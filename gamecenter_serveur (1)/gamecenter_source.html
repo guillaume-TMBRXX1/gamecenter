@@ -4323,7 +4323,7 @@ function localMidnight(ms){
   const g=k=>+(p.find(x=>x.type===k)||{value:0}).value;
   return ms-((g('hour')*60+g('minute'))*60+g('second'))*1000;
 }
-const WEEK_OPEN=SEASON?localMidnight(W_FIRST):0, WEEK_RESET=SEASON?localMidnight(W_FIRST+7*864e5):0   /* next Monday 00:00, also across a clock change */;
+const WEEK_MON=SEASON?localMidnight(W_FIRST):0, WEEK_OPEN=SEASON?(SERVER&&SERVER.open_ms!=null?Math.min(SERVER.open_ms,WEEK_MON):WEEK_MON):0, WEEK_RESET=SEASON?localMidnight(W_FIRST+7*864e5):0   /* next Monday 00:00, also across a clock change */;
 const r2=v=>Math.round(v*100)/100;
 const amOf=d=>d>=2?(d-1)*100:-100/(d-1);           /* decimal → the page's internal price (decOf gives it back) */
 
@@ -4365,7 +4365,8 @@ function quote(raw,t){
   if(t<WEEK_OPEN) lock('opens'); else if(st==='final') lock('final'); else if(!revealed(s,t)) lock('seeds'); else if(q.price==null) lock('na');
   return q;
 }
-function lockText(w){ return {opens:'Betting opens Monday 00:00',final:'Game over · market closed',closed:'Market closed',seeds:'Opens when the seeds are set',live:'Futures pause while games are live',na:'Not priced by the engine'}[w]||'Market closed'; }
+function openText(){ return WEEK_OPEN<WEEK_MON?"Betting opens after last week's AI Bowl":'Betting opens Monday 00:00'; }
+function lockText(w){ return {opens:openText(),final:'Game over · market closed',closed:'Market closed',seeds:'Opens when the seeds are set',live:'Futures pause while games are live',na:'Not priced by the engine'}[w]||'Market closed'; }
 
 /* ---------- the wallet: a ledger of bets; balance and results are worked out at time t ---------- */
 let WAL={bets:[]}, WAL_KEY='', SEEN=new Set(), STORE_OK=true;
@@ -4402,7 +4403,7 @@ function ledger(t){
   for(const r of rows){ staked+=r.stake;
     if(r.st==='open'){ open++; atRisk+=r.stake; continue; }
     back+=r.ret; if(r.st==='won') won++; if(r.st==='lost') lost++;
-    day[clamp(Math.floor((r.sat-WEEK_OPEN)/864e5),0,6)]+=r.ret-r.stake; }
+    day[clamp(Math.floor((r.sat-WEEK_MON)/864e5),0,6)]+=r.ret-r.stake; }
   return {rows,staked:r2(staked),back:r2(back),balance:r2(BANKROLL-staked+back),net:r2(back-(staked-atRisk)),won,lost,open,atRisk:r2(atRisk),day:day.map(r2)};
 }
 function placeable(t){ return t>=WEEK_OPEN&&t<WEEK_RESET; }
@@ -4486,7 +4487,7 @@ function seasonTotals(){
   const btn=document.getElementById('place'); let act='place', lab, dis=false;
   const nClosed=slip.picks.filter(dead).length, nPend=live.filter(p=>p.pending).length, low=live.some(p=>!(p.stake>=MIN_STAKE));
   if(!slip.picks.length){ lab='Place bet'; dis=true; }
-  else if(!placeable(t)){ lab=t<WEEK_OPEN?'Betting opens Monday 00:00':'This week is over'; dis=true; }
+  else if(!placeable(t)){ lab=t<WEEK_OPEN?openText():'This week is over'; dis=true; }
   else if(nClosed){ act='clean'; lab=`Remove ${nClosed} closed pick${nClosed>1?'s':''}`; }
   else if(nPend){ act='accept'; lab='Accept new odds'; }
   else if(!live.length){ lab='Futures reopen after the slot'; dis=true; }

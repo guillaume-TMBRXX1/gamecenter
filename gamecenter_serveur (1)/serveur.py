@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
+OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
 BANKROLL, MIN_STAKE = 1000.0, 1.0
 TZ = ZoneInfo("Europe/Brussels")
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -56,7 +57,8 @@ class Week:
         self.by = {g["id"]: g for g in self.sched}
         self.lock = iso_ms(self.doc["week"]["standings_locked_at"])
         mon = datetime.fromisoformat(self.start).replace(tzinfo=TZ)
-        self.open = int(mon.timestamp() * 1000)
+        self.monday = int(mon.timestamp() * 1000)
+        self.open = self.monday     # recalculé par _assign_opens : paris ouverts dès la publication de la semaine
         self.reset = int((mon + timedelta(days=7)).timestamp() * 1000)
         self.reg = [g for g in self.sched if g["phase"] == "regular"]
         self.semis = [g for g in self.sched if g["phase"] == "semifinal"]
@@ -225,12 +227,22 @@ def load_weeks():
                     _WEEKS[name[5:]] = Week(p)
                 except Exception as e:  # une semaine incomplète ne bloque pas les autres
                     print("semaine illisible", name, e)
+        _assign_opens()
     return _WEEKS
+
+
+def _assign_opens():
+    """Ouverture des paris d'une semaine : la toute première semaine est ouverte dès qu'elle est sur le serveur ;
+    les suivantes, OPEN_AFTER_FINAL_MIN après la fin de l'AI Bowl de la semaine d'avant (sans dépasser le lundi 00:00).
+    La page bascule sur la nouvelle semaine à ce moment-là (current_week)."""
+    ws = sorted(_WEEKS.values(), key=lambda w: w.monday)
+    for i, w in enumerate(ws):
+        w.open = 0 if i == 0 else min(w.monday, ws[i - 1].final["end"] + OPEN_AFTER_FINAL_MIN * 60 * 1000)
 
 
 def current_week(t=None):
     t = now_ms() if t is None else t
-    ws = sorted(load_weeks().values(), key=lambda w: w.open)
+    ws = sorted(load_weeks().values(), key=lambda w: w.monday)
     if not ws:
         return None
     live = [w for w in ws if w.open <= t < w.reset]
@@ -246,7 +258,7 @@ def _init_clock():
     if not at:
         return
     if at == "auto":
-        ws = sorted(load_weeks().values(), key=lambda w: w.open)
+        ws = sorted(load_weeks().values(), key=lambda w: w.monday)
         if not ws:
             return
         target = ws[-1].sched[0]["ko"] - 15 * 60 * 1000
@@ -341,7 +353,7 @@ def _enc(o):
 def page():
     w = _need_week(); t = now_ms()
     bundle = {"week": w.public_state(t), "feeds": {g["id"]: w.public_feed(g, t) for g in w.sched}}
-    srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "week_start": w.start}
+    srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "week_start": w.start, "open_ms": w.open}
     s = _page_source().replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
