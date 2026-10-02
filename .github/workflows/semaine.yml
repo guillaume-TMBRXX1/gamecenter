@@ -21,6 +21,9 @@ jobs:
   produire:
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"   # dossier du serveur dans ce dépôt (le même que Railway)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,5 +44,5 @@ jobs:
             echo "Aucune nouvelle semaine."
           else
             git commit -m "Nouvelle semaine $(ls data/weeks | tail -1)"
-            git push
+            git push origin HEAD
           fi
