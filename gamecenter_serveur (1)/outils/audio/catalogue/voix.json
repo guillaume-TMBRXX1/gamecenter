@@ -1,0 +1,13 @@
+{
+ "note": "Voix du commentateur (ElevenLabs). voice_id : ElevenLabs → Voices → la voix choisie → ID. Changer un réglage régénère les prises concernées (nouvelle empreinte). eleven_v3 : les « prefix » (balises d'émotion) sont ajoutés au texte ; eleven_multilingual_v2 : le ton passe par voice_settings.",
+ "voice_id": "",
+ "model_id": "eleven_multilingual_v2",
+ "output_format": "mp3_44100_128",
+ "seed": 1,
+ "voice_settings": {"stability": 0.5, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": true, "speed": 1.0},
+ "tiers": {
+  "calm":    {"prefix": "", "voice_settings": {"stability": 0.6, "style": 0.2}},
+  "excited": {"prefix": "[excited] ", "voice_settings": {"stability": 0.4, "style": 0.5, "speed": 1.05}},
+  "huge":    {"prefix": "[shouting] ", "voice_settings": {"stability": 0.3, "style": 0.75, "speed": 1.08}}
+ }
+}

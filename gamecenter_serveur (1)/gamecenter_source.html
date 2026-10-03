@@ -4479,6 +4479,8 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
+    /* Audio System V0.2: commentator voice — 'recorded' (GameCenter calls, when the pack is there) or 'device' */
+    voiceSrc:d.voiceSrc==='device'?'device':'recorded',
     /* Audio System mixer (V0.1): volume per category, 100 % = the previous sound; music arrives in V0.4 */
     mix:(m=>({commentary:clamp(num(m.commentary,100),0,100),crowd:clamp(num(m.crowd,100),0,100),sfx:clamp(num(m.sfx,100),0,100),music:clamp(num(m.music,100),0,100)}))(d.mix&&typeof d.mix==='object'?d.mix:{}),
     mixMute:(m=>({commentary:m.commentary===true,music:m.music===true}))(d.mixMute&&typeof d.mixMute==='object'?d.mixMute:{})}; })();
@@ -5205,7 +5207,7 @@ function focusGame(){ if(modalGame&&modalGame.replay) return modalGame; const f=
 function audioFocusTick(){
   const f=focusGame();
   if(f!==FOCUS){ FOCUS=f; F_Q=f&&f.cur?num(f.cur.quarter,1):0; F_SEQ=f&&f.cur?f.cur.seq:-1;
-    if(f){ alog('focus',f.id); if(soundOn()) say(introLine(f),3,f); }
+    if(f){ alog('focus',f.id); if(soundOn()){ if(AM) AM.focus(f,introLine(f)); else say(introLine(f),3,f); } }
     audioApply(); }
 }
 function audioSnap(g){
@@ -5246,13 +5248,17 @@ function audioResolve(g){
 setInterval(audioFocusTick,400);
 function audioTest(){
   if(!soundOn()) setSound(true);
-  sfx('horn'); sfx('roar',0,1,3); say('Touchdown! This is how GameCenter sounds.',3,null);
+  sfx('horn'); sfx('roar',0,1,3);
+  if(AM) AM.say('Touchdown! This is how GameCenter sounds.',3,null,{cues:[{cue:'TEST',tags:[]}],imp:.6,seq:0}); else say('Touchdown! This is how GameCenter sounds.',3,null);
 }
 function soundCard(){
   const sw=(n,lab,desc)=>`<div class="set-row"><span class="set-l" id="setL_${n}">${lab}<small>${desc}</small></span><button type="button" class="switch" role="switch" data-set="${n}" aria-checked="${!!SET[n]}" aria-labelledby="setL_${n}"><i></i></button></div>`;
   const radio=(val,lab,desc)=>`<button type="button" class="set-opt" role="radio" data-set="talk" data-v="${val}" aria-checked="${SET.talk===val}"><span class="set-dot" aria-hidden="true"></span><span><b>${lab}</b><small>${desc}</small></span></button>`;
   const cur=AM?AM.pickVoice():pickVoice(), vl=AM?AM.voices():VOICES, hasTts=AM?AM.hasTTS():!!TTS;
-  const vsel = !hasTts ? `<p class="set-p">This browser has no speech voice: commentary shows as captions.</p>`
+  const rec=!!(AM&&AM.recordedPack()), dev=SET.voiceSrc==='device';
+  const vsrc = rec ? `<div class="set-row col"><span class="set-l" id="setVsrcL">Commentator voice<small>GameCenter's recorded commentator says the calls; names, yards and score stay in the captions</small></span>
+      <div class="seg" role="radiogroup" aria-labelledby="setVsrcL">${[['recorded','GameCenter'],['device','This device']].map(([v,l])=>`<button type="button" role="radio" data-set="voiceSrc" data-v="${v}" aria-checked="${SET.voiceSrc===v}" aria-selected="${SET.voiceSrc===v}">${l}</button>`).join('')}</div></div>` : '';
+  const vsel = rec&&!dev ? '' : !hasTts ? `<p class="set-p">This browser has no speech voice: commentary shows as captions.</p>`
     : vl.length ? `<div class="set-row"><label class="set-l" for="setVoice">Voice<small>English voices of this device</small></label><select id="setVoice" class="set-sel">${vl.map(v=>`<option value="${esc(v.name)}"${cur&&cur.name===v.name?' selected':''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')}</select></div>`
     : `<p class="set-p">No English voice found on this device yet: commentary shows as captions.</p>`;
   return `<div class="card set-card"><div class="card-h"><h2>Sound</h2><button type="button" class="chip-btn" data-sndtest>Play a test</button></div>
@@ -5263,8 +5269,8 @@ function soundCard(){
     ${AM?mixerRows():''}
     <div class="set-row col"><span class="set-l" id="setTalkL">Commentator<small>Follows the Prime Time board, or the big screen when it is open</small></span>
       <div class="set-opts" role="radiogroup" aria-labelledby="setTalkL">${radio('full','Play by play','Every snap that matters, third downs, scores')}${radio('big','Big plays only','Scores, turnovers, sacks and long gains')}${radio('off','Off','Crowd and effects only')}</div></div>
-    ${vsel}
-    <div class="set-row"><span class="set-l" id="setRateL">Speaking pace</span><div class="seg" role="radiogroup" aria-labelledby="setRateL">${[[0.9,'Calm'],[1.05,'Normal'],[1.2,'Fast']].map(([v,l])=>`<button type="button" role="radio" data-set="rate" data-num data-v="${v}" aria-checked="${SET.rate===v}" aria-selected="${SET.rate===v}">${l}</button>`).join('')}</div></div>
+    ${vsrc}${vsel}
+    ${rec&&!dev?'':`<div class="set-row"><span class="set-l" id="setRateL">Speaking pace</span><div class="seg" role="radiogroup" aria-labelledby="setRateL">${[[0.9,'Calm'],[1.05,'Normal'],[1.2,'Fast']].map(([v,l])=>`<button type="button" role="radio" data-set="rate" data-num data-v="${v}" aria-checked="${SET.rate===v}" aria-selected="${SET.rate===v}">${l}</button>`).join('')}</div></div>`}
     ${sw('cap','Captions','Show what the commentator says at the top of the screen')}
   </div>`;
 }

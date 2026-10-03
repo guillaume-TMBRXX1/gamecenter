@@ -1,0 +1,1213 @@
+{
+ "schema": "gc-commentary-catalogue/1",
+ "note": "Commentaire enregistré (V0.2). Appels génériques en anglais, sans nom de joueur (les noms restent dans les sous-titres). id stable ; changer un texte → nouveau fichier à la prochaine génération. tier : calm / excited / huge selon l'importance du moment. tags : pass, run, fd (premier down), nogain, lead (prise d'avantage), goal, ot, q2/q3/q4.",
+ "lines": [
+  {
+   "id": "touchdown_excited_01",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "text": "Touchdown!"
+  },
+  {
+   "id": "touchdown_excited_02",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "text": "And he's in! Touchdown!"
+  },
+  {
+   "id": "touchdown_excited_03",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "text": "Into the end zone — touchdown!"
+  },
+  {
+   "id": "touchdown_excited_04",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "text": "Six points on the board!"
+  },
+  {
+   "id": "touchdown_excited_05",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "text": "Touchdown, and that drive pays off!"
+  },
+  {
+   "id": "touchdown_excited_pass_01",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "Thrown… and caught! Touchdown!"
+  },
+  {
+   "id": "touchdown_excited_pass_02",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "He finds his man in the end zone — touchdown!"
+  },
+  {
+   "id": "touchdown_excited_pass_03",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "What a throw — touchdown!"
+  },
+  {
+   "id": "touchdown_excited_run_01",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "He punches it in! Touchdown!"
+  },
+  {
+   "id": "touchdown_excited_run_02",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "Right up the gut — and in for the score!"
+  },
+  {
+   "id": "touchdown_excited_run_03",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "He walks in untouched — touchdown!"
+  },
+  {
+   "id": "touchdown_huge_01",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "text": "TOUCHDOWN! Unbelievable!"
+  },
+  {
+   "id": "touchdown_huge_02",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "text": "He's in! TOUCHDOWN! Listen to this crowd!"
+  },
+  {
+   "id": "touchdown_huge_03",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "text": "TOUCHDOWN! What a moment!"
+  },
+  {
+   "id": "touchdown_huge_04",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "text": "Oh, he's in! Are you kidding me? Touchdown!"
+  },
+  {
+   "id": "touchdown_huge_lead_01",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [
+    "lead"
+   ],
+   "text": "Touchdown! And they've taken the lead!"
+  },
+  {
+   "id": "touchdown_huge_lead_02",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [
+    "lead"
+   ],
+   "text": "They go ahead! Touchdown, and this place is shaking!"
+  },
+  {
+   "id": "interception_excited_01",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "text": "Intercepted!"
+  },
+  {
+   "id": "interception_excited_02",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "text": "Picked off!"
+  },
+  {
+   "id": "interception_excited_03",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "text": "And that's an interception!"
+  },
+  {
+   "id": "interception_excited_04",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "text": "He jumps the route — interception!"
+  },
+  {
+   "id": "interception_excited_05",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "text": "Thrown… and it's picked!"
+  },
+  {
+   "id": "interception_huge_01",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "text": "INTERCEPTED! What a time for it!"
+  },
+  {
+   "id": "interception_huge_02",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "text": "PICKED OFF! Huge, huge turnover!"
+  },
+  {
+   "id": "interception_huge_03",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "text": "Interception! That could be the ball game!"
+  },
+  {
+   "id": "fumble_excited_01",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "text": "Fumble! And they recover!"
+  },
+  {
+   "id": "fumble_excited_02",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "text": "The ball is out — and they've got it!"
+  },
+  {
+   "id": "fumble_excited_03",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "text": "He loses it! Turnover!"
+  },
+  {
+   "id": "fumble_excited_04",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "text": "Fumble, and it's a change of possession!"
+  },
+  {
+   "id": "fumble_huge_01",
+   "cue": "FUMBLE",
+   "tier": "huge",
+   "tags": [],
+   "text": "FUMBLE! They come up with it! What a swing!"
+  },
+  {
+   "id": "fumble_huge_02",
+   "cue": "FUMBLE",
+   "tier": "huge",
+   "tags": [],
+   "text": "The ball is OUT! Huge turnover!"
+  },
+  {
+   "id": "field_goal_good_calm_01",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "text": "The kick is good."
+  },
+  {
+   "id": "field_goal_good_calm_02",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "text": "Right down the middle. Three points."
+  },
+  {
+   "id": "field_goal_good_calm_03",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "text": "Good from there, and that's three."
+  },
+  {
+   "id": "field_goal_good_calm_04",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "text": "Splits the uprights."
+  },
+  {
+   "id": "field_goal_good_excited_01",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "text": "The kick is up… it's good!"
+  },
+  {
+   "id": "field_goal_good_excited_02",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "text": "It's good! Big three points!"
+  },
+  {
+   "id": "field_goal_good_excited_03",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "text": "Plenty of leg — and it's good!"
+  },
+  {
+   "id": "field_goal_good_huge_01",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "text": "The kick is up… IT'S GOOD! What a kick!"
+  },
+  {
+   "id": "field_goal_good_huge_02",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "text": "IT'S GOOD! He's done it!"
+  },
+  {
+   "id": "field_goal_miss_calm_01",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "text": "The kick is no good."
+  },
+  {
+   "id": "field_goal_miss_calm_02",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "text": "Wide. No points."
+  },
+  {
+   "id": "field_goal_miss_calm_03",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "text": "He pulls it — no good."
+  },
+  {
+   "id": "field_goal_miss_excited_01",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "text": "No good! He misses it!"
+  },
+  {
+   "id": "field_goal_miss_excited_02",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "text": "Off the upright — no good!"
+  },
+  {
+   "id": "field_goal_miss_excited_03",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "text": "Wide right! Oh, he missed it!"
+  },
+  {
+   "id": "sack_calm_01",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Sacked."
+  },
+  {
+   "id": "sack_calm_02",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "He's brought down behind the line."
+  },
+  {
+   "id": "sack_calm_03",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Quarterback sack."
+  },
+  {
+   "id": "sack_calm_04",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Pressure gets home — sack."
+  },
+  {
+   "id": "sack_excited_01",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "text": "Sacked! Big play by the defense!"
+  },
+  {
+   "id": "sack_excited_02",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "text": "Down he goes! What a rush!"
+  },
+  {
+   "id": "sack_excited_03",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "text": "They get to him — sack!"
+  },
+  {
+   "id": "sack_excited_04",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "text": "He had nowhere to go! Sack!"
+  },
+  {
+   "id": "big_play_excited_pass_01",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "Deep shot… caught! Big gain!"
+  },
+  {
+   "id": "big_play_excited_pass_02",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "He's open downfield — what a catch!"
+  },
+  {
+   "id": "big_play_excited_pass_03",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "Long completion, and they're moving!"
+  },
+  {
+   "id": "big_play_excited_run_01",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "He breaks free! Big run!"
+  },
+  {
+   "id": "big_play_excited_run_02",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "He finds a crease — and he's off!"
+  },
+  {
+   "id": "big_play_excited_run_03",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "text": "Nobody touches him! Big gain on the ground!"
+  },
+  {
+   "id": "big_play_huge_01",
+   "cue": "BIG_PLAY",
+   "tier": "huge",
+   "tags": [],
+   "text": "He's loose! Look at him go!"
+  },
+  {
+   "id": "big_play_huge_02",
+   "cue": "BIG_PLAY",
+   "tier": "huge",
+   "tags": [],
+   "text": "Caught! And he's got room! Huge play!"
+  },
+  {
+   "id": "pass_complete_calm_01",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Complete."
+  },
+  {
+   "id": "pass_complete_calm_02",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Caught, short gain."
+  },
+  {
+   "id": "pass_complete_calm_03",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "He makes the grab."
+  },
+  {
+   "id": "pass_complete_calm_04",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Quick throw, complete."
+  },
+  {
+   "id": "pass_complete_calm_05",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Underneath, and that's caught."
+  },
+  {
+   "id": "pass_complete_calm_fd_01",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Complete, and that's a first down."
+  },
+  {
+   "id": "pass_complete_calm_fd_02",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Caught — and he moves the chains."
+  },
+  {
+   "id": "pass_complete_calm_fd_03",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "On target, first down."
+  },
+  {
+   "id": "pass_complete_calm_fd_04",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Complete, first down."
+  },
+  {
+   "id": "pass_complete_calm_nogain_01",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "nogain"
+   ],
+   "text": "Caught, but no gain."
+  },
+  {
+   "id": "pass_complete_calm_nogain_02",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "nogain"
+   ],
+   "text": "Complete, but he's stopped right there."
+  },
+  {
+   "id": "incomplete_calm_01",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Incomplete."
+  },
+  {
+   "id": "incomplete_calm_02",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Pass falls incomplete."
+  },
+  {
+   "id": "incomplete_calm_03",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Thrown away."
+  },
+  {
+   "id": "incomplete_calm_04",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Broken up — incomplete."
+  },
+  {
+   "id": "incomplete_calm_05",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Overthrown."
+  },
+  {
+   "id": "incomplete_calm_06",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Can't hang on. Incomplete."
+  },
+  {
+   "id": "run_calm_01",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Handoff, a few yards."
+  },
+  {
+   "id": "run_calm_02",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Up the middle, short gain."
+  },
+  {
+   "id": "run_calm_03",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "He picks up a couple."
+  },
+  {
+   "id": "run_calm_04",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Off tackle, modest gain."
+  },
+  {
+   "id": "run_calm_05",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Runs inside for a little."
+  },
+  {
+   "id": "run_calm_fd_01",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Handoff… and that's a first down."
+  },
+  {
+   "id": "run_calm_fd_02",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "He moves the chains on the ground."
+  },
+  {
+   "id": "run_calm_fd_03",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Tough run, first down."
+  },
+  {
+   "id": "run_calm_fd_04",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "text": "Powers ahead — first down."
+  },
+  {
+   "id": "run_stuffed_calm_01",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "text": "Stuffed at the line."
+  },
+  {
+   "id": "run_stuffed_calm_02",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "text": "No gain."
+  },
+  {
+   "id": "run_stuffed_calm_03",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "text": "Stopped in the backfield."
+  },
+  {
+   "id": "run_stuffed_calm_04",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "text": "Nowhere to go — no gain."
+  },
+  {
+   "id": "punt_calm_01",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They'll punt it away."
+  },
+  {
+   "id": "punt_calm_02",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Punt is away."
+  },
+  {
+   "id": "punt_calm_03",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Good hang time on the punt."
+  },
+  {
+   "id": "punt_calm_04",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Punted deep."
+  },
+  {
+   "id": "kickoff_calm_01",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "text": "Here's the kickoff."
+  },
+  {
+   "id": "kickoff_calm_02",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "text": "Kicked deep."
+  },
+  {
+   "id": "kickoff_calm_03",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "text": "And the kickoff is away."
+  },
+  {
+   "id": "halftime_calm_01",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "text": "And that's halftime."
+  },
+  {
+   "id": "halftime_calm_02",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "text": "That will do it for the first half."
+  },
+  {
+   "id": "halftime_calm_03",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "text": "We've reached the half."
+  },
+  {
+   "id": "victory_excited_01",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "text": "And that's the ball game! The home side wins it!"
+  },
+  {
+   "id": "victory_excited_02",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "text": "It's over! A home win, and this crowd loves it!"
+  },
+  {
+   "id": "victory_excited_03",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "text": "Final whistle — the home team gets it done!"
+  },
+  {
+   "id": "victory_huge_01",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [],
+   "text": "IT'S OVER! THEY'VE DONE IT! What a finish!"
+  },
+  {
+   "id": "victory_huge_02",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [],
+   "text": "They win it! Unbelievable scenes here!"
+  },
+  {
+   "id": "victory_huge_ot_01",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [
+    "ot"
+   ],
+   "text": "They win it in overtime! What a game!"
+  },
+  {
+   "id": "defeat_calm_01",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "And that's the ball game. The visitors take this one."
+  },
+  {
+   "id": "defeat_calm_02",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "It's over. A road win, and a quiet stadium."
+  },
+  {
+   "id": "defeat_calm_03",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Final whistle, and the visitors hang on."
+  },
+  {
+   "id": "defeat_excited_01",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [],
+   "text": "It's over! The visitors steal it at the end!"
+  },
+  {
+   "id": "defeat_excited_02",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [],
+   "text": "They win it on the road! Silence in this building!"
+  },
+  {
+   "id": "defeat_excited_ot_01",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [
+    "ot"
+   ],
+   "text": "The visitors win it in overtime!"
+  },
+  {
+   "id": "tie_calm_01",
+   "cue": "TIE",
+   "tier": "calm",
+   "tags": [],
+   "text": "And it ends all square."
+  },
+  {
+   "id": "tie_calm_02",
+   "cue": "TIE",
+   "tier": "calm",
+   "tags": [],
+   "text": "A tie, nobody wins this one."
+  },
+  {
+   "id": "field_goal_unit_calm_01",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Out comes the field goal unit."
+  },
+  {
+   "id": "field_goal_unit_calm_02",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They'll try the field goal."
+  },
+  {
+   "id": "field_goal_unit_calm_03",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Field goal team is on."
+  },
+  {
+   "id": "fourth_down_attempt_excited_01",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "text": "Fourth down — and they're going for it!"
+  },
+  {
+   "id": "fourth_down_attempt_excited_02",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "text": "They're staying on the field on fourth down!"
+  },
+  {
+   "id": "fourth_down_attempt_excited_03",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "text": "Fourth down. No punt. Here we go!"
+  },
+  {
+   "id": "third_down_calm_01",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Third down."
+  },
+  {
+   "id": "third_down_calm_02",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Big third down coming up."
+  },
+  {
+   "id": "third_down_calm_03",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Third down, and they need this one."
+  },
+  {
+   "id": "third_down_calm_04",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Third down — a money down."
+  },
+  {
+   "id": "third_down_calm_goal_01",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [
+    "goal"
+   ],
+   "text": "Third and goal."
+  },
+  {
+   "id": "third_down_calm_goal_02",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [
+    "goal"
+   ],
+   "text": "Third down, at the goal line."
+  },
+  {
+   "id": "first_and_goal_calm_01",
+   "cue": "FIRST_AND_GOAL",
+   "tier": "calm",
+   "tags": [],
+   "text": "First and goal."
+  },
+  {
+   "id": "first_and_goal_calm_02",
+   "cue": "FIRST_AND_GOAL",
+   "tier": "calm",
+   "tags": [],
+   "text": "First and goal, knocking on the door."
+  },
+  {
+   "id": "red_zone_first_calm_01",
+   "cue": "RED_ZONE_FIRST",
+   "tier": "calm",
+   "tags": [],
+   "text": "First down, in the red zone."
+  },
+  {
+   "id": "red_zone_first_calm_02",
+   "cue": "RED_ZONE_FIRST",
+   "tier": "calm",
+   "tags": [],
+   "text": "They're in the red zone now."
+  },
+  {
+   "id": "adj_hurry_calm_01",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "text": "They go hurry-up."
+  },
+  {
+   "id": "adj_hurry_calm_02",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "text": "No huddle now."
+  },
+  {
+   "id": "adj_hurry_calm_03",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "text": "Here comes the hurry-up."
+  },
+  {
+   "id": "adj_clock_calm_01",
+   "cue": "ADJ_CLOCK",
+   "tier": "calm",
+   "tags": [],
+   "text": "They want to run out the clock."
+  },
+  {
+   "id": "adj_clock_calm_02",
+   "cue": "ADJ_CLOCK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Clock-killing time."
+  },
+  {
+   "id": "adj_shelve_calm_01",
+   "cue": "ADJ_SHELVE",
+   "tier": "calm",
+   "tags": [],
+   "text": "They shelve that call — it isn't working."
+  },
+  {
+   "id": "adj_shelve_calm_02",
+   "cue": "ADJ_SHELVE",
+   "tier": "calm",
+   "tags": [],
+   "text": "That play goes back in the book."
+  },
+  {
+   "id": "adj_shelve_form_calm_01",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "text": "They move out of that look."
+  },
+  {
+   "id": "adj_d_deep_calm_01",
+   "cue": "ADJ_D_DEEP",
+   "tier": "calm",
+   "tags": [],
+   "text": "The safeties roll deep."
+  },
+  {
+   "id": "adj_d_deep_calm_02",
+   "cue": "ADJ_D_DEEP",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense backs into deep shells."
+  },
+  {
+   "id": "adj_d_heat_calm_01",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense answers with more pressure."
+  },
+  {
+   "id": "adj_d_run_calm_01",
+   "cue": "ADJ_D_RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Eight in the box now."
+  },
+  {
+   "id": "adj_d_run_calm_02",
+   "cue": "ADJ_D_RUN",
+   "tier": "calm",
+   "tags": [],
+   "text": "They stack the box to stop the run."
+  },
+  {
+   "id": "adj_d_press_calm_01",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "text": "They press the short passing game."
+  },
+  {
+   "id": "adj_d_noblitz_calm_01",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense backs off the blitz."
+  },
+  {
+   "id": "adj_d_prevent_calm_01",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They drop into a prevent defense."
+  },
+  {
+   "id": "adj_d_attack_calm_01",
+   "cue": "ADJ_D_ATTACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense sells out for a stop."
+  },
+  {
+   "id": "quarter_start_calm_q2_01",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q2"
+   ],
+   "text": "Start of the second quarter."
+  },
+  {
+   "id": "quarter_start_calm_q3_01",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q3"
+   ],
+   "text": "Here we go, second half underway."
+  },
+  {
+   "id": "quarter_start_calm_q3_02",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q3"
+   ],
+   "text": "Start of the third quarter."
+  },
+  {
+   "id": "quarter_start_calm_q4_01",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q4"
+   ],
+   "text": "Fourth quarter. This is where it's decided."
+  },
+  {
+   "id": "quarter_start_calm_q4_02",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q4"
+   ],
+   "text": "Start of the fourth quarter."
+  },
+  {
+   "id": "overtime_huge_01",
+   "cue": "OVERTIME",
+   "tier": "huge",
+   "tags": [],
+   "text": "We're headed to overtime!"
+  },
+  {
+   "id": "overtime_huge_02",
+   "cue": "OVERTIME",
+   "tier": "huge",
+   "tags": [],
+   "text": "Overtime! Nobody wants this to end!"
+  },
+  {
+   "id": "intro_live_excited_01",
+   "cue": "INTRO_LIVE",
+   "tier": "excited",
+   "tags": [],
+   "text": "Welcome to GameCenter. Here we go!"
+  },
+  {
+   "id": "intro_live_excited_02",
+   "cue": "INTRO_LIVE",
+   "tier": "excited",
+   "tags": [],
+   "text": "Kickoff is coming up, live on GameCenter!"
+  },
+  {
+   "id": "intro_join_calm_01",
+   "cue": "INTRO_JOIN",
+   "tier": "calm",
+   "tags": [],
+   "text": "We're live on GameCenter."
+  },
+  {
+   "id": "intro_join_calm_02",
+   "cue": "INTRO_JOIN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Joining the action, live."
+  },
+  {
+   "id": "intro_replay_calm_01",
+   "cue": "INTRO_REPLAY",
+   "tier": "calm",
+   "tags": [],
+   "text": "A replay from the engine."
+  },
+  {
+   "id": "intro_replay_calm_02",
+   "cue": "INTRO_REPLAY",
+   "tier": "calm",
+   "tags": [],
+   "text": "Here's the replay."
+  },
+  {
+   "id": "test_excited_01",
+   "cue": "TEST",
+   "tier": "excited",
+   "tags": [],
+   "text": "Touchdown! This is how GameCenter sounds."
+  }
+ ]
+}

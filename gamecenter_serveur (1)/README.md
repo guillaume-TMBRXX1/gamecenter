@@ -136,6 +136,24 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - **Tests** : `node outils/audio/test_mapper_v01.js` (sans navigateur) ;
   `GC_TEST_HOOK=1 uvicorn serveur:app --port 8103` puis `node outils/audio/test_parite_v01.js data/weeks 8103` (Playwright).
 
+### 12. Commentaire enregistré (Audio System V0.2)
+
+- **Principe** : le commentateur dit des appels génériques enregistrés (163 phrases en anglais, sans nom de joueur :
+  `outils/audio/catalogue/commentary.json`) ; les sous-titres gardent la phrase complète (noms, yards, score).
+  Ton choisi selon l'importance du moment (calme / excité / énorme : un TD ordinaire n'est pas un TD décisif à 0:30),
+  variante choisie de façon contrôlée (même prise pour tous les spectateurs, jamais deux fois de suite).
+  Prise absente ou trop lente (> 350 ms) → la voix de l'appareil dit la phrase complète. *Settings → Sound → Commentator voice*
+  permet de garder la voix de l'appareil. iOS : le son passe même en mode silencieux quand Safari le permet.
+- **Tant qu'aucune prise n'est générée, rien ne change** (le site garde la voix de l'appareil).
+- **Générer les prises (sur ton ordinateur, une fois)** :
+  1. ElevenLabs → *Voices* → choisir la voix du commentateur → copier son ID dans `outils/audio/catalogue/voix.json` (`voice_id`).
+  2. Créer `gamecenter_serveur (1)/.env` (ignoré par Git) : `ELEVENLABS_API_KEY=ta-clé`. Installer ffmpeg (normalisation du volume).
+  3. `python3 outils/audio/generer_audio.py --dry-run` (≈ 4 600 caractères), puis `python3 outils/audio/generer_audio.py`.
+  4. Écouter `outils/audio/ecoute.html` ; une prise ratée : `--reject <id>` puis relancer (seule celle-là est refaite).
+  5. Commiter `audio/` (≈ 1,5 Mo) → Railway le sert. Aucune clé ne quitte ton ordinateur.
+- **Tests** : `node outils/audio/test_commentaire_v02.js data/weeks 8104` avec des bips de test
+  (`generer_audio.py --placeholder --audio-dir /tmp/gc-audio` et `GC_AUDIO_DIR=/tmp/gc-audio` pour le serveur).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
