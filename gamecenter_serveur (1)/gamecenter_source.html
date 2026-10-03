@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GameCenter — Live Board</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};})();</script>
 <meta name="description" content="NFL Sim GameCenter: prime-time live boards for simulated football, with real-time odds, power bars and a bet slip.">
@@ -1529,9 +1531,9 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.15),0 6px 16px -8px rgba(22,90,120,.8);
     font:700 10.5px/1 var(--f-announce);letter-spacing:.06em;color:#fff}
   .pt-tag::before{content:"";width:17px;height:11px;flex-shrink:0;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='6 7 17 10'%3E%3Cpath d='M7 12C9.7 7.3 19.3 7.3 22.4 12 19.3 16.7 9.7 16.7 7 12Z' fill='%23fff'/%3E%3Cpath d='M11.8 12h6.4M13.4 10.7v2.6M15 10.7v2.6M16.6 10.7v2.6' stroke='%231E5C78' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E")}
-  .pt-tag::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%) -150% 0/60% 100% no-repeat;pointer-events:none}
+  .pt-tag::after{content:"";position:absolute;top:0;bottom:0;left:0;width:60%;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-100%);pointer-events:none}
   @media (prefers-reduced-motion:no-preference){ .pt-tag::after{animation:ptShine 5s ease-in-out infinite} }
-  @keyframes ptShine{0%,70%{background-position:-150% 0}100%{background-position:250% 0}}
+  @keyframes ptShine{0%,70%{transform:translateX(-100%)}100%{transform:translateX(166.667%)}}   /* même reflet qu'avant (background-position -150% → 250%), mais animé par le compositeur : plus de repeint à chaque image */
 
   /* « NOW » : le dégradé de « Center » */
   h1 .now{background:linear-gradient(90deg,#315A87 0%,#16858A 60%,#B38332 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
@@ -1651,6 +1653,29 @@
   :root[data-theme="dark"] .td.to{filter:drop-shadow(0 0 1px #0B1017) drop-shadow(0 2px 0 #8E2C23) drop-shadow(0 10px 24px rgba(226,88,74,.4))}
   :root[data-theme="dark"] .dst tr.now td{background:rgba(76,130,186,.16)}
   :root[data-theme="dark"] ::selection{background:rgba(76,130,186,.4)}
+
+  /* ===== Performance tactile (téléphones, tablettes) =====
+     Le verre dépoli se recalcule dès que ce qu'il recouvre bouge. Sur mobile, deux sources le faisaient à chaque image :
+     – le fond qui dérive (body::before) sous toutes les surfaces de verre → fond fixe ;
+     – le terrain animé sous les pastilles posées dessus (bug, LIVE, chip, 3e down) → pastilles pleines, un peu plus opaques.
+     Les repeints continus du cadre de 3e down (dégradé qui défile, halo qui respire) sont remplacés par la seule
+     pulsation d'opacité, prise en charge par le compositeur. Flou des surfaces un peu réduit. */
+  @media (pointer:coarse),(max-width:760px){
+    :root{--blur:blur(14px) saturate(165%)}
+    body::before{animation:none}
+    .bug,.pill.half,.pill.final,.pill.upcoming,.pill.replay,.chip-play,.third,.field-hit::after{-webkit-backdrop-filter:none;backdrop-filter:none}
+    .bug{background:rgba(255,255,255,.86)}
+    .pill.half,.pill.final,.pill.upcoming,.pill.replay{background:rgba(255,255,255,.86)}
+    .chip-play,.field-hit::after{background:rgba(255,255,255,.9)}
+    .third{background:rgba(255,255,255,.9)}
+    :root[data-theme="dark"] .bug{background:rgba(14,20,30,.88)}
+    :root[data-theme="dark"] .pill.half,:root[data-theme="dark"] .pill.final,:root[data-theme="dark"] .pill.upcoming,:root[data-theme="dark"] .pill.replay,:root[data-theme="dark"] .chip-play,:root[data-theme="dark"] .third,:root[data-theme="dark"] .field-hit::after{background:rgba(14,20,30,.88)}
+    .field.third-on::before{animation:prPulse 1.6s ease-in-out infinite}
+    .field.third-on::after{animation:none}
+  }
+  @media (pointer:coarse) and (prefers-reduced-motion:reduce),(max-width:760px) and (prefers-reduced-motion:reduce){
+    .field.third-on::before{animation:none}
+  }
 </style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
@@ -1876,7 +1901,8 @@ const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
 const lerp=(a,b,u)=>a+(b-a)*u;
 const ease=u=>u*u*(3-2*u);
 function pick(arr,w){ let r=RNG()*w.reduce((s,x)=>s+x,0); for(let i=0;i<arr.length;i++){ r-=w[i]; if(r<=0) return arr[i]; } return arr[arr.length-1]; }
-function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+const HEXA=new Map();   /* perf: the canvas asks for the same few colours every frame — build each string once */
+function hexA(hex,a){ const k=hex+'|'+a; let v=HEXA.get(k); if(v===undefined){ const n=parseInt(hex.slice(1),16); v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; if(HEXA.size>512) HEXA.clear(); HEXA.set(k,v); } return v; }
 function money(v){ return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 /* Period label: Q1-Q4, then OT, OT2… (overtime periods 5, 6… from the engine) */
 function qName(q){ q=q|0; return q>4 ? 'OT'+(q>5?q-4:'') : 'Q'+q; }
@@ -3199,22 +3225,26 @@ function toast(msg){ const t=document.getElementById('toast'); t.classList.remov
 /*@ui-start*/
 function qLabel(g){ return g.status==='final'?'FINAL':g.status==='half'?'HALF':qName(g.q); }
 function clkDisp(g){ if(g.status!=='live') return ''; let c=g.clock; if(g.phase==='play'&&g.plan) c-=g.plan.elapsed*clamp(g.t/g.dur,0,1); return clockStr(c); }
+/* perf: write to the DOM only when the value really changes — the HUD is refreshed 4x a second and every
+   write (even of the same text) costs a style pass and wakes the team-colour observer */
+function setTxt(el,v){ if(el.textContent!==v) el.textContent=v; }
+function setHTML(el,v){ if(el._h!==v){ el._h=v; el.innerHTML=v; } }
 function setScore(el,v){ const s=String(v); if(el.textContent!==s){ el.textContent=s; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
 function updateGameUI(g){
   document.querySelectorAll(`[data-g="${g.id}"]`).forEach(el=>{
     switch(el.dataset.f){
       case 'as': setScore(el,g.as); break;
       case 'hs': setScore(el,g.hs); break;
-      case 'q': el.textContent=qLabel(g); break;
-      case 'clk': el.textContent=clkDisp(g); break;
-      case 'dd': el.textContent=g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g)); break;
+      case 'q': setTxt(el,qLabel(g)); break;
+      case 'clk': setTxt(el,clkDisp(g)); break;
+      case 'dd': setTxt(el,g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g))); break;
       case 'third': renderThird(g,el); break;
-      case 'spot': el.textContent=g.status==='live'?'Ball on '+spotLabel(g,g.los):''; break;
+      case 'spot': setTxt(el,g.status==='live'?'Ball on '+spotLabel(g,g.los):''); break;
       case 'possA': el.classList.toggle('on', g.poss==='away'&&g.status==='live'); break;
       case 'possH': el.classList.toggle('on', g.poss==='home'&&g.status==='live'); break;
-      case 'status': { const rv=g.mode==='replay', up=g.mode==='upcoming'; const t=up?'UPCOMING':g.status==='final'?'FINAL':g.status==='half'?'HALFTIME':rv?'REPLAY':'LIVE'; el.className='pill '+(up?'upcoming':rv&&g.status==='live'?'replay':g.status); el.querySelector('span').textContent=t; break; }
-      case 'wpval': el.innerHTML=`<small>${TEAMS[g.home].abbr}</small>${Math.round(g.p*100)}%`; break;
-      case 'last': el.innerHTML=`<b>Last play</b> · ${esc(g.lastText)}`; break;
+      case 'status': { const rv=g.mode==='replay', up=g.mode==='upcoming'; const t=up?'UPCOMING':g.status==='final'?'FINAL':g.status==='half'?'HALFTIME':rv?'REPLAY':'LIVE', cn='pill '+(up?'upcoming':rv&&g.status==='live'?'replay':g.status); if(el.className!==cn) el.className=cn; setTxt(el.querySelector('span'),t); break; }
+      case 'wpval': setHTML(el,`<small>${TEAMS[g.home].abbr}</small>${Math.round(g.p*100)}%`); break;
+      case 'last': setHTML(el,`<b>Last play</b> · ${esc(g.lastText)}`); break;
     }
   });
   updateTicker(g);
@@ -3227,9 +3257,9 @@ function renderReplayUI(g){
   document.querySelectorAll(`[data-g="${g.id}"][data-f^="rp"]`).forEach(el=>{
     switch(el.dataset.f){
       case 'rptoggle': { const on=!g.paused; if(el._on!==on){ el._on=on; el.innerHTML=on?ICON.pause:ICON.play; el.setAttribute('aria-label',on?'Pause replay':'Play replay'); } break; }
-      case 'rprange': if(!el._drag){ if(+el.value!==k) el.value=k; el.style.setProperty('--fill',(n>1?(k-1)/(n-1)*100:0).toFixed(2)+'%'); } break;
+      case 'rprange': if(!el._drag){ if(+el.value!==k) el.value=k; const fl=(n>1?(k-1)/(n-1)*100:0).toFixed(2)+'%'; if(el._fl!==fl){ el._fl=fl; el.style.setProperty('--fill',fl); } } break;
       case 'rppos': { const v=`Play <b>${k}</b> / ${n}`; if(el._v!==v){ el._v=v; el.innerHTML=v; } break; }
-      case 'rpspeed': el.setAttribute('aria-pressed', +el.dataset.s===g.speed?'true':'false'); break;
+      case 'rpspeed': { const v=+el.dataset.s===g.speed?'true':'false'; if(el.getAttribute('aria-pressed')!==v) el.setAttribute('aria-pressed',v); break; }
       case 'rpcall': { const v=g.status==='final'?`<b>Final</b> · ${esc(TEAMS[g.away].name)} ${g.as}, ${esc(TEAMS[g.home].name)} ${g.hs} · ${n} plays from the engine`:g.status==='half'?'<b>Halftime</b>':rpCallText(g); if(el._v!==v){ el._v=v; el.innerHTML=v; } break; }
     }
   });
@@ -3247,7 +3277,7 @@ function renderThird(g,el){
   const t=g.cur&&g.cur.call?g.cur.call.type:null;
   const on=g.status==='live' && !g.special && g.down>=3 && (g.phase==='presnap'||g.phase==='play') && (!t||t==='run'||t==='pass');
   const fld=el.closest('.field'); if(fld) fld.classList.toggle('third-on',on);
-  el.hidden=!on; if(!on) return;
+  if(el.hidden!==!on) el.hidden=!on; if(!on) return;
   const k=g.down===3?'3RD':'4TH'; let sub=`${Math.max(1,Math.round(g.toGo))} to go`;
   if(g.plays){ const S=computeStats(g,rpDone(g)).team[g.poss], a=g.down===3?S.d3:S.d4, c=g.down===3?S.c3:S.c4; sub+=` · ${TEAMS[offTeam(g)].abbr} ${k.toLowerCase()} down ${c}/${a} this game`; }
   const v=k+'|'+sub; if(el._v!==v){ el._v=v; el.querySelector('b').textContent=`${k} DOWN`; el.querySelector('span').textContent=sub; }
@@ -3389,7 +3419,15 @@ function onCommit(g){ flashField(g,document); refreshOddsUI(g); flashMoves(g); r
    Aggregated play by play from the engine feed, up to the play on screen (nothing is guessed:
    carriers, targets, passers and credited defenders all come from the feed). */
 function rpDone(g){ return !g.plays ? 0 : (g.phase==='done'||g.status==='final') ? g.plays.length : (g.phase==='post' ? g.idx+1 : g.idx); }
+/* perf: the 3rd-down banner asks for the stats 4x a second; they only change when a play is added.
+   Same inputs (feed, number of plays) → same result, so the last one is kept per game (read-only for callers). */
+const _stMemo=new WeakMap();
 function computeStats(g,n){
+  const m=_stMemo.get(g), len=g.plays?g.plays.length:0;
+  if(m&&m.plays===g.plays&&m.gf===g.gf&&m.n===n&&m.len===len) return m.res;
+  const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
+}
+function computeStatsNow(g,n){
   const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
@@ -3627,6 +3665,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 
 /*@core-start*/
 /* ---------------- field renderer (neon, playbook notation) ---------------- */
+/* perf: canvas resolution cap. Starts at 2x; lowered (1.5x, then 1x) if the device can't keep up (see frame()) */
+let FX_DPR=2;
 class FieldView{
   constructor(wrap,g,viewW,maxZoom){
     this.wrap=wrap; this.canvas=wrap.querySelector('canvas'); this.ctx=this.canvas.getContext('2d'); this.g=g; this.viewW=viewW;
@@ -3635,12 +3675,15 @@ class FieldView{
     this.resize();
     if(window.ResizeObserver){ this.ro=new ResizeObserver(()=>this.resize()); this.ro.observe(wrap); }
     else { this.onR=()=>this.resize(); window.addEventListener('resize',this.onR); }
+    /* perf: a field scrolled out of view (or in a hidden page) is not drawn — the game itself keeps running */
+    this.onScreen=true;
+    if(window.IntersectionObserver){ this.io=new IntersectionObserver(es=>{ for(const e of es){ const on=e.isIntersecting; if(on&&!this.onScreen) this._resnap=true; this.onScreen=on; } },{rootMargin:'80px'}); this.io.observe(wrap); }
   }
   resize(){
     const w=this.wrap.clientWidth; if(!w) return;
     /* The canvas shows `vy` yards of the field's width: all of it when the frame is tall enough,
        otherwise a window that the camera moves up and down with the ball (see draw) */
-    const dpr=Math.min(2,window.devicePixelRatio||1), s=w/this.viewW, wh=this.wrap.clientHeight||w*0.56;
+    const dpr=Math.min(FX_DPR,window.devicePixelRatio||1), s=w/this.viewW, wh=this.wrap.clientHeight||w*0.56;
     const h=Math.min(53.3*s, wh*1.1);
     this.cw=w; this.ch=h; this.s0=s; this.s=s/this.z; this.vy0=h/s;
     this.canvas.style.width=w+'px'; this.canvas.style.height=h+'px';
@@ -3648,6 +3691,7 @@ class FieldView{
     this.ctx.setTransform(dpr,0,0,dpr,0,0);
     this.wrap.style.perspective=Math.round(w*1.35)+'px';
     this.calib();
+    this._sig=null; this._vg=null;   /* the canvas was cleared: draw the next frame whatever happens */
   }
   /* Which part of the canvas is really on screen once tilted: the frame clips the near (bottom) edge and the
      sides of the near rows, and the 3rd-down banner / score bug cover the top and bottom. Stored as fractions
@@ -3673,7 +3717,18 @@ class FieldView{
     const d=parseFloat(this.wrap.style.perspective)||1e6, r=this.wrap.getBoundingClientRect(), vx=this.wrap.clientWidth/2, vy=this.wrap.clientHeight/2, f=d/(d-pz);
     return {x:r.left+vx+(px-vx)*f, y:r.top+vy+(py-vy)*f};
   }
-  destroy(){ if(this.ro) this.ro.disconnect(); if(this.onR) window.removeEventListener('resize',this.onR); }
+  destroy(){ if(this.ro) this.ro.disconnect(); if(this.io) this.io.disconnect(); if(this.onR) window.removeEventListener('resize',this.onR); }
+  /* perf: everything the picture depends on, rounded below a quarter of a pixel. When it has not changed since
+     the last frame (pause between plays, halftime, final, a server game waiting for its next play, a settled
+     camera…) the canvas already shows it and drawing it again is skipped. */
+  sigOf(g,x0,y0,s,W,H){
+    let h=0; const P=a=>{ for(let i=0;i<a.length;i++){ const p=a[i]; if(!p) continue; h=(h*31+Math.round(p.x*40))|0; h=(h*31+Math.round(p.y*40))|0; } };
+    P(g.off); P(g.def);
+    const b=g.ball, tl=g.trail.length?g.trail[g.trail.length-1]:null, c=g.carrier, se=g.sel, hv=this.hover;
+    return [W,H,Math.round(x0*s*4),Math.round(y0*s*4),Math.round(s*400),h,Math.round(b.x*40),Math.round(b.y*40),Math.round(b.h*40),
+      g.trail.length,tl&&Math.round(tl.x*40),tl&&Math.round(tl.y*40),g.tracks,g.plan,g.phase,g.status,g.los,g.toGo,g.special,g.poss,g.home,g.away,
+      c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g)];
+  }
   endZone(xs,team,X,x0,x1){
     if(xs+10<x0||xs>x1) return;
     const c=this.ctx, s=this.s, H=this.ch, T=TEAMS[team];
@@ -3702,9 +3757,10 @@ class FieldView{
     let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9; for(const p of pts){ x0=Math.min(x0,p.x); x1=Math.max(x1,p.x); y0=Math.min(y0,p.y); y1=Math.max(y1,p.y); }
     return {x0,x1,y0,y1};
   }
-  draw(dt){
+  draw(dt,now){
     const g=this.g, c=this.ctx, W=this.cw, H=this.ch;
-    if(!W) return;
+    if(!W) return false;
+    if(this._resnap){ this._resnap=false; this._sig=null; dt=5; }   /* back on screen: the camera jumps to the action instead of panning from where it was left */
     /* "Lazy" camera: it stays still while the action is inside the visible window and only moves when
        the ball, the carrier or the target would leave it; a slow drift re-centres it. Zoom has hysteresis
        (widens as soon as needed, comes back in only once there is clear room) so the shot never breathes. */
@@ -3727,6 +3783,9 @@ class FieldView{
     this.camY += (ty-this.camY)*(REDUCED?1:Math.min(1,dt*follow*sp));
     const y0=this.camY;
     const X=x=>(x-x0)*s, Y=y=>(y-y0)*s; this.X=X; this.Y=Y;
+    const sig=this.sigOf(g,x0,y0,s,W,H), old=this._sig;
+    if(old && now!=null && now-this._drawn<1000 && old.length===sig.length && sig.every((v,i)=>v===old[i])) return false;
+    this._sig=sig; this._drawn=now||0;
     // hologram turf: deep indigo with 5-yard bands
     c.fillStyle=FIELD.turf; c.fillRect(0,0,W,H);
     c.fillStyle=FIELD.turf2;
@@ -3865,9 +3924,11 @@ class FieldView{
     c.beginPath(); c.ellipse(0,0,Math.max(2.2,0.55*s)*sc,Math.max(1.4,0.34*s)*sc,0,0,Math.PI*2);
     c.fillStyle=FIELD.ink; c.fill(); c.restore();
     // night vignette
-    const vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.25,W/2,H/2,Math.max(W,H)*0.72);
-    vg.addColorStop(0,`rgba(${DA_FX.vig},0)`); vg.addColorStop(1,`rgba(${DA_FX.vig},.3)`);
-    c.fillStyle=vg; c.fillRect(0,0,W,H);
+    if(!this._vg||this._vgK!==DA_FX.vig){   /* perf: same gradient every frame — built once per size and theme */
+      const vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.25,W/2,H/2,Math.max(W,H)*0.72);
+      vg.addColorStop(0,`rgba(${DA_FX.vig},0)`); vg.addColorStop(1,`rgba(${DA_FX.vig},.3)`); this._vg=vg; this._vgK=DA_FX.vig; }
+    c.fillStyle=this._vg; c.fillRect(0,0,W,H);
+    return true;
   }
 }
 /*@core-end*/
@@ -4348,10 +4409,10 @@ function renderClock(){
   const b=document.getElementById('clockBtn'); if(!b) return;
   const t=nowMs(), inWeek=t>=W_FIRST-6*3600e3&&t<=W_END+3600e3;
   b.hidden=false;
-  b.innerHTML=`${CLOCK_SVG}<span>${esc(dStr(t))} · ${esc(tStr(t))}</span>${SERVER?'<span class="clk-tag live">Live</span>':CLOCK.demo?'<span class="clk-tag">Preview</span>':'<span class="clk-tag live">Brussels</span>'}`;
+  setHTML(b,`${CLOCK_SVG}<span>${esc(dStr(t))} · ${esc(tStr(t))}</span>${SERVER?'<span class="clk-tag live">Live</span>':CLOCK.demo?'<span class="clk-tag">Preview</span>':'<span class="clk-tag live">Brussels</span>'}`);
   b.title=CLOCK.demo?'Preview time: the week is replayed from the moment you picked':'Real time (Europe/Brussels)';
   const cd=document.getElementById('countdown');
-  if(cd&&NEXT_GAMES.length){ const s=Math.max(0,Math.round((NEXT_GAMES[0].ko-t)/1000)); cd.textContent=s>=3600?Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0'):clockStr(s); }
+  if(cd&&NEXT_GAMES.length){ const s=Math.max(0,Math.round((NEXT_GAMES[0].ko-t)/1000)); setTxt(cd,s>=3600?Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0'):clockStr(s)); }
   return inWeek;
 }
 function openClockPanel(){
@@ -4378,9 +4439,9 @@ function seasonRefresh(force){
   for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t);
     if(gStatus(g.sched,t)==='live' && (g.idx<k-1||g.idx>k+1)){ rpSeek(g,k); g.paused=false; rpAfterSeek(g); } }
   const live=games.filter(g=>g.mode==='live').length, upc=SCHED.filter(g=>gStatus(g,t)==='upcoming').length, fin=SCHED.filter(g=>gStatus(g,t)==='final').length;
-  const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ cnt[0].textContent=live; cnt[1].textContent=upc; cnt[2].textContent=fin; }
-  document.getElementById('eyebrow').innerHTML=`<b>Week ${SW.week.index}</b> · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))} · ${live?`${live} game${live>1?'s':''} live`:'no game live right now'} · every game played by the engine`;
-  document.getElementById('h1txt').innerHTML= live ? 'Live <span class="now">now</span>' : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>';
+  const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ setTxt(cnt[0],String(live)); setTxt(cnt[1],String(upc)); setTxt(cnt[2],String(fin)); }
+  setHTML(document.getElementById('eyebrow'),`<b>Week ${SW.week.index}</b> · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))} · ${live?`${live} game${live>1?'s':''} live`:'no game live right now'} · every game played by the engine`);
+  setHTML(document.getElementById('h1txt'), live ? 'Live <span class="now">now</span>' : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>');
   renderClock();
   betTick(t);
   renderView(false);
@@ -4677,8 +4738,8 @@ function seasonTotals(){
   let st=0, rt=0;
   if(combo){ st=slip.comboStake||0; rt=comboCheck()?0:st*comboDec(); }
   else live.forEach(p=>{ st+=p.stake||0; rt+=(p.stake||0)*decOf(p.pending?p.pending.price:p.price); });
-  document.getElementById('tStake').textContent=money(r2(st));
-  document.getElementById('tRet').textContent=money(r2(rt));
+  setTxt(document.getElementById('tStake'),money(r2(st)));
+  setTxt(document.getElementById('tRet'),money(r2(rt)));
   const btn=document.getElementById('place'); let act='place', lab, dis=false;
   const nClosed=slip.picks.filter(dead).length, nPend=live.filter(p=>p.pending).length, low=combo?!(st>=MIN_STAKE):live.some(p=>!(p.stake>=MIN_STAKE));
   if(!slip.picks.length){ lab='Place bet'; dis=true; }
@@ -5561,11 +5622,28 @@ if(!SEASON){ let cd=14*60+32; const cdEl=document.getElementById('countdown');
 setInterval(()=>{ cd=Math.max(0,cd-1); cdEl.textContent=cd>0?clockStr(cd):'Kickoff'; },1000); }
 
 let last=performance.now(), lastUi=0;
+/* perf: frame-time watch. If the fields can't hold ~40 fps for a few seconds, the canvases are redrawn at a lower
+   resolution (2x → 1.5x → 1x). Only goes down, so the picture never pumps. */
+const PERF={t0:last+4000,ws:0,n:0,sum:0};
+function perfWatch(ms,drew,now){
+  if(now<PERF.t0||document.hidden||!drew||FX_DPR<=1||(window.devicePixelRatio||1)<=1) return;
+  if(!PERF.n) PERF.ws=now;
+  PERF.n++; PERF.sum+=Math.min(ms,250);
+  if(PERF.n<20||now-PERF.ws<2500) return;            /* judge on 2.5 s and at least 20 drawn frames */
+  const avg=PERF.sum/PERF.n; PERF.n=0; PERF.sum=0;
+  if(avg>25){ FX_DPR=FX_DPR>1.5?1.5:1; for(const v of views) v.resize(); PERF.t0=now+3000; }
+}
 function frame(now){
-  const dt=Math.min(0.1,(now-last)/1000); last=now;
+  const ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
   for(const g of games) stepGame(g,dt);
   if(replayGame) stepGame(replayGame,dt);
-  for(const v of views) v.draw(dt);
+  let drew=false;
+  for(const v of views){
+    /* perf: off-screen fields, and the boards behind the open big screen, are not drawn (their games still run) */
+    if(!v.onScreen||(modalView&&v!==modalView)){ v._resnap=true; continue; }
+    if(v.draw(dt,now)) drew=true;
+  }
+  perfWatch(ms,drew,now);
   if(now-lastUi>250){ lastUi=now; for(const g of games) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
   requestAnimationFrame(frame);
 }
@@ -5585,7 +5663,16 @@ requestAnimationFrame(frame);
       else if(e.hasAttribute('data-tm')) e.removeAttribute('data-tm');
     }
   }
-  new MutationObserver(function(){ if(!t) t=setTimeout(run,60); }).observe(document.body,{childList:true,subtree:true,characterData:true});
+  /* perf: only changes that can add or rename a team abbreviation trigger a pass (new markup, or text inside
+     .abbr / .badge). Clocks, scores and odds change every second and never need one. */
+  var SEL='.abbr,.badge';
+  function hit(r){
+    var n=r.target, el=n.nodeType===1?n:n.parentElement;
+    if(el&&el.closest&&el.closest(SEL)) return true;
+    if(r.type==='childList') for(var i=0;i<r.addedNodes.length;i++) if(r.addedNodes[i].nodeType===1) return true;
+    return false;
+  }
+  new MutationObserver(function(rs){ if(t) return; for(var i=0;i<rs.length;i++) if(hit(rs[i])){ t=setTimeout(run,60); return; } }).observe(document.body,{childList:true,subtree:true,characterData:true});
   run();
 })();
 </script>
