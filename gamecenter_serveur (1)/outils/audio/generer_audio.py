@@ -6,8 +6,10 @@ ElevenLabs et ses réglages), génère seulement ce qui manque ou a changé, nor
 (mono 24 kHz, 48 kb/s, −16 LUFS, silences coupés), écrit audio/commentary/<id>.<empreinte>.mp3 et
 met à jour audio/manifest.json. Le site ne parle JAMAIS à ElevenLabs : il lit ces fichiers.
 
-Clé API : variable ELEVENLABS_API_KEY, ou un fichier .env (ignoré par Git) à côté de ce script ou à la
-racine du dépôt :  ELEVENLABS_API_KEY=...   Jamais dans le code, jamais sur Railway.
+Le plus simple : le workflow GitHub « Commentaire audio » (.github/workflows/audio.yml) lance ce script sur les
+machines de GitHub — rien à installer. Clé API : secret GitHub ELEVENLABS_API_KEY (ou, en local, variable
+d'environnement / fichier .env ignoré par Git). Voix : variable ELEVENLABS_VOICE_ID (ou voice_id dans voix.json).
+Jamais dans le code, jamais sur Railway, jamais dans le navigateur.
 
     python3 outils/audio/generer_audio.py --dry-run        ce qui serait généré, nombre de caractères
     python3 outils/audio/generer_audio.py                  génère ce qui manque, met à jour le manifeste
@@ -176,10 +178,12 @@ def main():
             rejets[i] = int(rejets.get(i, 0)) + 1
         save_json(rej_path, rejets); print(f"{len(a.reject.split(','))} prise(s) à refaire au prochain passage."); return
 
+    if os.environ.get("ELEVENLABS_VOICE_ID", "").strip():
+        voix = dict(voix, voice_id=os.environ["ELEVENLABS_VOICE_ID"].strip())
     if a.placeholder:
         voix = dict(voix, voice_id="placeholder", model_id="placeholder")
     elif not voix.get("voice_id"):
-        raise SystemExit("Choisir la voix du commentateur : voice_id dans outils/audio/catalogue/voix.json (ElevenLabs → Voices → ID).")
+        raise SystemExit("Voix du commentateur absente : variable ELEVENLABS_VOICE_ID (GitHub → Settings → Secrets and variables → Actions → Variables) ou voice_id dans outils/audio/catalogue/voix.json.")
     out_dir = os.path.join(a.audio_dir, "commentary"); os.makedirs(out_dir, exist_ok=True)
     hashes, todo = {}, []
     for l in lines:

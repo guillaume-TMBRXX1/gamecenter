@@ -1,0 +1,90 @@
+# Génère le commentaire enregistré de GameCenter avec ElevenLabs, sur les machines de GitHub
+# (rien à installer sur ton ordinateur). Lancer : onglet Actions → « Commentaire audio » → Run workflow.
+#
+# À régler une seule fois (Settings → Secrets and variables → Actions) :
+#   • Secret   ELEVENLABS_API_KEY  = la clé API ElevenLabs   (chiffrée par GitHub, jamais affichée, jamais commitée)
+#   • Variable ELEVENLABS_VOICE_ID = l'ID de la voix du commentateur
+# Le workflow ne génère que les prises qui manquent (ou à refaire), les normalise (ffmpeg), met à jour
+# audio/manifest.json et les ajoute au dépôt → Railway met le site à jour. Écoute : https://<site>/audio/ecoute
+name: Commentaire audio
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "generer = crée les prises manquantes · essai = montre seulement ce qui serait généré"
+        type: choice
+        options: [generer, essai]
+        default: generer
+      refaire:
+        description: "Prises à refaire (ids séparés par des virgules, vus sur /audio/ecoute) — facultatif"
+        required: false
+        default: ""
+      seulement:
+        description: "Limiter à un cue ou un id (ex. TOUCHDOWN) — facultatif"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: audio
+  cancel-in-progress: false
+
+jobs:
+  generer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    env:
+      # les entrées passent par des variables d'environnement (jamais collées dans les commandes)
+      MODE: ${{ inputs.mode }}
+      REFAIRE: ${{ inputs.refaire }}
+      SEULEMENT: ${{ inputs.seulement }}
+      ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Vérifier la configuration
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          if [ -z "$ELEVENLABS_API_KEY" ]; then echo "::error::Secret ELEVENLABS_API_KEY absent : Settings → Secrets and variables → Actions → New repository secret"; exit 1; fi
+          if [ -z "$ELEVENLABS_VOICE_ID" ]; then echo "::error::Variable ELEVENLABS_VOICE_ID absente : Settings → Secrets and variables → Actions → Variables → New repository variable"; exit 1; fi
+          echo "Configuration présente (clé masquée)."
+      - name: Installer ffmpeg (normalisation du volume)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Marquer les prises à refaire
+        if: ${{ inputs.refaire != '' }}
+        run: python3 outils/audio/generer_audio.py --reject "$REFAIRE"
+      - name: Générer
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          ARGS="--prune"
+          if [ "$MODE" = "essai" ]; then ARGS="--dry-run"; fi
+          if [ -n "$SEULEMENT" ]; then python3 outils/audio/generer_audio.py $ARGS --only "$SEULEMENT"; else python3 outils/audio/generer_audio.py $ARGS; fi
+      - name: Contrôler (aucune clé dans les fichiers, manifeste lisible)
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          if grep -rqF -- "$ELEVENLABS_API_KEY" audio outils; then echo "::error::La clé apparaît dans un fichier : arrêt."; exit 1; fi
+          python3 -c "import json; m=json.load(open('audio/manifest.json')); c=[a for a in m['assets'] if a['cat']=='commentary']; print(len(c),'prises ·',sum(a['bytes'] for a in c)//1024,'Ko')" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Ajouter au dépôt
+        if: ${{ inputs.mode == 'generer' }}
+        run: |
+          git config user.name "gamecenter-bot"
+          git config user.email "gamecenter-bot@users.noreply.github.com"
+          git add audio outils/audio/catalogue/rejets.json 2>/dev/null || git add audio
+          if git diff --cached --quiet; then
+            echo "Rien de nouveau." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            git commit -m "Commentaire audio : prises ElevenLabs ($(date -u +%Y-%m-%d))"
+            for i in 1 2 3; do git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done
+            echo "Ajouté au dépôt : Railway met le site à jour (≈ 1-2 min). Écoute : /audio/ecoute" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi

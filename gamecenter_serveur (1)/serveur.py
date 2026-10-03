@@ -576,6 +576,40 @@ def audio_js(v: str = ""):
     return Response(b["src"], media_type="application/javascript; charset=utf-8", headers={"Cache-Control": cc, "ETag": '"' + b["ver"] + '"'})
 
 
+@app.get("/audio/ecoute", response_class=HTMLResponse)
+def audio_ecoute():
+    """Écoute des prises enregistrées (lecture seule, aucune clé) : cocher celles à refaire, copier la liste dans
+    le workflow GitHub « Commentaire audio » (champ « Prises à refaire »)."""
+    import html as _h
+    m = {}
+    try:
+        with open(os.path.join(AUDIO_DIR, "manifest.json"), encoding="utf-8") as fh:
+            m = json.load(fh)
+    except Exception:
+        pass
+    com = [a for a in m.get("assets", []) if a.get("cat") == "commentary"]
+    rows = "".join(
+        f'<tr><td><input type="checkbox" value="{_h.escape(a["id"][2:])}" aria-label="refaire"></td><td><b>{_h.escape(a["cue"])}</b><br><small>{_h.escape(a["tier"])}'
+        f'{(" · " + _h.escape(" ".join(a.get("tags") or []))) if a.get("tags") else ""}</small></td><td>{_h.escape(a["text"])}<br><small>{_h.escape(a["id"][2:])}</small></td>'
+        f'<td><audio controls preload="none" src="/audio/{_h.escape(a["file"])}"></audio></td></tr>' for a in com)
+    empty = "" if com else "<p><b>Aucune prise pour l'instant.</b> GitHub → Actions → « Commentaire audio » → Run workflow.</p>"
+    page = ("<!doctype html><html lang=fr><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
+            "<title>GameCenter — écoute du commentaire</title><style>body{font:15px system-ui,sans-serif;margin:16px;max-width:1000px;color:#17202d;background:#f4f2ee}"
+            "table{border-collapse:collapse;width:100%}td{padding:8px 6px;border-bottom:1px solid #ddd;vertical-align:middle}small{color:#667}"
+            "audio{width:220px;max-width:100%;height:34px}input[type=checkbox]{width:22px;height:22px}"
+            "#bar{position:sticky;top:0;background:#f4f2ee;padding:10px 0;border-bottom:2px solid #17202d;margin-bottom:6px}"
+            "#ids{width:100%;font:13px ui-monospace,monospace;padding:8px;box-sizing:border-box}"
+            "@media(max-width:700px){table,tbody{display:block}tr{display:grid;grid-template-columns:34px 1fr;gap:4px 8px;padding:10px 0;border-bottom:1px solid #ddd}"
+            "td{display:block;border:0;padding:0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-row:span 3}audio{width:100%}}</style>"
+            f"<h1>Commentaire enregistré · {len(com)} prises</h1>{empty}"
+            "<div id=bar>Prises à refaire (cocher, puis copier dans GitHub → Actions → « Commentaire audio » → <i>Prises à refaire</i>) :"
+            "<input id=ids readonly placeholder='aucune'></div>"
+            f"<table>{rows}</table>"
+            "<script>const ids=document.getElementById('ids');document.addEventListener('change',()=>{ids.value=[...document.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value).join(',');});"
+            "ids.addEventListener('focus',()=>ids.select());</script></html>")
+    return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/audio/{path:path}")
 def audio_asset(path: str):
     full = os.path.realpath(os.path.join(AUDIO_DIR, path))
