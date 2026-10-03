@@ -72,6 +72,24 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (à ajouter avant une grosse audience) ; argent fictif uniquement (de l'argent réel demanderait une licence de la
   Commission des jeux de hasard).
 
+### 7. Comptes joueurs (depuis le 03/10/2026)
+
+- **Facultatifs** : on parie en invité comme avant (clé gardée dans le navigateur). *Settings → Account* :
+  **Create account** (pseudo 3-24 caractères + mot de passe de 8 caractères ou plus) pose le compte sur la clé
+  du navigateur — les paris déjà faits suivent. **Sign in** sur un autre appareil redonne le même portefeuille
+  (les paris faits en invité sur cet appareil passent sur le compte pour chaque semaine où le compte n'a encore rien joué).
+- Mots de passe hachés (scrypt) ; 8 erreurs sur un pseudo (ou 30 depuis une même adresse) en 15 min → pause de 15 min.
+  Changer de mot de passe déconnecte les autres appareils.
+- **Mot de passe oublié** (pas d'e-mail) : toi seul peux le réinitialiser, avec `GC_ADMIN_KEY` :
+  ```
+  curl -X POST https://gridironsim.up.railway.app/api/admin/password \
+       -H 'Content-Type: application/json' \
+       -d '{"key":"<GC_ADMIN_KEY>","pseudo":"Pseudo du joueur","password":"nouveau-mot-de-passe"}'
+  ```
+- **Classement de la saison** (*My bets → Leaderboard → Season*) : comptes seulement, somme des gains nets de chaque
+  semaine (retour − mise des paris réglés ; un pari compte quand il est réglé). Toutes les semaines du serveur comptent ;
+  pour repartir d'une date : variable Railway `GC_SEASON_START=2026-10-05` (par exemple).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

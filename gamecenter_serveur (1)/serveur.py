@@ -4,14 +4,17 @@ Le serveur garde les semaines produites par le notebook (section 15.1) et ne mon
 s'est déjà passé : les actions d'un match arrivent une par une, à l'heure (6,5 s par action, une action de
 décalage), les résultats, le classement, les futures et les affiches des playoffs seulement quand ils sont
 connus. Les paris sont pris, vérifiés (cote, marché ouvert, solde) et réglés ici, avec un classement commun.
+Comptes (étape 1, 03/10/2026) : pseudo + mot de passe facultatifs, posés sur la clé du joueur ; classement de la
+saison = somme des gains nets de chaque semaine (comptes seulement). Voir /api/account/* et /api/leaderboard?scope=season.
 
 Lancer :  uvicorn serveur:app --host 0.0.0.0 --port 8000
 Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecenter_source.html)
             GC_DEMO_AT (ISO, ex. 2026-10-05T12:59:00+02:00 : l'horloge du serveur démarre à cet instant ;
             « auto » = lundi 12:45 de la semaine la plus récente) · GC_AUTOGEN=1 (produit la semaine suivante
-            tout seul, voir generer_semaine.py)
+            tout seul, voir generer_semaine.py) · GC_ADMIN_KEY (sauvegarde, réinitialisation de mot de passe)
+            GC_SEASON_START (facultatif, ex. 2026-10-05 : semaines plus anciennes hors classement de la saison)
 """
-import json, os, re, secrets, sqlite3, threading, time, uuid, math
+import hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, uuid, math
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
@@ -288,6 +291,14 @@ with db() as _c:
                                     stake REAL, pt INTEGER, title TEXT, sub TEXT);
     CREATE INDEX IF NOT EXISTS bets_pw ON bets(player, week);
     """)
+    # Comptes (étape 1 de la feuille de route) : un joueur reste une clé ; un compte = pseudo + mot de passe posés sur
+    # ce joueur. Sans compte on parie comme avant (« invité ») ; le compte garde le portefeuille sur tous les appareils
+    # et donne une place au classement de la saison. Migration douce : colonnes ajoutées à la base existante.
+    _cols = {r[1] for r in _c.execute("PRAGMA table_info(players)")}
+    for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER")):
+        if _col not in _cols:
+            _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
+    _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -303,6 +314,74 @@ def player_by_token(token):
     with db() as c:
         r = c.execute("SELECT * FROM players WHERE token=?", (token,)).fetchone()
     return dict(r) if r else None
+
+
+# ---- comptes : pseudo + mot de passe ----
+PSEUDO_MIN, PW_MIN, PW_MAX = 3, 8, 128
+LOGIN_FAILS = {}                       # (« pseudo » | « ip », clé) -> instants des échecs récents
+FAIL_WINDOW, FAIL_MAX_PSEUDO, FAIL_MAX_IP = 15 * 60, 8, 30
+SEASON_START = os.environ.get("GC_SEASON_START", "")   # ex. 2026-10-05 : semaines plus anciennes hors classement de la saison
+
+
+def login_key(name):
+    return re.sub(r"\s+", " ", name).strip().casefold()
+
+
+def clean_pseudo(s):
+    """Pseudo = nom affiché au classement ET identifiant de connexion (sans tenir compte des majuscules)."""
+    raw = re.sub(r"\s+", " ", str(s or "")).strip()
+    if NAME_RE.search(raw):
+        raise HTTPException(400, "pseudo_chars")   # codes : la page les traduit (site en anglais)
+    if not (PSEUDO_MIN <= len(raw) <= 24):
+        raise HTTPException(400, "pseudo_length")
+    return raw
+
+
+def check_new_password(pw):
+    pw = str(pw or "")
+    if not (PW_MIN <= len(pw) <= PW_MAX):
+        raise HTTPException(400, "password_length")
+    return pw
+
+
+def hash_pw(pw):
+    salt = secrets.token_bytes(16)
+    h = hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
+    return f"scrypt$16384$8$1${salt.hex()}${h.hex()}"
+
+
+def verify_pw(pw, stored):
+    try:
+        algo, n, r, p, salt, h = stored.split("$")
+        got = hashlib.scrypt(str(pw).encode(), salt=bytes.fromhex(salt), n=int(n), r=int(r), p=int(p), dklen=len(h) // 2)
+        return algo == "scrypt" and hmac.compare_digest(got.hex(), h)
+    except Exception:
+        return False
+
+
+def player_by_login(name):
+    with db() as c:
+        r = c.execute("SELECT * FROM players WHERE login=?", (login_key(name),)).fetchone()
+    return dict(r) if r else None
+
+
+def _too_many_fails(*keys):
+    now = time.time()
+    for k, mx in keys:
+        lst = [x for x in LOGIN_FAILS.get(k, []) if now - x < FAIL_WINDOW]
+        LOGIN_FAILS[k] = lst
+        if len(lst) >= mx:
+            return True
+    return False
+
+
+def _note_fail(*keys):
+    for k in keys:
+        LOGIN_FAILS.setdefault(k, []).append(time.time())
+
+
+def account_public(p):
+    return {"token": p["token"], "name": p["name"], "account": bool(p.get("login"))}
 
 
 def player_bets(pid, week):
@@ -323,6 +402,55 @@ def ledger(week, bets, t):
             back += ret; won += st == "won"; lost += st == "lost"
         rows.append(dict(b, st=st, ret=ret))
     return {"bets": rows, "balance": round(BANKROLL - staked + back, 2), "won": won, "lost": lost, "open": open_}
+
+
+# ---- classement de la saison : somme des gains nets de chaque semaine ----
+def season_weeks(t):
+    ws = sorted(load_weeks().values(), key=lambda w: w.monday)
+    return [w for w in ws if w.open <= t and w.start >= SEASON_START]
+
+
+def _season_agg(bets, weeks, t):
+    """Gains nets = somme (retour − mise) des paris RÉGLÉS ; un pari encore ouvert compte quand il est réglé.
+    Une semaine finie : gains nets = solde final − 1 000 $. L'argent non misé ne compte pas."""
+    by = {w.start: w for w in weeks}
+    net, won, lost, nb, played = 0.0, 0, 0, 0, set()
+    for b in bets:
+        w = by.get(b["week"])
+        if w is None or b["pt"] > t:
+            continue
+        nb += 1; played.add(b["week"])
+        st, ret = w.settle(b, t)
+        if st == "open":
+            continue
+        net += ret - b["stake"]; won += st == "won"; lost += st == "lost"
+    return {"net": round(net, 2), "weeks": len(played), "bets": nb, "won": won, "lost": lost}
+
+
+def season_rows(t):
+    """Comptes seulement (les invités n'entrent pas au classement de la saison), classés par gains nets."""
+    weeks = season_weeks(t)
+    with db() as c:
+        names = {r["id"]: r["name"] for r in c.execute("SELECT id, name FROM players WHERE login IS NOT NULL")}
+        bets = [dict(r) for r in c.execute("SELECT b.* FROM bets b JOIN players p ON p.id = b.player WHERE p.login IS NOT NULL")]
+    per = {}
+    for b in bets:
+        per.setdefault(b["player"], []).append(b)
+    rows = []
+    for pid, bl in per.items():
+        a = _season_agg(bl, weeks, t)
+        if a["bets"]:
+            rows.append(dict(a, id=pid, name=names.get(pid, "?")))
+    rows.sort(key=lambda r: (-r["net"], -r["weeks"], r["name"].casefold()))
+    for i, r in enumerate(rows):
+        r["rank"] = i + 1
+    return rows
+
+
+def season_net(pid, t):
+    with db() as c:
+        bets = [dict(r) for r in c.execute("SELECT * FROM bets WHERE player=?", (pid,))]
+    return _season_agg(bets, season_weeks(t), t)
 
 
 # ------------------------------------------------------------------ l'application
@@ -395,8 +523,10 @@ async def api_new_player(req: Request):
     body = await _json(req)
     pid, token = uuid.uuid4().hex, secrets.token_urlsafe(24)
     name = clean_name(body.get("name"))
+    if player_by_login(name):                      # un invité ne prend pas le pseudo d'un compte
+        name = clean_name("")
     with _db_lock, db() as c:
-        c.execute("INSERT INTO players VALUES(?,?,?,?)", (pid, token, name, now_ms()))
+        c.execute("INSERT INTO players(id, token, name, created) VALUES(?,?,?,?)", (pid, token, name, now_ms()))
     return {"id": pid, "token": token, "name": name}
 
 
@@ -406,10 +536,106 @@ async def api_rename(req: Request):
     p = player_by_token(body.get("token"))
     if not p:
         raise HTTPException(401, "Clé de joueur inconnue.")
+    if p.get("login"):                             # compte : le pseudo change, il reste unique (et sert à se connecter)
+        name = clean_pseudo(body.get("name"))
+        other = player_by_login(name)
+        if other and other["id"] != p["id"]:
+            raise HTTPException(409, "pseudo_taken")
+        with _db_lock, db() as c:
+            c.execute("UPDATE players SET name=?, login=? WHERE id=?", (name, login_key(name), p["id"]))
+        return {"name": name, "account": True}
     name = clean_name(body.get("name"))
+    if player_by_login(name):
+        raise HTTPException(409, "pseudo_taken")
     with _db_lock, db() as c:
         c.execute("UPDATE players SET name=? WHERE id=?", (name, p["id"]))
-    return {"name": name}
+    return {"name": name, "account": False}
+
+
+@app.post("/api/account/register")
+async def api_register(req: Request):
+    """Crée un compte. Avec la clé d'invité du navigateur (token), le compte est posé sur ce joueur : ses paris
+    (cette semaine et les précédentes) sont repris tels quels."""
+    body = await _json(req)
+    name, pw = clean_pseudo(body.get("pseudo")), check_new_password(body.get("password"))
+    h = hash_pw(pw)
+    with _db_lock:
+        if player_by_login(name):
+            raise HTTPException(409, "pseudo_taken")
+        p = player_by_token(body.get("token"))
+        with db() as c:
+            if p:
+                if p.get("login"):
+                    raise HTTPException(409, "already_account")
+                c.execute("UPDATE players SET name=?, login=?, pw=?, acct_at=? WHERE id=?",
+                          (name, login_key(name), h, now_ms(), p["id"]))
+                tok = p["token"]
+            else:
+                tok = secrets.token_urlsafe(24)
+                c.execute("INSERT INTO players(id, token, name, created, login, pw, acct_at) VALUES(?,?,?,?,?,?,?)",
+                          (uuid.uuid4().hex, tok, name, now_ms(), login_key(name), h, now_ms()))
+    return account_public(player_by_token(tok))
+
+
+@app.post("/api/account/login")
+async def api_login(req: Request):
+    """Connexion. Si le navigateur avait une clé d'invité avec des paris, ces paris passent sur le compte pour
+    chaque semaine où le compte n'a encore rien joué (jamais deux portefeuilles mélangés dans une même semaine)."""
+    body = await _json(req)
+    name, pw = str(body.get("pseudo") or ""), str(body.get("password") or "")
+    ip = req.client.host if req.client else "?"
+    kp, ki = ("pseudo", login_key(name)), ("ip", ip)
+    if _too_many_fails((kp, FAIL_MAX_PSEUDO), (ki, FAIL_MAX_IP)):
+        raise HTTPException(429, "too_many_attempts")
+    p = player_by_login(name) if name.strip() else None
+    if not p or not p.get("pw") or not verify_pw(pw, p["pw"]):
+        _note_fail(kp, ki)
+        raise HTTPException(401, "bad_login")
+    LOGIN_FAILS.pop(kp, None)
+    moved, kept = 0, 0
+    guest = player_by_token(body.get("token"))
+    if guest and not guest.get("login") and guest["id"] != p["id"]:
+        with _db_lock, db() as c:
+            mine = {r[0] for r in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (p["id"],))}
+            for (wk,) in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (guest["id"],)).fetchall():
+                n = c.execute("SELECT COUNT(*) FROM bets WHERE player=? AND week=?", (guest["id"], wk)).fetchone()[0]
+                if wk in mine:
+                    kept += n
+                else:
+                    c.execute("UPDATE bets SET player=? WHERE player=? AND week=?", (p["id"], guest["id"], wk)); moved += n
+    return dict(account_public(p), moved=moved, left_behind=kept)
+
+
+@app.post("/api/account/password")
+async def api_password(req: Request):
+    """Changer de mot de passe : la clé change aussi, les autres appareils sont déconnectés."""
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p or not p.get("login"):
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    if not verify_pw(body.get("old", ""), p["pw"]):
+        raise HTTPException(401, "bad_password")
+    h, tok = hash_pw(check_new_password(body.get("new"))), secrets.token_urlsafe(24)
+    with _db_lock, db() as c:
+        c.execute("UPDATE players SET pw=?, token=? WHERE id=?", (h, tok, p["id"]))
+    return account_public(player_by_token(tok))
+
+
+@app.post("/api/admin/password")
+async def api_admin_password(req: Request):
+    """Mot de passe oublié : réinitialisé par l'administrateur (GC_ADMIN_KEY). La clé du joueur change.
+    Usage : POST /api/admin/password {"key": "<GC_ADMIN_KEY>", "pseudo": "...", "password": "nouveau"}"""
+    body = await _json(req)
+    admin = os.environ.get("GC_ADMIN_KEY", "")
+    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key", "")), admin):
+        raise HTTPException(403, "Non autorisé.")
+    p = player_by_login(str(body.get("pseudo") or ""))
+    if not p:
+        raise HTTPException(404, "Pseudo inconnu.")
+    h, tok = hash_pw(check_new_password(body.get("password"))), secrets.token_urlsafe(24)
+    with _db_lock, db() as c:
+        c.execute("UPDATE players SET pw=?, token=? WHERE id=?", (h, tok, p["id"]))
+    return {"ok": True, "pseudo": p["name"]}
 
 
 @app.get("/api/me")
@@ -419,7 +645,11 @@ def api_me(token: str = ""):
         raise HTTPException(401, "Clé de joueur inconnue.")
     w = _need_week(); t = now_ms()
     L = ledger(w, player_bets(p["id"], w), t)
-    return {"name": p["name"], "week": w.start, "now": t, **L}
+    rows = season_rows(t)
+    mine = next((r for r in rows if r["id"] == p["id"]), None)
+    season = {"rank": mine["rank"] if mine else None, "net": mine["net"] if mine else season_net(p["id"], t)["net"],
+              "players": len(rows)}
+    return {"name": p["name"], "account": bool(p.get("login")), "week": w.start, "now": t, "season": season, **L}
 
 
 @app.post("/api/bets")
@@ -469,21 +699,34 @@ async def api_bets(req: Request):
 
 
 @app.get("/api/leaderboard")
-def api_leaderboard(token: str = ""):
+def api_leaderboard(token: str = "", scope: str = "week"):
+    """scope=week : soldes de la semaine en cours (tous les joueurs) ; scope=season : gains nets cumulés (comptes)."""
     w = _need_week(); t = now_ms()
+    me = player_by_token(token)
+    if scope == "season":
+        rows = season_rows(t)
+        out = [{k: r[k] for k in ("rank", "name", "net", "weeks", "bets", "won", "lost")} | {"me": bool(me and me["id"] == r["id"])}
+               for r in rows]
+        mine = next((r for r in out if r["me"]), None)
+        if me and not mine:                         # invité, ou compte sans pari : sa ligne sans rang
+            a = season_net(me["id"], t)
+            mine = dict(a, rank=None, name=me["name"], me=True, account=bool(me.get("login")))
+        return {"scope": "season", "week": w.start, "weeks": [x.start for x in season_weeks(t)], "players": len(out),
+                "top": out[:50], "me": mine}
     with db() as c:
         players = [dict(r) for r in c.execute("SELECT DISTINCT p.* FROM players p JOIN bets b ON b.player=p.id WHERE b.week=?", (w.start,))]
-    me = player_by_token(token)
     rows = []
     for p in players:
         L = ledger(w, player_bets(p["id"], w), t)
+        if not L["bets"]:
+            continue
         rows.append({"name": p["name"], "balance": L["balance"], "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"],
-                     "me": bool(me and me["id"] == p["id"])})
+                     "account": bool(p.get("login")), "me": bool(me and me["id"] == p["id"])})
     rows.sort(key=lambda r: (-r["balance"], r["name"]))
     for i, r in enumerate(rows):
         r["rank"] = i + 1
     mine = next((r for r in rows if r["me"]), None)
-    return {"week": w.start, "players": len(rows), "top": rows[:20], "me": mine}
+    return {"scope": "week", "week": w.start, "players": len(rows), "top": rows[:20], "me": mine}
 
 
 @app.get("/api/health")

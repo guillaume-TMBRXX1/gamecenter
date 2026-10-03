@@ -751,6 +751,20 @@
   .srv-pill{display:none;position:fixed;z-index:360;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:8px 14px;border-radius:var(--r-md);background:var(--l3);border:1px solid var(--pink);font-size:12.5px;color:var(--ink)}
   .srv-off .srv-pill{display:block}
   .set-row .name-in{width:200px}
+  /* ---------- Accounts (roadmap step 1): username + password, season leaderboard ---------- */
+  .ac-seg{margin:6px 0 2px}
+  .ac-form{display:grid;gap:12px;padding:12px 0;border-top:1px solid var(--line);margin-top:10px}
+  .ac-f{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .ac-f .set-sel{max-width:none;width:100%;height:40px;font-size:14px}
+  .ac-form .cta{height:44px;width:100%;font-size:14px}
+  .ac-form .cta:disabled{opacity:.6;cursor:wait}
+  .ac-form .set-err{margin:0;min-height:0}
+  .ac-form .set-err:empty{display:none}
+  .ac-note{margin:0;font-size:11.5px;color:var(--ink-3)}
+  .ac-who{font-weight:700;color:var(--ink)}
+  .lb-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);font-size:12.5px;color:var(--ink-2)}
+  .tst.lb td.up{color:var(--cyan)} .tst.lb td.dn{color:var(--pink)}
+  .bt-card .card-h .seg{flex-shrink:0}
   .tst.lb td.rk,.tst.lb thead th:first-child{text-align:left;width:44px}
   [hidden]{display:none!important}   /* also when the page is served by the live server (no artifact reset) */
   /* ---------- Season betting: slip states, history, settings ---------- */
@@ -4587,12 +4601,13 @@ function renderBets(t){
       ${rows.length?`<div class="st-scroll"><table class="tst bets"><thead><tr><th class="tl">Placed</th><th scope="col" class="tl">Bet</th><th>Odds</th><th>Stake</th><th>Result</th><th>Return</th><th aria-label="Game"></th></tr></thead><tbody>${tr}</tbody></table></div>`
         : `<div class="st-empty"><b>${L.rows.length?'Nothing in this filter':'No bets yet this week'}</b>${L.rows.length?'Switch the filter to see your other bets.':'Tap any price on the board, the schedule or the futures table, then place it from the slip.'}${L.rows.length?'':'<div><button class="chip-btn bt-go" type="button" data-view-go="live">Go to the board</button></div>'}</div>`}
     </div>
-    ${SERVER?`<div class="card bt-card"><div class="card-h"><h2>Leaderboard</h2><span class="label">Week ${SW.week.index} · all players</span></div><div id="lbBox">${leaderboardHTML()}</div></div>`:''}
+    ${SERVER?`<div class="card bt-card"><div class="card-h"><h2>Leaderboard</h2><div class="seg" role="tablist" aria-label="Leaderboard">${[['week',`Week ${SW.week.index}`],['season','Season']].map(([k,l])=>`<button type="button" role="tab" data-lbscope="${k}" aria-selected="${LB.scope===k}">${l}</button>`).join('')}</div></div><div id="lbBox">${leaderboardHTML()}</div></div>`:''}
     <div class="card bt-rules"><span class="label">House rules</span><ul>
       <li>$${BANKROLL.toLocaleString('en-US')} every Monday at 00:00 (Brussels). What is left of last week, and any bet still open, is lost at the reset.</li>
       <li>Single bets, minimum $${MIN_STAKE}. Moneyline, spread and total before and during each game; futures between slots.</li>
       <li>Every price comes from the engine. Bets settle by themselves at the final whistle — a moneyline tie returns the stake; futures settle once decided.</li>
-      <li>${SERVER?'Your bets are kept on the GameCenter server and checked there: price, open market and balance at the moment you place them.':'Your bets are kept in this browser only. Preview time has its own wallet.'}</li></ul></div>`;
+      <li>${SERVER?'Your bets are kept on the GameCenter server and checked there: price, open market and balance at the moment you place them.':'Your bets are kept in this browser only. Preview time has its own wallet.'}</li>
+      ${SERVER?'<li>A free account (username and password) keeps your wallet on every device and puts you on the season leaderboard: your net winnings of every week, added up. Guests play the week leaderboard only.</li>':''}</ul></div>`;
 }
 
 /* ---------- Settings ---------- */
@@ -4600,7 +4615,7 @@ let SET_CONFIRM=false, SET_ERR='';
 function renderSettings(force){
   const el=document.getElementById('viewSettings');
   const nPrev=CLOCK.demo?WAL.bets.length:0;
-  const key='set|'+JSON.stringify(SET)+'|'+SET_CONFIRM+'|'+SET_ERR+'|'+CLOCK.demo+'|'+nPrev+'|'+slip.picks.length;
+  const key='set|'+JSON.stringify(SET)+'|'+SET_CONFIRM+'|'+SET_ERR+'|'+CLOCK.demo+'|'+nPrev+'|'+slip.picks.length+'|'+(SERVER?acctSig():'');
   if(!force&&el._k===key) return; el._k=key;
   const radio=(name,val,lab,desc)=>`<button type="button" class="set-opt" role="radio" data-set="${name}" data-v="${val}" aria-checked="${SET[name]===val}"><span class="set-dot" aria-hidden="true"></span><span><b>${lab}</b>${desc?`<small>${desc}</small>`:''}</span></button>`;
   el.innerHTML=`<div class="view-head"><h2>Settings</h2><p class="eyebrow">Saved in this browser as soon as you change them</p></div>
@@ -4622,10 +4637,8 @@ function renderSettings(force){
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
     </div>
     ${soundCard()}
-    <div class="card set-card"><div class="card-h"><h2>Your data</h2></div>
-      ${SERVER?`<p class="set-p">Your bets are kept on the GameCenter server. This browser keeps your player key: clearing its data for this site loses access to this week's wallet.</p>
-      <div class="set-row"><label class="set-l" for="setName">Name on the leaderboard<small>${PLAYER?'Saved on the server':'Given with your first bet, or now'}</small></label><input id="setName" class="set-sel name-in" type="text" maxlength="24" value="${esc(PLAYER&&PLAYER.name||'')}" placeholder="e.g. Blitz Guillaume"></div>`
-      :`<p class="set-p">Bets, the slip and these settings are kept in this browser only. Nothing is sent anywhere.</p>`}
+    <div class="card set-card" id="acCard"><div class="card-h"><h2>${SERVER?'Account':'Your data'}</h2>${SERVER?`<span class="label">${PLAYER&&PLAYER.account?'Signed in':'Guest'}</span>`:''}</div>
+      ${SERVER?accountHTML():`<p class="set-p">Bets, the slip and these settings are kept in this browser only. Nothing is sent anywhere.</p>`}
       ${SERVER?'':`<div class="set-row"><span class="set-l">${CLOCK.demo?'Preview wallet':'Real-time wallet'}<small>${CLOCK.demo?`${nPrev} bet${nPrev===1?'':'s'} placed in preview time`:'Resets by itself on Monday 00:00'}</small></span>
         ${CLOCK.demo?(SET_CONFIRM?`<div class="set-confirm"><button type="button" class="chip-btn danger" data-setreset="yes">Reset preview wallet</button><button type="button" class="chip-btn" data-setreset="no">Keep it</button></div>`:`<button type="button" class="chip-btn" data-setreset="ask"${nPrev?'':' disabled'}>Reset preview wallet</button>`):''}
 </div>`}
@@ -5022,8 +5035,8 @@ async function api(path,opt){
 function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),line:b.line,stake:b.stake,pt:b.pt,title:b.title,sub:b.sub}; }
 async function serverWalletLoad(){
   if(!PLAYER||!PLAYER.token){ WAL={bets:[]}; return; }
-  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
-  catch(e){ if(e.status===401){ PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(_){} } }
+  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account}); WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
+  catch(e){ if(e.status===401){ PLAYER=null; WAL={bets:[]}; try{ localStorage.removeItem(PLAYER_KEY); }catch(_){} BET_SIG=''; renderSlip(); renderView(true); } }
 }
 async function ensurePlayer(){
   if(PLAYER&&PLAYER.token) return PLAYER;
@@ -5051,24 +5064,116 @@ async function serverPlace(picks){
     if(moved||closed||other) toastErr([moved?`${moved} price${moved>1?'s':''} moved: accept the new odds to place ${moved>1?'them':'it'}.`:'',closed?`${closed} market${closed>1?'s':''} closed.`:'',other].filter(Boolean).join(' '));
   }catch(e){ toastErr(`The bet was not placed: ${e.message}. Check your connection and place it again.`); renderSlip(); }
 }
-let LB={at:0,data:null,busy:false};
+let LB={at:{},data:{},busy:false,scope:'week'};
 async function leaderboardLoad(force){
-  if(!SERVER||LB.busy||(!force&&Date.now()-LB.at<15000)) return;
+  const sc=LB.scope;
+  if(!SERVER||LB.busy||(!force&&Date.now()-(LB.at[sc]||0)<15000)) return;
   LB.busy=true;
-  try{ LB.data=await api('/leaderboard'+(PLAYER&&PLAYER.token?'?token='+encodeURIComponent(PLAYER.token):'')); LB.at=Date.now(); const el=document.getElementById('lbBox'); if(el) el.innerHTML=leaderboardHTML(); }
+  try{ const q='scope='+sc+(PLAYER&&PLAYER.token?'&token='+encodeURIComponent(PLAYER.token):'');
+    LB.data[sc]=await api('/leaderboard?'+q); LB.at[sc]=Date.now(); const el=document.getElementById('lbBox'); if(el&&LB.scope===sc) el.innerHTML=leaderboardHTML(); }
   catch(e){} finally{ LB.busy=false; }
 }
 function leaderboardHTML(){
-  const d=LB.data; if(!d) return '<p class="st-none">Loading the leaderboard…</p>';
-  if(!d.top.length) return '<p class="st-none">Nobody has placed a bet this week yet: the first bet puts you on the board.</p>';
-  const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td>${money(r.balance)}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
-  const mine=d.me&&!d.top.some(r=>r.me)?row(d.me):'';
-  return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Balance</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · balances include open bets at their stake</p>`;
+  const sc=LB.scope, d=LB.data[sc]; if(!d) return '<p class="st-none">Loading the leaderboard…</p>';
+  if(sc==='week'){
+    if(!d.top.length) return '<p class="st-none">Nobody has placed a bet this week yet: the first bet puts you on the board.</p>';
+    const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td>${money(r.balance)}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
+    const mine=d.me&&!d.top.some(r=>r.me)?row(d.me):'';
+    return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Balance</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · balances include open bets at their stake</p>`;
+  }
+  const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v));
+  const cta=PLAYER&&PLAYER.account?'':`<div class="lb-cta"><span>${PLAYER?'You play as a guest. Create an account to join the season leaderboard: your bets so far come with you.':'Create a free account to join the season leaderboard.'}</span><button class="chip-btn" type="button" data-view-go="settings">Create an account</button></div>`;
+  if(!d.top.length) return `<p class="st-none">No account has a bet yet: the season leaderboard starts with the first one.</p>${cta}`;
+  const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${r.net<0?'dn':r.net>0?'up':''}">${sgn(r.net)}</td><td>${r.weeks}</td><td>${r.won}–${r.lost}</td></tr>`;
+  const mine=d.me&&d.me.rank!=null&&!d.top.some(r=>r.me)?row(d.me):'';
+  const nw=(d.weeks||[]).length;
+  return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Net P/L</th><th>Weeks</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} account${d.players===1?'':'s'} · net winnings added up over ${nw} week${nw===1?'':'s'} · a bet counts once it is settled</p>${cta}`;
+}
+function lbScope(sc){
+  LB.scope=sc; document.querySelectorAll('[data-lbscope]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.lbscope===sc)));
+  const el=document.getElementById('lbBox'); if(el) el.innerHTML=leaderboardHTML(); leaderboardLoad(true);
 }
 async function renameMe(name){
-  try{ await ensurePlayer(); const r=await api('/players/me',{method:'POST',body:JSON.stringify({token:PLAYER.token,name})}); PLAYER.name=r.name; lsSet(PLAYER_KEY,PLAYER); toast(`Name saved · ${r.name}`); LB.at=0; renderSettings(true); }
-  catch(e){ toastErr(`The name was not saved: ${e.message}.`); }
+  try{ await ensurePlayer(); const r=await api('/players/me',{method:'POST',body:JSON.stringify({token:PLAYER.token,name})}); PLAYER.name=r.name; PLAYER.account=!!r.account; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account}); toast(`Name saved · ${r.name}`); LB.at={}; renderSettings(true); }
+  catch(e){ toastErr(`The name was not saved. ${accMsg(e)}`); renderSettings(true); }
 }
+
+/* ---------- accounts: username + password (roadmap step 1) ----------
+   A player is still a key kept in this browser. Creating an account puts a username and a password on that key
+   (bets so far come along); signing in on another device gets the same key back. Guests keep playing as before. */
+let ACCT={mode:'register',pwOpen:false,busy:false};
+const ACC_ERR={pseudo_taken:'This username is taken. Pick another one.',pseudo_length:'Username: 3 to 24 characters.',
+  pseudo_chars:'Username: letters, digits, spaces, dot, apostrophe and dash only.',password_length:'Password: at least 8 characters.',
+  bad_login:'Wrong username or password.',too_many_attempts:'Too many attempts. Wait 15 minutes, then try again.',
+  bad_password:'Your current password is not right.',already_account:'This browser already has an account. Sign out first.'};
+function accMsg(e){ return ACC_ERR[e&&e.message]||((e&&e.message)?e.message+'.':'Check your connection and try again.'); }
+function acctSig(){ return [!!PLAYER,PLAYER&&PLAYER.account,PLAYER&&PLAYER.name,ACCT.mode,ACCT.pwOpen].join(','); }
+function acErr(m){ const el=document.getElementById('acErr'); if(el) el.textContent=m||''; return false; }
+function accountHTML(){
+  if(PLAYER&&PLAYER.account){
+    return `<p class="set-p">Signed in as <span class="ac-who">${esc(PLAYER.name)}</span>. Your wallet follows you on every device where you sign in, and you are on the season leaderboard.</p>
+      <div class="set-row"><label class="set-l" for="setName">Username<small>Shown on the leaderboards · also what you sign in with</small></label><input id="setName" class="set-sel name-in" type="text" maxlength="24" autocomplete="username" value="${esc(PLAYER.name||'')}"></div>
+      <div class="set-row"><span class="set-l">Password<small>Changing it signs out your other devices</small></span><button type="button" class="chip-btn" data-acpw aria-expanded="${ACCT.pwOpen}">${ACCT.pwOpen?'Keep my password':'Change password'}</button></div>
+      ${ACCT.pwOpen?`<form class="ac-form" id="acPwForm" novalidate>
+        <div class="ac-f"><label class="set-l" for="acOld">Current password</label><input id="acOld" class="set-sel" type="password" autocomplete="current-password"></div>
+        <div class="ac-f"><label class="set-l" for="acNew">New password<small>At least 8 characters</small></label><input id="acNew" class="set-sel" type="password" autocomplete="new-password"></div>
+        <p class="set-err" id="acErr" role="alert"></p>
+        <button class="cta" type="submit" id="acGo">Save new password</button></form>`:''}
+      <div class="set-row"><span class="set-l">Sign out<small>This browser forgets your key · sign in again any time</small></span><button type="button" class="chip-btn" id="acOut">Sign out</button></div>`;
+  }
+  const reg=ACCT.mode==='register', guestName=PLAYER&&PLAYER.name&&!/^Player \d{4}$/.test(PLAYER.name)?PLAYER.name:'';
+  return `<p class="set-p">${PLAYER?'You play as a guest: your wallet lives in this browser only, and clearing its data for this site loses it.':'You play as a guest.'} ${reg?(PLAYER?'Create an account to keep your wallet on any device and join the season leaderboard. Your bets so far come with you.':'Create an account to keep your wallet on any device and join the season leaderboard.'):'Sign in to get your wallet back on this device.'}</p>
+    <div class="seg ac-seg" role="tablist" aria-label="Account">${[['register','Create account'],['login','Sign in']].map(([k,l])=>`<button type="button" role="tab" data-acmode="${k}" aria-selected="${ACCT.mode===k}">${l}</button>`).join('')}</div>
+    <form class="ac-form" id="acForm" novalidate>
+      <div class="ac-f"><label class="set-l" for="acPseudo">Username${reg?'<small>3 to 24 characters · shown on the leaderboards</small>':''}</label><input id="acPseudo" class="set-sel" type="text" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(reg?guestName:'')}"></div>
+      <div class="ac-f"><label class="set-l" for="acPw">Password${reg?'<small>At least 8 characters</small>':''}</label><input id="acPw" class="set-sel" type="password" autocomplete="${reg?'new-password':'current-password'}"></div>
+      <p class="set-err" id="acErr" role="alert"></p>
+      <button class="cta" type="submit" id="acGo">${reg?'Create account':'Sign in'}</button>
+      ${reg?'':'<p class="ac-note">Forgot your password? Ask the GameCenter admin to reset it.</p>'}
+    </form>
+    ${reg?`<div class="set-row"><label class="set-l" for="setName">Guest name<small>Shown on this week's leaderboard${PLAYER?'':' · given with your first bet, or now'}</small></label><input id="setName" class="set-sel name-in" type="text" maxlength="24" value="${esc(PLAYER&&PLAYER.name||'')}" placeholder="e.g. Blitz Guillaume"></div>`:''}`;
+}
+async function accountSubmit(){
+  if(ACCT.busy) return;
+  const reg=ACCT.mode==='register', u=(document.getElementById('acPseudo').value||'').trim().replace(/\s+/g,' '), pw=document.getElementById('acPw').value||'';
+  if(reg){ if(u.length<3||u.length>24) return acErr(ACC_ERR.pseudo_length); if(/[^\p{L}\p{M}\p{N}_ .'\-]/u.test(u)) return acErr(ACC_ERR.pseudo_chars); if(pw.length<8) return acErr(ACC_ERR.password_length); }
+  else if(!u||!pw) return acErr('Enter your username and your password.');
+  acErr(''); ACCT.busy=true; const btn=document.getElementById('acGo'); btn.disabled=true; btn.textContent=reg?'Creating…':'Signing in…';
+  try{
+    const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
+    PLAYER={token:r.token,name:r.name,account:true}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
+    ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={};
+    await serverWalletLoad(); renderSettings(true); walletRender(nowMs());
+    toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
+    if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
+  }catch(e){ ACCT.busy=false; btn.disabled=false; btn.textContent=reg?'Create account':'Sign in'; acErr(accMsg(e)); }
+  finally{ ACCT.busy=false; }
+}
+async function accountPassword(){
+  if(ACCT.busy) return;
+  const o=document.getElementById('acOld').value||'', n=document.getElementById('acNew').value||'';
+  if(!o) return acErr('Enter your current password.'); if(n.length<8) return acErr(ACC_ERR.password_length);
+  ACCT.busy=true; const btn=document.getElementById('acGo'); btn.disabled=true; btn.textContent='Saving…';
+  try{ const r=await api('/account/password',{method:'POST',body:JSON.stringify({token:PLAYER.token,old:o,new:n})});
+    PLAYER.token=r.token; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:true}); ACCT.pwOpen=false; ACCT.busy=false; renderSettings(true);
+    toast('Password changed · your other devices are signed out'); }
+  catch(e){ btn.disabled=false; btn.textContent='Save new password'; acErr(accMsg(e)); }
+  finally{ ACCT.busy=false; }
+}
+function accountSignOut(){
+  const n=PLAYER&&PLAYER.name; PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(e){}
+  WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={};
+  renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true);
+  toast(`Signed out${n?' · '+n:''}. Sign in again any time.`);
+}
+document.addEventListener('submit',e=>{ if(!SERVER) return;
+  if(e.target.id==='acForm'){ e.preventDefault(); accountSubmit(); } else if(e.target.id==='acPwForm'){ e.preventDefault(); accountPassword(); } });
+document.addEventListener('click',e=>{ if(!SERVER||!e.target.closest) return; const t=e.target;
+  const m=t.closest('[data-acmode]'); if(m){ if(ACCT.mode!==m.dataset.acmode){ ACCT.mode=m.dataset.acmode; renderSettings(true); document.getElementById('acPseudo')?.focus(); } return; }
+  if(t.closest('[data-acpw]')){ ACCT.pwOpen=!ACCT.pwOpen; renderSettings(true); if(ACCT.pwOpen) document.getElementById('acOld')?.focus(); return; }
+  if(t.closest('#acOut')){ accountSignOut(); return; }
+  const sc=t.closest('[data-lbscope]'); if(sc){ lbScope(sc.dataset.lbscope); } });
+document.addEventListener('input',e=>{ if(SERVER&&e.target.closest&&e.target.closest('#acForm,#acPwForm')) acErr(''); });
 document.addEventListener('change',e=>{ if(SERVER&&e.target.id==='setName') renameMe(e.target.value); });
 
 /* ---------------- init & loop ---------------- */
