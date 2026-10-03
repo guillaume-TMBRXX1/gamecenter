@@ -4,6 +4,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY serveur.py gamecenter_source.html ./
+COPY static ./static
+COPY audio ./audio
 COPY data/weeks /app/semaines_initiales
 # Les semaines et la base des paris vivent dans /data : il FAUT y monter un disque persistant
 # (Railway : « Volume » monté sur /data ; docker run : -v gamecenter-data:/data).

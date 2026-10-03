@@ -121,6 +121,21 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   « Defense rolls to deep shells »…) et le commentateur le dit au snap (`play.adjust` du GameFeed). Les semaines
   produites avant V21 n'en ont pas : rien ne change pour elles.
 
+### 11. Audio System (V0.1, depuis le 03/10/2026)
+
+- **Architecture** : moteur (GameFeed) → page (rejoue, écrit les phrases) → `AudioEventMapper` (événements + contexte,
+  point de vue HOME = le stade) → `AudioManager` → `AudioMixer` (MASTER · COMMENTARY · CROWD · SFX · MUSIC) → Web Audio.
+  Modules dans `static/audio/`, assemblés et versionnés par le serveur (`/static/audio/gc-audio.js?v=…`, cache 1 an).
+- **V0.1 = même son qu'avant** : sons procéduraux et voix du navigateur déplacés tels quels (parité vérifiée sur les
+  10 476 actions des semaines : 46 461 décisions identiques). Nouveau : *Settings → Sound → Mixer* (niveau par catégorie,
+  muet pour la voix et la musique), enregistré dans le navigateur.
+- **Retour arrière immédiat** : ajouter `?audio=legacy` à l'adresse (ou si `gc-audio.js` ne se charge pas) → l'ancien code.
+- **Fichiers sons** : `audio/manifest.json` + `audio/{commentary,crowd,sfx,music}/` (vides en V0.1). Ils seront pré-générés
+  hors ligne (ElevenLabs) : **aucun appel ElevenLabs pendant un match, aucune clé sur Railway ni dans le navigateur**
+  (clé seulement dans un `.env` local, ignoré par Git, ou un secret GitHub).
+- **Tests** : `node outils/audio/test_mapper_v01.js` (sans navigateur) ;
+  `GC_TEST_HOOK=1 uvicorn serveur:app --port 8103` puis `node outils/audio/test_parite_v01.js data/weeks 8103` (Playwright).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
