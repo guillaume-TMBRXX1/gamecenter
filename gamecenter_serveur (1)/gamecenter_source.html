@@ -3665,8 +3665,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 
 /*@core-start*/
 /* ---------------- field renderer (neon, playbook notation) ---------------- */
-/* perf: canvas resolution cap. Starts at 2x; lowered (1.5x, then 1x) if the device can't keep up (see frame()) */
-let FX_DPR=2;
+/* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
+   the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
+let FX_DPR=2, FX_GLOW=true;
 class FieldView{
   constructor(wrap,g,viewW,maxZoom){
     this.wrap=wrap; this.canvas=wrap.querySelector('canvas'); this.ctx=this.canvas.getContext('2d'); this.g=g; this.viewW=viewW;
@@ -3799,12 +3800,12 @@ class FieldView{
     for(let yd=15; yd<=105; yd+=5){ if(yd<x0-1||yd>x1+1) continue; const px=X(yd); c.moveTo(px,0); c.lineTo(px,H); }
     c.stroke();
     // goal lines glow
-    c.save(); c.shadowColor=FIELD.cyan; c.shadowBlur=8;
+    c.save(); c.shadowColor=FIELD.cyan; c.shadowBlur=FX_GLOW?8:0;
     c.strokeStyle=hexA(FIELD.cyan,.8); c.lineWidth=Math.max(1.5,s*0.2); c.beginPath();
     for(const yd of [10,110]){ if(yd<x0-1||yd>x1+1) continue; c.moveTo(X(yd),0); c.lineTo(X(yd),H); }
     c.stroke(); c.restore();
     // goal posts on the end lines (seen from above: the crossbar)
-    c.save(); c.shadowColor=FIELD.cyan; c.shadowBlur=6; c.strokeStyle=hexA(FIELD.cyan,.75); c.lineWidth=Math.max(1.5,s*0.24); c.lineCap='round'; c.beginPath();
+    c.save(); c.shadowColor=FIELD.cyan; c.shadowBlur=FX_GLOW?6:0; c.strokeStyle=hexA(FIELD.cyan,.75); c.lineWidth=Math.max(1.5,s*0.24); c.lineCap='round'; c.beginPath();
     for(const gx of [0.35,119.65]){ if(gx<x0-1||gx>x1+1) continue; c.moveTo(X(gx),Y(MIDY-3.08)); c.lineTo(X(gx),Y(MIDY+3.08)); }
     c.stroke(); c.restore();
     // hash marks
@@ -3829,7 +3830,7 @@ class FieldView{
     // line of scrimmage (white) and line to gain (cyan), both lit
     if(g.status==='live'){
       const a=g.phase==='post'?0.45:1, lw=Math.max(2,s*0.3), d=dirOf(g);
-      c.save(); c.shadowBlur=12;
+      c.save(); c.shadowBlur=FX_GLOW?12:0;
       c.shadowColor='#FFFFFF'; c.fillStyle=hexA(FIELD.ink,a*0.9); c.fillRect(X(g.los)-lw/2,0,lw,H);
       if(!g.special && g.toGo<ytg(g)-0.5){ c.shadowColor=FIELD.cyan; c.fillStyle=hexA(FIELD.cyan,a); c.fillRect(X(g.los+d*g.toGo)-lw/2,0,lw,H); }
       c.restore();
@@ -3888,7 +3889,7 @@ class FieldView{
     }
     if(g.carrier){
       const p=g.carrier.side==='off'?g.off[g.carrier.idx]:g.def[g.carrier.idx];
-      c.save(); c.shadowColor='#FFFFFF'; c.shadowBlur=10;
+      c.save(); c.shadowColor='#FFFFFF'; c.shadowBlur=FX_GLOW?10:0;
       c.beginPath(); c.arc(X(p.x),Y(p.y),r+Math.max(2,s*0.34),0,Math.PI*2); c.strokeStyle=hexA(FIELD.ink,.95); c.lineWidth=Math.max(1.2,s*0.14); c.stroke();
       c.restore();
     }
@@ -3896,14 +3897,14 @@ class FieldView{
     if(g.sel){
       const p=(g.sel.side==='off'?g.off:g.def)[g.sel.idx];
       if(p){ c.save(); c.setLineDash([Math.max(2,s*0.35),Math.max(2,s*0.3)]); c.lineWidth=Math.max(1.3,s*0.14);
-        c.strokeStyle=g.sel.side==='off'?daOff(g):FIELD.pink; c.shadowColor=c.strokeStyle; c.shadowBlur=10;
+        c.strokeStyle=g.sel.side==='off'?daOff(g):FIELD.pink; c.shadowColor=c.strokeStyle; c.shadowBlur=FX_GLOW?10:0;
         c.beginPath(); c.arc(X(p.x),Y(p.y),r+Math.max(4,s*0.6),0,Math.PI*2); c.stroke(); c.restore(); }
     }
     // hovered player: ring + name tag, so the right dot is clicked even while it moves
     if(this.hover){
       const h=this.hover, p=(h.side==='off'?g.off:g.def)[h.idx];
       if(p){ const px=X(p.x), py=Y(p.y), col=h.side==='off'?daOff(g):FIELD.pink;
-        c.save(); c.lineWidth=Math.max(1.2,s*0.12); c.strokeStyle=col; c.shadowColor=col; c.shadowBlur=8;
+        c.save(); c.lineWidth=Math.max(1.2,s*0.12); c.strokeStyle=col; c.shadowColor=col; c.shadowBlur=FX_GLOW?8:0;
         c.beginPath(); c.arc(px,py,r+Math.max(3,s*0.4),0,Math.PI*2); c.stroke(); c.restore();
         let sm2=null; if(g.plays && typeof slotMap==='function'){ try{ sm2=slotMap(g); }catch(e){} }
         const pl=sm2&&sm2[h.side][h.idx];
@@ -3920,7 +3921,7 @@ class FieldView{
     if(b.h>0.05){ c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(bx,by,Math.max(1.8,0.45*s),Math.max(1,0.25*s),0,0,Math.PI*2); c.fill(); }
     const sc=1+b.h*0.05;
     c.save(); c.translate(bx,by-b.h*s*0.55); c.rotate(dirOf(g)>0?-0.35:0.35);
-    c.shadowColor=FIELD.ink; c.shadowBlur=8;
+    c.shadowColor=FIELD.ink; c.shadowBlur=FX_GLOW?8:0;
     c.beginPath(); c.ellipse(0,0,Math.max(2.2,0.55*s)*sc,Math.max(1.4,0.34*s)*sc,0,0,Math.PI*2);
     c.fillStyle=FIELD.ink; c.fill(); c.restore();
     // night vignette
@@ -5622,16 +5623,17 @@ if(!SEASON){ let cd=14*60+32; const cdEl=document.getElementById('countdown');
 setInterval(()=>{ cd=Math.max(0,cd-1); cdEl.textContent=cd>0?clockStr(cd):'Kickoff'; },1000); }
 
 let last=performance.now(), lastUi=0;
-/* perf: frame-time watch. If the fields can't hold ~40 fps for a few seconds, the canvases are redrawn at a lower
-   resolution (2x → 1.5x → 1x). Only goes down, so the picture never pumps. */
+/* perf: frame-time watch. If the fields can't hold ~40 fps for a few seconds, the halos go first, then the
+   canvases are redrawn at a lower resolution (2x → 1.5x → 1x). Only goes down, so the picture never pumps. */
 const PERF={t0:last+4000,ws:0,n:0,sum:0};
 function perfWatch(ms,drew,now){
-  if(now<PERF.t0||document.hidden||!drew||FX_DPR<=1||(window.devicePixelRatio||1)<=1) return;
+  const canDpr=FX_DPR>1&&(window.devicePixelRatio||1)>1;
+  if(now<PERF.t0||document.hidden||!drew||(!FX_GLOW&&!canDpr)) return;
   if(!PERF.n) PERF.ws=now;
   PERF.n++; PERF.sum+=Math.min(ms,250);
   if(PERF.n<20||now-PERF.ws<2500) return;            /* judge on 2.5 s and at least 20 drawn frames */
   const avg=PERF.sum/PERF.n; PERF.n=0; PERF.sum=0;
-  if(avg>25){ FX_DPR=FX_DPR>1.5?1.5:1; for(const v of views) v.resize(); PERF.t0=now+3000; }
+  if(avg>25){ if(FX_GLOW) FX_GLOW=false; else FX_DPR=FX_DPR>1.5?1.5:1; for(const v of views) v.resize(); PERF.t0=now+3000; }
 }
 function frame(now){
   const ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
