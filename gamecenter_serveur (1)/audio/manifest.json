@@ -1,0 +1,6 @@
+{
+  "schema": "gc-audio-manifest/1",
+  "version": 0,
+  "note": "V0.1 : aucun fichier enregistré. Les sons sont procéduraux, le commentaire est la voix du navigateur. Les fichiers pré-générés (ElevenLabs, hors ligne) arrivent en V0.2+ : audio/<catégorie>/<id>.<empreinte>.mp3",
+  "assets": []
+}

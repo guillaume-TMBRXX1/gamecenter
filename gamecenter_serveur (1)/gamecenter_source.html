@@ -1825,6 +1825,9 @@
 <script type="application/json" id="gf-week">__WEEK__</script>
 <!-- Set by the GameCenter live server (step 9): {api, now, play_sec}; null in a standalone page -->
 <script type="application/json" id="gf-server">__SERVER__</script>
+<!-- Audio System (V0.1): modules of static/audio, bundled and versioned by the server. If it does not load
+     (page opened as a file, network error) or the URL has ?audio=legacy, the page keeps its built-in sound. -->
+<script src="/static/audio/gc-audio.js?v=__AUDIO_V__"></script>
 
 <script>
 (function(){
@@ -4475,7 +4478,10 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }cat
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
-    /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false}; })();
+    /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
+    /* Audio System mixer (V0.1): volume per category, 100 % = the previous sound; music arrives in V0.4 */
+    mix:(m=>({commentary:clamp(num(m.commentary,100),0,100),crowd:clamp(num(m.crowd,100),0,100),sfx:clamp(num(m.sfx,100),0,100),music:clamp(num(m.music,100),0,100)}))(d.mix&&typeof d.mix==='object'?d.mix:{}),
+    mixMute:(m=>({commentary:m.commentary===true,music:m.music===true}))(d.mixMute&&typeof d.mixMute==='object'?d.mixMute:{})}; })();
 function saveSettings(){ return lsSet(SET_KEY,SET); }
 function applySettings(){
   document.body.classList.toggle('fx-off',!SET.fx);
@@ -4945,12 +4951,18 @@ const BETS_API={quote,ledger,settle,wallet:()=>WAL,SET,WEEK_OPEN,WEEK_RESET,load
    Web Audio; the commentator is the browser's own English voice (Web Speech), fed by lines written from
    the engine's play-by-play. Only one game is on air: the big screen when it is open, else the Prime Time
    board. Browsers only start sound after a click, so sound is off until the viewer turns it on. */
+/* Audio System (V0.1): GAME EVENTS → AudioManager → AudioMixer → Web Audio, in static/audio. The page only
+   reports what happens on air (and writes the lines); the manager decides and plays. Same sound as before.
+   ?audio=legacy (or the bundle missing) keeps the built-in code below — the rollback path. */
+const AUDIO_MODE=(/[?&]audio=legacy(&|$)/.test(location.search)||!(window.GCAudioLib&&window.GCAudioLib.AudioManager))?'legacy':'system';
+let AM=null;
 const TTS=(typeof window.speechSynthesis!=='undefined'&&typeof window.SpeechSynthesisUtterance!=='undefined')?window.speechSynthesis:null;
 let AC=null, A_MASTER=null, A_SFX=null, A_CROWD=null, A_DUCK=null, A_NOISE=null, A_ROAR=null;
 const ALOG=[];                                   /* last events and lines, read by the tests */
 function alog(kind,name,extra){ ALOG.push(Object.assign({kind,name,at:Date.now()},extra||{})); if(ALOG.length>400) ALOG.shift(); }
 const soundOn=()=>!!SET.snd;
 function acInit(){
+  if(AM){ AM.unlock(); return AM.mixer.ctx; }
   if(AC) return AC;
   const C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
   try{ AC=new C(); }catch(e){ return null; }
@@ -4980,6 +4992,7 @@ function audioApply(){
   const on=soundOn();
   const b=document.getElementById('sndBtn');
   if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.innerHTML=on?ICON_SND.on:ICON_SND.off; b.setAttribute('aria-label',on?'Turn sound off':'Turn sound on'); b.title=(on?'Sound on':'Sound off')+' · M'; }
+  if(AM){ if(!on) captionHide(); AM.apply(); return; }
   if(!on){ if(TTS) try{ TTS.cancel(); }catch(e){} captionHide(); }
   if(!AC) return;
   const t=AC.currentTime;
@@ -4990,12 +5003,12 @@ function audioApply(){
 function crowdLevel(){ const g=FOCUS; return !g?0.10:g.mode==='live'?0.22:0.14; }
 function setSound(on){
   SET.snd=!!on; saveSettings();
-  if(on){ acInit(); if(AC&&AC.state==='suspended') AC.resume(); if(TTS){ try{ TTS.cancel(); }catch(e){} } }
+  if(on){ if(AM){ AM.unlock(); AM.voice.cancel(); } else { acInit(); if(AC&&AC.state==='suspended') AC.resume(); if(TTS){ try{ TTS.cancel(); }catch(e){} } } }
   audioApply(); if(on) sfxUi('on');
   if(typeof renderSettings==='function'&&SEASON&&VIEW==='settings') renderSettings(true);
 }
 /* a saved "sound on" waits for the first click or key anywhere (browsers block sound before that) */
-function audioWake(){ if(soundOn()){ acInit(); if(AC&&AC.state==='suspended') AC.resume(); audioApply(); } }
+function audioWake(){ if(soundOn()){ if(AM) AM.unlock(); else { acInit(); if(AC&&AC.state==='suspended') AC.resume(); } audioApply(); } }
 document.addEventListener('pointerdown',audioWake,{once:true,capture:true});
 document.addEventListener('keydown',e=>{
   if(e.key!=='m'&&e.key!=='M') return;
@@ -5034,11 +5047,13 @@ const SFX_LIB={
   roar(t,v=1,dur=1.6){ if(!SET.crowd) return; const p=A_ROAR.gain; p.cancelScheduledValues(t); p.setValueAtTime(p.value,t); p.linearRampToValueAtTime(.55*v,t+.18); p.setValueAtTime(.55*v,t+dur*.45); p.exponentialRampToValueAtTime(.0001,t+dur); }
 };
 function sfx(name,delay,...args){
-  if(!soundOn()||!AC||AC.state!=='running') { alog('sfx',name,{muted:true}); return; }
-  if(!SET.sfx&&name!=='roar'){ alog('sfx',name,{muted:true}); return; }
-  alog('sfx',name); try{ SFX_LIB[name](AC.currentTime+(delay||0)+.01,...args); }catch(e){}
+  if(AM){ AM.sfx(name,delay,...args); return; }
+  if(!soundOn()||!AC||AC.state!=='running') { alog('sfx',name,{muted:true,args:[delay,...args]}); return; }
+  if(!SET.sfx&&name!=='roar'){ alog('sfx',name,{muted:true,args:[delay,...args]}); return; }
+  alog('sfx',name,{args:[delay,...args]}); try{ SFX_LIB[name](AC.currentTime+(delay||0)+.01,...args); }catch(e){}
 }
 function sfxUi(kind){
+  if(AM){ AM.ui(kind); return; }
   if(!soundOn()||!AC||AC.state!=='running'){ alog('ui',kind,{muted:true}); return; }
   alog('ui',kind); const t=AC.currentTime+.01;
   const seq={on:[[660,.06],[990,.1]],placed:[[880,.05],[1320,.09]],won:[[523,.08],[659,.08],[784,.08],[1047,.22]],lost:[[392,.12],[294,.26]],push:[[587,.08],[587,.14]]}[kind];
@@ -5145,7 +5160,7 @@ function introLine(g){
 /* ---------- the voice ---------- */
 let VOICES=[], V_QUEUE=null;
 function loadVoices(){ if(!TTS) return; try{ VOICES=TTS.getVoices().filter(v=>/^en([-_]|$)/i.test(v.lang)); }catch(e){ VOICES=[]; } if(SEASON&&VIEW==='settings') renderSettings(true); }
-if(TTS){ loadVoices(); try{ TTS.addEventListener('voiceschanged',loadVoices); }catch(e){ TTS.onvoiceschanged=loadVoices; } }
+if(TTS&&AUDIO_MODE==='legacy'){ loadVoices(); try{ TTS.addEventListener('voiceschanged',loadVoices); }catch(e){ TTS.onvoiceschanged=loadVoices; } }
 function pickVoice(){
   return VOICES.find(v=>v.name===SET.voice)
     || VOICES.find(v=>/en-GB/i.test(v.lang)&&/male|daniel|george|ryan|arthur|oliver/i.test(v.name))
@@ -5162,6 +5177,7 @@ function utter(text){
   try{ TTS.speak(u); }catch(e){}
 }
 function say(text,prio,g){
+  if(AM){ AM.say(text,prio,g); return; }
   alog('say',text,{prio,game:g&&g.id});
   if(!soundOn()||SET.talk==='off') return;
   if(SET.talk==='big'&&prio<2) return;
@@ -5194,6 +5210,15 @@ function audioFocusTick(){
 }
 function audioSnap(g){
   if(g!==FOCUS||!g.cur) return;
+  if(AM){   /* Audio System: the page writes the lines, the manager maps the events and plays */
+    const P=g.cur, jump=F_SEQ>=0&&P.seq!==F_SEQ+1&&P.seq!==F_SEQ, q=num(P.quarter,1), prev={quarter:F_Q,seq:F_SEQ};
+    F_SEQ=P.seq;
+    const qLine= q!==F_Q&&!jump&&F_Q ? {text:q>4?`We're headed to overtime! ${scoreLine(g)}`:`Start of the ${ORD[q].toLowerCase()} quarter. ${scoreLine(g)}`,prio:q>4?3:2} : null;
+    F_Q=q;
+    const al=adjLine(g,P), l=snapLine(g,P);
+    AM.snap(g,P,prev,[qLine, al||l ? {text:[al&&al.text,l&&l.text].filter(Boolean).join(' '),prio:Math.max(al?al.prio:0,l?l.prio:0)} : null]);
+    return;
+  }
   const P=g.cur, ty=P.call&&P.call.type, jump=F_SEQ>=0&&P.seq!==F_SEQ+1&&P.seq!==F_SEQ; F_SEQ=P.seq;
   const q=num(P.quarter,1);
   if(q!==F_Q&&!jump&&F_Q){ say(q>4?`We're headed to overtime! ${scoreLine(g)}`:`Start of the ${ORD[q].toLowerCase()} quarter. ${scoreLine(g)}`,q>4?3:2,g); }
@@ -5204,6 +5229,7 @@ function audioSnap(g){
 }
 function audioResolve(g){
   if(g!==FOCUS||!g.cur) return;
+  if(AM){ const h=g.hist||[]; AM.resolve(g,g.cur,h.length?h[h.length-1]:null,playLine(g,g.cur)); return; }
   const P=g.cur, r=P.result, gain=num(P.gain,0), st=P.after&&P.after.status;
   if(r==='touchdown'){ sfx('horn'); sfx('roar',0,1,3.2); }
   else if(r==='interception'||r==='fumble_lost'){ sfx('ooh'); sfx('roar',.5,.85,2.4); sfx('whistle',.9); }
@@ -5225,15 +5251,16 @@ function audioTest(){
 function soundCard(){
   const sw=(n,lab,desc)=>`<div class="set-row"><span class="set-l" id="setL_${n}">${lab}<small>${desc}</small></span><button type="button" class="switch" role="switch" data-set="${n}" aria-checked="${!!SET[n]}" aria-labelledby="setL_${n}"><i></i></button></div>`;
   const radio=(val,lab,desc)=>`<button type="button" class="set-opt" role="radio" data-set="talk" data-v="${val}" aria-checked="${SET.talk===val}"><span class="set-dot" aria-hidden="true"></span><span><b>${lab}</b><small>${desc}</small></span></button>`;
-  const cur=pickVoice();
-  const vsel = !TTS ? `<p class="set-p">This browser has no speech voice: commentary shows as captions.</p>`
-    : VOICES.length ? `<div class="set-row"><label class="set-l" for="setVoice">Voice<small>English voices of this device</small></label><select id="setVoice" class="set-sel">${VOICES.map(v=>`<option value="${esc(v.name)}"${cur&&cur.name===v.name?' selected':''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')}</select></div>`
+  const cur=AM?AM.pickVoice():pickVoice(), vl=AM?AM.voices():VOICES, hasTts=AM?AM.hasTTS():!!TTS;
+  const vsel = !hasTts ? `<p class="set-p">This browser has no speech voice: commentary shows as captions.</p>`
+    : vl.length ? `<div class="set-row"><label class="set-l" for="setVoice">Voice<small>English voices of this device</small></label><select id="setVoice" class="set-sel">${vl.map(v=>`<option value="${esc(v.name)}"${cur&&cur.name===v.name?' selected':''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')}</select></div>`
     : `<p class="set-p">No English voice found on this device yet: commentary shows as captions.</p>`;
   return `<div class="card set-card"><div class="card-h"><h2>Sound</h2><button type="button" class="chip-btn" data-sndtest>Play a test</button></div>
     ${sw('snd','Sound','Crowd, whistle, hits and the commentator · M to switch')}
-    <div class="set-row"><label class="set-l" for="setVol">Volume<small>${SET.vol}%</small></label><input type="range" id="setVol" class="set-range" min="0" max="100" step="5" value="${SET.vol}"></div>
+    <div class="set-row"><label class="set-l" for="setVol">${AM?'Master volume':'Volume'}<small>${SET.vol}%</small></label><input type="range" id="setVol" class="set-range" min="0" max="100" step="5" value="${SET.vol}"></div>
     ${sw('crowd','Crowd','The stadium in the background, louder on big plays')}
     ${sw('sfx','Effects','Whistle, snap, hits, kicks and the touchdown horn')}
+    ${AM?mixerRows():''}
     <div class="set-row col"><span class="set-l" id="setTalkL">Commentator<small>Follows the Prime Time board, or the big screen when it is open</small></span>
       <div class="set-opts" role="radiogroup" aria-labelledby="setTalkL">${radio('full','Play by play','Every snap that matters, third downs, scores')}${radio('big','Big plays only','Scores, turnovers, sacks and long gains')}${radio('off','Off','Crowd and effects only')}</div></div>
     ${vsel}
@@ -5241,6 +5268,20 @@ function soundCard(){
     ${sw('cap','Captions','Show what the commentator says at the top of the screen')}
   </div>`;
 }
+/* Audio System mixer (V0.1): one level per category + mute for the voice and the music (crowd and effects keep their switches) */
+const MIX_ROWS=[['commentary','Commentator level','The voice (captions stay when it is muted)'],['crowd','Crowd level','Stadium bed and reactions'],['sfx','Effects level','Whistle, hits, kicks, horn'],['music','Music level','Arrives with a later update']];
+function mixerRows(){
+  return `<div class="set-row col"><span class="set-l">Mixer<small>Each part of the sound on its own · saved in this browser</small></span></div>`+MIX_ROWS.map(([k,lab,desc])=>{
+    const mute=k==='commentary'||k==='music', off=mute&&SET.mixMute[k];
+    return `<div class="set-row"><label class="set-l" for="setMix_${k}">${lab}<small>${off?'Muted':SET.mix[k]+'%'} · ${desc}</small></label>`+
+      `<input type="range" id="setMix_${k}" class="set-range" data-mix="${k}" min="0" max="100" step="5" value="${SET.mix[k]}"${off?' disabled':''}>`+
+      (mute?`<button type="button" class="switch" role="switch" data-mixmute="${k}" aria-checked="${!off}" aria-label="${lab}: ${off?'muted':'on'}"><i></i></button>`:'')+`</div>`; }).join('');
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-mixmute]'); if(!b) return;
+  const k=b.dataset.mixmute; SET.mixMute[k]=!SET.mixMute[k]; saveSettings(); audioApply(); if(typeof renderSettings==='function'&&SEASON&&VIEW==='settings') renderSettings(true); });
+document.addEventListener('input',e=>{ const k=e.target.dataset&&e.target.dataset.mix; if(!k) return;
+  SET.mix[k]=clamp(+e.target.value||0,0,100); audioApply(); const sm=e.target.parentElement.querySelector('small'); if(sm) sm.firstChild.textContent=SET.mix[k]+'% · '+MIX_ROWS.find(r=>r[0]===k)[2]; });
+document.addEventListener('change',e=>{ if(e.target.dataset&&e.target.dataset.mix) saveSettings(); });
 document.addEventListener('input',e=>{ if(e.target.id==='setVol'){ SET.vol=clamp(+e.target.value||0,0,100); audioApply(); const s=e.target.parentElement.querySelector('small'); if(s) s.textContent=SET.vol+'%'; } });
 document.addEventListener('change',e=>{
   if(e.target.id==='setVol'){ saveSettings(); }
@@ -5266,7 +5307,15 @@ function audioSweep(){
     }); }
   out.bad=out.bad.slice(0,8); out.missing=out.missing.slice(0,8); return out;
 }
-const AUDIO_API={sweep:audioSweep,log:ALOG,playLine,snapLine,adjLine,introLine,focus:()=>FOCUS&&FOCUS.id,ctx:()=>AC&&AC.state,setSound,voices:()=>VOICES.length,tts:!!TTS};
+if(AUDIO_MODE==='system'){
+  try{ AM=new window.GCAudioLib.AudioManager({settings:()=>SET,log:alog,caption,captionHide,crowdLevel,
+    onVoices:()=>{ if(SEASON&&VIEW==='settings') renderSettings(true); }}); }
+  catch(e){ AM=null; if(TTS){ loadVoices(); try{ TTS.addEventListener('voiceschanged',loadVoices); }catch(_){ TTS.onvoiceschanged=loadVoices; } } }
+}
+const AUDIO_API={sweep:audioSweep,log:ALOG,playLine,snapLine,adjLine,introLine,focus:()=>FOCUS&&FOCUS.id,ctx:()=>AM?AM.state():AC&&AC.state,setSound,voices:()=>AM?AM.voices().length:VOICES.length,tts:!!TTS,
+  /* Audio System (V0.1) */
+  mode:()=>AUDIO_MODE, manager:()=>AM, lib:window.GCAudioLib||null, snap:audioSnap, resolve:audioResolve,
+  setFocus:g=>{ FOCUS=g; F_Q=g&&g.cur?num(g.cur.quarter,1):0; F_SEQ=g&&g.cur?g.cur.seq:-1; }};
 
 
 /* ================= LIVE SERVER MODE (step 9, site only) =================

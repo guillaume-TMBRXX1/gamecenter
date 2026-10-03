@@ -15,12 +15,14 @@ Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecente
             « auto » = lundi 12:45 de la semaine la plus récente) · GC_AUTOGEN=1 (produit la semaine suivante
             tout seul, voir generer_semaine.py) · GC_ADMIN_KEY (sauvegarde, réinitialisation de mot de passe)
             GC_SEASON_START (facultatif, ex. 2026-10-05 : semaines plus anciennes hors classement de la saison)
+Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/audio assemblés, versionnés) et /audio/*
+(fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
 import hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, uuid, math
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
@@ -540,6 +542,53 @@ def _page_source():
     return _PAGE_CACHE["src"]
 
 
+# ------------------------------------------------------------------ audio system (V0.1)
+AUDIO_JS_DIR = os.path.join(HERE, "static", "audio")
+AUDIO_DIR = os.path.realpath(os.path.join(HERE, "audio"))
+# ordre d'assemblage : chaque module s'inscrit dans window.GCAudioLib
+AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
+_AUDIO_JS = {"key": None, "src": b"", "ver": ""}
+_AUDIO_TYPES = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".webm": "audio/webm", ".wav": "audio/wav", ".json": "application/json"}
+_HASHED = re.compile(r"\.[0-9a-f]{6,}\.[a-z0-9]+$")
+
+
+def _audio_bundle():
+    paths = [os.path.join(AUDIO_JS_DIR, f) for f in AUDIO_MODULES]
+    key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in paths)
+    if _AUDIO_JS["key"] != key:
+        parts = []
+        for p in paths:
+            if os.path.exists(p):
+                with open(p, "rb") as fh:
+                    parts.append(b"/* --- " + os.path.basename(p).encode() + b" --- */\n" + fh.read())
+        src = b"\n".join(parts)
+        _AUDIO_JS.update(key=key, src=src, ver=hashlib.sha1(src).hexdigest()[:12] if src else "")
+    return _AUDIO_JS
+
+
+@app.get("/static/audio/gc-audio.js")
+def audio_js(v: str = ""):
+    b = _audio_bundle()
+    if not b["src"]:
+        raise HTTPException(404)
+    # l'URL versionnée (?v=<empreinte>) ne change jamais de contenu : cache d'un an ; sinon toujours revalider
+    cc = "public, max-age=31536000, immutable" if v == b["ver"] else "no-cache"
+    return Response(b["src"], media_type="application/javascript; charset=utf-8", headers={"Cache-Control": cc, "ETag": '"' + b["ver"] + '"'})
+
+
+@app.get("/audio/{path:path}")
+def audio_asset(path: str):
+    full = os.path.realpath(os.path.join(AUDIO_DIR, path))
+    if not full.startswith(AUDIO_DIR + os.sep) or not os.path.isfile(full):
+        raise HTTPException(404)
+    ext = os.path.splitext(full)[1].lower()
+    if ext not in _AUDIO_TYPES:
+        raise HTTPException(404)
+    # nom à empreinte (td_huge_03.a1b2c3.mp3) → immuable ; manifest.json et le reste → revalidés
+    cc = "public, max-age=31536000, immutable" if _HASHED.search(full) else "no-cache"
+    return FileResponse(full, media_type=_AUDIO_TYPES[ext], headers={"Cache-Control": cc})
+
+
 def _enc(o):
     return json.dumps(o, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
 
@@ -549,7 +598,7 @@ def page():
     w = _need_week(); t = now_ms()
     bundle = {"week": w.public_state(t), "feeds": {g["id"]: w.public_feed(g, t) for g in w.sched}}
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "week_start": w.start, "open_ms": w.open}
-    s = _page_source().replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
+    s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API},audio:AUDIO_API};\n})();")

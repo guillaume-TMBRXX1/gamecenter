@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# secrets (ElevenLabs : génération hors ligne uniquement, jamais commitée)
+.env
+.env.*
+*.key
