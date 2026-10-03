@@ -544,9 +544,9 @@ def _page_source():
 
 # ------------------------------------------------------------------ audio system (V0.1)
 AUDIO_JS_DIR = os.path.join(HERE, "static", "audio")
-AUDIO_DIR = os.path.realpath(os.path.join(HERE, "audio"))
+AUDIO_DIR = os.path.realpath(os.environ.get("GC_AUDIO_DIR") or os.path.join(HERE, "audio"))   # GC_AUDIO_DIR : tests seulement
 # ordre d'assemblage : chaque module s'inscrit dans window.GCAudioLib
-AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
+AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "CommentaryCues.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
 _AUDIO_JS = {"key": None, "src": b"", "ver": ""}
 _AUDIO_TYPES = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".webm": "audio/webm", ".wav": "audio/wav", ".json": "application/json"}
 _HASHED = re.compile(r"\.[0-9a-f]{6,}\.[a-z0-9]+$")

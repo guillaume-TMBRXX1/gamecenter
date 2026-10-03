@@ -93,7 +93,7 @@ function mapResolve(g,P,wpBefore){
 /* 0..1 — how big the moment is: the event, then the game situation */
 const WEIGHT={TOUCHDOWN:.55,INTERCEPTION:.5,FUMBLE:.5,TURNOVER_ON_DOWNS:.4,FIELD_GOAL_GOOD:.35,FIELD_GOAL_MISS:.35,SACK:.3,BIG_PLAY:.35,
   FOURTH_DOWN_ATTEMPT:.3,THIRD_DOWN:.15,FIRST_DOWN:.1,PUNT:.08,INCOMPLETE:.08,PASS_COMPLETE:.08,RUN:.08,SNAP:.05,KICK_SNAP:.08,KICKOFF:.08,
-  HALFTIME:.4,GAME_END:.7,VICTORY:.8,DEFEAT:.7,TIE:.6,QUARTER_START:.2,QUARTER_END:.2,OVERTIME:.8,RED_ZONE:.2,COORD_ADJUST:.1,LEAD_CHANGE:.5};
+  HALFTIME:.4,GAME_END:.35,VICTORY:.55,DEFEAT:.3,TIE:.45,QUARTER_START:.2,QUARTER_END:.2,OVERTIME:.8,RED_ZONE:.2,COORD_ADJUST:.1,LEAD_CHANGE:.5};
 function importance(c,ev){
   let v=0; for(const e of ev) v=Math.max(v,WEIGHT[e]||0);
   /* the same play matters more late: Q1-Q2 ×.25, Q3 ×.5, last half of Q4 and overtime ×1 */
@@ -102,6 +102,8 @@ function importance(c,ev){
   if(c.isCloseGame) v+=.08*late;
   if(c.isOvertime) v+=.1;
   if(c.wpSwing) v+=Math.min(.15,c.wpSwing*.4);
+  /* the final call: a close finish is a big moment, a blowout is not */
+  if(c.isCloseGame&&(ev.includes('VICTORY')||ev.includes('DEFEAT'))) v+=.2;
   return Math.round(clamp(v,0,1)*100)/100;
 }
 
