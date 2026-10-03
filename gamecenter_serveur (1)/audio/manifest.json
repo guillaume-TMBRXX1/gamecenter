@@ -1,6 +1,1866 @@
 {
-  "schema": "gc-audio-manifest/1",
-  "version": 0,
-  "note": "V0.1 : aucun fichier enregistré. Les sons sont procéduraux, le commentaire est la voix du navigateur. Les fichiers pré-générés (ElevenLabs, hors ligne) arrivent en V0.2+ : audio/<catégorie>/<id>.<empreinte>.mp3",
-  "assets": []
+ "schema": "gc-audio-manifest/1",
+ "version": "3e451337af",
+ "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
+ "assets": [
+  {
+   "id": "c:touchdown_excited_01",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/touchdown_excited_01.ac1abfd6.mp3",
+   "text": "Touchdown!",
+   "dur": 0.84,
+   "bytes": 5277
+  },
+  {
+   "id": "c:touchdown_excited_02",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/touchdown_excited_02.7d577185.mp3",
+   "text": "And he's in! Touchdown!",
+   "dur": 1.66,
+   "bytes": 10173
+  },
+  {
+   "id": "c:touchdown_excited_03",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/touchdown_excited_03.a5e507c7.mp3",
+   "text": "Into the end zone — touchdown!",
+   "dur": 1.87,
+   "bytes": 11469
+  },
+  {
+   "id": "c:touchdown_excited_04",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/touchdown_excited_04.7f859642.mp3",
+   "text": "Six points on the board!",
+   "dur": 1.32,
+   "bytes": 8157
+  },
+  {
+   "id": "c:touchdown_excited_05",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/touchdown_excited_05.4ada69fb.mp3",
+   "text": "Touchdown, and that drive pays off!",
+   "dur": 2.45,
+   "bytes": 14925
+  },
+  {
+   "id": "c:touchdown_excited_pass_01",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/touchdown_excited_pass_01.75f4203f.mp3",
+   "text": "Thrown… and caught! Touchdown!",
+   "dur": 2.47,
+   "bytes": 15069
+  },
+  {
+   "id": "c:touchdown_excited_pass_02",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/touchdown_excited_pass_02.90d9b7f7.mp3",
+   "text": "He finds his man in the end zone — touchdown!",
+   "dur": 2.78,
+   "bytes": 16941
+  },
+  {
+   "id": "c:touchdown_excited_pass_03",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/touchdown_excited_pass_03.90b3df48.mp3",
+   "text": "What a throw — touchdown!",
+   "dur": 1.58,
+   "bytes": 9741
+  },
+  {
+   "id": "c:touchdown_excited_run_01",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/touchdown_excited_run_01.619316da.mp3",
+   "text": "He punches it in! Touchdown!",
+   "dur": 1.8,
+   "bytes": 11037
+  },
+  {
+   "id": "c:touchdown_excited_run_02",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/touchdown_excited_run_02.f48dd9cf.mp3",
+   "text": "Right up the gut — and in for the score!",
+   "dur": 2.3,
+   "bytes": 14061
+  },
+  {
+   "id": "c:touchdown_excited_run_03",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/touchdown_excited_run_03.85b5faac.mp3",
+   "text": "He walks in untouched — touchdown!",
+   "dur": 2.5,
+   "bytes": 15213
+  },
+  {
+   "id": "c:touchdown_huge_01",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/touchdown_huge_01.6845ba31.mp3",
+   "text": "TOUCHDOWN! Unbelievable!",
+   "dur": 1.68,
+   "bytes": 10317
+  },
+  {
+   "id": "c:touchdown_huge_02",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/touchdown_huge_02.60d095f3.mp3",
+   "text": "He's in! TOUCHDOWN! Listen to this crowd!",
+   "dur": 2.54,
+   "bytes": 15501
+  },
+  {
+   "id": "c:touchdown_huge_03",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/touchdown_huge_03.9de49bf9.mp3",
+   "text": "TOUCHDOWN! What a moment!",
+   "dur": 1.66,
+   "bytes": 10173
+  },
+  {
+   "id": "c:touchdown_huge_04",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/touchdown_huge_04.61db5216.mp3",
+   "text": "Oh, he's in! Are you kidding me? Touchdown!",
+   "dur": 2.52,
+   "bytes": 15357
+  },
+  {
+   "id": "c:touchdown_huge_lead_01",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [
+    "lead"
+   ],
+   "file": "commentary/touchdown_huge_lead_01.a768e957.mp3",
+   "text": "Touchdown! And they've taken the lead!",
+   "dur": 2.14,
+   "bytes": 13053
+  },
+  {
+   "id": "c:touchdown_huge_lead_02",
+   "cat": "commentary",
+   "cue": "TOUCHDOWN",
+   "tier": "huge",
+   "tags": [
+    "lead"
+   ],
+   "file": "commentary/touchdown_huge_lead_02.e6a0617b.mp3",
+   "text": "They go ahead! Touchdown, and this place is shaking!",
+   "dur": 3.24,
+   "bytes": 19677
+  },
+  {
+   "id": "c:interception_excited_01",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/interception_excited_01.9219fcc1.mp3",
+   "text": "Intercepted!",
+   "dur": 0.84,
+   "bytes": 5277
+  },
+  {
+   "id": "c:interception_excited_02",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/interception_excited_02.40b0229c.mp3",
+   "text": "Picked off!",
+   "dur": 0.77,
+   "bytes": 4845
+  },
+  {
+   "id": "c:interception_excited_03",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/interception_excited_03.a6e52455.mp3",
+   "text": "And that's an interception!",
+   "dur": 1.39,
+   "bytes": 8589
+  },
+  {
+   "id": "c:interception_excited_04",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/interception_excited_04.eb5a9746.mp3",
+   "text": "He jumps the route — interception!",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:interception_excited_05",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/interception_excited_05.a24888c0.mp3",
+   "text": "Thrown… and it's picked!",
+   "dur": 1.7,
+   "bytes": 10461
+  },
+  {
+   "id": "c:interception_huge_01",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/interception_huge_01.5c358258.mp3",
+   "text": "INTERCEPTED! What a time for it!",
+   "dur": 1.99,
+   "bytes": 12189
+  },
+  {
+   "id": "c:interception_huge_02",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/interception_huge_02.1549e408.mp3",
+   "text": "PICKED OFF! Huge, huge turnover!",
+   "dur": 2.3,
+   "bytes": 14061
+  },
+  {
+   "id": "c:interception_huge_03",
+   "cat": "commentary",
+   "cue": "INTERCEPTION",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/interception_huge_03.2579d1a1.mp3",
+   "text": "Interception! That could be the ball game!",
+   "dur": 2.26,
+   "bytes": 13773
+  },
+  {
+   "id": "c:fumble_excited_01",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fumble_excited_01.a402d6ba.mp3",
+   "text": "Fumble! And they recover!",
+   "dur": 1.56,
+   "bytes": 9597
+  },
+  {
+   "id": "c:fumble_excited_02",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fumble_excited_02.d41d8a91.mp3",
+   "text": "The ball is out — and they've got it!",
+   "dur": 1.97,
+   "bytes": 12045
+  },
+  {
+   "id": "c:fumble_excited_03",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fumble_excited_03.bf630115.mp3",
+   "text": "He loses it! Turnover!",
+   "dur": 1.42,
+   "bytes": 8733
+  },
+  {
+   "id": "c:fumble_excited_04",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fumble_excited_04.4c1ef53d.mp3",
+   "text": "Fumble, and it's a change of possession!",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:fumble_huge_01",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/fumble_huge_01.083aa69e.mp3",
+   "text": "FUMBLE! They come up with it! What a swing!",
+   "dur": 2.54,
+   "bytes": 15501
+  },
+  {
+   "id": "c:fumble_huge_02",
+   "cat": "commentary",
+   "cue": "FUMBLE",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/fumble_huge_02.a5c1efba.mp3",
+   "text": "The ball is OUT! Huge turnover!",
+   "dur": 2.09,
+   "bytes": 12765
+  },
+  {
+   "id": "c:field_goal_good_calm_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_good_calm_01.a4d360da.mp3",
+   "text": "The kick is good.",
+   "dur": 1.01,
+   "bytes": 6285
+  },
+  {
+   "id": "c:field_goal_good_calm_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_good_calm_02.741ada5b.mp3",
+   "text": "Right down the middle. Three points.",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:field_goal_good_calm_03",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_good_calm_03.8e332288.mp3",
+   "text": "Good from there, and that's three.",
+   "dur": 2.09,
+   "bytes": 12765
+  },
+  {
+   "id": "c:field_goal_good_calm_04",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_good_calm_04.a2d35ed3.mp3",
+   "text": "Splits the uprights.",
+   "dur": 1.3,
+   "bytes": 8013
+  },
+  {
+   "id": "c:field_goal_good_excited_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_good_excited_01.7091d0ef.mp3",
+   "text": "The kick is up… it's good!",
+   "dur": 1.46,
+   "bytes": 9021
+  },
+  {
+   "id": "c:field_goal_good_excited_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_good_excited_02.f91418d2.mp3",
+   "text": "It's good! Big three points!",
+   "dur": 1.97,
+   "bytes": 12045
+  },
+  {
+   "id": "c:field_goal_good_excited_03",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_good_excited_03.f14a9b27.mp3",
+   "text": "Plenty of leg — and it's good!",
+   "dur": 1.85,
+   "bytes": 11325
+  },
+  {
+   "id": "c:field_goal_good_huge_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/field_goal_good_huge_01.8b295581.mp3",
+   "text": "The kick is up… IT'S GOOD! What a kick!",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:field_goal_good_huge_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/field_goal_good_huge_02.4b6fe9ae.mp3",
+   "text": "IT'S GOOD! He's done it!",
+   "dur": 1.54,
+   "bytes": 9453
+  },
+  {
+   "id": "c:field_goal_miss_calm_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_miss_calm_01.1ce46fea.mp3",
+   "text": "The kick is no good.",
+   "dur": 1.22,
+   "bytes": 7581
+  },
+  {
+   "id": "c:field_goal_miss_calm_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_miss_calm_02.040beed7.mp3",
+   "text": "Wide. No points.",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:field_goal_miss_calm_03",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_miss_calm_03.7f1475b5.mp3",
+   "text": "He pulls it — no good.",
+   "dur": 1.49,
+   "bytes": 9165
+  },
+  {
+   "id": "c:field_goal_miss_excited_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_miss_excited_01.2c54cf85.mp3",
+   "text": "No good! He misses it!",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:field_goal_miss_excited_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_miss_excited_02.99995252.mp3",
+   "text": "Off the upright — no good!",
+   "dur": 1.61,
+   "bytes": 9885
+  },
+  {
+   "id": "c:field_goal_miss_excited_03",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_MISS",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/field_goal_miss_excited_03.adb2ee1c.mp3",
+   "text": "Wide right! Oh, he missed it!",
+   "dur": 1.66,
+   "bytes": 10173
+  },
+  {
+   "id": "c:sack_calm_01",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/sack_calm_01.217cedde.mp3",
+   "text": "Sacked.",
+   "dur": 0.6,
+   "bytes": 3837
+  },
+  {
+   "id": "c:sack_calm_02",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/sack_calm_02.1e3e72c1.mp3",
+   "text": "He's brought down behind the line.",
+   "dur": 1.8,
+   "bytes": 11037
+  },
+  {
+   "id": "c:sack_calm_03",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/sack_calm_03.2a7ed713.mp3",
+   "text": "Quarterback sack.",
+   "dur": 1.03,
+   "bytes": 6429
+  },
+  {
+   "id": "c:sack_calm_04",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/sack_calm_04.97b66860.mp3",
+   "text": "Pressure gets home — sack.",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:sack_excited_01",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/sack_excited_01.ce21d835.mp3",
+   "text": "Sacked! Big play by the defense!",
+   "dur": 2.14,
+   "bytes": 13053
+  },
+  {
+   "id": "c:sack_excited_02",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/sack_excited_02.94c4aefa.mp3",
+   "text": "Down he goes! What a rush!",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:sack_excited_03",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/sack_excited_03.a406d4f8.mp3",
+   "text": "They get to him — sack!",
+   "dur": 1.37,
+   "bytes": 8445
+  },
+  {
+   "id": "c:sack_excited_04",
+   "cat": "commentary",
+   "cue": "SACK",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/sack_excited_04.16478d7e.mp3",
+   "text": "He had nowhere to go! Sack!",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:big_play_excited_pass_01",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/big_play_excited_pass_01.9d0b15bb.mp3",
+   "text": "Deep shot… caught! Big gain!",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:big_play_excited_pass_02",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/big_play_excited_pass_02.f8eb5776.mp3",
+   "text": "He's open downfield — what a catch!",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:big_play_excited_pass_03",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "file": "commentary/big_play_excited_pass_03.6048a1b7.mp3",
+   "text": "Long completion, and they're moving!",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:big_play_excited_run_01",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/big_play_excited_run_01.25fc9246.mp3",
+   "text": "He breaks free! Big run!",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:big_play_excited_run_02",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/big_play_excited_run_02.665dac0f.mp3",
+   "text": "He finds a crease — and he's off!",
+   "dur": 2.04,
+   "bytes": 12477
+  },
+  {
+   "id": "c:big_play_excited_run_03",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "excited",
+   "tags": [
+    "run"
+   ],
+   "file": "commentary/big_play_excited_run_03.f3993072.mp3",
+   "text": "Nobody touches him! Big gain on the ground!",
+   "dur": 2.47,
+   "bytes": 15069
+  },
+  {
+   "id": "c:big_play_huge_01",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/big_play_huge_01.ec462e9b.mp3",
+   "text": "He's loose! Look at him go!",
+   "dur": 1.49,
+   "bytes": 9165
+  },
+  {
+   "id": "c:big_play_huge_02",
+   "cat": "commentary",
+   "cue": "BIG_PLAY",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/big_play_huge_02.40781ebc.mp3",
+   "text": "Caught! And he's got room! Huge play!",
+   "dur": 2.76,
+   "bytes": 16797
+  },
+  {
+   "id": "c:pass_complete_calm_01",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pass_complete_calm_01.d95505e2.mp3",
+   "text": "Complete.",
+   "dur": 0.72,
+   "bytes": 4557
+  },
+  {
+   "id": "c:pass_complete_calm_02",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pass_complete_calm_02.727f97c3.mp3",
+   "text": "Caught, short gain.",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:pass_complete_calm_03",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pass_complete_calm_03.1a79397c.mp3",
+   "text": "He makes the grab.",
+   "dur": 1.08,
+   "bytes": 6717
+  },
+  {
+   "id": "c:pass_complete_calm_04",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pass_complete_calm_04.fe856d42.mp3",
+   "text": "Quick throw, complete.",
+   "dur": 1.27,
+   "bytes": 7869
+  },
+  {
+   "id": "c:pass_complete_calm_05",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pass_complete_calm_05.8e50aa53.mp3",
+   "text": "Underneath, and that's caught.",
+   "dur": 1.92,
+   "bytes": 11757
+  },
+  {
+   "id": "c:pass_complete_calm_fd_01",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/pass_complete_calm_fd_01.9246b705.mp3",
+   "text": "Complete, and that's a first down.",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:pass_complete_calm_fd_02",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/pass_complete_calm_fd_02.4317d5a5.mp3",
+   "text": "Caught — and he moves the chains.",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:pass_complete_calm_fd_03",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/pass_complete_calm_fd_03.13153e39.mp3",
+   "text": "On target, first down.",
+   "dur": 1.61,
+   "bytes": 9885
+  },
+  {
+   "id": "c:pass_complete_calm_fd_04",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/pass_complete_calm_fd_04.2eb38161.mp3",
+   "text": "Complete, first down.",
+   "dur": 1.58,
+   "bytes": 9741
+  },
+  {
+   "id": "c:pass_complete_calm_nogain_01",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "nogain"
+   ],
+   "file": "commentary/pass_complete_calm_nogain_01.721adc60.mp3",
+   "text": "Caught, but no gain.",
+   "dur": 1.61,
+   "bytes": 9885
+  },
+  {
+   "id": "c:pass_complete_calm_nogain_02",
+   "cat": "commentary",
+   "cue": "PASS_COMPLETE",
+   "tier": "calm",
+   "tags": [
+    "nogain"
+   ],
+   "file": "commentary/pass_complete_calm_nogain_02.9cb6bc1e.mp3",
+   "text": "Complete, but he's stopped right there.",
+   "dur": 2.4,
+   "bytes": 14637
+  },
+  {
+   "id": "c:incomplete_calm_01",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_01.032429d3.mp3",
+   "text": "Incomplete.",
+   "dur": 0.91,
+   "bytes": 5709
+  },
+  {
+   "id": "c:incomplete_calm_02",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_02.3a2e50ed.mp3",
+   "text": "Pass falls incomplete.",
+   "dur": 1.46,
+   "bytes": 9021
+  },
+  {
+   "id": "c:incomplete_calm_03",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_03.5f9702db.mp3",
+   "text": "Thrown away.",
+   "dur": 0.94,
+   "bytes": 5853
+  },
+  {
+   "id": "c:incomplete_calm_04",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_04.0e71c639.mp3",
+   "text": "Broken up — incomplete.",
+   "dur": 1.7,
+   "bytes": 10461
+  },
+  {
+   "id": "c:incomplete_calm_05",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_05.05cd2054.mp3",
+   "text": "Overthrown.",
+   "dur": 0.96,
+   "bytes": 5997
+  },
+  {
+   "id": "c:incomplete_calm_06",
+   "cat": "commentary",
+   "cue": "INCOMPLETE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/incomplete_calm_06.dea1a2d5.mp3",
+   "text": "Can't hang on. Incomplete.",
+   "dur": 1.87,
+   "bytes": 11469
+  },
+  {
+   "id": "c:run_calm_01",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_calm_01.38602301.mp3",
+   "text": "Handoff, a few yards.",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:run_calm_02",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_calm_02.0df83e73.mp3",
+   "text": "Up the middle, short gain.",
+   "dur": 1.73,
+   "bytes": 10605
+  },
+  {
+   "id": "c:run_calm_03",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_calm_03.c6342a11.mp3",
+   "text": "He picks up a couple.",
+   "dur": 1.1,
+   "bytes": 6861
+  },
+  {
+   "id": "c:run_calm_04",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_calm_04.66b13f9f.mp3",
+   "text": "Off tackle, modest gain.",
+   "dur": 1.7,
+   "bytes": 10461
+  },
+  {
+   "id": "c:run_calm_05",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_calm_05.01616511.mp3",
+   "text": "Runs inside for a little.",
+   "dur": 1.44,
+   "bytes": 8877
+  },
+  {
+   "id": "c:run_calm_fd_01",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/run_calm_fd_01.baf1606f.mp3",
+   "text": "Handoff… and that's a first down.",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:run_calm_fd_02",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/run_calm_fd_02.502d466c.mp3",
+   "text": "He moves the chains on the ground.",
+   "dur": 1.97,
+   "bytes": 12045
+  },
+  {
+   "id": "c:run_calm_fd_03",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/run_calm_fd_03.90964d5f.mp3",
+   "text": "Tough run, first down.",
+   "dur": 1.63,
+   "bytes": 10029
+  },
+  {
+   "id": "c:run_calm_fd_04",
+   "cat": "commentary",
+   "cue": "RUN",
+   "tier": "calm",
+   "tags": [
+    "fd"
+   ],
+   "file": "commentary/run_calm_fd_04.90d67b63.mp3",
+   "text": "Powers ahead — first down.",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:run_stuffed_calm_01",
+   "cat": "commentary",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_stuffed_calm_01.c4f6d006.mp3",
+   "text": "Stuffed at the line.",
+   "dur": 1.22,
+   "bytes": 7581
+  },
+  {
+   "id": "c:run_stuffed_calm_02",
+   "cat": "commentary",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_stuffed_calm_02.bcf2d0ac.mp3",
+   "text": "No gain.",
+   "dur": 0.84,
+   "bytes": 5277
+  },
+  {
+   "id": "c:run_stuffed_calm_03",
+   "cat": "commentary",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_stuffed_calm_03.ef320ae4.mp3",
+   "text": "Stopped in the backfield.",
+   "dur": 1.34,
+   "bytes": 8301
+  },
+  {
+   "id": "c:run_stuffed_calm_04",
+   "cat": "commentary",
+   "cue": "RUN_STUFFED",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/run_stuffed_calm_04.5875d379.mp3",
+   "text": "Nowhere to go — no gain.",
+   "dur": 1.85,
+   "bytes": 11325
+  },
+  {
+   "id": "c:punt_calm_01",
+   "cat": "commentary",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/punt_calm_01.37714b19.mp3",
+   "text": "They'll punt it away.",
+   "dur": 1.18,
+   "bytes": 7293
+  },
+  {
+   "id": "c:punt_calm_02",
+   "cat": "commentary",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/punt_calm_02.035428cb.mp3",
+   "text": "Punt is away.",
+   "dur": 1.01,
+   "bytes": 6285
+  },
+  {
+   "id": "c:punt_calm_03",
+   "cat": "commentary",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/punt_calm_03.b65280a2.mp3",
+   "text": "Good hang time on the punt.",
+   "dur": 1.44,
+   "bytes": 8877
+  },
+  {
+   "id": "c:punt_calm_04",
+   "cat": "commentary",
+   "cue": "PUNT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/punt_calm_04.3eeb0278.mp3",
+   "text": "Punted deep.",
+   "dur": 0.96,
+   "bytes": 5997
+  },
+  {
+   "id": "c:kickoff_calm_01",
+   "cat": "commentary",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/kickoff_calm_01.5872b66d.mp3",
+   "text": "Here's the kickoff.",
+   "dur": 0.98,
+   "bytes": 6141
+  },
+  {
+   "id": "c:kickoff_calm_02",
+   "cat": "commentary",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/kickoff_calm_02.9e3bcef4.mp3",
+   "text": "Kicked deep.",
+   "dur": 0.86,
+   "bytes": 5421
+  },
+  {
+   "id": "c:kickoff_calm_03",
+   "cat": "commentary",
+   "cue": "KICKOFF",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/kickoff_calm_03.c91c2c25.mp3",
+   "text": "And the kickoff is away.",
+   "dur": 1.44,
+   "bytes": 8877
+  },
+  {
+   "id": "c:halftime_calm_01",
+   "cat": "commentary",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/halftime_calm_01.4c668bfb.mp3",
+   "text": "And that's halftime.",
+   "dur": 1.2,
+   "bytes": 7437
+  },
+  {
+   "id": "c:halftime_calm_02",
+   "cat": "commentary",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/halftime_calm_02.8cd6104a.mp3",
+   "text": "That will do it for the first half.",
+   "dur": 1.87,
+   "bytes": 11469
+  },
+  {
+   "id": "c:halftime_calm_03",
+   "cat": "commentary",
+   "cue": "HALFTIME",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/halftime_calm_03.4126680e.mp3",
+   "text": "We've reached the half.",
+   "dur": 1.15,
+   "bytes": 7149
+  },
+  {
+   "id": "c:victory_excited_01",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/victory_excited_01.2cf69bd1.mp3",
+   "text": "And that's the ball game! The home side wins it!",
+   "dur": 2.88,
+   "bytes": 17517
+  },
+  {
+   "id": "c:victory_excited_02",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/victory_excited_02.2f5a8ac7.mp3",
+   "text": "It's over! A home win, and this crowd loves it!",
+   "dur": 3.5,
+   "bytes": 21261
+  },
+  {
+   "id": "c:victory_excited_03",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/victory_excited_03.77d6a2d8.mp3",
+   "text": "Final whistle — the home team gets it done!",
+   "dur": 2.78,
+   "bytes": 16941
+  },
+  {
+   "id": "c:victory_huge_01",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/victory_huge_01.234aeef0.mp3",
+   "text": "IT'S OVER! THEY'VE DONE IT! What a finish!",
+   "dur": 2.5,
+   "bytes": 15213
+  },
+  {
+   "id": "c:victory_huge_02",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/victory_huge_02.ff6011d8.mp3",
+   "text": "They win it! Unbelievable scenes here!",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:victory_huge_ot_01",
+   "cat": "commentary",
+   "cue": "VICTORY",
+   "tier": "huge",
+   "tags": [
+    "ot"
+   ],
+   "file": "commentary/victory_huge_ot_01.e5bace8d.mp3",
+   "text": "They win it in overtime! What a game!",
+   "dur": 2.26,
+   "bytes": 13773
+  },
+  {
+   "id": "c:defeat_calm_01",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/defeat_calm_01.ab147c3e.mp3",
+   "text": "And that's the ball game. The visitors take this one.",
+   "dur": 3.05,
+   "bytes": 18525
+  },
+  {
+   "id": "c:defeat_calm_02",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/defeat_calm_02.4cc7fad1.mp3",
+   "text": "It's over. A road win, and a quiet stadium.",
+   "dur": 3.41,
+   "bytes": 20685
+  },
+  {
+   "id": "c:defeat_calm_03",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/defeat_calm_03.be96ef55.mp3",
+   "text": "Final whistle, and the visitors hang on.",
+   "dur": 2.3,
+   "bytes": 14061
+  },
+  {
+   "id": "c:defeat_excited_01",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/defeat_excited_01.34617c87.mp3",
+   "text": "It's over! The visitors steal it at the end!",
+   "dur": 2.62,
+   "bytes": 15933
+  },
+  {
+   "id": "c:defeat_excited_02",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/defeat_excited_02.36dc15cb.mp3",
+   "text": "They win it on the road! Silence in this building!",
+   "dur": 3.05,
+   "bytes": 18525
+  },
+  {
+   "id": "c:defeat_excited_ot_01",
+   "cat": "commentary",
+   "cue": "DEFEAT",
+   "tier": "excited",
+   "tags": [
+    "ot"
+   ],
+   "file": "commentary/defeat_excited_ot_01.9d44d768.mp3",
+   "text": "The visitors win it in overtime!",
+   "dur": 1.87,
+   "bytes": 11469
+  },
+  {
+   "id": "c:tie_calm_01",
+   "cat": "commentary",
+   "cue": "TIE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/tie_calm_01.0ab1dcd7.mp3",
+   "text": "And it ends all square.",
+   "dur": 1.54,
+   "bytes": 9453
+  },
+  {
+   "id": "c:tie_calm_02",
+   "cat": "commentary",
+   "cue": "TIE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/tie_calm_02.3765529d.mp3",
+   "text": "A tie, nobody wins this one.",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:field_goal_unit_calm_01",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_unit_calm_01.b2e3ad4c.mp3",
+   "text": "Out comes the field goal unit.",
+   "dur": 1.75,
+   "bytes": 10749
+  },
+  {
+   "id": "c:field_goal_unit_calm_02",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_unit_calm_02.0c85853c.mp3",
+   "text": "They'll try the field goal.",
+   "dur": 1.32,
+   "bytes": 8157
+  },
+  {
+   "id": "c:field_goal_unit_calm_03",
+   "cat": "commentary",
+   "cue": "FIELD_GOAL_UNIT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/field_goal_unit_calm_03.ec2e8a2e.mp3",
+   "text": "Field goal team is on.",
+   "dur": 1.39,
+   "bytes": 8589
+  },
+  {
+   "id": "c:fourth_down_attempt_excited_01",
+   "cat": "commentary",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fourth_down_attempt_excited_01.a2080d8d.mp3",
+   "text": "Fourth down — and they're going for it!",
+   "dur": 2.14,
+   "bytes": 13053
+  },
+  {
+   "id": "c:fourth_down_attempt_excited_02",
+   "cat": "commentary",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fourth_down_attempt_excited_02.1f600efc.mp3",
+   "text": "They're staying on the field on fourth down!",
+   "dur": 2.18,
+   "bytes": 13341
+  },
+  {
+   "id": "c:fourth_down_attempt_excited_03",
+   "cat": "commentary",
+   "cue": "FOURTH_DOWN_ATTEMPT",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/fourth_down_attempt_excited_03.fbb6d28e.mp3",
+   "text": "Fourth down. No punt. Here we go!",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:third_down_calm_01",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/third_down_calm_01.4c972f1b.mp3",
+   "text": "Third down.",
+   "dur": 0.84,
+   "bytes": 5277
+  },
+  {
+   "id": "c:third_down_calm_02",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/third_down_calm_02.8c716feb.mp3",
+   "text": "Big third down coming up.",
+   "dur": 1.37,
+   "bytes": 8445
+  },
+  {
+   "id": "c:third_down_calm_03",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/third_down_calm_03.9dba3dc6.mp3",
+   "text": "Third down, and they need this one.",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:third_down_calm_04",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/third_down_calm_04.7f4a12ed.mp3",
+   "text": "Third down — a money down.",
+   "dur": 1.78,
+   "bytes": 10893
+  },
+  {
+   "id": "c:third_down_calm_goal_01",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [
+    "goal"
+   ],
+   "file": "commentary/third_down_calm_goal_01.5837bbc8.mp3",
+   "text": "Third and goal.",
+   "dur": 1.06,
+   "bytes": 6573
+  },
+  {
+   "id": "c:third_down_calm_goal_02",
+   "cat": "commentary",
+   "cue": "THIRD_DOWN",
+   "tier": "calm",
+   "tags": [
+    "goal"
+   ],
+   "file": "commentary/third_down_calm_goal_02.16c05da6.mp3",
+   "text": "Third down, at the goal line.",
+   "dur": 1.9,
+   "bytes": 11613
+  },
+  {
+   "id": "c:first_and_goal_calm_01",
+   "cat": "commentary",
+   "cue": "FIRST_AND_GOAL",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/first_and_goal_calm_01.62cc0637.mp3",
+   "text": "First and goal.",
+   "dur": 1.2,
+   "bytes": 7437
+  },
+  {
+   "id": "c:first_and_goal_calm_02",
+   "cat": "commentary",
+   "cue": "FIRST_AND_GOAL",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/first_and_goal_calm_02.4f1a3dc3.mp3",
+   "text": "First and goal, knocking on the door.",
+   "dur": 2.47,
+   "bytes": 15069
+  },
+  {
+   "id": "c:red_zone_first_calm_01",
+   "cat": "commentary",
+   "cue": "RED_ZONE_FIRST",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/red_zone_first_calm_01.843ab6b0.mp3",
+   "text": "First down, in the red zone.",
+   "dur": 1.8,
+   "bytes": 11037
+  },
+  {
+   "id": "c:red_zone_first_calm_02",
+   "cat": "commentary",
+   "cue": "RED_ZONE_FIRST",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/red_zone_first_calm_02.ba8e6957.mp3",
+   "text": "They're in the red zone now.",
+   "dur": 1.42,
+   "bytes": 8733
+  },
+  {
+   "id": "c:adj_hurry_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_hurry_calm_01.b51977d6.mp3",
+   "text": "They go hurry-up.",
+   "dur": 1.1,
+   "bytes": 6861
+  },
+  {
+   "id": "c:adj_hurry_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_hurry_calm_02.3cdf7f15.mp3",
+   "text": "No huddle now.",
+   "dur": 1.01,
+   "bytes": 6285
+  },
+  {
+   "id": "c:adj_hurry_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_HURRY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_hurry_calm_03.ecb183ef.mp3",
+   "text": "Here comes the hurry-up.",
+   "dur": 1.25,
+   "bytes": 7725
+  },
+  {
+   "id": "c:adj_clock_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_CLOCK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_clock_calm_01.2000bc56.mp3",
+   "text": "They want to run out the clock.",
+   "dur": 1.54,
+   "bytes": 9453
+  },
+  {
+   "id": "c:adj_clock_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_CLOCK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_clock_calm_02.c6a2ef9c.mp3",
+   "text": "Clock-killing time.",
+   "dur": 1.32,
+   "bytes": 8157
+  },
+  {
+   "id": "c:adj_shelve_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_SHELVE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_shelve_calm_01.4c36c09e.mp3",
+   "text": "They shelve that call — it isn't working.",
+   "dur": 2.47,
+   "bytes": 15069
+  },
+  {
+   "id": "c:adj_shelve_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_SHELVE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_shelve_calm_02.a286a4fb.mp3",
+   "text": "That play goes back in the book.",
+   "dur": 1.58,
+   "bytes": 9741
+  },
+  {
+   "id": "c:adj_shelve_form_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_shelve_form_calm_01.ed32578a.mp3",
+   "text": "They move out of that look.",
+   "dur": 1.42,
+   "bytes": 8733
+  },
+  {
+   "id": "c:adj_d_deep_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_DEEP",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_deep_calm_01.b659ebf5.mp3",
+   "text": "The safeties roll deep.",
+   "dur": 1.39,
+   "bytes": 8589
+  },
+  {
+   "id": "c:adj_d_deep_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_DEEP",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_deep_calm_02.5bc94e1e.mp3",
+   "text": "The defense backs into deep shells.",
+   "dur": 2.28,
+   "bytes": 13917
+  },
+  {
+   "id": "c:adj_d_heat_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_heat_calm_01.f08d0811.mp3",
+   "text": "The defense answers with more pressure.",
+   "dur": 2.02,
+   "bytes": 12333
+  },
+  {
+   "id": "c:adj_d_run_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_run_calm_01.055845c6.mp3",
+   "text": "Eight in the box now.",
+   "dur": 1.27,
+   "bytes": 7869
+  },
+  {
+   "id": "c:adj_d_run_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_RUN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_run_calm_02.f1505da5.mp3",
+   "text": "They stack the box to stop the run.",
+   "dur": 2.18,
+   "bytes": 13341
+  },
+  {
+   "id": "c:adj_d_press_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_press_calm_01.38d501a2.mp3",
+   "text": "They press the short passing game.",
+   "dur": 1.97,
+   "bytes": 12045
+  },
+  {
+   "id": "c:adj_d_noblitz_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_noblitz_calm_01.537adf5e.mp3",
+   "text": "The defense backs off the blitz.",
+   "dur": 1.73,
+   "bytes": 10605
+  },
+  {
+   "id": "c:adj_d_prevent_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_prevent_calm_01.cec9bcea.mp3",
+   "text": "They drop into a prevent defense.",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:adj_d_attack_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_ATTACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_attack_calm_01.7e604c0a.mp3",
+   "text": "The defense sells out for a stop.",
+   "dur": 1.87,
+   "bytes": 11469
+  },
+  {
+   "id": "c:quarter_start_calm_q2_01",
+   "cat": "commentary",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q2"
+   ],
+   "file": "commentary/quarter_start_calm_q2_01.948bc165.mp3",
+   "text": "Start of the second quarter.",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:quarter_start_calm_q3_01",
+   "cat": "commentary",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q3"
+   ],
+   "file": "commentary/quarter_start_calm_q3_01.feac1c8c.mp3",
+   "text": "Here we go, second half underway.",
+   "dur": 2.4,
+   "bytes": 14637
+  },
+  {
+   "id": "c:quarter_start_calm_q3_02",
+   "cat": "commentary",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q3"
+   ],
+   "file": "commentary/quarter_start_calm_q3_02.50bb8bfb.mp3",
+   "text": "Start of the third quarter.",
+   "dur": 1.44,
+   "bytes": 8877
+  },
+  {
+   "id": "c:quarter_start_calm_q4_01",
+   "cat": "commentary",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q4"
+   ],
+   "file": "commentary/quarter_start_calm_q4_01.fde8ab0f.mp3",
+   "text": "Fourth quarter. This is where it's decided.",
+   "dur": 2.64,
+   "bytes": 16077
+  },
+  {
+   "id": "c:quarter_start_calm_q4_02",
+   "cat": "commentary",
+   "cue": "QUARTER_START",
+   "tier": "calm",
+   "tags": [
+    "q4"
+   ],
+   "file": "commentary/quarter_start_calm_q4_02.e4872a0e.mp3",
+   "text": "Start of the fourth quarter.",
+   "dur": 1.44,
+   "bytes": 8877
+  },
+  {
+   "id": "c:overtime_huge_01",
+   "cat": "commentary",
+   "cue": "OVERTIME",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/overtime_huge_01.0bd0d5a1.mp3",
+   "text": "We're headed to overtime!",
+   "dur": 1.39,
+   "bytes": 8589
+  },
+  {
+   "id": "c:overtime_huge_02",
+   "cat": "commentary",
+   "cue": "OVERTIME",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/overtime_huge_02.ea0fa86f.mp3",
+   "text": "Overtime! Nobody wants this to end!",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:intro_live_excited_01",
+   "cat": "commentary",
+   "cue": "INTRO_LIVE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/intro_live_excited_01.d2f08f59.mp3",
+   "text": "Welcome to GameCenter. Here we go!",
+   "dur": 2.28,
+   "bytes": 13917
+  },
+  {
+   "id": "c:intro_live_excited_02",
+   "cat": "commentary",
+   "cue": "INTRO_LIVE",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/intro_live_excited_02.1a44594d.mp3",
+   "text": "Kickoff is coming up, live on GameCenter!",
+   "dur": 2.62,
+   "bytes": 15933
+  },
+  {
+   "id": "c:intro_join_calm_01",
+   "cat": "commentary",
+   "cue": "INTRO_JOIN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/intro_join_calm_01.f40c0a8c.mp3",
+   "text": "We're live on GameCenter.",
+   "dur": 1.46,
+   "bytes": 9021
+  },
+  {
+   "id": "c:intro_join_calm_02",
+   "cat": "commentary",
+   "cue": "INTRO_JOIN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/intro_join_calm_02.1124c8bf.mp3",
+   "text": "Joining the action, live.",
+   "dur": 1.49,
+   "bytes": 9165
+  },
+  {
+   "id": "c:intro_replay_calm_01",
+   "cat": "commentary",
+   "cue": "INTRO_REPLAY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/intro_replay_calm_01.bf775861.mp3",
+   "text": "A replay from the engine.",
+   "dur": 1.37,
+   "bytes": 8445
+  },
+  {
+   "id": "c:intro_replay_calm_02",
+   "cat": "commentary",
+   "cue": "INTRO_REPLAY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/intro_replay_calm_02.27634dd6.mp3",
+   "text": "Here's the replay.",
+   "dur": 1.03,
+   "bytes": 6429
+  },
+  {
+   "id": "c:test_excited_01",
+   "cat": "commentary",
+   "cue": "TEST",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/test_excited_01.8d9cd7ea.mp3",
+   "text": "Touchdown! This is how GameCenter sounds.",
+   "dur": 2.64,
+   "bytes": 16077
+  }
+ ]
 }
