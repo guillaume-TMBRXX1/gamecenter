@@ -1912,7 +1912,11 @@ const OFF_FORM={
   /* step 3 (03/10/2026): franchise playbooks — trips (3 receivers to one side), ace (2 TE), jumbo (2 TE + fullback) */
   TRIPS:     {TE:[1.3,10],  QB:[5,0],   RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,22],   WR3:[1.3,16]},
   ACE:       {TE:[1.0,5.6], QB:[1.1,0], RB:[7,0],      WR1:[1,-20], WR2:[1,21],   WR3:[1.0,-5.6]},
-  JUMBO:     {TE:[1.0,5.6], QB:[1.1,0], RB:[7.4,0],    WR1:[1.0,-5.6], WR2:[1.6,8], WR3:[4.4,0]}
+  JUMBO:     {TE:[1.0,5.6], QB:[1.1,0], RB:[7.4,0],    WR1:[1.0,-5.6], WR2:[1.6,8], WR3:[4.4,0]},
+  /* V20 (playbook Roman 2014): bunch (3 receivers stacked), heavy (tackle-over: WR1 slot = 6th OL, WR3 = fullback), pony (2 halfbacks) */
+  BUNCH:     {TE:[1.2,8.5], QB:[5,0],   RB:[5.2,-1.9], WR1:[1,-20], WR2:[2.6,10.5], WR3:[2.6,6.8]},
+  HEAVY:     {TE:[1.0,-5.6],QB:[1.1,0], RB:[7.4,0],    WR1:[0.9,5.7], WR2:[1,20],  WR3:[4.6,0]},
+  PONY:      {TE:[1.0,5.6], QB:[5,0],   RB:[5.2,-2.1], WR1:[1,-20], WR2:[1,21],   WR3:[5.2,2.1]}
 };
 /* dl: down linemen (+ edge rushers), lb: linebackers, nb: nickel/dime backs; CB are 6 and 7, safeties 9 and 10 */
 const DEF_FORM={
@@ -1940,16 +1944,23 @@ const ROUTE_LIB={
   DRAG:{depth:4.5,break_depth:4,break_angle:90,break_run:12,direction:'HORIZONTAL'},
   POST:{depth:20,break_depth:12.5,break_angle:37.5,break_run:10,direction:'INSIDE'},
   CORNER:{depth:20,break_depth:12.5,break_angle:37.5,break_run:10,direction:'OUTSIDE'},
-  GO:{depth:32,break_depth:null,break_angle:0,break_run:null,direction:'VERTICAL'}
+  GO:{depth:32,break_depth:null,break_angle:0,break_run:null,direction:'VERTICAL'},
+  STICK:{depth:6,break_depth:5.5,break_angle:45,break_run:1.5,direction:'INSIDE'},
+  CURL:{depth:12,break_depth:11,break_angle:30,break_run:2,direction:'INSIDE'},
+  DIG:{depth:16,break_depth:15,break_angle:90,break_run:10,direction:'INSIDE'},
+  FLAG:{depth:14,break_depth:9,break_angle:45,break_run:8,direction:'OUTSIDE'},
+  SEAM:{depth:14,break_depth:null,break_angle:0,break_run:null,direction:'VERTICAL'}
 };
-const CONCEPT_ROUTE={QUICK_SLANT:'QUICK_SLANT',SHORT_OUT:'OUT',CROSS:'CROSS',FOUR_VERTS:'GO',DEEP_POST:'POST',PLAY_ACTION:'POST',CORNER:'CORNER',IN:'IN',DRAG:'DRAG'};
+const CONCEPT_ROUTE={QUICK_SLANT:'QUICK_SLANT',SHORT_OUT:'OUT',CROSS:'CROSS',FOUR_VERTS:'GO',DEEP_POST:'POST',PLAY_ACTION:'POST',CORNER:'CORNER',IN:'IN',DRAG:'DRAG',
+  STICK:'STICK',CURL:'CURL',CHAMP:'CORNER',DAGGER:'DIG',SAIL:'FLAG',MESH:'DRAG',BOOT:'FLAG',POP:'SEAM'};
 /* Supporting routes of the other eligibles, as [forward, lateral toward the middle] points */
 const RT={
   GO:[[0,0],[1.5,-0.6],[34,-1.2]], SEAM:[[0,0],[30,1.5]], POST:[[0,0],[12,0],[24,8]], CORNER:[[0,0],[12,0],[21,-8]],
   DIG:[[0,0],[11,0],[11.5,11]], OUT:[[0,0],[8,0],[8.3,-9]], SLANT:[[0,0],[2.5,0],[9,7]], CURL:[[0,0],[11,0],[9.5,1.5]],
   FLAT:[[0,0],[1.5,-3],[3.5,-10]], DRAG:[[0,0],[4.5,1],[5,17]], CROSS:[[0,0],[5,0],[10,16]], CHECK:[[0,0],[-0.5,-2.5],[3.5,-5.5]],
   BLOCK:[[0,0],[-0.8,0.6],[-1,0.8]], STALK:[[0,0],[3.5,0.3],[4.5,0.6]], SWING:[[0,0],[-1.2,-3.5],[-0.5,-8],[3,-11]],
-  BUBBLE:[[0,0],[-1,-1.5],[0.5,-4],[3,-5]], FAKE:[[0,0],[0.3,2.2],[1.8,4.5]]
+  BUBBLE:[[0,0],[-1,-1.5],[0.5,-4],[3,-5]], FAKE:[[0,0],[0.3,2.2],[1.8,4.5]],
+  STICK:[[0,0],[6,0],[5.6,1.6]], HITCH:[[0,0],[5,0],[4.5,0.4]], FLAG:[[0,0],[9,0],[15,-6]]
 };
 const PASS_ASSIGN={
   FOUR_VERTS:{8:'GO',9:'GO',10:'SEAM',5:'SEAM',7:'CHECK'},
@@ -1963,9 +1974,18 @@ const PASS_ASSIGN={
   SCREEN:{8:'STALK',9:'STALK',10:'STALK',5:'BLOCK',7:'SWING'},
   PLAY_ACTION:{8:'POST',9:'GO',10:'DIG',5:'FLAT',7:'FAKE'},
   CURL:{8:'CURL',9:'CURL',10:'FLAT',5:'CURL',7:'CHECK'},
-  COMEBACK:{8:'CURL',9:'CURL',10:'FLAT',5:'CURL',7:'CHECK'}
+  COMEBACK:{8:'CURL',9:'CURL',10:'FLAT',5:'CURL',7:'CHECK'},
+  /* V20 — playbook Roman 2014 */
+  STICK:{8:'GO',9:'HITCH',10:'STICK',5:'STICK',7:'FLAT'},
+  CHAMP:{8:'HITCH',9:'HITCH',10:'CORNER',5:'DIG',7:'CHECK'},
+  DAGGER:{8:'DIG',9:'GO',10:'SEAM',5:'DRAG',7:'CHECK'},
+  SAIL:{8:'GO',9:'FLAG',10:'FLAT',5:'DRAG',7:'CHECK'},
+  MESH:{8:'CORNER',9:'DRAG',10:'DRAG',5:'SEAM',7:'FLAT'},
+  BOOT:{8:'GO',9:'FLAG',10:'DRAG',5:'FLAT',7:'FAKE'},
+  POP:{8:'GO',9:'GO',10:'BLOCK',5:'SEAM',7:'FAKE'}
 };
-const TARGET_DEFAULT={FOUR_VERTS:'GO',DEEP_POST:'POST',CORNER:'CORNER',CROSS:'CROSS',IN:'DIG',DRAG:'DRAG',SHORT_OUT:'OUT',QUICK_SLANT:'SLANT',PLAY_ACTION:'POST',CURL:'CURL',COMEBACK:'CURL'};
+const TARGET_DEFAULT={FOUR_VERTS:'GO',DEEP_POST:'POST',CORNER:'CORNER',CROSS:'CROSS',IN:'DIG',DRAG:'DRAG',SHORT_OUT:'OUT',QUICK_SLANT:'SLANT',PLAY_ACTION:'POST',CURL:'CURL',COMEBACK:'CURL',
+  STICK:'STICK',CHAMP:'CORNER',DAGGER:'DIG',SAIL:'FLAG',MESH:'DRAG',BOOT:'FLAG',POP:'SEAM'};
 const SPEED={ol:3.2,dl:4.2,lb:6.2,db:7.4,wr:7.6,rb:7.2,qb:5};
 
 /* The call drawn on the field: from the feed (replay / engine) or a demo call (live demo boards) */
@@ -2158,8 +2178,10 @@ function planScrimmage(g,call,imp){
     const concept=call.concept||'CROSS', asg=PASS_ASSIGN[concept]||PASS_ASSIGN.CROSS;
     const tIdx=imp.target!=null?imp.target:(concept==='SCREEN'?7:pick([8,9,10,5],[.4,.25,.2,.15]));
     const underCenter=(O[6].x-L)*-d<2;
-    const pa=concept==='PLAY_ACTION';
-    const qb=O[6], drop={x:L-d*(concept==='QUICK_SLANT'||concept==='SCREEN'?6:7.5), y:by+(pa?(call.flip?-1:1)*-1.2:0)};
+    const pa=concept==='PLAY_ACTION'||concept==='BOOT'||concept==='POP', boot=concept==='BOOT';
+    /* BOOT / NAKED: run fake one way, the QB rolls out toward the targeted side */
+    const qb=O[6], drop=boot ? {x:L-d*5.5, y:clamp(by+((O[tIdx]||O[8]).y>by?1:-1)*6.5,4,49.3)}
+                            : {x:L-d*(concept==='QUICK_SLANT'||concept==='SCREEN'||concept==='STICK'?6:7.5), y:by+(pa?(call.flip?-1:1)*-1.2:0)};
     off[6]= pa ? [[0,qb.x,qb.y],[0.14,L-d*3.2,by+(O[7].y>by?0.9:-0.9)],[0.32,drop.x,drop.y],[1,drop.x+d*0.4,drop.y]]
                : [[0,qb.x,qb.y],[underCenter?0.28:0.18,drop.x,drop.y],[1,drop.x+d*0.5,drop.y]];
     const routes={}, asgName={};
@@ -2288,14 +2310,14 @@ function planScrimmage(g,call,imp){
   /* ---------------- runs ---------------- */
   const concept=call.concept||'INSIDE_RUN', te=O[5].y>=by?1:-1;
   const side = imp.side===1||imp.side===-1 ? imp.side : concept==='POWER' ? te : concept==='COUNTER' ? te : (RNG()<.5?-1:1);
-  const holeY = by+side*(concept==='INSIDE_RUN'||concept==='DRAW'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):rand(3,4.6));
+  const holeY = by+side*(concept==='INSIDE_RUN'||concept==='DRAW'||concept==='TRAP'||concept==='READ_OPTION'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):concept==='JET_SWEEP'?rand(9,13):rand(3,4.6));
   const qb=O[6], rb=O[7], shot=(qb.x-L)*-d>2.5;
   const mesh= concept==='DRAW' ? {x:L-d*6.2,y:by+side*0.6} : shot ? {x:qb.x+d*0.3,y:by+(rb.y>by?0.9:-0.9)} : {x:L-d*4,y:by+side*0.8};
   const hU = concept==='DRAW'?0.36:concept==='COUNTER'?0.26:0.2;
   /* offensive line: drive block toward the play side; POWER pulls the back-side guard, COUNTER guard + tackle */
   for(let i=0;i<5;i++){ const s=O[i]; off[i]= concept==='DRAW' ? [[0,s.x,s.y],[0.25,s.x-d*1.2,s.y],[0.45,s.x-d*0.4,s.y],[1,s.x+d*1.4,s.y+side*0.6]]
                                                              : [[0,s.x,s.y],[0.3,s.x+d*1.4,s.y+side*0.5],[1,s.x+d*2.4,s.y+side*0.9]]; }
-  const pullers = concept==='POWER' ? [side>0?1:2] : concept==='COUNTER' ? [side>0?1:2, side>0?3:4] : [];
+  const pullers = concept==='POWER'||concept==='TRAP' ? [side>0?1:2] : concept==='COUNTER' ? [side>0?1:2, side>0?3:4] : [];
   for(const i of pullers){ const s=O[i]; off[i]=[[0,s.x,s.y],[0.14,s.x-d*1.2,s.y],[0.4,L-d*1.4,holeY+side*0.6],[0.6,L+d*1.2,holeY+side*1.2],[1,L+d*2.4,holeY+side*1.6]]; }
   off[6]= concept==='DRAW' ? [[0,qb.x,qb.y],[0.3,mesh.x,mesh.y-side*0.6],[0.45,mesh.x-d*0.4,mesh.y-side*2.4],[1,mesh.x-d*0.8,mesh.y-side*3.5]]
                            : [[0,qb.x,qb.y],[hU-0.02,mesh.x-d*0.3,mesh.y-side*0.6],[0.5,mesh.x-d*1.8,mesh.y-side*3.4],[1,mesh.x-d*2,mesh.y-side*4]];
@@ -2305,7 +2327,7 @@ function planScrimmage(g,call,imp){
     ? [[0,rb.x,rb.y],[0.1,rb.x-d*0.3,rb.y-side*1.4],[hU,mesh.x,mesh.y],[0.42,holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]]
     : [[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[Math.min(0.46,hU+0.2),holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
   off[7]=rbPath;
-  if(call.formation==='I_FORM'||call.formation==='JUMBO'){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
+  if(call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY'){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
   for(const i of [8,9,10]){ if(off[i]) continue; const s=O[i], cb=i===8?D[6]:i===9?D[7]:(D[8]||D[6]); off[i]=[[0,s.x,s.y],[0.45,lerp(s.x,cb.x,.7),lerp(s.y,cb.y,.7)],[1,lerp(s.x,cb.x,.85)+d*1,lerp(s.y,cb.y,.85)]]; }
   { const s=O[5]; off[5]=[[0,s.x,s.y],[0.3,s.x+d*1.2,s.y-side*0.4],[1,s.x+d*2.2,s.y-side*0.6]]; }
   /* defense: front holds the line, linebackers fill the hole, safeties come down, corners set the edge */
@@ -2318,6 +2340,15 @@ function planScrimmage(g,call,imp){
     else def[i]=[[0,s.x,s.y],[0.18,s.x,s.y],[0.55,lerp(s.x,hole.x+d*1,0.7),lerp(s.y,holeY,0.7)],[1,lerp(s.x,hole.x+d*1,0.8),lerp(s.y,holeY,0.8)]];
   }
   P.carrier=[[0.08,hU,'off',6],[hU,1,'off',7]]; P.pStart=hU+0.12; P.pEnd=0.9;
+  if(imp.target===6){   /* read option kept / QB power: the QB carries, the back carries out his fake */
+    off[6]=[[0,qb.x,qb.y],[hU,mesh.x-d*0.2,mesh.y],[Math.min(0.46,hU+0.2),holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
+    off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[0.5,L+d*0.8,by-side*2.5],[1,L+d*1.5,by-side*3.5]];
+    P.carrier=[[0.08,1,'off',6]];
+  } else if(imp.target===8||imp.target===9||imp.target===10){   /* jet / Z sweep: the receiver takes it in motion */
+    const w=O[imp.target]; off[imp.target]=[[0,w.x,w.y],[hU,mesh.x,mesh.y+side*0.4],[Math.min(0.5,hU+0.24),L-d*0.6,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
+    off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y-side],[1,L+d*1.5,by-side*3]];
+    P.carrier=[[0.08,hU,'off',6],[hU,1,'off',imp.target]];
+  }
   P.wDef=[.35,.35,.35,.35,.8,.8,.6,.6,.8,.75,.75]; P.wOff=new Array(11).fill(0);
   P.spot={x:Fx,y:Fy}; P.gain=total; P.hole=holeY;
   return P;
@@ -2628,7 +2659,7 @@ function makeGame(id,home,away,o){
 const RP_TYPES=['run','pass','punt','field_goal','kickoff'];
 const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff'];
 const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
-const RP_SLOT={WR1:8,WR2:9,WR3:10,TE1:5,TE2:5,RB1:7,RB2:7,FB1:7};
+const RP_SLOT={WR1:8,WR2:9,WR3:10,TE1:5,TE2:5,RB1:7,RB2:7,FB1:7,QB1:6};
 
 /* First problem found in a feed, or null when it can be replayed */
 function validateFeed(f){
@@ -3513,6 +3544,8 @@ function slotMap(g){
   if(call.formation==='I_FORM'||call.formation==='JUMBO') roles.off[10]='Fullback';
   if(call.formation==='JUMBO'){ roles.off[8]='Tight end'; roles.off[9]='Wing'; }
   if(call.formation==='ACE') roles.off[10]='Tight end';
+  if(call.formation==='HEAVY'){ roles.off[8]='Extra tackle'; roles.off[10]='Fullback'; }
+  if(call.formation==='PONY') roles.off[10]='Halfback (2)';
   if(call.formation==='EMPTY') roles.off[7]='Slot (running back)';
   if(g.special==='punt') roles.off[6]='Punter';
   if(g.special==='field_goal'){ roles.off[6]='Holder'; roles.off[7]='Kicker'; }
