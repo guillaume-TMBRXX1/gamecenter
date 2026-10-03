@@ -90,6 +90,15 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   semaine (retour − mise des paris réglés ; un pari compte quand il est réglé). Toutes les semaines du serveur comptent ;
   pour repartir d'une date : variable Railway `GC_SEASON_START=2026-10-05` (par exemple).
 
+### 8. Paris plus riches (depuis le 03/10/2026)
+
+- **Combinés** : 2 à 6 sélections, une par match, pas de futures, une seule mise (bulletin → *Combo*). Perdu dès qu'une
+  sélection perd ; gagné au produit des cotes des sélections gagnées (une sélection remboursée compte 1).
+- **Cash-out** (*Open bets* ou *My bets*, deux clics) : valeur juste − 5 % = mise × Π (cote prise ÷ cote du moment) × 0,95
+  (sélection déjà gagnée : sa cote). Indisponible si la ligne d'un spread / total a bougé, ou sur un future pendant les matchs.
+  Le serveur recalcule ; si la valeur a bougé, il renvoie la nouvelle et la page redemande confirmation. `POST /api/cashout`.
+- **Historique** : *My bets* → onglets de semaine (semaines où le joueur a parié). `GET /api/history?token=…[&week=…]`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

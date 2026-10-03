@@ -796,6 +796,24 @@
   .bt-st{font:700 italic 11px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
   .bt-st.won{color:var(--cyan)} .bt-st.lost{color:var(--pink)} .bt-st.open{color:var(--ink)}
   .bt-lost .bt-ret{color:var(--ink-3)} .bt-won .bt-ret{color:var(--cyan)}
+  /* ---------- Richer bets (roadmap step 2): combos, cash-out, past weeks ---------- */
+  .bt-st.cashed{color:var(--ink)} .bt-cashed .bt-ret{color:var(--ink)}
+  .slip-mode{display:flex;width:100%;margin-bottom:10px} .slip-mode button{flex:1;justify-content:center}
+  .pk.leg{padding-bottom:10px} .pk.leg .pk-top{align-items:center}
+  .pk.combo{border-style:dashed}
+  .combo-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .combo-h b{font:700 15px var(--f-mono)}
+  .legs{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink-3)}
+  .legs li{display:flex;gap:6px;align-items:baseline;min-width:0}
+  .legs li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .legs li i{font-style:normal;font:700 10px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;width:34px}
+  .legs .lg-won i{color:var(--cyan)} .legs .lg-lost i{color:var(--pink)} .legs .lg-lost span{text-decoration:line-through}
+  .co-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+  .co-btn{height:34px;padding:0 12px;font-size:12px}
+  .co-btn.armed{border-color:var(--cyan);color:var(--cyan)}
+  .co-na{font-size:11px;color:var(--ink-3)}
+  .bt-acts{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+  .wk-seg{flex-wrap:wrap}
   .bt-go{margin-top:12px}
   .bt-rules ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-2);max-width:72ch}
   .set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
@@ -1415,6 +1433,7 @@
   .wp-val{font:900 34px/1 var(--f-display)}
   .kpi b,.a-rt b,.pc-top b{font:900 28px/1.05 var(--f-display)}
   .bt-k b{font:900 40px/1 var(--f-display)}
+  @media (max-width:560px){ .bt-k b{font-size:clamp(24px,7.4vw,40px)} }   /* $1,000.00+ fits a half-width card on a phone */
   .bug .sc{font:900 24px/1 var(--f-display)}
   @container (min-width:560px){ .bug .sc{font-size:32px} }
   .tk .sc{font:900 16px/1 var(--f-display)}
@@ -2845,7 +2864,7 @@ function marketInfo(g,mk,side){
   return {price,line,title,sub:sub+' · '+market,dec:price==null?NaN:decOf(price),locked,why};
 }
 /*@ui-end*/
-const slip={picks:[],open:[{key:'x',title:'Atlas Sevens to win',sub:'NGT @ ATL · Moneyline',price:-150,stake:20}],tab:'slip'};
+const slip={picks:[],open:[{key:'x',title:'Atlas Sevens to win',sub:'NGT @ ATL · Moneyline',price:-150,stake:20}],tab:'slip',mode:'single',comboStake:0};
 let balance=4280.50;
 const slipHas=k=>{ const n=SEASON?normKey(k):k; return slip.picks.some(p=>p.key===n); };
 
@@ -2854,7 +2873,7 @@ const STORE_KEY='gc-slip-v1';
 let lastStake=10;
 function saveSlip(){
   try{
-    if(slip.picks.length) localStorage.setItem(STORE_KEY, JSON.stringify({picks:slip.picks,lastStake,at:Date.now()}));
+    if(slip.picks.length) localStorage.setItem(STORE_KEY, JSON.stringify({picks:slip.picks,lastStake,mode:slip.mode,comboStake:slip.comboStake,at:Date.now()}));
     else localStorage.removeItem(STORE_KEY);
   }catch(e){}
 }
@@ -3098,6 +3117,8 @@ function updateTotals(){
 }
 slipList.addEventListener('input',e=>{
   const inp=e.target.closest('[data-stake]'); if(!inp) return;
+  if(inp.dataset.stake==='combo'){ const v=parseFloat(inp.value.replace(',','.')); slip.comboStake=isFinite(v)&&v>0?Math.round(v*100)/100:0; if(slip.comboStake>0) lastStake=slip.comboStake;
+    const r=slipList.querySelector('[data-ret="combo"]'); if(r&&!comboCheck()) r.textContent=money(slip.comboStake*comboDec()); updateTotals(); saveSlip(); return; }
   const p=slip.picks.find(x=>x.key===inp.dataset.stake); if(!p) return;
   const v=parseFloat(inp.value.replace(',','.')); p.stake = isFinite(v)&&v>0 ? Math.round(v*100)/100 : 0;
   if(p.stake>0) lastStake=p.stake;
@@ -3930,7 +3951,8 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-drawer-close]') || t===scrim){ closeDrawer(); return; }
   const tab=t.closest('.slip-tabs [data-tab]'); if(tab){ slip.tab=tab.dataset.tab; renderSlip(); return; }
   const rm=t.closest('[data-rm]'); if(rm){ togglePick(rm.dataset.rm); return; }
-  const q=t.closest('[data-q]'); if(q){ lastStake=+q.dataset.q; slip.picks.forEach(p=>p.stake=lastStake); renderSlip(); saveSlip(); return; }
+  const q=t.closest('[data-q]'); if(q){ lastStake=+q.dataset.q; slip.picks.forEach(p=>p.stake=lastStake); slip.comboStake=lastStake; renderSlip(); saveSlip(); return; }
+  const sm=t.closest('[data-slipmode]'); if(sm){ slip.mode=sm.dataset.slipmode; if(!(slip.comboStake>0)) slip.comboStake=SEASON?SET.stake:lastStake; renderSlip(); saveSlip(); return; }
   if(t.closest('[data-discard]')){ slip.picks=[]; slip.restored=false; renderSlip(); syncPressed(); saveSlip(); return; }
   if(t.closest('#place')){
     if(SEASON){ seasonPlace(); return; }
@@ -4385,7 +4407,7 @@ function lockText(w){ return {opens:openText(),final:'Game over · market closed
 /* ---------- the wallet: a ledger of bets; balance and results are worked out at time t ---------- */
 let WAL={bets:[]}, WAL_KEY='', SEEN=new Set(), STORE_OK=true;
 function walletKey(){ return 'gc-wallet-v1:'+SW.week.start+':'+(CLOCK.demo?'preview':'real'); }
-function validBet(b){ return b&&typeof b.key==='string'&&isFinite(b.price)&&isFinite(b.stake)&&b.stake>=MIN_STAKE&&isFinite(b.pt)&&(b.key.startsWith('fut:')?!!FUT_M[b.key.split(':')[1]]:!!SCHED_BY[b.key.split(':')[0]]); }
+function validBet(b){ return b&&typeof b.key==='string'&&isFinite(b.price)&&isFinite(b.stake)&&b.stake>=MIN_STAKE&&isFinite(b.pt)&&(b.key==='combo'?Array.isArray(b.legs)&&b.legs.length>=2&&b.legs.every(l=>l&&typeof l.key==='string'&&!!SCHED_BY[l.key.split(':')[0]]):b.key.startsWith('fut:')?!!FUT_M[b.key.split(':')[1]]:!!SCHED_BY[b.key.split(':')[0]]); }
 function loadWallet(){
   if(SERVER){ WAL_KEY='server'; WAL={bets:[]}; return; }
   WAL_KEY=walletKey(); const d=lsGet(WAL_KEY);
@@ -4394,23 +4416,58 @@ function loadWallet(){
 }
 function saveWallet(){ if(SERVER) return; STORE_OK=lsSet(WAL_KEY,{v:1,week:SW.week.start,bets:WAL.bets}); }
 function markSeen(t){ SEEN=new Set(WAL.bets.filter(b=>(SERVER||b.pt<=t)&&settle(b,t).st!=='open').map(b=>b.id)); }
-function settle(b,t){
+function legDec(l){ return l.dec!=null?l.dec:decOf(l.price); }
+function settleLeg(key,line,t){
   let res=null, at=0;
-  if(b.key.startsWith('fut:')){
-    const [,m,a]=b.key.split(':');
+  if(key.startsWith('fut:')){
+    const [,m,a]=key.split(':');
     if(m==='regular_season'){ at=Math.max(...SCHED.filter(g=>g.phase==='regular').map(g=>g.end)); if(t>=at) res=SW.standings[0].team===a?'won':'lost'; }
     else if(m==='reach_final'){ at=Math.max(...SCHED.filter(g=>g.phase==='semifinal').map(g=>g.end)); const fin=SCHED.find(g=>g.phase==='ai_bowl'); if(t>=at) res=(fin.home===a||fin.away===a)?'won':'lost'; }
     else { const fin=SCHED.find(g=>g.phase==='ai_bowl'); at=fin.end; if(t>=at) res=SW.champion===a?'won':'lost'; }
-  } else {
-    const [gid,mk,side]=b.key.split(':'), s=SCHED_BY[gid]; at=s.end;
-    if(t>=at){ const H=s.result.home, A=s.result.away;
-      if(mk==='ml') res= H===A?'push':((H>A)===(side==='home')?'won':'lost');
-      else if(mk==='sp'){ const m=(side==='home'?H-A:A-H)+b.line; res=m>0?'won':m<0?'lost':'push'; }
-      else { const d=H+A-b.line; res=d===0?'push':((d>0)===(side==='over')?'won':'lost'); } }
+    return {res,at};
   }
-  if(!res) return {st:'open',sat:0,ret:0};
-  return {st:res,sat:Math.max(at,b.pt),ret:res==='won'?r2(b.stake*decOf(b.price)):res==='push'?b.stake:0};
+  const [gid,mk,side]=key.split(':'), s=SCHED_BY[gid];
+  if(!s) return {res:'push',at:0};          /* game no longer on the schedule (week re-made): stake returned, as on the server */
+  at=s.end;
+  if(t>=at){ const H=s.result.home, A=s.result.away;
+    if(mk==='ml') res= H===A?'push':((H>A)===(side==='home')?'won':'lost');
+    else if(mk==='sp'){ const m=(side==='home'?H-A:A-H)+line; res=m>0?'won':m<0?'lost':'push'; }
+    else { const d=H+A-line; res=d===0?'push':((d>0)===(side==='over')?'won':'lost'); } }
+  return {res,at};
 }
+/* A single, or a combo (roadmap step 2): lost as soon as one leg loses; won when every leg is settled, at the
+   product of the winning legs (a pushed leg counts 1); all pushed = stake back. A cashed-out bet returns its cash-out. */
+function settle(b,t){
+  if(b.cash&&t>=b.cash.at) return {st:'cashed',sat:b.cash.at,ret:b.cash.amt};
+  if(b.legs){
+    let prod=1, pend=false, allPush=true, last=0;
+    for(const l of b.legs){ const r=settleLeg(l.key,l.line,t);
+      if(r.res==='lost') return {st:'lost',sat:Math.max(r.at,b.pt),ret:0};
+      if(r.res==null){ pend=true; continue; }
+      last=Math.max(last,r.at); if(r.res==='won'){ prod*=legDec(l); allPush=false; } }
+    if(pend) return {st:'open',sat:0,ret:0};
+    return {st:allPush?'push':'won',sat:Math.max(last,b.pt),ret:allPush?b.stake:r2(b.stake*prod)};
+  }
+  const r=settleLeg(b.key,b.line,t);
+  if(!r.res) return {st:'open',sat:0,ret:0};
+  return {st:r.res,sat:Math.max(r.at,b.pt),ret:r.res==='won'?r2(b.stake*legDec(b)):r.res==='push'?b.stake:0};
+}
+/* Cash-out: fair value − 5 %. Each open leg is worth (price taken ÷ price now); spread and total need the same line. */
+const CASH_FEE=0.05;
+function cashValue(b,t){
+  if(settle(b,t).st!=='open') return {amt:null,why:'settled'};
+  if(!placeable(t)) return {amt:null,why:'closed'};
+  let f=1;
+  for(const l of (b.legs||[b])){ const r=settleLeg(l.key,l.line,t);
+    if(r.res==='won'){ f*=legDec(l); continue; } if(r.res==='push') continue;
+    const q=quote(l.key,t); if(!q) return {amt:null,why:'closed'};
+    if(q.locked) return {amt:null,why:q.why};
+    if(q.line!==l.line) return {amt:null,why:'line'};
+    f*=legDec(l)/decOf(q.price); }
+  const amt=r2(b.stake*f*(1-CASH_FEE));
+  return amt>=0.01?{amt,why:null}:{amt:null,why:'zero'};
+}
+function cashWhy(w){ return {line:'Line has moved',live:'Paused while games are live',settled:'Settled',closed:'Market closed',final:'Game over',seeds:'Not open yet',opens:'Not open yet'}[w]||'Not available now'; }
 function ledger(t){
   const rows=WAL.bets.filter(b=>SERVER||b.pt<=t).map(b=>Object.assign({},b,settle(b,t))).sort((a,b)=>b.pt-a.pt);
   let staked=0, back=0, won=0, lost=0, open=0, atRisk=0; const day=[0,0,0,0,0,0,0];
@@ -4456,37 +4513,92 @@ function withFocus(fn){
   if(id){ const n=document.getElementById(id); if(n){ n.focus(); try{ n.setSelectionRange(s,e); }catch(_){} } }
 }
 function betContext(r,t){
+  if(r.st==='cashed'&&r.cash) return `Cashed out ${dStr(r.cash.at)} · ${tStr(r.cash.at)}`;
   if(r.key.startsWith('fut:')){ const m=r.key.split(':')[1];
     if(r.st&&r.st!=='open') return m==='regular_season'?`Regular season won by ${TEAMS[SW.standings[0].team].name}`:m==='reach_final'?'AI Bowl: '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').away].abbr+' @ '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').home].abbr:`AI Bowl won by ${TEAMS[SW.champion].name}`;
     return m==='regular_season'?'Settles after the last regular-season slot (Friday)':m==='reach_final'?'Settles after the semi-finals (Saturday)':'Settles after the AI Bowl (Sunday)'; }
-  const s=SCHED_BY[r.key.split(':')[0]], st=gStatus(s,t), sc=scoreAt(s,t), A=TEAMS[s.away].abbr, H=TEAMS[s.home].abbr;
+  if(r.legs){ const rs=r.legs.map(l=>settleLeg(l.key,l.line,t).res), w=rs.filter(x=>x==='won').length, open=rs.filter(x=>x==null).length;
+    return `${r.legs.length} legs · ${w} won${rs.includes('lost')?' · 1 lost':''}${open?` · ${open} to play`:''}`; }
+  const s=SCHED_BY[r.key.split(':')[0]]; if(!s) return 'Game no longer on the schedule · stake returned';
+  const st=gStatus(s,t), sc=scoreAt(s,t), A=TEAMS[s.away].abbr, H=TEAMS[s.home].abbr;
   if(st==='live') return `Live · ${A} ${sc.away}${MINUS}${sc.home} ${H}`;
   if(st==='final') return `Final${s.result.overtime?' (OT)':''} · ${A} ${sc.away}${MINUS}${sc.home} ${H}`;
   return `Kickoff ${dStr(s.ko)} · ${tStr(s.ko)}`;
 }
-const ST_LAB={open:'Open',won:'Won',lost:'Lost',push:'Push'};
+const ST_LAB={open:'Open',won:'Won',lost:'Lost',push:'Push',cashed:'Cashed out'};
+/* ---------- combos (roadmap step 2): 2 to 6 picks, one per game, no futures, one stake ---------- */
+const COMBO_MIN=2, COMBO_MAX=6;
+function comboOn(){ return slip.mode==='combo'&&slip.picks.length>=COMBO_MIN; }
+function comboCheck(){
+  const ps=slip.picks; if(ps.length<COMBO_MIN) return 'Add at least 2 picks for a combo'; if(ps.length>COMBO_MAX) return 'A combo takes 6 picks at most';
+  if(ps.some(p=>p.key.startsWith('fut:'))) return "Futures can't go in a combo · remove them or place singles";
+  const g=ps.map(p=>p.key.split(':')[0]); if(new Set(g).size!==g.length) return 'One pick per game in a combo';
+  return ''; }
+function comboDec(){ return slip.picks.reduce((a,p)=>a*decOf(p.pending?p.pending.price:p.price),1); }
+function legsHTML(r,t,past){
+  if(!r.legs) return '';
+  return `<ul class="legs">${r.legs.map(l=>{ const x=past?null:settleLeg(l.key,l.line,t).res;
+    return `<li class="lg-${x||'open'}"><i>${x==='won'?'Won':x==='lost'?'Lost':x==='push'?'Push':fmtO(l.price)}</i><span>${esc(l.title)}</span></li>`; }).join('')}</ul>`; }
+let CO={id:null,amt:0,until:0,busy:false};
+function cashHTML(r,t){
+  if(r.st!=='open') return '';
+  const v=cashValue(r,t); if(v.amt==null) return `<span class="co-na">Cash out · ${esc(cashWhy(v.why))}</span>`;
+  const armed=CO.id===r.id&&Date.now()<CO.until;
+  return `<button type="button" class="chip-btn co-btn${armed?' armed':''}" data-co="${r.id}" data-amt="${v.amt}">${armed?`Confirm · ${money(CO.amt)}`:`Cash out ${money(v.amt)}`}</button>`; }
+function cashSig(rows,t){ return rows.filter(r=>r.st==='open').map(r=>{ const v=cashValue(r,t); return r.id+'='+(v.amt==null?v.why:v.amt); }).join(',')+'|'+(CO.id&&Date.now()<CO.until?CO.id+CO.amt:''); }
+function rerenderBets(){ BET_SIG=''; walletRender(nowMs()); renderSlip(); renderView(true); }
+async function cashOut(id){
+  if(CO.busy) return;
+  const b=WAL.bets.find(x=>x.id===id); if(!b) return;
+  const t=nowMs(), v=cashValue(b,t);
+  if(v.amt==null){ CO.id=null; toastErr(`Cash out is not available right now: ${cashWhy(v.why).toLowerCase()}.`); rerenderBets(); return; }
+  const armed=CO.id===id&&Date.now()<CO.until;
+  if(!armed||Math.abs(v.amt-CO.amt)>Math.max(0.02,0.002*v.amt)){
+    if(armed) toastErr(`The cash-out value moved to ${money(v.amt)}. Tap confirm to take it.`);
+    CO={id,amt:v.amt,until:Date.now()+6000,busy:false}; rerenderBets(); setTimeout(()=>{ if(CO.id===id&&Date.now()>=CO.until){ CO.id=null; rerenderBets(); } },6100); return; }
+  let got=null;
+  if(SERVER){ CO.busy=true;
+    try{ const r=await api('/cashout',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,id,amount:CO.amt})});
+      if(r.ok) got={at:r.at,amt:r.amount};
+      else if(r.reason==='value'){ CO={id,amt:r.amount,until:Date.now()+6000,busy:false}; toastErr(`The cash-out value moved to ${money(r.amount)}. Tap confirm to take it.`); rerenderBets(); return; }
+      else { CO.id=null; toastErr(`Cash out is not available right now${r.why?': '+cashWhy(r.why).toLowerCase():''}.`); rerenderBets(); return; } }
+    catch(e){ toastErr(`Cash out failed: ${e.message}. Check your connection and try again.`); return; }
+    finally{ CO.busy=false; } }
+  else { got={at:t,amt:v.amt}; }
+  b.cash=got; saveWallet(); SEEN.add(id); CO.id=null; HIST.at=0;
+  sfxUi('won'); toast(`Cashed out · ${money(got.amt)} back in your balance`); rerenderBets();
+}
+document.addEventListener('click',e=>{ const c=e.target.closest&&e.target.closest('[data-co]'); if(c){ e.stopPropagation(); cashOut(c.dataset.co); } },true);
+
 function seasonRenderSlip(){
   const t=nowMs();
   document.querySelectorAll('.slip-tabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===slip.tab?'true':'false'));
   const L=ledger(t), nS=document.getElementById('nSlip'), nO=document.getElementById('nOpen');
   nS.textContent=slip.picks.length; nS.classList.toggle('muted',!slip.picks.length);
   nO.textContent=L.open; nO.classList.toggle('muted',!L.open);
-  const onSlip=slip.tab==='slip';
+  const onSlip=slip.tab==='slip', combo=comboOn();
   document.getElementById('quick').hidden=!onSlip||!slip.picks.length;
   document.getElementById('slipFoot').hidden=!onSlip;
   withFocus(()=>{
     if(onSlip){
       const banner = slip.restored && slip.picks.length ? `<div class="restored"><span>Slip restored from your last visit</span><button class="link" type="button" data-discard>Discard</button></div>` : '';
-      slipList.innerHTML = banner + (slip.picks.length ? slip.picks.map(p=>{ const sid='stake-'+p.key.replace(/[^a-z0-9]/gi,'-'), pr=p.pending?p.pending.price:p.price;
+      const modes = slip.picks.length>=COMBO_MIN ? `<div class="seg slip-mode" role="tablist" aria-label="Bet type">${[['single','Singles'],['combo','Combo']].map(([k,l])=>`<button type="button" role="tab" data-slipmode="${k}" aria-selected="${(combo?'combo':'single')===k}">${l}</button>`).join('')}</div>` : '';
+      const cards = slip.picks.map(p=>{ const sid='stake-'+p.key.replace(/[^a-z0-9]/gi,'-'), pr=p.pending?p.pending.price:p.price;
         const px = p.closed ? `<span class="pk-p off">${ICON.lock}</span>` : p.pending ? `<span class="pk-p chg"><s>${fmtO(p.price)}</s> ${fmtO(p.pending.price)}</span>` : `<span class="pk-p${p.moved?' mv-'+p.moved:''}">${fmtO(p.price)}</span>`;
         const note = paused(p) ? `<div class="pk-note off">Futures pause while games are live · the pick stays here until the slot is over</div>` : p.closed ? `<div class="pk-note off">${esc(lockText(p.closed))} · remove this pick</div>` : p.pending ? `<div class="pk-note chg">${p.pending.line!==p.line?'Line moved to '+esc(p.pending.title.replace(/^.* (?=[+−O U]|PK)/,'')):'Price moved'} · accept the new odds to place it</div>` : '';
-        return `<div class="pk${p.closed?' closed':''}"><div class="pk-top"><div><div class="pk-t">${esc(p.pending?p.pending.title:p.title)}</div><div class="pk-s">${esc(p.sub)}</div></div>${px}<button class="x" type="button" data-rm="${p.key}" aria-label="Remove ${esc(p.title)}">${ICON.x}</button></div>
-          <div class="pk-stake"><label class="stake" for="${sid}"><span>$</span><input id="${sid}" type="text" inputmode="decimal" value="${p.stake||''}" data-stake="${p.key}" aria-label="Stake for ${esc(p.title)}"${p.closed?' disabled':''}></label><div class="ret">Returns<b data-ret="${p.key}">${p.closed?'—':money(p.stake*decOf(pr))}</b></div></div>${note}</div>`;
-      }).join('') : `<div class="empty"><b>Your slip is empty</b>Tap any price on the board, the schedule or the futures table.</div>`);
+        const stake = combo ? '' : `<div class="pk-stake"><label class="stake" for="${sid}"><span>$</span><input id="${sid}" type="text" inputmode="decimal" value="${p.stake||''}" data-stake="${p.key}" aria-label="Stake for ${esc(p.title)}"${p.closed?' disabled':''}></label><div class="ret">Returns<b data-ret="${p.key}">${p.closed?'—':money(p.stake*decOf(pr))}</b></div></div>`;
+        return `<div class="pk${p.closed?' closed':''}${combo?' leg':''}"><div class="pk-top"><div><div class="pk-t">${esc(p.pending?p.pending.title:p.title)}</div><div class="pk-s">${esc(p.sub)}</div></div>${px}<button class="x" type="button" data-rm="${p.key}" aria-label="Remove ${esc(p.title)}">${ICON.x}</button></div>${stake}${note}</div>`;
+      }).join('');
+      let comboCard='';
+      if(combo){ const d=comboDec(), why=comboCheck(), cs=slip.comboStake||0;
+        comboCard=`<div class="pk combo"><div class="combo-h"><div><div class="pk-t">${slip.picks.length}-leg combo</div><div class="pk-s">Every pick must win · one stake</div></div><b>${fmtO(amOf(d))}</b></div>
+          <div class="pk-stake"><label class="stake" for="stake-combo"><span>$</span><input id="stake-combo" type="text" inputmode="decimal" value="${cs||''}" data-stake="combo" aria-label="Stake for the combo"></label><div class="ret">Returns<b data-ret="combo">${why?'—':money(cs*d)}</b></div></div>
+          ${why?`<div class="pk-note chg">${esc(why)}</div>`:''}</div>`; }
+      slipList.innerHTML = banner + (slip.picks.length ? modes + cards + comboCard : `<div class="empty"><b>Your slip is empty</b>Tap any price on the board, the schedule or the futures table.</div>`);
     } else {
       const open=L.rows.filter(r=>r.st==='open');
-      slipList.innerHTML = (open.length ? open.map(r=>`<div class="pk"><div class="pk-top"><div><div class="pk-t">${esc(r.title)}</div><div class="pk-s">${esc(r.sub)}</div></div><span class="pk-p">${fmtO(r.price)}</span></div>
-        <div class="ob-row"><span class="status-t">OPEN</span><span>Stake <b>${money(r.stake)}</b></span><span class="ret-o">Returns <b>${money(r2(r.stake*decOf(r.price)))}</b></span></div><div class="pk-note">${esc(betContext(r,t))}</div></div>`).join('')
+      slipList.innerHTML = (open.length ? open.map(r=>`<div class="pk"><div class="pk-top"><div><div class="pk-t">${esc(r.title)}</div><div class="pk-s">${esc(r.legs?'Combo · every leg must win':r.sub)}</div></div><span class="pk-p">${fmtO(r.price)}</span></div>
+        ${legsHTML(r,t)}<div class="ob-row"><span class="status-t">OPEN</span><span>Stake <b>${money(r.stake)}</b></span><span class="ret-o">Returns <b>${money(r2(r.stake*(r.legs?r.legs.reduce((a,l)=>a*legDec(l),1):legDec(r))))}</b></span></div><div class="pk-note">${esc(betContext(r,t))}</div><div class="co-row">${cashHTML(r,t)}</div></div>`).join('')
         : `<div class="empty"><b>No open bets</b>Placed bets show here until they settle.</div>`) + `<button class="link ob-all" type="button" data-view-go="bets">All bets this week →</button>`;
     }
   });
@@ -4494,33 +4606,47 @@ function seasonRenderSlip(){
 }
 function seasonTotals(){
   const t=nowMs(), L=ledger(t); balance=L.balance;
-  const live=slip.picks.filter(p=>!p.closed);
-  let st=0, rt=0; live.forEach(p=>{ st+=p.stake||0; rt+=(p.stake||0)*decOf(p.pending?p.pending.price:p.price); });
+  const live=slip.picks.filter(p=>!p.closed), combo=comboOn();
+  let st=0, rt=0;
+  if(combo){ st=slip.comboStake||0; rt=comboCheck()?0:st*comboDec(); }
+  else live.forEach(p=>{ st+=p.stake||0; rt+=(p.stake||0)*decOf(p.pending?p.pending.price:p.price); });
   document.getElementById('tStake').textContent=money(r2(st));
   document.getElementById('tRet').textContent=money(r2(rt));
   const btn=document.getElementById('place'); let act='place', lab, dis=false;
-  const nClosed=slip.picks.filter(dead).length, nPend=live.filter(p=>p.pending).length, low=live.some(p=>!(p.stake>=MIN_STAKE));
+  const nClosed=slip.picks.filter(dead).length, nPend=live.filter(p=>p.pending).length, low=combo?!(st>=MIN_STAKE):live.some(p=>!(p.stake>=MIN_STAKE));
   if(!slip.picks.length){ lab='Place bet'; dis=true; }
   else if(!placeable(t)){ lab=t<WEEK_OPEN?openText():'This week is over'; dis=true; }
   else if(nClosed){ act='clean'; lab=`Remove ${nClosed} closed pick${nClosed>1?'s':''}`; }
   else if(nPend){ act='accept'; lab='Accept new odds'; }
+  else if(combo&&comboCheck()){ lab=comboCheck().split(' · ')[0]; dis=true; }
   else if(!live.length){ lab='Futures reopen after the slot'; dis=true; }
   else if(low){ lab=`Minimum stake $${MIN_STAKE}`; dis=true; }
   else if(st>balance+1e-9){ lab='Stake exceeds balance'; dis=true; }
-  else lab = live.length>1 ? `Place ${live.length} bets · ${money(r2(st))}` : `Place bet · ${money(r2(st))}`;
+  else lab = combo ? `Place combo · ${money(r2(st))}` : live.length>1 ? `Place ${live.length} bets · ${money(r2(st))}` : `Place bet · ${money(r2(st))}`;
   btn.dataset.act=act; btn.disabled=dis; btn.textContent=lab;
   document.getElementById('fabN').textContent=slip.picks.length;
   document.getElementById('fabR').textContent=money(r2(rt));
   document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(L.balance));
   const fine=document.querySelector('#slipFoot .fine');
-  if(fine) fine.textContent = STORE_OK ? `Single bets · $${BANKROLL.toLocaleString('en-US')} play money a week${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
+  if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · $${BANKROLL.toLocaleString('en-US')} play money a week${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
 }
 function seasonPlace(){
   const btn=document.getElementById('place'), act=btn.dataset.act, t=nowMs();
   if(act==='clean'){ slip.picks=slip.picks.filter(p=>!dead(p)); renderSlip(); syncPressed(); saveSlip(); renderView(true); return; }
   if(act==='accept'){ slip.picks.forEach(p=>{ if(p.pending){ Object.assign(p,{price:p.pending.price,line:p.pending.line,title:p.pending.title,sub:p.pending.sub}); p.pending=null; } }); renderSlip(); saveSlip(); return; }
   if(slipTick(t)){ renderSlip(); if(slip.picks.some(p=>dead(p)||p.pending)){ toastErr('Odds moved or a market closed while you were placing. Check the slip, then place again.'); return; } }
-  const L=ledger(t), picks=slip.picks.filter(p=>!p.closed);
+  const L=ledger(t);
+  if(comboOn()){
+    const st=r2(slip.comboStake||0);
+    if(comboCheck()||!placeable(t)||!(st>=MIN_STAKE)||st>L.balance+1e-9) return;
+    if(SERVER){ serverPlace([],slip.picks.slice()); return; }
+    const legs=slip.picks.map(p=>({key:p.key,price:p.price,line:p.line,title:p.title,sub:p.sub})), d=legs.reduce((a,l)=>a*decOf(l.price),1);
+    WAL.bets.push({id:'c'+t.toString(36)+Math.random().toString(36).slice(2,6),key:'combo',legs,price:amOf(d),line:null,stake:st,pt:t,title:`${legs.length}-leg combo`,sub:legs.map(l=>l.title).join(' · ')});
+    saveWallet(); slip.picks=[]; slip.tab='open'; slip.restored=false;
+    renderSlip(); syncPressed(); saveSlip(); walletRender(t); renderView(true);
+    sfxUi('placed'); toast(`Combo placed · ${legs.length} legs at ${fmtO(amOf(d))} · ${money(st)}`); return;
+  }
+  const picks=slip.picks.filter(p=>!p.closed);
   let st=0; picks.forEach(p=>st+=p.stake);
   if(!picks.length||!placeable(t)||picks.some(p=>!(p.stake>=MIN_STAKE))||st>L.balance+1e-9) return;
   if(SERVER){ serverPlace(picks); return; }
@@ -4563,7 +4689,7 @@ function betTick(t){
     sfxUi(pl>0?'won':pl<0?'lost':'push');
     toast(fresh.length===1 ? `${ST_LAB[fresh[0].st]} · ${fresh[0].title} · ${fresh[0].st==='won'?'+'+money(fresh[0].ret):fresh[0].st==='push'?'stake returned':MINUS+money(fresh[0].stake)}`
       : `${fresh.length} bets settled · ${pl<0?MINUS:'+'}${money(Math.abs(pl))}`); }
-  const moved=slipTick(t), sig=L.rows.map(r=>r.id+r.st).join(',')+'#'+slipSig()+'#'+Math.floor(t/1e4);
+  const moved=slipTick(t), sig=L.rows.map(r=>r.id+r.st).join(',')+'#'+slipSig()+'#'+Math.floor(t/1e4)+'#'+(slip.tab==='open'?cashSig(L.rows,t):'')+'#'+slip.mode+(slip.comboStake||0);
   if(moved||sig!==BET_SIG){ BET_SIG=sig; renderSlip(); }
   else seasonTotals();
 }
@@ -4578,18 +4704,19 @@ let BET_FILTER='all';
 function renderBets(t){
   const el=document.getElementById('viewBets'), L=ledger(t);
   const rows=L.rows.filter(r=>BET_FILTER==='all'||(BET_FILTER==='open'?r.st==='open':r.st!=='open'));
-  const key='bets|'+BET_FILTER+'|'+L.rows.map(r=>r.id+r.st).join(',')+'|'+Math.floor(t/1e4)+'|'+CLOCK.demo;
-  if(SERVER) leaderboardLoad(false);
+  if(SERVER){ leaderboardLoad(false); histLoad(); }
+  const key='bets|'+BET_FILTER+'|'+L.rows.map(r=>r.id+r.st).join(',')+'|'+Math.floor(t/1e4)+'|'+CLOCK.demo+'|'+cashSig(L.rows,t)+'|'+(HIST.sel||'')+(HIST.data[HIST.sel]?1:0)+((HIST.list||[]).map(w=>w.week).join());
   if(el._k===key) return; el._k=key;
+  if(SERVER&&HIST.sel){ el.innerHTML=pastHTML(); return; }
   const hit=L.won+L.lost?Math.round(L.won/(L.won+L.lost)*100)+'%':'—';
   const sgn=v=>(v<0?MINUS:'+')+money(Math.abs(v));
-  const tr=rows.map(r=>{ const gid=r.key.startsWith('fut:')?null:r.key.split(':')[0], s=gid&&SCHED_BY[gid], gs=s&&gStatus(s,t);
+  const tr=rows.map(r=>{ const gid=r.key.startsWith('fut:')||r.legs?null:r.key.split(':')[0], s=gid&&SCHED_BY[gid], gs=s&&gStatus(s,t);
     const go= s&&gs!=='upcoming' ? `<button class="link" type="button" data-sched="${gid}">${gs==='live'?'Watch':'Replay'}</button>` : '';
     return `<tr class="bt-${r.st}"><td class="tl bt-when">${esc(dStr(r.pt))}<small>${esc(tStr(r.pt))}</small></td>
-      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.sub)} · ${esc(betContext(r,t))}</small></th>
+      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?'Combo':r.sub)} · ${esc(betContext(r,t))}</small>${legsHTML(r,t)}</th>
       <td>${fmtO(r.price)}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]}</span></td>
-      <td class="bt-ret">${r.st==='open'?money(r2(r.stake*decOf(r.price))):money(r.ret)}${r.st==='open'?'<small>to return</small>':''}</td><td>${go}</td></tr>`; }).join('');
-  el.innerHTML=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${SW.week.index}</b> · $${BANKROLL.toLocaleString('en-US')} of play money · resets Monday 00:00 Brussels${CLOCK.demo?' · <b>preview wallet</b> (kept apart from real time)':''}</p></div>
+      <td class="bt-ret">${r.st==='open'?money(r2(r.stake*(r.legs?r.legs.reduce((a,l)=>a*legDec(l),1):legDec(r)))):money(r.ret)}${r.st==='open'?'<small>to return</small>':''}</td><td><div class="bt-acts">${cashHTML(r,t)}${go}</div></td></tr>`; }).join('');
+  el.innerHTML=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${SW.week.index}</b> · $${BANKROLL.toLocaleString('en-US')} of play money · resets Monday 00:00 Brussels${CLOCK.demo?' · <b>preview wallet</b> (kept apart from real time)':''}</p>${SERVER?histSeg():''}</div>
     <div class="bt-kpis">
       <div class="card bt-k"><span class="label">Balance</span><b>${money(L.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>
       <div class="card bt-k"><span class="label">Settled P/L</span><b class="${L.net<0?'dn':'up'}">${sgn(L.net)}</b><small>${L.won} won · ${L.lost} lost</small></div>
@@ -4604,7 +4731,9 @@ function renderBets(t){
     ${SERVER?`<div class="card bt-card"><div class="card-h"><h2>Leaderboard</h2><div class="seg" role="tablist" aria-label="Leaderboard">${[['week',`Week ${SW.week.index}`],['season','Season']].map(([k,l])=>`<button type="button" role="tab" data-lbscope="${k}" aria-selected="${LB.scope===k}">${l}</button>`).join('')}</div></div><div id="lbBox">${leaderboardHTML()}</div></div>`:''}
     <div class="card bt-rules"><span class="label">House rules</span><ul>
       <li>$${BANKROLL.toLocaleString('en-US')} every Monday at 00:00 (Brussels). What is left of last week, and any bet still open, is lost at the reset.</li>
-      <li>Single bets, minimum $${MIN_STAKE}. Moneyline, spread and total before and during each game; futures between slots.</li>
+      <li>Singles and combos, minimum $${MIN_STAKE}. Moneyline, spread and total before and during each game; futures between slots (singles only).</li>
+      <li>Combos: 2 to 6 picks, one per game. Every pick must win; a pushed pick counts at 1.00 and the rest still pays.</li>
+      <li>Cash out any open bet at its fair value minus 5 % (price taken ÷ price now, leg by leg). Not while a spread or total line has moved, nor on futures while games are live.</li>
       <li>Every price comes from the engine. Bets settle by themselves at the final whistle — a moneyline tie returns the stake; futures settle once decided.</li>
       <li>${SERVER?'Your bets are kept on the GameCenter server and checked there: price, open market and balance at the moment you place them.':'Your bets are kept in this browser only. Preview time has its own wallet.'}</li>
       ${SERVER?'<li>A free account (username and password) keeps your wallet on every device and puts you on the season leaderboard: your net winnings of every week, added up. Guests play the week leaderboard only.</li>':''}</ul></div>`;
@@ -5032,7 +5161,9 @@ async function api(path,opt){
   if(!r.ok) throw Object.assign(new Error((body&&body.detail)||('HTTP '+r.status)),{status:r.status});
   return body;
 }
-function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),line:b.line,stake:b.stake,pt:b.pt,title:b.title,sub:b.sub}; }
+function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),dec:b.price_dec,line:b.line,stake:b.stake,pt:b.pt,title:b.title,sub:b.sub,
+  legs:b.legs?b.legs.map(l=>({key:l.key,price:amOf(l.price_dec),dec:l.price_dec,line:l.line,title:l.title,sub:l.sub})):null,
+  cash:b.cashed_at!=null?{at:b.cashed_at,amt:b.cashed_amt}:null}; }
 async function serverWalletLoad(){
   if(!PLAYER||!PLAYER.token){ WAL={bets:[]}; return; }
   try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account}); WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
@@ -5044,26 +5175,77 @@ async function ensurePlayer(){
   PLAYER={token:p.token,name:p.name}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
   return PLAYER;
 }
-async function serverPlace(picks){
+async function serverPlace(picks,comboLegs){
   const btn=document.getElementById('place'); btn.disabled=true; btn.textContent='Placing…';
+  const wire=p=>({key:p.key,price_dec:Math.round(decOf(p.price)*1e4)/1e4,line:p.line,title:p.title,sub:p.sub});
   try{
     await ensurePlayer();
-    const res=await api('/bets',{method:'POST',body:JSON.stringify({token:PLAYER.token,picks:picks.map(p=>({key:p.key,price_dec:Math.round(decOf(p.price)*1e4)/1e4,line:p.line,stake:r2(p.stake),title:p.title,sub:p.sub}))})});
+    const body={token:PLAYER.token,picks:picks.map(p=>Object.assign(wire(p),{stake:r2(p.stake)})),
+                combos:comboLegs?[{stake:r2(slip.comboStake||0),legs:comboLegs.map(wire)}]:[]};
+    const res=await api('/bets',{method:'POST',body:JSON.stringify(body)});
     const done=new Set();
-    for(const b of res.accepted){ WAL.bets.push(fromServerBet(b)); done.add(b.key); }
+    for(const b of res.accepted){ WAL.bets.push(fromServerBet(b)); if(b.legs) b.legs.forEach(l=>done.add(l.key)); else done.add(b.key); }
     let moved=0, closed=0, other='';
-    for(const x of res.rejected){ const p=slip.picks.find(q=>q.key===x.key); if(!p) continue;
+    const legFix=x=>{ const p=slip.picks.find(q=>q.key===x.key); if(!p) return;
       if(x.reason==='price'){ const q=quote(p.key,nowMs())||{}; p.pending={price:amOf(x.price_dec),line:x.line,title:q.title||p.title,sub:q.sub||p.sub}; moved++; }
       else if(x.reason==='closed'){ p.closed=x.why||'closed'; closed++; }
-      else other = x.reason==='balance' ? 'Stake exceeds your balance on the server.' : 'The server refused this bet.'; }
+      else other='The server refused this bet.'; };
+    for(const x of res.rejected){
+      if(x.combo!=null){
+        if(x.reason==='legs_changed') x.legs.forEach(legFix);
+        else other={balance:'Stake exceeds your balance on the server.',stake:`Minimum stake $${MIN_STAKE}.`,same_game:'One pick per game in a combo.',futures:"Futures can't go in a combo.",legs:'A combo takes 2 to 6 picks.'}[x.reason]||'The server refused this combo.';
+        continue; }
+      const p=slip.picks.find(q=>q.key===x.key); if(!p) continue;
+      if(x.reason==='balance') other='Stake exceeds your balance on the server.'; else legFix(x); }
     slip.picks=slip.picks.filter(p=>!done.has(p.key));
     if(!slip.picks.length) slip.tab='open';
-    const n=res.accepted.length, st=res.accepted.reduce((s,b)=>s+b.stake,0);
+    const n=res.accepted.length, st=res.accepted.reduce((s,b)=>s+b.stake,0); HIST.at=0;
     BET_SIG=''; renderSlip(); syncPressed(); saveSlip(); walletRender(nowMs()); renderView(true);
-    if(n){ sfxUi('placed'); toast(`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
+    if(n){ sfxUi('placed'); const c=res.accepted.find(b=>b.legs); toast(c?`Combo placed · ${c.legs.length} legs at ${fmtO(amOf(c.price_dec))} · ${money(c.stake)}`:`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
     if(moved||closed||other) toastErr([moved?`${moved} price${moved>1?'s':''} moved: accept the new odds to place ${moved>1?'them':'it'}.`:'',closed?`${closed} market${closed>1?'s':''} closed.`:'',other].filter(Boolean).join(' '));
   }catch(e){ toastErr(`The bet was not placed: ${e.message}. Check your connection and place it again.`); renderSlip(); }
 }
+/* ---------- past weeks (roadmap step 2): the server keeps every bet of every week ---------- */
+let HIST={list:null,at:0,busy:false,sel:null,data:{}};
+function histReset(){ HIST={list:null,at:0,busy:false,sel:null,data:{}}; }
+async function histLoad(){
+  if(!SERVER||!PLAYER||!PLAYER.token||HIST.busy||Date.now()-HIST.at<30000) return;
+  HIST.busy=true;
+  try{ const d=await api('/history?token='+encodeURIComponent(PLAYER.token)); const sig=JSON.stringify(HIST.list); HIST.list=d.weeks; HIST.at=Date.now(); if(JSON.stringify(HIST.list)!==sig&&VIEW==='bets') renderView(true); }
+  catch(e){ HIST.at=Date.now(); } finally{ HIST.busy=false; }
+}
+async function histWeek(start){
+  HIST.sel=start===SW.week.start?null:start; renderView(true);
+  if(!HIST.sel||HIST.data[start]) return;
+  try{ HIST.data[start]=await api('/history?token='+encodeURIComponent(PLAYER.token)+'&week='+encodeURIComponent(start)); }
+  catch(e){ HIST.data[start]={error:e.message}; }
+  renderView(true);
+}
+function histSeg(){
+  const past=(HIST.list||[]).filter(w=>w.week!==SW.week.start); if(!past.length) return '';
+  const opts=[[SW.week.start,`Week ${SW.week.index} · now`],...past.map(w=>[w.week,`Week ${w.index}`])];
+  return `<div class="seg wk-seg" role="tablist" aria-label="Week">${opts.map(([k,l])=>`<button type="button" role="tab" data-hw="${k}" aria-selected="${(HIST.sel||SW.week.start)===k}">${l}</button>`).join('')}</div>`;
+}
+function pastHTML(){
+  const d=HIST.data[HIST.sel], w=(HIST.list||[]).find(x=>x.week===HIST.sel)||{};
+  const head=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${w.index||''}</b> · ${esc(HIST.sel)} · final results</p>${histSeg()}</div>`;
+  if(!d) return head+'<div class="card bt-card"><p class="st-none">Loading that week…</p></div>';
+  if(d.error) return head+`<div class="card bt-card"><p class="st-none">That week could not be loaded: ${esc(d.error)}. Pick it again to retry.</p></div>`;
+  const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), net=r2(d.balance-BANKROLL);
+  const hit=d.won+d.lost?Math.round(d.won/(d.won+d.lost)*100)+'%':'—';
+  const tr=d.bets.slice().sort((a,b)=>b.pt-a.pt).map(r=>{ const legs=r.legs?{legs:r.legs.map(l=>({title:l.title,price:amOf(l.price_dec)}))}:{};
+    return `<tr class="bt-${r.st}"><td class="tl bt-when">${esc(dStr(r.pt))}<small>${esc(tStr(r.pt))}</small></td>
+      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?'Combo':r.sub)}</small>${legsHTML(legs,0,true)}</th>
+      <td>${fmtO(amOf(r.price_dec))}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]||r.st}</span></td><td class="bt-ret">${money(r.ret)}</td></tr>`; }).join('');
+  return head+`<div class="bt-kpis">
+      <div class="card bt-k"><span class="label">Final balance</span><b>${money(d.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>
+      <div class="card bt-k"><span class="label">Week P/L</span><b class="${net<0?'dn':'up'}">${sgn(net)}</b><small>${d.won} won · ${d.lost} lost</small></div>
+      <div class="card bt-k"><span class="label">Bets</span><b>${d.bets.length}</b><small>${d.open?d.open+' still open':'all settled'}</small></div>
+      <div class="card bt-k"><span class="label">Hit rate</span><b>${hit}</b><small>won ÷ (won + lost)</small></div></div>
+    <div class="card bt-card"><div class="card-h"><h2>History</h2></div>
+      ${tr?`<div class="st-scroll"><table class="tst bets"><thead><tr><th class="tl">Placed</th><th scope="col" class="tl">Bet</th><th>Odds</th><th>Stake</th><th>Result</th><th>Return</th></tr></thead><tbody>${tr}</tbody></table></div>`:'<p class="st-none">No bets that week.</p>'}</div>`;
+}
+document.addEventListener('click',e=>{ const h=SERVER&&e.target.closest&&e.target.closest('[data-hw]'); if(h) histWeek(h.dataset.hw); });
 let LB={at:{},data:{},busy:false,scope:'week'};
 async function leaderboardLoad(force){
   const sc=LB.scope;
@@ -5142,7 +5324,7 @@ async function accountSubmit(){
   try{
     const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
     PLAYER={token:r.token,name:r.name,account:true}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
-    ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={};
+    ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
     await serverWalletLoad(); renderSettings(true); walletRender(nowMs());
     toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
     if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
@@ -5162,7 +5344,7 @@ async function accountPassword(){
 }
 function accountSignOut(){
   const n=PLAYER&&PLAYER.name; PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(e){}
-  WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={};
+  WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
   renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true);
   toast(`Signed out${n?' · '+n:''}. Sign in again any time.`);
 }
@@ -5182,6 +5364,7 @@ const saved=loadSlip();
 if(saved && saved.picks.length){
   slip.picks=saved.picks.filter(p=>p && typeof p.key==='string' && (SEASON ? !!quote(p.key,nowMs()) : byId[p.key.split(':')[0]]) && isFinite(p.price)).map(p=>({key:SEASON?normKey(p.key):p.key,title:String(p.title),sub:String(p.sub),price:+p.price,line:p.line==null?null:+p.line,stake:+p.stake||0}));
   if(!SEASON) lastStake=+saved.lastStake||10; slip.restored=slip.picks.length>0;
+  if(SEASON){ slip.mode=saved.mode==='combo'?'combo':'single'; slip.comboStake=+saved.comboStake||0; }
 }
 if(!SEASON && !slip.picks.length && games[0]){ const g0=games[0], info=marketInfo(g0,'ml','home'); if(!info.locked) slip.picks.push({key:g0.id+':ml:home',title:info.title,sub:info.sub,price:info.price,stake:lastStake}); }
 if(!SEASON){ buildTicker(); renderHeadlines(); renderMoments(false); }

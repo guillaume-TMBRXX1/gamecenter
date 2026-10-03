@@ -6,6 +6,8 @@ décalage), les résultats, le classement, les futures et les affiches des playo
 connus. Les paris sont pris, vérifiés (cote, marché ouvert, solde) et réglés ici, avec un classement commun.
 Comptes (étape 1, 03/10/2026) : pseudo + mot de passe facultatifs, posés sur la clé du joueur ; classement de la
 saison = somme des gains nets de chaque semaine (comptes seulement). Voir /api/account/* et /api/leaderboard?scope=season.
+Paris plus riches (étape 2, 03/10/2026) : combinés 2-6 sélections (une par match, pas de futures), cash-out à la valeur
+juste − 5 % (/api/cashout), historique des semaines passées (/api/history).
 
 Lancer :  uvicorn serveur:app --host 0.0.0.0 --port 8000
 Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecenter_source.html)
@@ -23,6 +25,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
 BANKROLL, MIN_STAKE = 1000.0, 1.0
+CASH_FEE = 0.05                # cash-out : valeur juste − 5 % (étape 2)
+COMBO_MIN, COMBO_MAX = 2, 6    # combinés : 2 à 6 sélections, une par match, pas de futures
 TZ = ZoneInfo("Europe/Brussels")
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("GC_DATA", os.path.join(HERE, "data"))
@@ -182,8 +186,9 @@ class Week:
         return q
 
     # ---- règlement (mêmes règles que le site) ----
-    def settle(self, b, t):
-        k = b["key"].split(":")
+    def settle_leg(self, key, line, t):
+        """Résultat d'une sélection à l'instant t : (« won » | « lost » | « push » | None si pas encore réglée, instant du règlement)."""
+        k = key.split(":")
         res, at = None, 0
         if k[0] == "fut":
             m, a = k[1], k[2]
@@ -196,25 +201,73 @@ class Week:
             else:
                 at = self.final["end"]
                 if t >= at: res = "won" if self.doc["champion"] == a else "lost"
-        else:
-            g = self.by.get(k[0])
-            if g is None:              # match qui n'existe plus (semaine re-produite) : pari remboursé
-                return "push", b["stake"]
-            at = g["end"]
-            if t >= at:
-                H, A = g["result"]["home"], g["result"]["away"]
-                if k[1] == "ml":
-                    res = "push" if H == A else ("won" if (H > A) == (k[2] == "home") else "lost")
-                elif k[1] == "sp":
-                    mg = (H - A if k[2] == "home" else A - H) + b["line"]
-                    res = "won" if mg > 0 else "lost" if mg < 0 else "push"
-                else:
-                    dd = H + A - b["line"]
-                    res = "push" if dd == 0 else ("won" if (dd > 0) == (k[2] == "over") else "lost")
+            return res, at
+        g = self.by.get(k[0])
+        if g is None:                  # match qui n'existe plus (semaine re-produite) : sélection remboursée
+            return "push", 0
+        at = g["end"]
+        if t >= at:
+            H, A = g["result"]["home"], g["result"]["away"]
+            if k[1] == "ml":
+                res = "push" if H == A else ("won" if (H > A) == (k[2] == "home") else "lost")
+            elif k[1] == "sp":
+                mg = (H - A if k[2] == "home" else A - H) + line
+                res = "won" if mg > 0 else "lost" if mg < 0 else "push"
+            else:
+                dd = H + A - line
+                res = "push" if dd == 0 else ("won" if (dd > 0) == (k[2] == "over") else "lost")
+        return res, at
+
+    def settle(self, b, t):
+        """Simple ou combiné (étape 2). Combiné : perdu dès qu'une sélection est perdue ; gagné quand toutes sont
+        réglées, au produit des cotes des sélections gagnées (une sélection remboursée compte 1) ; tout remboursé = push.
+        Un pari encaissé (cash-out) rend le montant encaissé à l'instant du cash-out."""
+        if b.get("cashed_at") is not None and t >= b["cashed_at"]:
+            return "cashed", b["cashed_amt"]
+        legs = b.get("legs")
+        if legs:
+            prod, pending, all_push = 1.0, False, True
+            for L in legs:
+                res, _ = self.settle_leg(L["key"], L.get("line"), t)
+                if res == "lost":
+                    return "lost", 0.0
+                if res is None:
+                    pending = True
+                elif res == "won":
+                    prod *= L["price_dec"]; all_push = False
+            if pending:
+                return "open", 0.0
+            return ("push", b["stake"]) if all_push else ("won", round(b["stake"] * prod, 2))
+        res, _ = self.settle_leg(b["key"], b["line"], t)
         if res is None:
             return "open", 0.0
         ret = round(b["stake"] * b["price_dec"], 2) if res == "won" else b["stake"] if res == "push" else 0.0
         return res, ret
+
+    def cash_value(self, b, t):
+        """Cash-out : valeur juste − CASH_FEE. Par sélection encore ouverte : cote prise ÷ cote du moment (même ligne
+        exigée pour spread / total) ; sélection gagnée : sa cote ; remboursée : 1. Renvoie (montant, None) ou (None, raison)."""
+        st, _ = self.settle(b, t)
+        if st != "open":
+            return None, "settled"
+        legs = b.get("legs") or [{"key": b["key"], "price_dec": b["price_dec"], "line": b["line"]}]
+        f = 1.0
+        for L in legs:
+            res, _ = self.settle_leg(L["key"], L.get("line"), t)
+            if res == "won":
+                f *= L["price_dec"]; continue
+            if res == "push":
+                continue
+            q = self.quote(L["key"], t)
+            if q is None:
+                return None, "unknown"
+            if q["locked"]:
+                return None, q["locked"]
+            if q["line"] != L.get("line"):
+                return None, "line"
+            f *= L["price_dec"] / q["price_dec"]
+        amt = round(b["stake"] * f * (1 - CASH_FEE), 2)
+        return (amt, None) if amt >= 0.01 else (None, "zero")
 
 
 def dec(am):
@@ -299,6 +352,11 @@ with db() as _c:
         if _col not in _cols:
             _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
     _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
+    # Étape 2 : combinés (legs = sélections en JSON, key = « combo ») et cash-out.
+    _bcols = {r[1] for r in _c.execute("PRAGMA table_info(bets)")}
+    for _col, _typ in (("legs", "TEXT"), ("cashed_at", "INTEGER"), ("cashed_amt", "REAL")):
+        if _col not in _bcols:
+            _c.execute(f"ALTER TABLE bets ADD COLUMN {_col} {_typ}")
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -384,9 +442,15 @@ def account_public(p):
     return {"token": p["token"], "name": p["name"], "account": bool(p.get("login"))}
 
 
+def bet_row(r):
+    b = dict(r)
+    b["legs"] = json.loads(b["legs"]) if b.get("legs") else None
+    return b
+
+
 def player_bets(pid, week):
     with db() as c:
-        return [dict(r) for r in c.execute("SELECT * FROM bets WHERE player=? AND week=? ORDER BY pt", (pid, week.start))]
+        return [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=? AND week=? ORDER BY pt", (pid, week.start))]
 
 
 def ledger(week, bets, t):
@@ -432,7 +496,7 @@ def season_rows(t):
     weeks = season_weeks(t)
     with db() as c:
         names = {r["id"]: r["name"] for r in c.execute("SELECT id, name FROM players WHERE login IS NOT NULL")}
-        bets = [dict(r) for r in c.execute("SELECT b.* FROM bets b JOIN players p ON p.id = b.player WHERE p.login IS NOT NULL")]
+        bets = [bet_row(r) for r in c.execute("SELECT b.* FROM bets b JOIN players p ON p.id = b.player WHERE p.login IS NOT NULL")]
     per = {}
     for b in bets:
         per.setdefault(b["player"], []).append(b)
@@ -449,7 +513,7 @@ def season_rows(t):
 
 def season_net(pid, t):
     with db() as c:
-        bets = [dict(r) for r in c.execute("SELECT * FROM bets WHERE player=?", (pid,))]
+        bets = [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=?", (pid,))]
     return _season_agg(bets, season_weeks(t), t)
 
 
@@ -652,14 +716,41 @@ def api_me(token: str = ""):
     return {"name": p["name"], "account": bool(p.get("login")), "week": w.start, "now": t, "season": season, **L}
 
 
+def _check_pick(w, pk, t):
+    """Une sélection envoyée par la page : (sélection validée, None) ou (None, refus)."""
+    key = str(pk.get("key", ""))
+    q = w.quote(key, t)
+    if q is None:
+        return None, {"key": key, "reason": "unknown"}
+    if q["locked"]:
+        return None, {"key": key, "reason": "closed", "why": q["locked"]}
+    try:
+        price = float(pk.get("price_dec")); line = pk.get("line")
+        line = None if line is None else float(line)
+    except (TypeError, ValueError):
+        return None, {"key": key, "reason": "invalid"}
+    if abs(price - q["price_dec"]) > 0.006 or line != q["line"]:
+        return None, {"key": key, "reason": "price", "price_dec": q["price_dec"], "line": q["line"]}
+    return {"key": key, "price_dec": q["price_dec"], "line": q["line"],
+            "title": str(pk.get("title", ""))[:120], "sub": str(pk.get("sub", ""))[:120]}, None
+
+
+def _stake(x):
+    try:
+        return round(float(x), 2)
+    except (TypeError, ValueError):
+        return float("nan")
+
+
 @app.post("/api/bets")
 async def api_bets(req: Request):
+    """picks = paris simples ; combos = [{stake, legs: [sélections]}] (2 à 6 sélections, une par match, pas de futures)."""
     body = await _json(req)
     p = player_by_token(body.get("token"))
     if not p:
         raise HTTPException(401, "Clé de joueur inconnue.")
-    picks = body.get("picks") or []
-    if not isinstance(picks, list) or not picks or len(picks) > 20:
+    picks, combos = body.get("picks") or [], body.get("combos") or []
+    if not isinstance(picks, list) or not isinstance(combos, list) or not (1 <= len(picks) + len(combos) <= 20):
         raise HTTPException(400, "Envoyez entre 1 et 20 paris.")
     w = _need_week()
     accepted, rejected = [], []
@@ -669,33 +760,115 @@ async def api_bets(req: Request):
             raise HTTPException(409, "Les paris de cette semaine sont fermés.")
         bal = ledger(w, player_bets(p["id"], w), t)["balance"]
         rows = []
-        for pk in picks:
-            key = str(pk.get("key", ""))
-            q = w.quote(key, t)
-            if q is None:
-                rejected.append({"key": key, "reason": "unknown"}); continue
-            if q["locked"]:
-                rejected.append({"key": key, "reason": "closed", "why": q["locked"]}); continue
-            try:
-                stake = round(float(pk.get("stake")), 2); price = float(pk.get("price_dec")); line = pk.get("line")
-                line = None if line is None else float(line)
-            except (TypeError, ValueError):
-                rejected.append({"key": key, "reason": "invalid"}); continue
-            if abs(price - q["price_dec"]) > 0.006 or line != q["line"]:
-                rejected.append({"key": key, "reason": "price", "price_dec": q["price_dec"], "line": q["line"]}); continue
+
+        def take(stake, rej):
+            nonlocal bal
             if not (stake >= MIN_STAKE):
-                rejected.append({"key": key, "reason": "stake"}); continue
+                rejected.append(dict(rej, reason="stake")); return False
             if stake > bal + 1e-9:
-                rejected.append({"key": key, "reason": "balance", "balance": bal}); continue
-            bal = round(bal - stake, 2)
-            b = {"id": "b" + uuid.uuid4().hex[:16], "player": p["id"], "week": w.start, "key": key,
-                 "price_dec": q["price_dec"], "line": q["line"], "stake": stake, "pt": t,
-                 "title": str(pk.get("title", ""))[:120], "sub": str(pk.get("sub", ""))[:120]}
+                rejected.append(dict(rej, reason="balance", balance=bal)); return False
+            bal = round(bal - stake, 2); return True
+
+        for pk in picks:
+            leg, bad = _check_pick(w, pk, t)
+            if bad:
+                rejected.append(bad); continue
+            stake = _stake(pk.get("stake"))
+            if not take(stake, {"key": leg["key"]}):
+                continue
+            b = dict(leg, id="b" + uuid.uuid4().hex[:16], player=p["id"], week=w.start, stake=stake, pt=t, legs=None)
+            rows.append(b); accepted.append(b)
+        for ci, cb in enumerate(combos):
+            raw = cb.get("legs") if isinstance(cb, dict) else None
+            if not isinstance(raw, list) or not (COMBO_MIN <= len(raw) <= COMBO_MAX):
+                rejected.append({"combo": ci, "reason": "legs"}); continue
+            keys = [str(x.get("key", "")) for x in raw]
+            if any(k.startswith("fut:") for k in keys):
+                rejected.append({"combo": ci, "reason": "futures"}); continue
+            if len({k.split(":")[0] for k in keys}) != len(keys):
+                rejected.append({"combo": ci, "reason": "same_game"}); continue
+            legs, bads = [], []
+            for x in raw:
+                leg, bad = _check_pick(w, x, t)
+                (bads.append(bad) if bad else legs.append(leg))
+            if bads:
+                rejected.append({"combo": ci, "reason": "legs_changed", "legs": bads}); continue
+            stake = _stake(cb.get("stake"))
+            if not take(stake, {"combo": ci}):
+                continue
+            prod = 1.0
+            for leg in legs:
+                prod *= leg["price_dec"]
+            n = len(legs)
+            b = {"id": "c" + uuid.uuid4().hex[:16], "player": p["id"], "week": w.start, "key": "combo",
+                 "price_dec": round(prod, 4), "line": None, "stake": stake, "pt": t,
+                 "title": f"{n}-leg combo", "sub": " · ".join(l["title"] for l in legs)[:120], "legs": legs}
             rows.append(b); accepted.append(b)
         if rows:
             with db() as c:
-                c.executemany("INSERT INTO bets VALUES(:id,:player,:week,:key,:price_dec,:line,:stake,:pt,:title,:sub)", rows)
+                c.executemany("INSERT INTO bets(id, player, week, key, price_dec, line, stake, pt, title, sub, legs) "
+                              "VALUES(:id,:player,:week,:key,:price_dec,:line,:stake,:pt,:title,:sub,:legs)",
+                              [dict(r, legs=json.dumps(r["legs"], ensure_ascii=False) if r["legs"] else None) for r in rows])
     return {"now": t, "accepted": accepted, "rejected": rejected, "balance": bal}
+
+
+@app.post("/api/cashout")
+async def api_cashout(req: Request):
+    """Cash-out d'un pari ouvert de la semaine en cours. La page envoie le montant qu'elle affiche ; s'il ne correspond
+    plus (cote qui a bougé), rien n'est fait et le nouveau montant est renvoyé."""
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    w = _need_week()
+    with _db_lock:
+        t = now_ms()
+        with db() as c:
+            r = c.execute("SELECT * FROM bets WHERE id=? AND player=?", (str(body.get("id", "")), p["id"])).fetchone()
+        if not r:
+            raise HTTPException(404, "Pari inconnu.")
+        b = bet_row(r)
+        if b["week"] != w.start or not (w.open <= t < w.reset) or b["pt"] > t:
+            return {"ok": False, "reason": "closed"}
+        amt, why = w.cash_value(b, t)
+        if amt is None:
+            return {"ok": False, "reason": "unavailable", "why": why}
+        try:
+            want = float(body.get("amount"))
+        except (TypeError, ValueError):
+            want = -1.0
+        if abs(want - amt) > max(0.02, 0.002 * amt):
+            return {"ok": False, "reason": "value", "amount": amt}
+        with db() as c:
+            c.execute("UPDATE bets SET cashed_at=?, cashed_amt=? WHERE id=?", (t, amt, b["id"]))
+        bal = ledger(w, player_bets(p["id"], w), t)["balance"]
+    return {"ok": True, "id": b["id"], "amount": amt, "at": t, "balance": bal}
+
+
+@app.get("/api/history")
+def api_history(token: str = "", week: str = ""):
+    """Historique : sans « week », une ligne par semaine où le joueur a parié ; avec « week », tous ses paris de cette semaine."""
+    p = player_by_token(token)
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    t = now_ms(); cur = current_week(t)
+    weeks = {w.start: w for w in load_weeks().values() if w.open <= t}
+    if week:
+        w = weeks.get(week)
+        if w is None:
+            raise HTTPException(404, "Semaine inconnue.")
+        L = ledger(w, player_bets(p["id"], w), t)
+        return {"week": w.start, "index": w.doc["week"]["index"], "current": w is cur, "now": t, **L}
+    with db() as c:
+        played = {r[0] for r in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (p["id"],))}
+    out = []
+    for start in sorted(played & set(weeks), reverse=True):
+        w = weeks[start]
+        L = ledger(w, player_bets(p["id"], w), t)
+        a = _season_agg(L["bets"], [w], t)
+        out.append({"week": start, "index": w.doc["week"]["index"], "current": w is cur, "balance": L["balance"],
+                    "net": a["net"], "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"], "open": L["open"]})
+    return {"now": t, "weeks": out}
 
 
 @app.get("/api/leaderboard")
