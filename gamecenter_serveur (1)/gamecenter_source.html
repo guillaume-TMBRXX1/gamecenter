@@ -494,6 +494,7 @@
   .feed li.k-td .ftext{color:var(--cyan);font-weight:600}
   .feed li.k-to .ftext{color:var(--pink)}
   .feed li.k-score .ftext{color:var(--cyan)}
+  .feed li.k-adj .ftext{font-style:italic;color:var(--ink-3)}
   .np-note{font-size:11px;color:var(--ink-3);margin:10px 0 0}
 
   /* ---------- Replay: an engine match played back from a GameFeed ---------- */
@@ -2730,6 +2731,8 @@ function rpKind(P){
   return 'play';
 }
 function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||''),kind:rpKind(P)}; }
+/* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each */
+function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||''),kind:'adj'})); }
 function rpChip(P){
   const r=P.result, gn=Math.round(num(P.gain,0)), sg=(gn>=0?'+':MINUS)+Math.abs(gn);
   switch(r){
@@ -2781,7 +2784,7 @@ function rpSeek(g,k){
   const n=g.plays.length; k=clamp(k|0,0,n-1);
   const prev=k>0?g.plays[k-1]:null, first=g.plays[0];
   g.hs=prev?prev.after.score.home:0; g.as=prev?prev.after.score.away:0;
-  g.feed=[]; for(let j=Math.max(0,k-40);j<k;j++) g.feed.unshift(rpFeedItem(g,g.plays[j]));
+  g.feed=[]; for(let j=Math.max(0,k-40);j<k;j++){ for(const it of rpAdjItems(g,g.plays[j])) g.feed.unshift(it); g.feed.unshift(rpFeedItem(g,g.plays[j])); }
   let p=num(first.win_prob_home,0.5); const hist=[];
   for(let j=0;j<k;j++){ p=num(g.plays[j].win_prob_home,p); hist.push(p); }
   g.hist=hist.length?hist:[p]; g.p=p; g.odds=rpOdds((prev||first).odds);
@@ -2797,7 +2800,8 @@ function rpSnap(g){
 }
 function rpResolve(g){
   const P=g.cur, A=P.after;
-  g.feed.unshift(rpFeedItem(g,P)); if(g.feed.length>40) g.feed.pop();
+  for(const it of rpAdjItems(g,P)) g.feed.unshift(it);
+  g.feed.unshift(rpFeedItem(g,P)); while(g.feed.length>40) g.feed.pop();
   g.hs=A.score.home; g.as=A.score.away;
   g.chip=rpChip(P); g.lastText=String(P.text||'');
   if(P.result==='touchdown') g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal';
@@ -5010,6 +5014,26 @@ function snapLine(g,P){
   if(gd<=20&&P.down===1) return {prio:1,text:`${off}, first and ${tg==='goal'?'goal':'ten'}, ${spotWords(g,P)}.`};
   return null;
 }
+/* a coordinator's in-game adjustment, said at the snap where it takes effect */
+function adjLine(g,P){
+  const A=Array.isArray(P.adjust)?P.adjust:[]; if(!A.length) return null;
+  const parts=A.map((a,i)=>{ const n=nick(a.team==='home'?g.home:g.away), L=String(a.label||''), V=l=>l[hsh(g.id+'|'+P.seq+'|'+i)%l.length];
+    switch(a.kind){
+      case 'hurry': return V([`The ${n} go hurry-up!`,`No huddle now, the ${n} are in a hurry.`,`Here comes the hurry-up from the ${n}.`]);
+      case 'clock': return V([`The ${n} want to run out the clock.`,`Clock-killing time: the ${n} keep it on the ground.`]);
+      case 'shelve': return V([`The ${n} shelve the ${L}, it just isn't working.`,`That's enough ${L} for the ${n}.`]);
+      case 'shelve_form': return `The ${n} move out of the ${L} look.`;
+      case 'd_deep': return V([`The ${n} roll their safeties deep.`,`The ${n} defense backs into deep shells.`]);
+      case 'd_heat': return `The ${n} answer the deep shots with even more pressure.`;
+      case 'd_run': return V([`The ${n} stack the box to stop the run.`,`Eight in the box now for the ${n}.`]);
+      case 'd_press': return `The ${n} press the short passing game.`;
+      case 'd_noblitz': return `The ${n} back off the blitz.`;
+      case 'd_prevent': return `The ${n} drop into a prevent defense.`;
+      case 'd_attack': return `The ${n} defense sells out for a stop.`;
+    }
+    return String(a.text||''); });
+  return {prio:2,text:parts.join(' ')};
+}
 function playLine(g,P){
   const pl=P.players||{}, car=pl.carrier&&pl.carrier.name, qb=pl.passer&&pl.passer.name, def=pl.defender&&pl.defender.name;
   const off=P.offense==='home'?g.home:g.away, dfT=P.offense==='home'?g.away:g.home, gain=num(P.gain,0), fd=/1st down/.test(String(P.text||''));
@@ -5113,7 +5137,8 @@ function audioSnap(g){
   if(q!==F_Q&&!jump&&F_Q){ say(q>4?`We're headed to overtime! ${scoreLine(g)}`:`Start of the ${ORD[q].toLowerCase()} quarter. ${scoreLine(g)}`,q>4?3:2,g); }
   F_Q=q;
   if(ty==='punt'||ty==='field_goal'||ty==='kickoff') sfx('kick',.45); else sfx('snap');
-  const l=snapLine(g,P); if(l) say(l.text,l.prio,g);
+  const al=adjLine(g,P), l=snapLine(g,P);
+  if(al||l) say([al&&al.text,l&&l.text].filter(Boolean).join(' '),Math.max(al?al.prio:0,l?l.prio:0),g);
 }
 function audioResolve(g){
   if(g!==FOCUS||!g.cur) return;
@@ -5179,7 +5204,7 @@ function audioSweep(){
     }); }
   out.bad=out.bad.slice(0,8); out.missing=out.missing.slice(0,8); return out;
 }
-const AUDIO_API={sweep:audioSweep,log:ALOG,playLine,snapLine,introLine,focus:()=>FOCUS&&FOCUS.id,ctx:()=>AC&&AC.state,setSound,voices:()=>VOICES.length,tts:!!TTS};
+const AUDIO_API={sweep:audioSweep,log:ALOG,playLine,snapLine,adjLine,introLine,focus:()=>FOCUS&&FOCUS.id,ctx:()=>AC&&AC.state,setSound,voices:()=>VOICES.length,tts:!!TTS};
 
 
 /* ================= LIVE SERVER MODE (step 9, site only) =================
