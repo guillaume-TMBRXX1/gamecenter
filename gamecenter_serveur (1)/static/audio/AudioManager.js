@@ -1,8 +1,9 @@
-/* GameCenter Audio System — AudioManager (V0.2)
+/* GameCenter Audio System — AudioManager (V0.3)
    GAME ENGINE → GAME EVENTS → AUDIO MANAGER → AUDIO MIXER → BROWSER AUDIO
    The page reports what happened on the broadcast (snap, result, focus change, interface feedback) with
    the lines its writers produced; the manager maps it to events (AudioEventMapper), decides the
-   reactions (ProceduralAudio; recorded crowd / effects from V0.3), picks the recorded call for the
+   reactions (recorded crowd and field effects — CrowdManager, SFXManager — with ProceduralAudio as the
+   fallback for anything missing or not decoded yet), picks the recorded call for the
    commentator (CommentaryCues) and sends everything through the mixer. It never talks to the engine,
    nor to ElevenLabs: recorded calls are files made offline and listed in /audio/manifest.json.
 
@@ -19,6 +20,8 @@ class AudioManager{
     this.mixer=new L.AudioMixer();
     this.proc=new L.ProceduralAudio(this.mixer);
     this.assets=new L.AssetLoader(this.mixer);
+    this.sfxRec=new L.SFXManager(this.mixer,this.assets);
+    this.crowd=new L.CrowdManager(this.mixer,this.assets);
     this.voice=new L.CommentaryManager({mixer:this.mixer,assets:this.assets,settings:deps.settings,on:()=>this.on(),caption:deps.caption,log:deps.log,onVoices:deps.onVoices});
     this.last=null;                                   /* last event batch, for tests */
     this.listeners=new Set();
@@ -31,7 +34,13 @@ class AudioManager{
     this.mixer.playThroughSilent(true);               /* iOS: play even with the silent switch on, where Safari allows it */
     this.proc.init(); this.mixer.resume(); this.apply();
     if(!this._mf) this._mf=this.assets.loadManifest().then(m=>{ const n=this.voice.setManifest(m);
-      if(n){ this.prefetchStart(); if(this.d.onVoices) this.d.onVoices(); } return m; });
+      this.sfxRec.index(m); this.crowd.index(m);
+      /* stadium pack: every effect (small) and the crowd, in the background; data saver keeps to the essentials */
+      const lite=this.assets.lite();
+      this.assets.prefetch(this.sfxRec.ids(lite?['snap','whistle','tackle']:null));
+      if(this.crowd.ready()) this.assets.prefetch(this.crowd.ids(lite));
+      if(n){ this.prefetchStart(); if(this.d.onVoices) this.d.onVoices(); }
+      this.apply(); return m; });
     return true;
   }
   recordedPack(){ return this.voice.picker.ready(); }
@@ -42,7 +51,43 @@ class AudioManager{
     this.mixer.configure({enabled:on,master:S.vol,
       vol:{commentary:mix.commentary,crowd:mix.crowd,sfx:mix.sfx,music:mix.music},
       mute:{sfx:!S.sfx,commentary:!!mm.commentary,music:!!mm.music}});
-    if(this.proc.ready) this.proc.setBed(on&&S.crowd?this.d.crowdLevel():0);
+    const lvl=on&&S.crowd?this.d.crowdLevel():0;
+    if(this.crowd.ready()&&this.mixer.ctx){ if(this.proc.ready) this.proc.setBed(0); this.crowd.apply(lvl); }   /* recorded stadium */
+    else if(this.proc.ready) this.proc.setBed(lvl);
+  }
+  stadium(){ return this.sfxRec.ready()||this.crowd.ready(); }
+  /* one effect through the recorded stadium: recorded take if decoded, else the procedural one.
+     Same gating as sfx(). Crowd sounds (roar, ooh, groan) give way to the recorded crowd's reactions. */
+  fx(name,delay,args,c){
+    const S=this.d.settings(), log=this.d.log, a=[delay,...args], crowdCue=name==='roar'||name==='ooh'||name==='groan';
+    if(crowdCue&&this.crowd.ready()) return;
+    if(!this.on()||!this.running()){ log('sfx',name,{muted:true,args:a}); return; }
+    if(!S.sfx&&name!=='roar'){ log('sfx',name,{muted:true,args:a}); return; }
+    if(name==='roar'&&!S.crowd){ log('sfx',name,{args:a}); return; }
+    let kind=null, v=1;
+    if(name==='snap') kind='snap';
+    else if(name==='kick') kind=c.callType==='field_goal'&&this.sfxRec.has('fg_good')?'fg_good':'kick';
+    else if(name==='hit'){ kind=c.result==='sack'?'hit':'tackle'; v=args[0]==null?1:Math.min(1,.55+.45*args[0]); }
+    else if(name==='horn') kind='horn';
+    else if(name==='whistle'){
+      if(c.status==='half'||c.status==='final'){ if(this._longFor===c.seq) return; this._longFor=c.seq; kind='whistle_long'; }   /* one long whistle instead of 2-3 short */
+      else if((c.result==='interception'||c.result==='fumble_lost')&&delay>=.8) kind='turnover';
+      else kind='whistle';
+    }
+    if(kind&&this.sfxRec.play(kind,delay,v,c.gameId+'|'+c.seq)){ log('sfx',name,{args:a,rec:kind}); return; }
+    log('sfx',name,{args:a}); this.proc.play(name,delay,...args);
+  }
+  /* recorded-only touches the procedural set never had: the catch, the ball on the turf, the loose ball */
+  extras(c){
+    const S=this.d.settings(); if(!S.sfx||!this.sfxRec.ready()) return;
+    const k=c.gameId+'|'+c.seq, r=c.result;
+    if(r==='complete'&&c.gain>0) this.sfxRec.play('catch',0,.9,k);
+    else if(r==='incomplete') this.sfxRec.play('incomplete',.05,1,k);
+    else if(r==='fumble_lost') this.sfxRec.play('fumble',.1,1,k);
+  }
+  react(c,ev){
+    const S=this.d.settings(); if(!this.crowd.ready()||!S.crowd) return;
+    for(const [kind,delay,v] of L.CrowdManager.reactions(c,ev)) if(this.crowd.react(kind,delay,v,c.gameId+'|'+c.seq)) this.d.log('crowd',kind,{v});
   }
   running(){ return this.mixer.running(); }
   /* one effect, with the previous page's gating and log lines */
@@ -66,14 +111,16 @@ class AudioManager{
     const b=L.AudioEventMapper.mapSnap(g,P,prev), c=b.ctx; this.emit(b);
     const [qLine,playLine]=lines||[];
     if(qLine) this.say(qLine.text,qLine.prio,g,{cues:[CC().quarterCue(c.quarter)],imp:c.importance,seq:P.seq});
-    for(const x of L.ProceduralAudio.cuesSnap(c)) this.sfx(...x);
+    if(this.stadium()&&this.on()&&this.running()){ for(const [n,d,...a] of L.ProceduralAudio.cuesSnap(c)) this.fx(n,d,a,c); if(this.crowd.ready()) this.crowd.setMood(L.CrowdManager.mood(c,b.events)); }
+    else for(const x of L.ProceduralAudio.cuesSnap(c)) this.sfx(...x);
     if(playLine) this.say(playLine.text,playLine.prio,g,{cues:CC().snapCues(c,P),imp:c.importance,seq:P.seq});
     this.prefetchResolve(g,P,c);
     return b;
   }
   resolve(g,P,wpBefore,line){
     const b=L.AudioEventMapper.mapResolve(g,P,wpBefore), c=b.ctx; this.emit(b);
-    for(const x of L.ProceduralAudio.cuesResolve(c)) this.sfx(...x);
+    if(this.stadium()&&this.on()&&this.running()){ this.extras(c); for(const [n,d,...a] of L.ProceduralAudio.cuesResolve(c)) this.fx(n,d,a,c); this.react(c,b.events); }
+    else for(const x of L.ProceduralAudio.cuesResolve(c)) this.sfx(...x);
     if(line) this.say(line.text,line.prio,g,{cues:CC().resolveCues(c,P,g),imp:c.importance,seq:P.seq});
     return b;
   }
@@ -98,7 +145,8 @@ class AudioManager{
   pickVoice(){ return this.voice.pickVoice(); }
   hasTTS(){ return !!this.voice.tts; }
   state(){ return this.mixer.state(); }
+  stats(){ return {ctx:this.state(),cache:this.assets.stats(),sfx:this.sfxRec.stats(),crowd:this.crowd.stats(),voice:{recorded:this.voice.recorded(),busy:this.voice.busy()}}; }
 }
 L.AudioManager=AudioManager;
-L.version='0.2';
+L.version='0.3';
 })(window.GCAudioLib=window.GCAudioLib||{});

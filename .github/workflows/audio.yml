@@ -1,4 +1,4 @@
-# Génère le commentaire enregistré de GameCenter avec ElevenLabs, sur les machines de GitHub
+# Génère le commentaire enregistré, la foule et les effets de GameCenter avec ElevenLabs, sur les machines de GitHub
 # (rien à installer sur ton ordinateur). Lancer : onglet Actions → « Commentaire audio » → Run workflow.
 #
 # À régler une seule fois (Settings → Secrets and variables → Actions) :
@@ -16,6 +16,11 @@ on:
         type: choice
         options: [generer, essai]
         default: generer
+      categorie:
+        description: "tout = commentaire + stade · commentaire = la voix · stade = foule et effets (ElevenLabs Sound Effects)"
+        type: choice
+        options: [tout, commentaire, stade]
+        default: tout
       refaire:
         description: "Prises à refaire (ids séparés par des virgules, vus sur /audio/ecoute) — facultatif"
         required: false
@@ -44,6 +49,7 @@ jobs:
       MODE: ${{ inputs.mode }}
       REFAIRE: ${{ inputs.refaire }}
       SEULEMENT: ${{ inputs.seulement }}
+      CATEGORIE: ${{ inputs.categorie }}
       ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +61,7 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: |
           if [ -z "$ELEVENLABS_API_KEY" ]; then echo "::error::Secret ELEVENLABS_API_KEY absent : Settings → Secrets and variables → Actions → New repository secret"; exit 1; fi
-          if [ -z "$ELEVENLABS_VOICE_ID" ]; then echo "::error::Variable ELEVENLABS_VOICE_ID absente : Settings → Secrets and variables → Actions → Variables → New repository variable"; exit 1; fi
+          if [ -z "$ELEVENLABS_VOICE_ID" ] && [ "$CATEGORIE" != "stade" ]; then echo "::error::Variable ELEVENLABS_VOICE_ID absente : Settings → Secrets and variables → Actions → Variables → New repository variable"; exit 1; fi
           echo "Configuration présente (clé masquée)."
       - name: Installer ffmpeg (normalisation du volume)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
@@ -68,13 +74,14 @@ jobs:
         run: |
           ARGS="--prune"
           if [ "$MODE" = "essai" ]; then ARGS="--dry-run"; fi
+          case "$CATEGORIE" in commentaire) ARGS="$ARGS --cat commentary";; stade) ARGS="$ARGS --cat stade";; *) ARGS="$ARGS --cat all";; esac
           if [ -n "$SEULEMENT" ]; then python3 outils/audio/generer_audio.py $ARGS --only "$SEULEMENT"; else python3 outils/audio/generer_audio.py $ARGS; fi
       - name: Contrôler (aucune clé dans les fichiers, manifeste lisible)
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: |
           if grep -rqF -- "$ELEVENLABS_API_KEY" audio outils; then echo "::error::La clé apparaît dans un fichier : arrêt."; exit 1; fi
-          python3 -c "import json; m=json.load(open('audio/manifest.json')); c=[a for a in m['assets'] if a['cat']=='commentary']; print(len(c),'prises ·',sum(a['bytes'] for a in c)//1024,'Ko')" | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 -c "import json; m=json.load(open('audio/manifest.json')); [print(k,':',len([a for a in m['assets'] if a['cat']==k]),'fichiers ·',sum(a['bytes'] for a in m['assets'] if a['cat']==k)//1024,'Ko') for k in ('commentary','crowd','sfx')]" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Ajouter au dépôt
         if: ${{ inputs.mode == 'generer' }}
         run: |

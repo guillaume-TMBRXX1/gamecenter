@@ -14,7 +14,7 @@ async function run(q, opts={}){
   await p.goto(`http://localhost:${PORT}/${q}`); await p.waitForTimeout(1500);
   const out=await p.evaluate(async ({feeds,opts})=>{
     const A=window.__gc.audio; A.setSound(true); for(let i=0;i<50&&A.ctx()!=='running';i++) await new Promise(r=>setTimeout(r,50));
-    const SET=window.__gc.season.bets.SET; Object.assign(SET,opts);
+    const SET=window.__gc.season.bets.SET; Object.assign(SET,{voiceSrc:'device'},opts);   /* the recorded voice plays asynchronously: compare the decisions with the device voice */
     const log=[], events={};
     const M=A.manager(); if(M) M.onEvent(b=>{ for(const e of b.events) events[e]=(events[e]||0)+1; });
     for(const f of feeds){

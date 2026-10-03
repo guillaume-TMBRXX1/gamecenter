@@ -10,7 +10,7 @@ class AssetLoader{
   constructor(mixer,opts){
     this.mx=mixer; this.o=opts||{}; this.base=this.o.base||'/audio/';
     const mem=navigator.deviceMemory||4, small=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent||'');
-    this.budget=this.o.budget||((small||mem<=2)?24:64)*1024*1024;   /* bytes of decoded PCM */
+    this.budget=this.o.budget||((small||mem<=2)?32:64)*1024*1024;   /* bytes of decoded PCM */
     this.cache=new Map(); this.bytes=0; this.pending=new Map(); this.manifest=null; this._mf=null;
   }
   /* slow link or data saver: callers keep to the essentials (no music, one crowd bed) */
@@ -38,6 +38,8 @@ class AssetLoader{
     return Promise.race([p,new Promise(r=>setTimeout(()=>r(null),timeoutMs))]);
   }
   prefetch(ids){ for(const id of ids||[]) this.get(id); }
+  /* the decoded buffer if it is already here (no wait), else null and a fetch in the background */
+  peek(id){ const hit=this.cache.get(id); if(hit){ this.cache.delete(id); this.cache.set(id,hit); return hit.buf; } this.get(id); return null; }
   put(id,buf){
     const size=buf.length*buf.numberOfChannels*4;
     this.cache.set(id,{buf,size}); this.bytes+=size;

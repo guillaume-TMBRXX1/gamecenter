@@ -35,8 +35,8 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
           for(const [c,imp] of reqs){ moments++; const a=pk.pick(g.id,P.seq,c,imp,true); if(!a){ const k=c.cue+'/'+(c.tags||[]).join(','); missing[k]=(missing[k]||0)+1; continue; }
             picks++; used[a.id]=1; if(lastId[c.cue]===a.id) repeats++; lastId[c.cue]=a.id; }
           g.hist.push(P.win_prob_home); prev={quarter:s.ctx.quarter,seq:P.seq}; }); }
-      const unused=[...new Set(M.assets.manifest.assets.filter(a=>!used[a.id]).map(a=>a.cue))];
-      return {moments,picks,missing,repeats,distinct:Object.keys(used).length,total:M.assets.manifest.assets.length,unused};
+      const unused=[...new Set(M.assets.manifest.assets.filter(a=>a.cat==='commentary'&&!used[a.id]).map(a=>a.cue))];
+      return {moments,picks,missing,repeats,distinct:Object.keys(used).length,total:M.assets.manifest.assets.filter(a=>a.cat==='commentary').length,unused};
     },{feeds});
     console.log('1-2. couverture et variantes', JSON.stringify(r));
     check(Object.keys(r.missing).length===0,`toutes les cues ont une prise (${r.picks}/${r.moments} moments)`);
