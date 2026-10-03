@@ -7,8 +7,8 @@ COPY serveur.py gamecenter_source.html ./
 COPY data/weeks /app/semaines_initiales
 # Les semaines et la base des paris vivent dans /data : il FAUT y monter un disque persistant
 # (Railway : « Volume » monté sur /data ; docker run : -v gamecenter-data:/data).
-# À chaque mise à jour du dépôt (nouvelle semaine poussée par GitHub), les semaines nouvelles sont copiées sur /data.
+# À chaque démarrage, les semaines du dépôt remplacent celles de /data (le dépôt fait foi ; la base des paris n'est pas touchée).
 # Pas d'instruction VOLUME ici : Railway la refuse.
 ENV GC_DATA=/data GC_AUTOGEN=0 PYTHONUNBUFFERED=1
 EXPOSE 8000
-CMD ["sh", "-c", "mkdir -p /data/weeks && cp -rn /app/semaines_initiales/. /data/weeks/ && exec uvicorn serveur:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "mkdir -p /data/weeks && for d in /app/semaines_initiales/week_*; do rm -rf /data/weeks/$(basename $d) && cp -r $d /data/weeks/; done && exec uvicorn serveur:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

@@ -1,7 +1,7 @@
 # Calcule la semaine suivante de NFL Sim GameCenter, gratuitement, sur les machines de GitHub.
 # Samedi 3 h (heure de Bruxelles, ≈ 1 h UTC) ; dimanche même heure en secours si samedi a échoué.
 # Le script ne fait rien si la semaine suivante existe déjà ou n'est pas encore à produire.
-# La nouvelle semaine est ajoutée au dépôt → Railway remet le site à jour tout seul.
+# La nouvelle semaine est contrôlée (audit_moteur.py) puis ajoutée au dépôt → Railway remet le site à jour tout seul.
 name: Semaine suivante
 
 on:
@@ -35,6 +35,9 @@ jobs:
           python -m ipykernel install --user
       - name: Calculer la semaine (≈ 15-20 min si elle est à produire)
         run: python generer_semaine.py --suivante --data data --notebook NFL_Sim_GameCenter.ipynb
+      - name: Contrôler le moteur (audit de toutes les semaines)
+        # bloque la publication si une anomalie grave est trouvée (score faux, horloge, semaine dupliquée…)
+        run: python audit_moteur.py data/weeks
       - name: Ajouter la semaine au dépôt
         run: |
           git config user.name "gamecenter-bot"

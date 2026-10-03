@@ -194,7 +194,10 @@ class Week:
                 at = self.final["end"]
                 if t >= at: res = "won" if self.doc["champion"] == a else "lost"
         else:
-            g = self.by[k[0]]; at = g["end"]
+            g = self.by.get(k[0])
+            if g is None:              # match qui n'existe plus (semaine re-produite) : pari remboursé
+                return "push", b["stake"]
+            at = g["end"]
             if t >= at:
                 H, A = g["result"]["home"], g["result"]["away"]
                 if k[1] == "ml":
