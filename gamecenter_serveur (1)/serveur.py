@@ -546,7 +546,7 @@ def _page_source():
 AUDIO_JS_DIR = os.path.join(HERE, "static", "audio")
 AUDIO_DIR = os.path.realpath(os.environ.get("GC_AUDIO_DIR") or os.path.join(HERE, "audio"))   # GC_AUDIO_DIR : tests seulement
 # ordre d'assemblage : chaque module s'inscrit dans window.GCAudioLib
-AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "CommentaryCues.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
+AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "SFXManager.js", "CrowdManager.js", "CommentaryCues.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
 _AUDIO_JS = {"key": None, "src": b"", "ver": ""}
 _AUDIO_TYPES = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".webm": "audio/webm", ".wav": "audio/wav", ".json": "application/json"}
 _HASHED = re.compile(r"\.[0-9a-f]{6,}\.[a-z0-9]+$")
@@ -587,11 +587,19 @@ def audio_ecoute():
             m = json.load(fh)
     except Exception:
         pass
-    com = [a for a in m.get("assets", []) if a.get("cat") == "commentary"]
-    rows = "".join(
-        f'<tr><td><input type="checkbox" value="{_h.escape(a["id"][2:])}" aria-label="refaire"></td><td><b>{_h.escape(a["cue"])}</b><br><small>{_h.escape(a["tier"])}'
-        f'{(" · " + _h.escape(" ".join(a.get("tags") or []))) if a.get("tags") else ""}</small></td><td>{_h.escape(a["text"])}<br><small>{_h.escape(a["id"][2:])}</small></td>'
-        f'<td><audio controls preload="none" src="/audio/{_h.escape(a["file"])}"></audio></td></tr>' for a in com)
+    com = [a for a in m.get("assets", []) if a.get("cat") in ("commentary", "crowd", "sfx")]
+    order = {"commentary": 0, "crowd": 1, "sfx": 2}
+    com.sort(key=lambda a: order[a["cat"]])
+    label = {"commentary": "Commentaire", "crowd": "Foule", "sfx": "Effets"}
+    rows, cur = "", None
+    for a in com:
+        if a["cat"] != cur:
+            cur = a["cat"]; rows += f'<tr class=sec><td colspan=4><h2>{label[cur]} · {sum(1 for x in com if x["cat"] == cur)}</h2></td></tr>'
+        head = a.get("cue") or a.get("kind", "")
+        sub = a.get("tier") or ("boucle" if a.get("loop") else f'{a.get("dur") or ""} s')
+        rows += (f'<tr><td><input type="checkbox" value="{_h.escape(a["id"][2:])}" aria-label="refaire"></td><td><b>{_h.escape(head)}</b><br><small>{_h.escape(str(sub))}'
+                 f'{(" · " + _h.escape(" ".join(a.get("tags") or []))) if a.get("tags") else ""}</small></td><td>{_h.escape(a["text"])}<br><small>{_h.escape(a["id"][2:])}</small></td>'
+                 f'<td><audio controls preload="none" src="/audio/{_h.escape(a["file"])}"></audio></td></tr>')
     empty = "" if com else "<p><b>Aucune prise pour l'instant.</b> GitHub → Actions → « Commentaire audio » → Run workflow.</p>"
     page = ("<!doctype html><html lang=fr><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
             "<title>GameCenter — écoute du commentaire</title><style>body{font:15px system-ui,sans-serif;margin:16px;max-width:1000px;color:#17202d;background:#f4f2ee}"
@@ -600,8 +608,9 @@ def audio_ecoute():
             "#bar{position:sticky;top:0;background:#f4f2ee;padding:10px 0;border-bottom:2px solid #17202d;margin-bottom:6px}"
             "#ids{width:100%;font:13px ui-monospace,monospace;padding:8px;box-sizing:border-box}"
             "@media(max-width:700px){table,tbody{display:block}tr{display:grid;grid-template-columns:34px 1fr;gap:4px 8px;padding:10px 0;border-bottom:1px solid #ddd}"
-            "td{display:block;border:0;padding:0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-row:span 3}audio{width:100%}}</style>"
-            f"<h1>Commentaire enregistré · {len(com)} prises</h1>{empty}"
+            "td{display:block;border:0;padding:0;min-width:0;overflow-wrap:anywhere}td:first-child{grid-row:span 3}audio{width:100%}tr.sec{display:block}}"
+            "tr.sec h2{margin:18px 0 4px;font-size:18px}</style>"
+            f"<h1>Sons enregistrés · {len(com)} prises</h1>{empty}"
             "<div id=bar>Prises à refaire (cocher, puis copier dans GitHub → Actions → « Commentaire audio » → <i>Prises à refaire</i>) :"
             "<input id=ids readonly placeholder='aucune'></div>"
             f"<table>{rows}</table>"

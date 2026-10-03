@@ -158,6 +158,21 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - **Tests** : `node outils/audio/test_commentaire_v02.js data/weeks 8104` avec des bips de test
   (`generer_audio.py --placeholder --audio-dir /tmp/gc-audio` et `GC_AUDIO_DIR=/tmp/gc-audio` pour le serveur).
 
+### 13. Foule et effets enregistrés (Audio System V0.3)
+
+- **Foule** (`outils/audio/catalogue/stade.json`, ElevenLabs Sound Effects) : fond de stade en boucle (enchaîné en fondu,
+  sans couture audible), fond d'anticipation sur 3e / 4e down, zone rouge à domicile et fin de match serrée ; réactions
+  (petite / moyenne / énorme acclamation, huées, déception, TD, interception, victoire). **Point de vue HOME** : un TD
+  à domicile fait exploser le stade, un TD des visiteurs est hué ; taille selon l'importance du moment (un premier
+  down = applaudissements polis, une course ordinaire = rien). 2 réactions au plus à la fois.
+- **Effets** : snap, plaquage, impact, réception, ballon au sol, sifflet (long en fin de quart-temps), coup de pied,
+  field goal, ballon perdu, changement de possession, corne de stade. Variation légère de hauteur et de niveau,
+  6 effets au plus à la fois, réglages de niveau dans le catalogue (`gain`). Ambiance broadcast, pas d'arcade.
+- **Secours** : tout son enregistré absent ou pas encore décodé → le son synthétisé d'avant. Sans pack « stade », rien ne change.
+- **Générer** : GitHub → *Actions → Commentaire audio → Run workflow*, catégorie `stade` (42 sons, ≈ 2 min de son au
+  total ; mode `essai` d'abord). Les prises de commentaire existantes ne sont pas refaites. Écoute : `/audio/ecoute`.
+- **Tests** : `node outils/audio/test_stade_v03.js data/weeks 8106` (sons de test : `generer_audio.py --placeholder --cat stade`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

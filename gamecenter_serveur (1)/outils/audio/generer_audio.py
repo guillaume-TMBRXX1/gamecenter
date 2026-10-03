@@ -18,6 +18,7 @@ Jamais dans le code, jamais sur Railway, jamais dans le navigateur.
     python3 outils/audio/generer_audio.py --prune          supprime les fichiers qui ne sont plus au catalogue
     python3 outils/audio/generer_audio.py --manifest-only  reconstruit le manifeste à partir des fichiers présents
     python3 outils/audio/generer_audio.py --placeholder --audio-dir /tmp/x   bips de test (sans ElevenLabs)
+    python3 outils/audio/generer_audio.py --cat stade      seulement la foule et les effets (catalogue/stade.json, V0.3)
 Ensuite : ouvrir outils/audio/ecoute.html pour écouter, rejeter ce qui ne va pas (--reject), commiter audio/.
 """
 import argparse, hashlib, json, os, shutil, subprocess, sys, tempfile, time, urllib.error, urllib.request
@@ -26,6 +27,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))           # gamecenter_serveur (1)
 CAT = os.path.join(HERE, "catalogue")
 API = "https://api.elevenlabs.io/v1/text-to-speech/{voice}?output_format={fmt}"
+API_SFX = "https://api.elevenlabs.io/v1/sound-generation?output_format={fmt}"      # foule et effets (V0.3)
+SFX_POST_VERSION = "sv1"
 POST_VERSION = "pv1"                                               # changer si le traitement ffmpeg change
 
 
@@ -157,12 +160,130 @@ def write_listen_page(audio_dir, com):
         fh.write(html)
 
 
+# ------------------------------------------------------------------ foule et effets (V0.3)
+def take_of_sfx(a, rejets, fmt):
+    t = {"prompt": a["prompt"], "duration": a["duration"], "loop": bool(a.get("loop")), "influence": a.get("influence", 0.45),
+         "fmt": fmt, "take": int(rejets.get(a["id"], 0)), "post": SFX_POST_VERSION}
+    return t, hashlib.sha1(json.dumps(t, sort_keys=True).encode()).hexdigest()[:8]
+
+
+def sound_generation(key, take):
+    body = {"text": take["prompt"], "duration_seconds": take["duration"], "prompt_influence": take["influence"]}
+    if take["loop"]:
+        body["loop"] = True
+    for attempt in range(4):
+        req = urllib.request.Request(API_SFX.format(fmt=take["fmt"]), data=json.dumps(body).encode(), method="POST",
+                                     headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            msg = e.read()[:300].decode("utf-8", "replace")
+            if e.code in (400, 422) and "loop" in body:          # option boucle refusée : la boucle se fait dans le navigateur
+                body.pop("loop"); continue
+            if e.code in (429, 500, 502, 503) and attempt < 3:
+                time.sleep(2 ** (attempt + 1)); continue
+            raise SystemExit(f"ElevenLabs (sound-generation) a répondu {e.code} : {msg}")
+        except urllib.error.URLError as e:
+            if attempt < 3:
+                time.sleep(2 ** (attempt + 1)); continue
+            raise SystemExit(f"Réseau : {e}")
+
+
+def post_process_sfx(src_bytes, a, dst):
+    """mono 32 kHz 64 kb/s ; niveaux : fonds −27 LUFS, réactions −21, effets −20 ; fondus contre les clics
+    (pas de fondu sur les fonds en boucle : le navigateur les enchaîne en fondu)"""
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as fh:
+        fh.write(src_bytes); src = fh.name
+    try:
+        bed = a["kind"].startswith("bed_"); sfx = a["cat"] == "sfx"; d = float(a["duration"])
+        target = -27 if bed else (-20 if sfx else -21)
+        chain = []
+        if sfx:
+            chain.append("silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.01")
+        chain.append(f"loudnorm=I={target}:TP=-2:LRA=11")
+        if not bed:
+            fo = 0.02 if sfx else 0.15
+            chain += [f"afade=t=in:d={0.005 if sfx else 0.08}", f"areverse,afade=t=in:d={fo},areverse"]
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af", ",".join(chain), "-ac", "1", "-ar", "32000", "-b:a", "64k", dst], check=True)
+    finally:
+        os.unlink(src)
+
+
+def placeholder_sfx(a, dst):
+    d = max(0.3, float(a["duration"]))
+    src = (f"anoisesrc=color=pink:duration={d}:amplitude=0.3" if a["cat"] == "crowd" else f"sine=frequency=180:duration={min(d, 0.4)}")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", src, "-ac", "1", "-ar", "32000", "-b:a", "64k", dst], check=True)
+
+
+def build_manifest_sfx(audio_dir, assets, hashes):
+    mf_path = os.path.join(audio_dir, "manifest.json")
+    mf = load_json(mf_path, {}) or {}
+    keep = [x for x in mf.get("assets", []) if x.get("cat") not in ("crowd", "sfx")]
+    out = []
+    for a in assets:
+        fn = f"{a['id']}.{hashes[a['id']]}.mp3"; p = os.path.join(audio_dir, a["cat"], fn)
+        if os.path.exists(p):
+            out.append({"id": ("w:" if a["cat"] == "crowd" else "s:") + a["id"], "cat": a["cat"], "kind": a["kind"], "loop": bool(a.get("loop")),
+                        "gain": a.get("gain", 1.0), "file": f"{a['cat']}/{fn}", "text": a["prompt"], "dur": duration(p), "bytes": os.path.getsize(p)})
+    allx = keep + out
+    ver = hashlib.sha1(json.dumps(allx, sort_keys=True).encode()).hexdigest()[:10] if allx else 0
+    save_json(mf_path, {"schema": "gc-audio-manifest/1", "version": ver,
+                        "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
+                        "assets": allx})
+    return out
+
+
+def run_stade(a, rejets, key):
+    cat = load_json(os.path.join(CAT, "stade.json"))
+    assets, fmt = cat["assets"], "mp3_44100_128"
+    hashes, todo = {}, []
+    for x in assets:
+        take, h = take_of_sfx(x, rejets, fmt); hashes[x["id"]] = h
+        os.makedirs(os.path.join(a.audio_dir, x["cat"]), exist_ok=True)
+        if a.only and a.only.lower() not in (x["kind"] + " " + x["id"]).lower():
+            continue
+        if not os.path.exists(os.path.join(a.audio_dir, x["cat"], f"{x['id']}.{h}.mp3")):
+            todo.append((x, take, h))
+    if a.dry_run:
+        print(f"Stade : {len(todo)} son(s) à générer · {round(sum(x['duration'] for x, _, _ in todo), 1)} s d'audio")
+        for x, _, _ in todo[:50]:
+            print(f"  {x['id']:<22} {x['duration']:>4} s  {x['prompt'][:70]}")
+        return
+    if todo and not a.manifest_only:
+        if not a.placeholder and not key:
+            raise SystemExit("ELEVENLABS_API_KEY absente.")
+        for n, (x, take, h) in enumerate(todo, 1):
+            dst = os.path.join(a.audio_dir, x["cat"], f"{x['id']}.{h}.mp3")
+            if a.placeholder:
+                placeholder_sfx(x, dst)
+            else:
+                raw = sound_generation(key, take)
+                if ffmpeg_ok():
+                    post_process_sfx(raw, x, dst)
+                else:
+                    with open(dst, "wb") as fh:
+                        fh.write(raw)
+                time.sleep(0.3)
+            print(f"[stade {n}/{len(todo)}] {x['id']}")
+    if a.prune:
+        for c in ("crowd", "sfx"):
+            wanted = {f"{x['id']}.{hashes[x['id']]}.mp3" for x in assets if x["cat"] == c}
+            d = os.path.join(a.audio_dir, c)
+            for fn in os.listdir(d):
+                if fn.endswith(".mp3") and fn not in wanted:
+                    os.unlink(os.path.join(d, fn)); print("supprimé", c + "/" + fn)
+    out = build_manifest_sfx(a.audio_dir, assets, hashes)
+    print(f"Stade : {len(out)}/{len(assets)} sons · {sum(x['bytes'] for x in out)//1024} Ko.")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dry-run", action="store_true"); ap.add_argument("--only", default="")
     ap.add_argument("--reject", default=""); ap.add_argument("--prune", action="store_true")
     ap.add_argument("--manifest-only", action="store_true"); ap.add_argument("--placeholder", action="store_true")
     ap.add_argument("--audio-dir", default=os.path.join(ROOT, "audio"))
+    ap.add_argument("--cat", default="all", choices=["all", "commentary", "stade"])
     a = ap.parse_args()
 
     cat = load_json(os.path.join(CAT, "commentary.json"))
@@ -170,7 +291,7 @@ def main():
     rej_path = os.path.join(CAT, "rejets.json"); rejets = load_json(rej_path, {}) or {}
     lines = cat["lines"]
     if a.reject:
-        ids = {l["id"] for l in lines}
+        ids = {l["id"] for l in lines} | {x["id"] for x in (load_json(os.path.join(CAT, "stade.json"), {}) or {}).get("assets", [])}
         for i in a.reject.split(","):
             i = i.strip()
             if i not in ids:
@@ -178,6 +299,10 @@ def main():
             rejets[i] = int(rejets.get(i, 0)) + 1
         save_json(rej_path, rejets); print(f"{len(a.reject.split(','))} prise(s) à refaire au prochain passage."); return
 
+    if a.cat in ("all", "stade"):
+        run_stade(a, rejets, "" if (a.placeholder or a.dry_run) else api_key())
+    if a.cat == "stade":
+        return
     if os.environ.get("ELEVENLABS_VOICE_ID", "").strip():
         voix = dict(voix, voice_id=os.environ["ELEVENLABS_VOICE_ID"].strip())
     if a.placeholder:
