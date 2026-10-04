@@ -11,7 +11,7 @@
    Kept low (it sits under the voice and the crowd, ducked when the commentator speaks); off on data-saver links. */
 (function(L){
 'use strict';
-const XF=3, DWELL=20, LEVEL=.8;
+const XF=3, DWELL=20, LEVEL=1.2;   /* measured in a replay: the music bus sits ≈ at the crowd bed's level */
 const RANK={gameplay:0,pregame:0,close_game:1,red_zone:2,final_drive:3,overtime:4};
 
 function stateFor(c,ev){

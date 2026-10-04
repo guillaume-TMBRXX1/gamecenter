@@ -185,6 +185,8 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   Fondus à puissance constante de 3 s ; la tension monte tout de suite mais ne redescend qu'après 20 s (pas de va-et-vient) ;
   jamais plus de 2 pièces à la fois. Musique sous la voix et la foule, baissée quand le commentateur parle ;
   coupée sur les connexions « économie de données ». *Settings → Sound → Mixer → Music* (niveau, muet).
+  Niveau mesuré en replay (04/10) : musique ≈ −25 dB, au-dessus du fond de foule (−28), sous la voix ; pièces « m3 » enrichies
+  en médiums pour rester audibles sur un haut-parleur de tablette ou de téléphone.
 - **Foule plus présente** (mesures : fonds −28 LUFS, réactions −23 LUFS, voix ≈ −17 LUFS) : les réactions ne sont plus
   baissées sous la voix (comme à la télé, la clameur monte sous l'appel), +6 à 7 dB sur fonds et réactions, baisse sous la
   voix allégée ; limiteur de sécurité sur la sortie (jamais de saturation). Aucun son régénéré.
