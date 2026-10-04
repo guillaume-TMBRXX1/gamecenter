@@ -10,7 +10,7 @@ class AssetLoader{
   constructor(mixer,opts){
     this.mx=mixer; this.o=opts||{}; this.base=this.o.base||'/audio/';
     const mem=navigator.deviceMemory||4, small=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent||'');
-    this.budget=this.o.budget||((small||mem<=2)?32:64)*1024*1024;   /* bytes of decoded PCM */
+    this.budget=this.o.budget||((small||mem<=2)?48:96)*1024*1024;   /* bytes of decoded PCM (music loops ≈ 7 MB each) */
     this.cache=new Map(); this.bytes=0; this.pending=new Map(); this.manifest=null; this._mf=null;
   }
   /* slow link or data saver: callers keep to the essentials (no music, one crowd bed) */

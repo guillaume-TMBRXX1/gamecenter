@@ -22,7 +22,7 @@ async function run(q, opts={}){
       A.setFocus(g); g.cur=null;
       f.plays.forEach((P,i)=>{ g.idx=i; g.cur=P; A.log.length=0; const st=0;
         A.snap(g); g.hs=P.after.score.home; g.as=P.after.score.away; A.resolve(g);
-        for(const e of A.log.slice(st)) log.push([e.kind,e.name,JSON.stringify(e.args),e.prio,!!e.muted,e.game].join('|'));
+        for(const e of A.log.slice(st)) if(!['music','crowd','clip','clip-cut','voice'].includes(e.kind)) log.push([e.kind,e.name,JSON.stringify(e.args),e.prio,!!e.muted,e.game].join('|'));
         g.hist.push(P.win_prob_home); });
     }
     return {n:log.length, log, mode:A.mode(), ctx:A.ctx(), events};

@@ -546,7 +546,7 @@ def _page_source():
 AUDIO_JS_DIR = os.path.join(HERE, "static", "audio")
 AUDIO_DIR = os.path.realpath(os.environ.get("GC_AUDIO_DIR") or os.path.join(HERE, "audio"))   # GC_AUDIO_DIR : tests seulement
 # ordre d'assemblage : chaque module s'inscrit dans window.GCAudioLib
-AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "SFXManager.js", "CrowdManager.js", "CommentaryCues.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
+AUDIO_MODULES = ["AudioMixer.js", "ProceduralAudio.js", "SFXManager.js", "CrowdManager.js", "MusicManager.js", "CommentaryCues.js", "CommentaryManager.js", "AudioEventMapper.js", "AssetLoader.js", "AudioManager.js"]
 _AUDIO_JS = {"key": None, "src": b"", "ver": ""}
 _AUDIO_TYPES = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".webm": "audio/webm", ".wav": "audio/wav", ".json": "application/json"}
 _HASHED = re.compile(r"\.[0-9a-f]{6,}\.[a-z0-9]+$")
@@ -587,16 +587,16 @@ def audio_ecoute():
             m = json.load(fh)
     except Exception:
         pass
-    com = [a for a in m.get("assets", []) if a.get("cat") in ("commentary", "crowd", "sfx")]
-    order = {"commentary": 0, "crowd": 1, "sfx": 2}
+    com = [a for a in m.get("assets", []) if a.get("cat") in ("commentary", "crowd", "sfx", "music")]
+    order = {"commentary": 0, "crowd": 1, "sfx": 2, "music": 3}
     com.sort(key=lambda a: order[a["cat"]])
-    label = {"commentary": "Commentaire", "crowd": "Foule", "sfx": "Effets"}
+    label = {"commentary": "Commentaire", "crowd": "Foule", "sfx": "Effets", "music": "Musique (originale, CC0)"}
     rows, cur = "", None
     for a in com:
         if a["cat"] != cur:
             cur = a["cat"]; rows += f'<tr class=sec><td colspan=4><h2>{label[cur]} · {sum(1 for x in com if x["cat"] == cur)}</h2></td></tr>'
-        head = a.get("cue") or a.get("kind", "")
-        sub = a.get("tier") or ("boucle" if a.get("loop") else f'{a.get("dur") or ""} s')
+        head = a.get("cue") or a.get("state") or a.get("kind", "")
+        sub = a.get("tier") or ("boucle" if a.get("loop") or a.get("kind") == "loop" else (f'{a.get("dur")} s' if a.get("dur") else "jingle"))
         rows += (f'<tr><td><input type="checkbox" value="{_h.escape(a["id"][2:])}" aria-label="refaire"></td><td><b>{_h.escape(head)}</b><br><small>{_h.escape(str(sub))}'
                  f'{(" · " + _h.escape(" ".join(a.get("tags") or []))) if a.get("tags") else ""}</small></td><td>{_h.escape(a["text"])}<br><small>{_h.escape(a["id"][2:])}</small></td>'
                  f'<td><audio controls preload="none" src="/audio/{_h.escape(a["file"])}"></audio></td></tr>')
