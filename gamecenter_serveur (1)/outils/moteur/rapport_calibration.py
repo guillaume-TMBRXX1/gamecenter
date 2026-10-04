@@ -11,6 +11,7 @@ allumées, ajoute les stats des décisions (cible réelle, première lecture, pr
     python3 outils/moteur/rapport_calibration.py --decisions on  --reference /tmp/v21.json     # comparaison
     python3 outils/moteur/rapport_calibration.py --decisions on --graines 20                   # rapide (240 matchs)
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-b off                   # décisions du bloc A
+    python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off                   # blocs A + B (V23)
 
 Code de sortie 1 si une mesure sort de sa tolérance (TOLERANCES, à valider par Guillaume).
 """
@@ -20,7 +21,7 @@ import __future__
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVEUR = os.path.abspath(os.path.join(HERE, "..", ".."))
 NOTEBOOK = os.path.join(SERVEUR, "NFL_Sim_GameCenter.ipynb")
-JUSQUA = "12.2 sexies"            # V23 : bloc B (avant : « 12.2 quinquies »)
+JUSQUA = "12.2 septies"           # V24 : bloc C (V23 : « 12.2 sexies », V22 : « 12.2 quinquies »)
 
 # tolérances proposées (bloc A, 04/10/2026) : écart absolu toléré par rapport à la référence V21
 TOLERANCES = {
@@ -40,10 +41,11 @@ TOLERANCES = {
 EQUILIBRE = (0.40, 0.60)          # % de victoires de chaque franchise (test 12.3, inchangé)
 
 
-def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True):
+def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc_c=True):
     """Exécute les cellules de code du notebook jusqu'à celle dont l'en-tête contient `jusqua` (incluse)."""
     os.environ["GC_DECISIONS"] = "1" if decisions else "0"
     os.environ["GC_BLOC_B"] = "1" if bloc_b else "0"
+    os.environ["GC_BLOC_C"] = "1" if bloc_c else "0"
     os.environ.setdefault("GC_MOTEUR_DIR", SERVEUR)
     nb = json.load(open(notebook, encoding="utf-8"))
     mod = types.ModuleType("__nb__")
@@ -184,19 +186,22 @@ def main():
     ap.add_argument("--notebook", default=NOTEBOOK)
     ap.add_argument("--jusqua", default=JUSQUA, help="dernière cellule chargée (V21 : « 12.2 quater »)")
     ap.add_argument("--bloc-b", choices=("off", "on"), default="on", help="intelligence du QB (bloc B, V23)")
+    ap.add_argument("--bloc-c", choices=("off", "on"), default="on", help="intelligence des joueurs (bloc C, V24)")
     ap.add_argument("--reference", help="rapport JSON de référence (V21, décisions coupées)")
     ap.add_argument("--sortie", help="écrit le rapport JSON ici")
     a = ap.parse_args()
 
-    ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on")
+    ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on",
+                          bloc_c=a.bloc_c == "on")
     assert ns.get("DECISIONS_ENABLED", False) == (a.decisions == "on")
     games, temps = mesurer(ns, a.graines)
     rep = _stats(games, temps, ns)
     rep["decisions"] = a.decisions
     rep["bloc_b"] = bool(ns.get("QB_IQ_ENABLED", False))
+    rep["bloc_c"] = bool(ns.get("PLAYER_IQ_ENABLED", False))
     rep["load_seconds"] = t_charge
     if a.decisions == "on":
-        rep["decision_stats"] = {k: v for k, v in ns["decision_report"](games).items() if k != "par_joueur"}
+        rep["decision_stats"] = {k: v for k, v in ns["decision_report"](games).items() if k not in ("par_joueur", "par_couvreur")}
     print(f"Rapport de calibration — décisions {a.decisions} — {rep['games']} matchs "
           f"({rep['seconds_per_game'] * 1000:.0f} ms / match, p95 {rep['seconds_per_game_p95'] * 1000:.0f} ms)")
     for k in ("completion_pct", "sack_rate", "int_rate", "ypa", "net_ypa", "ypc", "turnovers_pg", "int_pg",
@@ -218,6 +223,10 @@ def main():
                 print(f"    {qid:8s} {q['name']:16s} lancer {q['temps_lancer_moyen']:.2f} s · 1re lecture "
                       f"{q['taux_premiere_lecture']:.0%} · erreurs {q['taux_erreur_lecture']:.1%} · pressé "
                       f"{q['presses'] / max(1, q['lancers']):.0%} · sacks {q['taux_sack']:.1%} · INT {q['taux_int']:.1%}")
+        if rep["bloc_c"]:
+            print("  bloc C : " + " · ".join(f"{k} {v['part']:.1%} des ballons (complétion {v['completion']:.1%}, INT "
+                                            f"{v['int'] / max(1, v['cibles']):.1%})" for k, v in sorted(s["par_reception"].items()))
+                  + f" · coverage busts sur la cible {s['taux_bust']:.1%} ({s['busts']} au total)")
         for role, d in sorted(s["par_role"].items(), key=lambda x: -x[1]["cibles"]):
             print(f"    {role:4s} {d['cibles'] / max(1, s['lancers']):6.1%} des cibles · complétion "
                   f"{d['completes'] / max(1, d['cibles']):6.1%} · INT {d['int'] / max(1, d['cibles']):5.1%} · "

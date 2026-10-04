@@ -69,6 +69,11 @@ class EtatReceveur:
     defenseur: str
     separation: float
     statut: str
+    # bloc C (moteur.intelligence_joueurs) : défenseur responsable, coverage bust, écart de route
+    couvreur_id: str = ""
+    couvreur_nom: str = ""
+    bust: bool = False
+    ecart_route: float = 0.0
 
 
 @dataclass
@@ -133,7 +138,8 @@ def _defenseurs_zone(classe, defs):
 class DefensiveReactionEngine:
     """Construit le PostSnapState d'une passe."""
 
-    def react(self, concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng):
+    def react(self, concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng, bruit=BRUIT,
+              echelle=ECHELLE_DUEL):
         """
         concept_defensif : appel du coordinateur ("COVER_2", "BLITZ"…)
         lectures         : progression (moteur.progressions.progression)
@@ -141,6 +147,10 @@ class DefensiveReactionEngine:
         defenseurs       : {"CB": [...], "S": [...], "LB": [...]} (ordre du depth chart)
         niveau_pression  : 0-1, rush contre protection (fonction pure 03E du notebook, blitz compris)
         rng              : flux dédié (moteur.aleatoire.flux)
+        bruit            : écart-type du bruit de séparation (bloc C : plus petit, l'écart de route prend le reste ;
+                           mêmes tirages consommés)
+        echelle          : points de note pour un « pas » de séparation (bloc C : intelligence_joueurs.ECHELLE_C,
+                           20 comme au bloc A — le niveau des joueurs reste dans ce duel de notes)
         """
         famille, choix, rushers = COUVERTURES.get(concept_defensif, COUVERTURE_DEFAUT)
         couverture = _tirage(choix, rng)
@@ -162,14 +172,14 @@ class DefensiveReactionEngine:
                 zone = _defenseurs_zone(l["classe"], defenseurs)
                 tc = sum(talent_couverture(d) for d in zone) / len(zone) if zone else 70.0
                 nom_d = "zone"
-            sep = POIDS_DUEL[famille] * (talent_route(j, role) - tc) / ECHELLE_DUEL
+            sep = POIDS_DUEL[famille] * (talent_route(j, role) - tc) / echelle
             sep += AVANTAGE.get(couverture, {}).get(l["classe"], 0.0)
             sep += AVANTAGE_ROUTE.get(couverture, {}).get(l["route"], 0.0)
             if l["niveau"] == "checkdown":
                 sep += BONUS_CHECKDOWN
             if rushers >= 5 and l["classe"] == "court":
                 sep += BONUS_HOT
-            sep += gauss_borne(rng, BRUIT, 2.5)
+            sep += gauss_borne(rng, bruit, 2.5)
             brut[role] = (sep, nom_d, j)
 
         # double couverture : un safety penche sur la meilleure menace hors checkdown (souvent WR1)

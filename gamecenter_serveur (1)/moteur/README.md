@@ -53,6 +53,39 @@ resolution.probabilites_ajustees(...) statut RÉEL + mod_int / mod_inc (anticipa
 Un QB élite se trompe aussi (erreur de lecture jamais nulle). Interrupteur du notebook : `QB_IQ_ENABLED`
 (`GC_BLOC_B=0` : décisions du bloc A, moteur V22.1 + safety).
 
+## Bloc C — intelligence des joueurs : receveurs et défenseurs (notebook V24, allumé)
+
+```
+receveurs (WR, TE, RB) ── intelligence_joueurs.attributs_joueur(j, poste, franchise)   6 attributs
+défenseurs (CB, S, LB) ──                                                              7 attributs
+   ▼
+DefensiveReactionEngine.react(..., bruit=BRUIT_C, echelle=ECHELLE_C)   état post-snap (bloc A)
+   ▼
+intelligence_joueurs.ajuster_post_snap(...)   flux à part « joueurs-passe » : défenseur RESPONSABLE de chaque receveur
+   │                                          (homme : son vis-à-vis ; zone : un défenseur de la tranche attaquée)
+   │                                          release / man IQ · separation / reaction · reconnaissance / zone-man IQ ·
+   │                                          awareness (soupape, route « hot ») · play recognition (screen) ·
+   │                                          écart de route (route IQ : moyenne et dispersion) · coverage bust
+   │                                          (discipline, play recognition ; play action et double move)
+   ▼
+QBDecisionEngine.decide(...)                  le QB (blocs A-B) lit cet état
+   ▼
+_completer_bloc_c                             réception : open · traffic (catch in traffic / reaction) · contested
+                                              (contested catch / man-zone IQ ; awareness -> interceptions) ;
+                                              yards après la réception (separation / pursuit) ; normalisés par CALIBRATION_C
+```
+
+| Fichier | Rôle |
+|---|---|
+| `intelligence_joueurs.py` | les attributs (route IQ, release, separation, zone / man recognition, catch in traffic, contested catch ; play recognition, zone IQ, man IQ, awareness, reaction, discipline, pursuit), dérivés des notes du poste, de l'identité de la franchise (`PROFILS`) et d'un écart propre au joueur — hors OVR ; `ajuster_post_snap`, `modificateurs_reception`, `yards_apres_reception`. **Ce qui pèse, c'est le profil** : l'écart d'un attribut au `niveau()` du joueur (ses notes de route / de couverture, celles du duel du bloc A) ; le niveau est déjà dans le duel de notes (`POIDS_NIVEAU = 0`). Poids : `POIDS` (part de l'écart au niveau), `C` (effets en « pas » de séparation pour 10 points d'écart effectif) |
+| `reaction_defensive.py` | `react(..., bruit, echelle)` : au bloc C, bruit générique plus petit (l'écart de route prend le reste ; `echelle` du duel de notes inchangée, 20) ; champs `couvreur_id`, `couvreur_nom`, `bust`, `ecart_route` de chaque receveur |
+| `decision_qb.py` | `QBDecision.reception`, `couvreur_id`, `couvreur_nom`, `bust`, `yards_c` (remplis par `moteur.decider_passe`) |
+| `resolution.py` | `CALIBRATION_C` ; `ajustement_yards` ajoute `yards_c` |
+| `stats.py` | réceptions par type, coverage busts (sur la cible, au total), stats par défenseur responsable (`par_couvreur`) |
+
+Interrupteur du notebook : `PLAYER_IQ_ENABLED` (cellule 12.2 septies ; `GC_BLOC_C=0` : moteur V23, blocs A + B). Sans
+attributs sur les receveurs, `decider_passe` rend exactement la décision du bloc B (même bruit, aucun champ du bloc C).
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -71,6 +104,14 @@ Bloc B (`test_bloc_b.py`, toujours en distribution) : processing 90 contre 65 su
 un QB élite se trompe aussi · attributs dérivés (bornes, identité, déterminisme) · slot lu au bloc B seulement ·
 sans attributs = bloc A · déterminisme · probabilités valides · stats par QB.
 
+Bloc C (`test_bloc_c.py`, en distribution) : le niveau n'est pas compté deux fois (attributs au niveau des notes =
+effet nul) · profil au-delà du niveau (même notes, CB « homme » contre CB « zone ») · **deux défenseurs de notes différentes face à la même situation** (man IQ
+et reaction en homme, zone IQ en zone, discipline et play recognition -> coverage busts, play action, screen,
+awareness sur la soupape) · route IQ (écart de route plus petit et moins dispersé) · release (surtout en homme) ·
+reconnaissance de la zone · réception (open / traffic / contested, contested catch d'une star contre un receveur
+faible, défenseur attentif -> interceptions) · yards après la réception · chaîne complète déterministe · sans attributs
+= bloc B à l'identique · flux du bloc C séparé · stats.
+
 ## Calibration (garde-fou 3)
 
 ```bash
@@ -78,9 +119,11 @@ python3 outils/moteur/rapport_calibration.py --decisions off --sortie /tmp/v21.j
 python3 outils/moteur/rapport_calibration.py --decisions on --reference /tmp/v21.json         # verdict (code 1 si hors tolérance)
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json                            # recalcule CALIBRATION
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B                    # recalcule CALIBRATION_B
+python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc C                    # recalcule CALIBRATION_C
+python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off                       # V23 (blocs A + B)
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 sexies) et joue le test d'équilibre de 12.3
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 septies) et joue le test d'équilibre de 12.3
 (1 008 matchs, mêmes graines). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
 ## Colab

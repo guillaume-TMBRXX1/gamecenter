@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc B et safety terminés)
+# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc C terminé)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; **prochain : bloc C** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; **prochain : bloc D** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -314,12 +314,122 @@ CTX-MNL V21 — choisi parmi 40 candidats pour ce qu'il montre : 61 lancers au-d
 
 **Reste hors dépôt** : fiche technique du notebook (V22 / V22.1 / V23 : cellules 12.2 quinquies, 12.2 sexies, safety).
 
+## Bloc C — ✅ terminé le 04/10/2026 (notebook V24, allumé)
+
+**Intelligence des joueurs** — cellule **12.2 septies**, module `moteur/intelligence_joueurs.py` (+ `decider_passe`,
+`reaction_defensive`, `resolution`, `stats`), interrupteur `PLAYER_IQ_ENABLED` (`GC_BLOC_C=0` : moteur V23) :
+- **Receveurs** (WR, TE, RB), 6 attributs : route IQ, release, separation, reconnaissance zone / homme, catch in
+  traffic (réception sous pression), contested catch. **Défenseurs** (CB, S, LB), 7 attributs : play recognition,
+  zone IQ, man IQ, awareness, reaction, discipline, pursuit. Dérivés des notes du poste (resserrés autour de 80), de
+  l'identité de la franchise (CTX lit le jeu ; VEC se démarque et joue le ballon mais mord ; AEG tient ses zones, très
+  discipliné ; MNL gagne les ballons disputés, défense physique en homme, poursuit) et d'un écart propre au joueur.
+  **Hors OVR** : notes, unités et cotes d'avant-match inchangées. Fiche joueur sur le site.
+- **Ce qui pèse, c'est le profil** : l'écart d'un attribut au **niveau** du joueur (ses notes de route ou de
+  couverture, déjà dans le duel de notes du bloc A). Un CB de 90 reste meilleur qu'un CB de 75 (bloc A) ; le bloc C
+  dit en plus s'il est meilleur en homme qu'en zone, discipliné ou joueur, vif sur la cassure…
+- **État post-snap** : chaque receveur fait face au défenseur **responsable** (homme : son vis-à-vis ; zone : un
+  défenseur de la tranche attaquée). Release contre man IQ, separation contre reaction, reconnaissance contre zone /
+  man IQ, awareness sur la soupape et la route « hot », play recognition contre le screen. **Écart entre route
+  dessinée et route courue** : tirage dont la moyenne et la dispersion dépendent du route IQ. **Coverage bust** (le
+  défenseur perd son receveur, plus souvent sur play action et double move, selon discipline et play recognition) :
+  receveur seul. Le QB (blocs A-B) lit ensuite cet état.
+- **Réception** : libre (open), serrée (catch in traffic contre reaction), couverte ou doublée (contested catch contre
+  man / zone IQ ; awareness du défenseur -> interceptions) ; **yards après la réception** : separation contre pursuit.
+  Le défenseur responsable est crédité de l'interception et de la passe défendue sur un ballon disputé (12.2).
+- **Hasard** : flux à part `joueurs-passe|graine|n° d'action` ; le flux des décisions du QB n'est pas consommé (sans
+  attributs, `decider_passe` rend exactement la décision du bloc B — testé).
+- **GameFeed** (additif) : `play.decision.{reception, coverer, bust, busts}`, `roster[].player_iq`. **Site** : sur le
+  terrain, le défenseur responsable colle le receveur sur un ballon disputé (et c'est bien lui sur la fiche), personne
+  n'est près de la réception sur un coverage bust ; play-by-play « · contested catch », « · caught in traffic »,
+  « · X in coverage », « · coverage bust (X) » ; stats d'équipe « Contested catches », « Coverage busts allowed » ;
+  fiche « Receiver intelligence » / « Coverage intelligence » ; commentaire écrit (« Broken up by X! », « Coverage
+  bust! … », contested catch). Commentaire enregistré : pas de nouvelle prise (appels génériques, déjà couverts).
+- **Tests** : 22 tests du bloc C (`moteur/tests/test_bloc_c.py`, en distribution) dont **deux défenseurs de notes
+  différentes face à la même situation** (man IQ / reaction en homme, zone IQ en zone, discipline et play recognition
+  -> coverage busts, play action, screen, soupape), le niveau compté une seule fois, route IQ, release, reconnaissance,
+  réception, yards après la réception, déterminisme, bloc B intact sans attributs ; 65 tests en < 10 s.
+
+**Rapport de calibration** (12.3, 1 008 matchs, mêmes graines ; `outils/moteur/rapport_v24_bloc_c.json`) :
+
+| Mesure | V21 | V23 (safety + bloc B) | V24 (bloc C) | Tolérance |
+|---|---|---|---|---|
+| Complétion | 65,4 % | 65,3 % | 65,1 % | ± 2 points |
+| Sacks / dropback | 8,1 % | 8,3 % | 8,0 % | ± 1 point |
+| INT / tentative | 2,4 % | 2,4 % | 2,5 % | ± 0,5 point |
+| Yards / tentative | 7,67 | 7,54 | 7,62 | ± 0,3 |
+| Yards nets / dropback | 6,62 | 6,53 | 6,62 | ± 0,3 |
+| Yards / course | 5,64 | 5,67 | 5,67 | ± 0,2 |
+| Pertes de balle / match | 3,61 | 3,66 | 3,72 | ± 0,3 |
+| Points / match | 51,8 | 51,8 | 52,1 | ± 2 |
+| Drives / match | 21,0 | 21,1 | 21,1 | ± 1 |
+| Premiers downs / match | 42,7 | 43,0 | 43,4 | ± 2 |
+| Actions / match | 126,5 | 127,3 | 127,4 | ± 5 |
+| Part de dropbacks | 59,0 % | 58,9 % | 59,0 % | ± 2 points |
+| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 57,6 · 45,0 · 53,3 · 44,0 % | 52,4 · 49,6 · 54,0 · 44,0 % | chacune 40-60 % |
+| Temps par match | 128-140 ms | 162 ms* | 165 ms* (× 1,02) | ≤ × 2 |
+
+\* mesurés sur la machine de cette session, chargée par d'autres calculs (le rapport compare à la référence V21 :
+× 1,18) ; V23 et V24 mesurés dans les mêmes conditions.
+
+Bloc C (V24) : ballons **open** 48,4 % des lancers (complétion 82,3 %, INT 0,9 %), **in traffic** 43,0 % (60,2 %,
+3,3 %), **contested** 8,6 % (37,2 %, 8,3 %) ; **coverage bust** sur la cible 2,1 % des lancers (≈ 2,9 par match, toutes
+lectures comprises). 1re lecture 47,2 %, QB pressé 22,8 %, lancer à 2,14 s (bloc B inchangé).
+Cotes : **13.2** passe (biais −1,0 % pour ±4,5 % tolérés ; Brier 0,2437 contre 0,2585 pour la formule de notes ;
+spread 50,4 %, total 49,7 %) ; **13.4** passe sans recalibrage (écart moyen 0,010, extrêmes ±0,019, outsiders
+−13,1 %). Notebook complet sans semaine : 1 213 s ; **semaine du 12/10** produite par `generer_semaine.py` (notebook
+complet, décisions des blocs A-B-C) en 1 911 s — machine chargée par deux autres exécutions du notebook en parallèle
+(V23 : 1 591 s seule) ; `audit_moteur.py` : **0 anomalie bloquante, 0 alerte** (39 matchs, 5 442 actions, 3 049
+passes décidées au bloc C : 1 320 open, 1 133 in traffic, 222 contested, 43 coverage busts sur la cible ; `player_iq`
+dans les rosters) ; le serveur la charge et la sert. Site : exhibition rejouée dans Chromium sans erreur JS
+(play-by-play, stats, fiches, terrain) ; test du commentaire enregistré : couverture complète (20 806 moments).
+
+**Choix faits pendant le calibrage** (à relire) :
+- **Première version écartée** : les attributs bruts (écart à 80) recomptaient le niveau des joueurs, déjà dans le
+  duel de notes du bloc A. Mesuré : MNL (DB et WR les plus faibles de la ligue) tombait à 35-41 % au test 12.3 quel
+  que soit le poids (0,3 à 0,55), VEC montait à 56-61 % ; un témoin aux attributs neutres restait à 43-47 %. Compenser
+  par l'échelle du duel (30 au lieu de 20) ne suffisait pas (MNL 36-41 %). D'où le **profil** (écart au niveau du
+  joueur, `POIDS_NIVEAU = 0`) : MNL 44,0 %, sans toucher à l'échelle du duel (20).
+- `POIDS = 0,45` (comme au bloc B). À 0,7 : CTX 49,4 · VEC 49,2 · AEG 57,0 · MNL 44,3 % (AEG trop près de 60).
+- Coverage bust : base 0,8 % par receveur (× 2,2 sur play action, × 1,5 sur double move) -> 2,1 % des cibles ; à
+  1,2 % : 2,9-3,6 % des cibles, plus de gros jeux (points / match +2,4 avant recalibrage). Sans busts, l'équilibre ne
+  bouge pas (mesuré) : ils ne sont pas en cause dans l'écart de MNL.
+- Bruit générique de la séparation 0,65 au bloc C (0,9 avant) : l'écart de route (0,30-0,85 selon le route IQ) prend
+  le reste ; neutre pour l'équilibre (mesuré : MNL 45,2 % avec les attributs neutres).
+- Profils d'identité : VEC release / separation +1 (+3 au départ : l'avantage s'ajoutait à ses notes, déjà les
+  meilleures), MNL man IQ +4 et reaction +2 (défense physique), AEG zone IQ +4 et discipline +6, VEC discipline −6.
+- Normalisation propre au bloc C : `CALIBRATION_C` (int 1,166 · sack 1,241 · inc 0,921 · yards 0,423) ; contrairement
+  aux blocs A-B, le facteur « yards » du bloc C est bien appliqué aux yards de la passe (au bloc B, `CALIBRATION_B`
+  « yards » n'est pas utilisé : c'est celui du bloc A — sans conséquence mesurée, laissé tel quel pour ne pas changer V23).
+
+**À surveiller (bloc C)** :
+- MNL 44,0 % (comme en V23) : sa défense de passe concède le plus de receveurs libres (≈ 49 % des dropbacks adverses
+  contre 36-44 % ; autant avec le bloc C neutralisé) — ce sont ses notes de DB (duel du bloc A). Le bloc D (plan de jeu : courir plus contre une défense qui couvre bien)
+  peut l'aider ; si une franchise approche 40 / 60 %, baisser `intelligence_joueurs.POIDS` ou revoir `PROFILS`.
+- Test du commentaire enregistré (`outils/audio/test_commentaire_v02.js`) sur la semaine du 12/10 : « pas deux fois
+  la même prise de suite » échoue (6 cas) — sans lien avec le bloc C (même résultat avec la page d'avant) : les cues
+  d'ajustement en direct ADJ_SHELVE_FORM et ADJ_D_NOBLITZ n'ont qu'**une** prise et reviennent deux fois dans un même
+  match (les semaines précédentes n'avaient pas d'ajustements V21). Ajouter des prises (workflow « Commentaire audio »).
+- Les effets du profil sont modestes par construction (écarts de ± 1 à 4 points effectifs) : ils se voient surtout
+  dans les duels extrêmes (contested catches de MNL, busts de VEC, zones d'AEG).
+
+**Exhibition** (site, onglet « Exhibition ») : MNL @ VEC V24 (`exh-v24-mnl-vec`, 35-40, graine
+9 400 014) remplace VEC @ CTX V23 — choisi parmi 40 candidats pour ce qu'il montre du bloc C : 2 contested catches,
+5 passes défendues par le défenseur responsable, 2 coverage busts (concédés par la défense de MNL), avec les blocs A-B
+(33 lancers au-delà de la 1re lecture, 11 sous pression, 4 scrambles, 5 throwaways, 5 sacks « ballon gardé »), 1 safety
+et 11 ajustements en direct (7 types). `simuler_exhibition.py` note ces duels dans l'index (`contested`, `broken_up`,
+`busts`) et la carte du site les affiche.
+
+**Reste hors dépôt** : fiche technique du notebook (V22 / V22.1 / V23 / V24 : cellules 12.2 quinquies, sexies,
+septies, safety).
+
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-16 du README du serveur.
-2. **Bloc C** — intelligence des joueurs (receveurs : route IQ, release, séparation, zone / homme, réception sous
-   pression, contested catch ; défenseurs : play recognition, zone / man IQ, awareness, réaction, discipline, pursuit),
-   notebook V24 : mêmes garde-fous, rapport `outils/moteur/rapport_calibration.py --reference
-   outils/moteur/reference_v21.json`. Même approche que le bloc B pour l'équilibre : attributs hors OVR, poids réglable.
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-17 du README du serveur.
+2. **Bloc D** — adaptation en match et plan de jeu (prolonge V21 : mémoire de tendances, blitz répétés -> quick
+   pass / screen / draw / protection, WR1 trop ciblé -> bracket / double, l'attaque bascule vers WR2 / TE / RB,
+   contre-ajustements ; plan de jeu par adversaire), notebook V25 : mêmes garde-fous, rapport
+   `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`. Le bloc C fournit déjà le
+   défenseur responsable de chaque cible et ses duels : base naturelle pour « qui couvre WR1 » et le bracket.
+   Attention : une IA qui change de plan selon le score fausse les cotes en direct (refaire 13.4).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

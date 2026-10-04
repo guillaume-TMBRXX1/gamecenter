@@ -4,15 +4,16 @@
 Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais SANS produire de semaine), puis
 une cellule ajoutée à la volée qui :
   1. reprend les staffs ajustés de la dernière semaine (staffs_next_week), comme le ferait la semaine suivante ;
-  2. joue N matchs candidats entre deux franchises avec le moteur courant (V23 : intelligence du QB et poche — bloc B,
-     lectures du QB — bloc A, safety, coordinateurs adaptatifs en direct, playbooks V19 + « Roman 2014 » V20) — graines
-     hors saison et hors cotes ;
+  2. joue N matchs candidats entre deux franchises avec le moteur courant (V24 : intelligence des receveurs et des
+     défenseurs — bloc C, intelligence du QB et poche — bloc B, lectures du QB — bloc A, safety, coordinateurs
+     adaptatifs en direct, playbooks V19 + « Roman 2014 » V20) — graines hors saison et hors cotes ;
   3. garde le plus représentatif : décisions visibles du QB (lectures au-delà de la première, passes sous pression,
-     scrambles, throwaways, sacks « ballon gardé »), safety, ajustements en direct, score serré, concepts variés ;
+     scrambles, throwaways, sacks « ballon gardé »), duels receveur / défenseur (réceptions disputées réussies, ballons
+     défendus, coverage busts), safety, ajustements en direct, score serré, concepts variés ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
-    python3 outils/exhibition/simuler_exhibition.py --home CTX --away VEC [--candidats 40] [--id exh-v23-ctx-vec]
+    python3 outils/exhibition/simuler_exhibition.py --home CTX --away VEC [--candidats 40] [--id exh-v24-ctx-vec]
     (--remplace exh-v21-ctx-mnl : retire une ancienne exhibition de l'index et son fichier)
 Durée : l'exécution complète du notebook (≈ 15-20 min, tests compris) + quelques secondes.
 """
@@ -47,10 +48,15 @@ for _k in range(_P["candidates"]):
             "scrambles": sum(1 for d in _d if d.get("action") == "SCRAMBLE"),
             "throwaways": sum(1 for d in _d if d.get("action") == "THROWAWAY"),
             "held_sacks": sum(1 for d in _d if d.get("action") == "SACK"),
-            "safeties": sum(1 for p in _pl if p.get("result") == "safety")}
+            "safeties": sum(1 for p in _pl if p.get("result") == "safety"),
+            "contested": sum(1 for p in _pl if (p.get("decision") or {}).get("reception") == "contested" and p.get("result") in ("complete", "touchdown")),
+            "broken_up": sum(1 for p in _pl if (p.get("decision") or {}).get("reception") in ("contested", "traffic") and p.get("result") == "incomplete"
+                             and ((p.get("players") or {}).get("defender") or {}).get("name") == ((p.get("decision") or {}).get("coverer") or {}).get("name")),
+            "busts": sum(1 for p in _pl if (p.get("decision") or {}).get("bust") and p.get("result") in ("complete", "touchdown", "incomplete", "interception"))}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
-              + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"]))
+              + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
+              + 4 * min(_dec["contested"], 5) + 3 * min(_dec["broken_up"], 4) + 10 * min(_dec["busts"], 3))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
@@ -75,12 +81,14 @@ def main():
     ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V23 · QB intelligence, pocket & pressure · QB reads & post-snap coverage")
+    ap.add_argument("--titre", default="Notebook V24 · receiver & defender intelligence · QB intelligence, pocket & pressure")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")
     ap.add_argument("--sans-bloc-b", action="store_true",
                     help="décisions du bloc A seulement : intelligence du QB (bloc B, V23) coupée")
+    ap.add_argument("--sans-bloc-c", action="store_true",
+                    help="blocs A + B seulement : intelligence des receveurs et des défenseurs (bloc C, V24) coupée")
     a = ap.parse_args()
     import nbformat
     from nbclient import NotebookClient
@@ -96,6 +104,7 @@ def main():
     os.environ.setdefault("GC_MOTEUR_DIR", ROOT)        # modules moteur/ (V22)
     os.environ["GC_DECISIONS"] = "0" if a.sans_decisions else "1"
     os.environ["GC_BLOC_B"] = "0" if a.sans_bloc_b else "1"
+    os.environ["GC_BLOC_C"] = "0" if a.sans_bloc_c else "1"
     nb = nbformat.read(a.notebook, as_version=4)
     nb.cells.append(nbformat.v4.new_code_cell(CELL))
     t0 = time.time()
