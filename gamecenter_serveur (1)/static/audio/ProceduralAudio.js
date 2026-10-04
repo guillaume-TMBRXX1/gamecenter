@@ -81,6 +81,7 @@ ProceduralAudio.cuesResolve=function(ctx){
   if(r==='touchdown'){ c.push(['horn'],['roar',0,1,3.2]); }
   else if(r==='interception'||r==='fumble_lost'){ c.push(['ooh'],['roar',.5,.85,2.4],['whistle',.9]); }
   else if(r==='field_goal_good'){ c.push(['roar',0,.7,2]); }
+  else if(r==='safety'){ c.push(['hit',0,1.2],['roar',.05,1,3],['whistle',.6]); }
   else if(r==='field_goal_missed'){ c.push(['groan']); }
   else if(r==='sack'){ c.push(['hit',0,1.2],['roar',.05,.5,1.4],['whistle',.5]); }
   else if(r==='incomplete'){ c.push(['groan'],['whistle',.35,.7]); }

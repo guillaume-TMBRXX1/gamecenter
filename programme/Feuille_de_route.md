@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc A terminé)
+# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc B et safety terminés)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; **prochain : bloc B** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; **prochain : bloc C** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -220,14 +220,102 @@ TE 18,9 % · RB 11,5 % · WR3 3,2 % (avant : WR1 ≈ 55-60 %, RB seulement sur l
   ligue ; l'ajustement hebdomadaire (12.3) et le bloc B (intelligence du QB) peuvent le faire bouger.
 - Taux de 1re lecture 43,8 % et WR3 peu ciblé (3 %) : à affiner au bloc B (processing, anticipation) et dans les
   progressions (le slot n'est lu que sur STICK / SCREEN).
-- **Safety** : le moteur n'a pas la règle (2 points + coup de pied) ; ≈ 7 % des matchs auraient un safety (fréquence
-  NFL). Proposition : l'ajouter comme petit chantier avant ou avec le bloc B (score, GameFeed `result: "safety"`, site,
-  commentateur, cotes 13.4 à revérifier).
+- ~~**Safety**~~ : ✅ ajouté en V23 (voir « Bloc B » ci-dessous).
+
+## Safety + Bloc B — ✅ terminés le 04/10/2026 (notebook V23, allumés)
+
+**Safety** (validé seul avant le bloc B, garde-fou 8) — cellules 12.2, 11.6, 11.2, 11.5, 11.7, interrupteur
+`SAFETY_ENABLED` :
+- porteur, receveur ou QB sacké arrêté dans son propre en-but -> 2 points pour la défense, free kick de l'équipe qui
+  a concédé depuis sa ligne des 20 (journal : entrée `KICKOFF` avec `free_kick`, distance dans un flux dédié
+  `safety|graine|n° d'action`) ; en prolongation, un safety termine le match ; fumble perdu dans l'en-but : ligne
+  des 1 (comme V22.1) ;
+- GameFeed : `result: "safety"`, `possession_change: "safety"`, `safety_via` (run / complete / sack), `highlight:
+  "SAFETY"`, texte « X downed · Safety » / « Sacked in the end zone · Safety », puis « Free kick, N yds » ;
+- site : puce « SAFETY · 2 PTS », ballon dans l'en-but, éclair, play-by-play, stats, drive « Safety », commentaire
+  écrit, foule et effets (parité audio vérifiée) ; cue enregistrée `SAFETY` (4 prises au catalogue, **à générer** :
+  workflow « Commentaire audio », `seulement` = `SAFETY`) ; `audit_moteur.py` : 2 points pour la défense, sinon bloquant ;
+- mesure (1 008 matchs, décisions du bloc A) : toutes les mesures identiques à V22.1 à ±0,01 près, points / match
+  +0,3, safety dans ≈ 9 % des matchs (NFL ≈ 7 %) ; semaine du 12/10 produite (notebook complet, 13.2 / 13.4 passés)
+  en 1 560 s, `audit_moteur.py` 0 anomalie bloquante.
+
+**Bloc B — intelligence du QB, poche et pression** — cellule **12.2 sexies**, modules `moteur/intelligence_qb.py` et
+`moteur/decision_qb.py` (`decide_b`), interrupteur `QB_IQ_ENABLED` (`GC_BLOC_B=0` : décisions du bloc A) :
+- **8 attributs** (awareness, processing, coverage reading, decision making, pocket awareness, pressure response,
+  anticipation, aggressiveness) : les rosters n'ont que 4 notes de QB -> dérivés de ces notes (resserrés autour de 80),
+  de l'identité de la franchise (CTX lit, VEC ose, AEG protège le ballon, MNL encaisse) et d'un écart propre au joueur
+  (hash de son id). **Hors OVR** : notes, unités et cotes d'avant-match inchangées. Fiche du QB sur le site.
+  CTX 90 · 89 · 91 · 94 · 82 · 86 · 87 · 56 — VEC 88 · 82 · 87 · 89 · 80 · 85 · 88 · 85 — AEG 83 · 84 · 87 · 81 · 87 ·
+  81 · 81 · 33 — MNL 81 · 76 · 82 · 79 · 78 · 82 · 81 · 47 (même ordre).
+- **chrono de poche** : reconnaissance au snap (awareness), pas de lecture (processing), lancer avant l'ouverture
+  (anticipation) contre le temps avant la pression, allongé / raccourci dans la poche (pocket awareness) ; dans les
+  0,45 dernière seconde le QB est **pressé** ;
+- **statut perçu** : erreurs de lecture (coverage reading ; plus en zone ; plus sous pression selon pressure response)
+  -> passe dans une couverture crue ouverte (interception × 1,25) ou receveur libre ignoré ; jamais nulles (un élite se
+  trompe) ; **style** : aggressiveness (fenêtres serrées, passes forcées) tempéré par decision making ; **fin de
+  poche** : scramble, throwaway, passe forcée, sack (ballon gardé trop longtemps) ;
+- le slot (WR3) est lu dans 3 concepts de plus (CURL, FOUR_VERTS, DAGGER) : 3,2 % -> 5,6 % des cibles ;
+- GameFeed (additif) : `play.decision.{bloc, qb, perceived, misread, hurried, pocket_time}`, `roster[].qb_iq` ;
+  site : scramble animé, « · under pressure », stats « Avg. time to throw », « Pressured dropbacks », « QB
+  scrambles », fiche du QB ; commentaire écrit « holds it too long… sacked » ;
+- tests : 20 tests du bloc B (`moteur/tests/test_bloc_b.py`, toujours en distribution) : processing 90 contre 65,
+  pression précoce, poche qui se referme, pressure response, coverage reading, aggressiveness, decision making,
+  anticipation, élite qui se trompe, déterminisme, bloc A intact sans attributs ; 43 tests en < 1 s.
+
+**Rapport de calibration** (12.3, 1 008 matchs, mêmes graines ; `outils/moteur/rapport_v23_bloc_b.json`) :
+
+| Mesure | V21 | V22.1 | V23 (safety + bloc B) | Tolérance |
+|---|---|---|---|---|
+| Complétion | 65,4 % | 65,2 % | 65,3 % | ± 2 points |
+| Sacks / dropback | 8,1 % | 8,2 % | 8,3 % | ± 1 point |
+| INT / tentative | 2,4 % | 2,5 % | 2,4 % | ± 0,5 point |
+| Yards / tentative | 7,67 | 7,53 | 7,54 | ± 0,3 |
+| Yards nets / dropback | 6,62 | 6,52 | 6,53 | ± 0,3 |
+| Yards / course | 5,64 | 5,64 | 5,67 | ± 0,2 |
+| Pertes de balle / match | 3,61 | 3,72 | 3,66 | ± 0,3 |
+| Points / match | 51,8 | 51,4 | 51,8 | ± 2 |
+| Drives / match | 21,0 | 21,1 | 21,1 | ± 1 |
+| Premiers downs / match | 42,7 | 42,9 | 43,0 | ± 2 |
+| Actions / match | 126,5 | 127,1 | 127,3 | ± 5 |
+| Part de dropbacks | 59,0 % | 58,7 % | 58,9 % | ± 2 points |
+| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 53,8 · 48,5 · 52,4 · 45,3 % | 57,6 · 45,0 · 53,3 · 44,0 % | chacune 40-60 % |
+| Temps par match | 128-140 ms | 133 ms | ≈ 130 ms (× 0,95) | ≤ × 2 |
+
+Décisions (V23) : 1re lecture 46,5 % (bloc A 43,8 %), QB pressé 22,8 % des lancers, lancer à 2,14 s, poche 3,21 s,
+erreurs de lecture 7,5 % des lancers ; **35 % des interceptions viennent d'une passe forcée ou mal lue, 45 % des sacks
+d'un ballon gardé trop longtemps** (le reste : pression / tirage). Par QB : CTX lance à 2,01 s, 49 % en 1re lecture,
+6,5 % d'erreurs, 7,8 % de sacks · VEC 2,31 s, 48 % en 1re lecture, 7,6 % d'erreurs, 6,6 % de sacks, INT 2,9 % (le plus de passes forcées) · AEG 1,94 s,
+9,9 % de sacks, 2,2 % d'INT · MNL 2,25 s, 42 % en 1re lecture, 9,4 % d'erreurs, 10,2 % de sacks.
+Cotes : 13.2 passe (biais −1,5 % pour ±4,4 % tolérés ; Brier 0,2396 contre 0,2558 pour la formule de notes) ; 13.4
+passe sans recalibrage (écart moyen 0,007, extrêmes ±0,006, outsiders −7,6 %). Semaine du 12/10 produite par
+`generer_semaine.py` (notebook complet) en 1 591 s (V22.1 : 1 701 s) : `audit_moteur.py` 0 anomalie bloquante ;
+site : les 39 matchs rejoués dans Chromium sans erreur, parité audio identique, test du commentaire enregistré passé.
+
+**Choix faits pendant le calibrage** (à relire) :
+- Poids des attributs : seule une part `POIDS = 0,45` de l'écart d'une qualité au QB de référence (80) pèse
+  (aggressiveness, un style, pèse en entier). À 100 %, l'écart entre le QB de CTX (decision making 94) et celui de MNL
+  (79) donnait CTX 62 % / MNL 38 % ; à 0,6, MNL 40,2 % (trop près de la limite). Mesuré : avec des QB identiques, MNL
+  remonte à 48 % — c'est bien la qualité du QB qui pèse.
+- Attributs dérivés resserrés autour de 80 (`COMPRESSION = 0,5`) ; profils d'identité modestes (± 2 à 5 points ;
+  aggressiveness : VEC +28, AEG −18).
+- Normalisation propre au bloc B : `CALIBRATION_B` (int 1,156 · sack 1,237 · inc 0,925 · yards 0,531).
+- Le slot n'est lu davantage qu'au bloc B (`PROGRESSIONS_B`) : coupé, le bloc A reste identique.
+- Bug corrigé sur le site : « off his first read » s'affichait sur un sack (QB qui avait décidé de lancer, rattrapé).
+
+**À surveiller (bloc B)** :
+- MNL 44,0 % et VEC 45,0 % (CTX 57,6 %) : l'écart de QB se voit ; l'ajustement hebdomadaire (12.3) et le bloc C
+  (receveurs de MNL les plus faibles) peuvent le faire bouger. Si une franchise approche 40 / 60 %, baisser `POIDS`.
+- Sacks : MNL 10,2 % et AEG 9,9 % contre VEC 6,6 % (ligne de VEC + QB) ; moyenne de la ligue inchangée.
+- Le commentaire enregistré du safety reste à générer (workflow « Commentaire audio »).
+
+**Reste hors dépôt** : fiche technique du notebook (V22 / V22.1 / V23 : cellules 12.2 quinquies, 12.2 sexies, safety).
 
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et la section 15 du README du serveur.
-2. Décider du safety (ci-dessus), puis **bloc B** — intelligence du QB, poche et pression (notebook V23) : mêmes
-   garde-fous, rapport `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`.
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-16 du README du serveur.
+2. **Bloc C** — intelligence des joueurs (receveurs : route IQ, release, séparation, zone / homme, réception sous
+   pression, contested catch ; défenseurs : play recognition, zone / man IQ, awareness, réaction, discipline, pursuit),
+   notebook V24 : mêmes garde-fous, rapport `outils/moteur/rapport_calibration.py --reference
+   outils/moteur/reference_v21.json`. Même approche que le bloc B pour l'équilibre : attributs hors OVR, poids réglable.
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

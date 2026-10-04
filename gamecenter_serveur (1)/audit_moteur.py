@@ -74,6 +74,8 @@ def check_game(A, week, g_sched, feed):
             bad(s, "touchdown sans points")
         if r == "field_goal_good" and (scorer != p["offense"] or (dh or da) != 3):
             bad(s, f"field goal réussi mal compté ({dh}/{da})")
+        if r == "safety" and (scorer is None or scorer == p["offense"] or (dh or da) != 2):
+            bad(s, f"safety mal compté ({dh}/{da}) : 2 points pour la défense")
         if r in ("incomplete", "punt", "field_goal_missed", "kickoff") and scorer:
             bad(s, f"des points sur une action « {r} »")
         if r in ("run", "complete") and scorer:

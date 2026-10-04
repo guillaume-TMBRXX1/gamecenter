@@ -57,6 +57,15 @@ PROGRESSIONS = {
 }
 PROGRESSION_DEFAUT = [("WR1", "CURL"), ("WR2", "OUT"), ("TE", "STICK"), ("RB", "FLAT")]
 
+# bloc B : le slot (WR3) est lu dans trois concepts de plus (au bloc A, il ne l'était que sur STICK / SCREEN :
+# 3 % des cibles). Seulement pour les décisions du bloc B : coupé, les progressions restent celles du bloc A.
+PROGRESSIONS_B = dict(PROGRESSIONS)
+PROGRESSIONS_B.update({
+    "CURL":       [("WR1", "CURL"), ("WR2", "OUT"), ("WR3", "STICK"), ("RB", "FLAT")],
+    "FOUR_VERTS": [("WR1", "GO"), ("WR2", "GO"), ("WR3", "SEAM"), ("TE", "DRAG")],
+    "DAGGER":     [("WR1", "DIG"), ("WR2", "SEAM"), ("WR3", "DRAG"), ("RB", "FLAT")],
+})
+
 # formations où un rôle n'est pas éligible (HEAVY : WR1 aligné en 6e OL, cf. 12.2 ter)
 INELIGIBLES = {"HEAVY": {"WR1"}}
 # rôle de remplacement quand un rôle manque ou n'est pas éligible (route conservée)
@@ -64,13 +73,13 @@ REMPLACANTS = {"WR1": ("WR2", "WR3", "TE"), "WR2": ("WR3", "TE", "WR1"), "WR3": 
                "TE": ("WR3", "WR2", "RB"), "RB": ("TE", "WR3")}
 
 
-def progression(concept, formation=None, roles_presents=ROLES):
+def progression(concept, formation=None, roles_presents=ROLES, bloc="A"):
     """Liste ordonnée des lectures : [{"niveau", "role", "route", "classe", "ouverture"}].
 
     Un rôle absent du roster ou inéligible dans la formation est remplacé par le premier remplaçant libre ;
     sans remplaçant, la lecture est retirée. Le checkdown reste toujours en dernier.
     """
-    base = PROGRESSIONS.get(concept, PROGRESSION_DEFAUT)
+    base = (PROGRESSIONS_B if bloc == "B" else PROGRESSIONS).get(concept, PROGRESSION_DEFAUT)
     exclus = INELIGIBLES.get(formation or "", set())
     dispo = [r for r in roles_presents if r not in exclus]
     pris, out = set(), []

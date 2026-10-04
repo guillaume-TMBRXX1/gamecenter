@@ -10,6 +10,7 @@ allumées, ajoute les stats des décisions (cible réelle, première lecture, pr
     python3 outils/moteur/rapport_calibration.py --decisions off --sortie /tmp/v21.json        # référence
     python3 outils/moteur/rapport_calibration.py --decisions on  --reference /tmp/v21.json     # comparaison
     python3 outils/moteur/rapport_calibration.py --decisions on --graines 20                   # rapide (240 matchs)
+    python3 outils/moteur/rapport_calibration.py --decisions on --bloc-b off                   # décisions du bloc A
 
 Code de sortie 1 si une mesure sort de sa tolérance (TOLERANCES, à valider par Guillaume).
 """
@@ -19,7 +20,7 @@ import __future__
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVEUR = os.path.abspath(os.path.join(HERE, "..", ".."))
 NOTEBOOK = os.path.join(SERVEUR, "NFL_Sim_GameCenter.ipynb")
-JUSQUA = "12.2 quinquies"
+JUSQUA = "12.2 sexies"            # V23 : bloc B (avant : « 12.2 quinquies »)
 
 # tolérances proposées (bloc A, 04/10/2026) : écart absolu toléré par rapport à la référence V21
 TOLERANCES = {
@@ -39,9 +40,10 @@ TOLERANCES = {
 EQUILIBRE = (0.40, 0.60)          # % de victoires de chaque franchise (test 12.3, inchangé)
 
 
-def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False):
+def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True):
     """Exécute les cellules de code du notebook jusqu'à celle dont l'en-tête contient `jusqua` (incluse)."""
     os.environ["GC_DECISIONS"] = "1" if decisions else "0"
+    os.environ["GC_BLOC_B"] = "1" if bloc_b else "0"
     os.environ.setdefault("GC_MOTEUR_DIR", SERVEUR)
     nb = json.load(open(notebook, encoding="utf-8"))
     mod = types.ModuleType("__nb__")
@@ -86,11 +88,14 @@ def mesurer(ns, graines=84, base=50_000):
 def _stats(games, temps, ns):
     n = len(games)
     c = dict(att=0, comp=0, inc=0, ints=0, sacks=0, scr=0, pass_yds=0, comp_yds=0, runs=0, run_yds=0,
-             fum_lost=0, plays=0, first_downs=0, drives=0, points=0, dropbacks=0)
+             fum_lost=0, plays=0, first_downs=0, drives=0, points=0, dropbacks=0, safeties=0, games_safety=0)
     for g in games:
         c["points"] += g["home_score"] + g["away_score"]
         c["drives"] += len(g.get("drives") or [])
         log = [e for e in g["play_log"]]
+        saf = sum((e.get("run_summary") or {}).get("termination_cause") == "SAFETY" for e in log)
+        c["safeties"] += saf
+        c["games_safety"] += saf > 0
         for i, e in enumerate(log):
             if e.get("kind") != "OFF":
                 continue
@@ -146,6 +151,8 @@ def _stats(games, temps, ns):
         "attempts_pg": c["att"] / n,
         "sacks_pg": c["sacks"] / n,
         "scrambles_pg": c["scr"] / n,
+        "safeties_pg": c["safeties"] / n,
+        "games_with_safety": c["games_safety"] / n,
         "win_pct": win,
         "seconds_per_game": statistics.mean(temps),
         "seconds_per_game_p95": sorted(temps)[int(0.95 * (len(temps) - 1))],
@@ -176,15 +183,17 @@ def main():
     ap.add_argument("--graines", type=int, default=84, help="matchs par affiche et par terrain (84 -> 1 008 matchs)")
     ap.add_argument("--notebook", default=NOTEBOOK)
     ap.add_argument("--jusqua", default=JUSQUA, help="dernière cellule chargée (V21 : « 12.2 quater »)")
+    ap.add_argument("--bloc-b", choices=("off", "on"), default="on", help="intelligence du QB (bloc B, V23)")
     ap.add_argument("--reference", help="rapport JSON de référence (V21, décisions coupées)")
     ap.add_argument("--sortie", help="écrit le rapport JSON ici")
     a = ap.parse_args()
 
-    ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on")
+    ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on")
     assert ns.get("DECISIONS_ENABLED", False) == (a.decisions == "on")
     games, temps = mesurer(ns, a.graines)
     rep = _stats(games, temps, ns)
     rep["decisions"] = a.decisions
+    rep["bloc_b"] = bool(ns.get("QB_IQ_ENABLED", False))
     rep["load_seconds"] = t_charge
     if a.decisions == "on":
         rep["decision_stats"] = {k: v for k, v in ns["decision_report"](games).items() if k != "par_joueur"}
@@ -192,7 +201,7 @@ def main():
           f"({rep['seconds_per_game'] * 1000:.0f} ms / match, p95 {rep['seconds_per_game_p95'] * 1000:.0f} ms)")
     for k in ("completion_pct", "sack_rate", "int_rate", "ypa", "net_ypa", "ypc", "turnovers_pg", "int_pg",
               "fumbles_lost_pg", "points_pg", "drives_pg", "first_downs_pg", "plays_pg", "pass_rate", "attempts_pg",
-              "sacks_pg", "scrambles_pg"):
+              "sacks_pg", "scrambles_pg", "safeties_pg", "games_with_safety"):
         print(f"  {k:16s} {rep[k]:8.3f}")
     print("  victoires       ", " · ".join(f"{ab} {w:.1%}" for ab, w in rep["win_pct"].items()))
     if a.decisions == "on":
@@ -201,6 +210,14 @@ def main():
               f"sous pression {s['taux_pression']:.1%} · lancer à {s['temps_lancer_moyen']:.2f} s · "
               f"scrambles {s['scrambles']} · throwaways {s['throwaways']} · sans solution {s['sacks_decision']} · "
               f"forcées {s['forcees']}")
+        if rep["bloc_b"]:
+            print(f"  bloc B : erreurs de lecture {s['taux_erreur_lecture']:.1%} des lancers · poche {s['temps_poche_moyen']:.2f} s · "
+                  f"INT sur décision fautive (forcée / mal lue) {s['part_int_decision']:.0%} · "
+                  f"sacks « ballon gardé » {s['part_sacks_decision']:.0%}")
+            for qid, q in sorted(s["par_qb"].items()):
+                print(f"    {qid:8s} {q['name']:16s} lancer {q['temps_lancer_moyen']:.2f} s · 1re lecture "
+                      f"{q['taux_premiere_lecture']:.0%} · erreurs {q['taux_erreur_lecture']:.1%} · pressé "
+                      f"{q['presses'] / max(1, q['lancers']):.0%} · sacks {q['taux_sack']:.1%} · INT {q['taux_int']:.1%}")
         for role, d in sorted(s["par_role"].items(), key=lambda x: -x[1]["cibles"]):
             print(f"    {role:4s} {d['cibles'] / max(1, s['lancers']):6.1%} des cibles · complétion "
                   f"{d['completes'] / max(1, d['cibles']):6.1%} · INT {d['int'] / max(1, d['cibles']):5.1%} · "

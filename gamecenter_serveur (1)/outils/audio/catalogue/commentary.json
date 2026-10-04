@@ -341,6 +341,36 @@
    "text": "Wide right! Oh, he missed it!"
   },
   {
+   "id": "safety_excited_01",
+   "cue": "SAFETY",
+   "tier": "excited",
+   "tags": [],
+   "text": "Taken down in the end zone — that's a safety!"
+  },
+  {
+   "id": "safety_excited_02",
+   "cue": "SAFETY",
+   "tier": "excited",
+   "tags": [],
+   "text": "Safety! Two points for the defense!"
+  },
+  {
+   "id": "safety_excited_03",
+   "cue": "SAFETY",
+   "tier": "excited",
+   "tags": [
+    "pass"
+   ],
+   "text": "Sacked in his own end zone! Safety!"
+  },
+  {
+   "id": "safety_huge_01",
+   "cue": "SAFETY",
+   "tier": "huge",
+   "tags": [],
+   "text": "In the end zone… SAFETY! What a play by the defense!"
+  },
+  {
    "id": "sack_calm_01",
    "cue": "SACK",
    "tier": "calm",
