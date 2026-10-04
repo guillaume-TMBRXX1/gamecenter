@@ -1,0 +1,32 @@
+# Tests des modules ENGINE INTELLIGENCE (gamecenter_serveur (1)/moteur/) : quelques secondes, Python seul.
+# Ne touche ni aux semaines ni au site : un échec signale seulement un module cassé avant qu'il n'aille plus loin.
+name: Tests moteur
+
+on:
+  push:
+    paths:
+      - "gamecenter_serveur (1)/moteur/**"
+      - ".github/workflows/moteur.yml"
+  pull_request:
+    paths:
+      - "gamecenter_serveur (1)/moteur/**"
+      - ".github/workflows/moteur.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests unitaires du moteur
+        run: python -m unittest discover -s moteur/tests -t . -v

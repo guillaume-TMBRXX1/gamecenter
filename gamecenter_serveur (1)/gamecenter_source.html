@@ -2768,7 +2768,9 @@ function rpKind(P){
   if(r==='interception'||r==='fumble_lost'||r==='field_goal_missed'||r==='punt'||P.possession_change==='downs') return 'to';
   return 'play';
 }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||''),kind:rpKind(P)}; }
+/* engine intelligence, block A (play.decision): a completed read beyond the first one is said in the play-by-play */
+function rpReadNote(P){ const d=P.decision; return d&&d.action==='LANCER'&&num(d.read,1)>1&&P.call&&P.call.type==='pass' ? ' · off his first read' : ''; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||''),kind:'adj'})); }
 function rpChip(P){

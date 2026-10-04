@@ -63,6 +63,8 @@ def main():
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
     ap.add_argument("--titre", default="Notebook V21 · adaptive coordinators · V19/V20 playbooks")
+    ap.add_argument("--decisions", action="store_true",
+                    help="V22 : décisions de passe du bloc A allumées (ENGINE INTELLIGENCE), pour montrer le bloc")
     a = ap.parse_args()
     import nbformat
     from nbclient import NotebookClient
@@ -75,6 +77,8 @@ def main():
     for k in ("GC_WEEK_START", "GC_PREV_WEEK", "GC_OUT"):
         os.environ.pop(k, None)               # surtout pas de semaine produite
     os.environ["GC_EXH"] = json.dumps(params)
+    os.environ.setdefault("GC_MOTEUR_DIR", ROOT)        # modules moteur/ (V22)
+    os.environ["GC_DECISIONS"] = "1" if a.decisions else "0"
     nb = nbformat.read(a.notebook, as_version=4)
     nb.cells.append(nbformat.v4.new_code_cell(CELL))
     t0 = time.time()

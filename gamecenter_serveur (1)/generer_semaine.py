@@ -20,7 +20,8 @@ def run_notebook(monday, weeks_dir, prev_week_json=None, notebook=NOTEBOOK, time
     import nbformat
     from nbclient import NotebookClient
     os.makedirs(weeks_dir, exist_ok=True)
-    env = {"GC_WEEK_START": str(monday), "GC_OUT": os.path.abspath(weeks_dir), "GC_PREV_WEEK": os.path.abspath(prev_week_json) if prev_week_json else ""}
+    env = {"GC_WEEK_START": str(monday), "GC_OUT": os.path.abspath(weeks_dir), "GC_PREV_WEEK": os.path.abspath(prev_week_json) if prev_week_json else "",
+           "GC_MOTEUR_DIR": os.environ.get("GC_MOTEUR_DIR") or HERE}      # modules moteur/ (ENGINE INTELLIGENCE, V22)
     old = {k: os.environ.get(k) for k in env}
     os.environ.update(env)                        # le noyau hérite de l'environnement
     try:
