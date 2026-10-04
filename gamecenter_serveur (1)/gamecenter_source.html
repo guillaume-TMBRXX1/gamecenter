@@ -3028,8 +3028,8 @@ function oddBtn(g,mk,side,disp){
 function bugHTML(g){
   const A=TEAMS[g.away], H=TEAMS[g.home], id=g.id;
   return `<div class="bug">
-    <div class="bt"><i class="poss" data-g="${id}" data-f="possA" title="Possession"></i><span class="abbr">${A.abbr}</span><b class="sc" data-g="${id}" data-f="as">${g.as}</b></div>
-    <div class="bt"><i class="poss" data-g="${id}" data-f="possH" title="Possession"></i><span class="abbr">${H.abbr}</span><b class="sc" data-g="${id}" data-f="hs">${g.hs}</b></div>
+    <div class="bt"><i class="poss" data-g="${id}" data-f="possA" title="Possession"></i><span class="abbr">${A.abbr}</span><b class="sc" data-g="${id}" data-f="as">${g.spoiler?MINUS:g.as}</b></div>
+    <div class="bt"><i class="poss" data-g="${id}" data-f="possH" title="Possession"></i><span class="abbr">${H.abbr}</span><b class="sc" data-g="${id}" data-f="hs">${g.spoiler?MINUS:g.hs}</b></div>
     <div class="meta"><span data-g="${id}" data-f="q"></span><span data-g="${id}" data-f="clk"></span><span class="spot" data-g="${id}" data-f="spot"></span><span class="dd" data-g="${id}" data-f="dd"></span></div>
   </div>`;
 }
@@ -3237,8 +3237,8 @@ function setScore(el,v){ const s=String(v); if(el.textContent!==s){ el.textConte
 function updateGameUI(g){
   document.querySelectorAll(`[data-g="${g.id}"]`).forEach(el=>{
     switch(el.dataset.f){
-      case 'as': setScore(el,g.as); break;
-      case 'hs': setScore(el,g.hs); break;
+      case 'as': if(g.spoiler) setTxt(el,MINUS); else setScore(el,g.as); break;
+      case 'hs': if(g.spoiler) setTxt(el,MINUS); else setScore(el,g.hs); break;
       case 'q': setTxt(el,qLabel(g)); break;
       case 'clk': setTxt(el,clkDisp(g)); break;
       case 'dd': setTxt(el,g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g))); break;
@@ -3387,6 +3387,7 @@ let unseen=0;
 function renderMoments(isNew){
   moList.innerHTML=headlines.slice(0,6).map((m,i)=>`<button type="button" class="mo${isNew&&i===0?' new':''}" data-open="${m.gid}"><span class="k${m.k==='TD'?' is-td':''}">${m.k}</span><span class="abbr">${TEAMS[m.team].abbr}</span><span class="txt"></span><span class="t">${m.when}</span></button>`).join('');
   moList.querySelectorAll('.txt').forEach((s,i)=>s.textContent=headlines[i].text);
+  const box=moList.closest('.moments'); if(box) box.style.display=headlines.length?'':'none';   /* nothing seen yet: no empty strip */
 }
 /*@ui-start*/
 function bigPlayKind(g){
@@ -3416,7 +3417,10 @@ function onResolve(g){
   const k=g.mode==='replay'?null:bigPlayKind(g); if(k) celebrate(g,k);
   updateGameUI(g); renderFeed(g); renderStats(g);
 }
-function onCommit(g){ flashField(g,document); refreshOddsUI(g); flashMoves(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); renderFeed(g); renderStats(g); }
+function onCommit(g){
+  if(g.spoiler){ spoilerMask(g); teaserNext(g); }
+  if(SEASON&&g===replayGame&&g.status==='final'&&g.gf) markWatched(g.gf.game.id);   /* seen to the final whistle */
+  flashField(g,document); refreshOddsUI(g); flashMoves(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); renderFeed(g); renderStats(g); }
 
 /*@ui-start*/
 /* ---------------- match centre: team stats, player stats, drives ----------------
@@ -3994,10 +3998,12 @@ function openReplayFeed(feed,viewers){
 function openReplay(id){ const src=byId[id]; if(src&&src.gf) openReplayFeed(src.gf,src.viewers); }
 function closeModal(keepFocus){
   if(!modalGame) return;
+  const refresh=WATCH_DIRTY&&SEASON; WATCH_DIRTY=false;
   closePlayerCard();
   if(modalGame===replayGame) replayGame=null;
   modalView.destroy(); views.splice(views.indexOf(modalView),1);
   modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow='';
+  if(refresh) setTimeout(()=>seasonRefresh(true),0);      /* the game just watched now shows its result */
   if(!keepFocus&&lastFocus&&lastFocus.focus) lastFocus.focus();
 }
 modal.addEventListener('pointermove',e=>{
@@ -4189,7 +4195,7 @@ function seasonRankFor(pl){
 function recordOf(a,t){ const r=standingsAt(t).table.find(x=>x.team===a); return r?`${r.w}-${r.l}${r.t?'-'+r.t:''}`:''; }
 
 /* ---------- the board: live games, recent replays, what is next ---------- */
-let BOARD_SIG='', NEXT_GAMES=[];
+let BOARD_SIG='', NEXT_GAMES=[], BOARD_AT=0;
 function boardPlan(t){
   const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
   const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end);
@@ -4204,10 +4210,52 @@ function boardPlan(t){
    the field at the last play — and costs nothing (no replay stepping, the field drawn once). "Open board" plays it
    from kickoff on the big screen (openReplay, a separate copy); the tile stays as it is. Prime Time and live games run. */
 function previewGame(g){
-  rpSeek(g,g.plays.length-1); rpResolve(g); rpCommit(g);
-  g.paused=true; g.loop=false; g.preview=true; g.tdFlash=false; g.toFlash=null; g.shake=null;
+  g.paused=true; g.loop=false; g.preview=true;
+  if(watched(g.sched.id)){                       /* already seen here: the full final picture, with the score */
+    rpSeek(g,g.plays.length-1); rpResolve(g); rpCommit(g); g.paused=true;
+    g.tdFlash=false; g.toFlash=null; g.shake=null; g.chip={t:'Final · watched',c:''}; return;
+  }
+  /* not seen yet: no spoiler. No score, the PRE-GAME win probability and prices, and a teaser of a few big plays
+     from the first three quarters (never the ending), played fast, once, one tile at a time */
+  g.spoiler=true;
+  const o=g.gf.game.pregame_odds, s=g.sched;
+  g.p0=o&&isFinite(o.p_home)?o.p_home:num(g.plays[0].win_prob_home,.5);
+  g.odds0=o?pgOdds(s):rpOdds(g.plays[0].odds);
+  g.teaser={list:teaserPlays(g),k:0,running:false,done:false};
+  rpSeek(g,g.teaser.list[0]||0); spoilerMask(g);
   g.chip={t:'Final · watch the replay',c:''};
 }
+/* mouse over a preview tile: its teaser plays again (touch screens: once per board) */
+document.addEventListener('pointerenter',e=>{ if(e.pointerType!=='mouse') return; const t=e.target.closest&&e.target.closest('.tile.preview'); if(!t) return;
+  const g=byId[t.dataset.gid]; if(g&&g.teaser&&g.teaser.done&&!g.teaser.running) g.teaser.done=false; },true);
+function spoilerMask(g){ if(!g.spoiler) return; g.p=g.p0; g.odds=g.odds0; g.hist=[g.p0]; }
+/* up to 3 marked plays, spread over Q1-Q3, never a half-time or final play */
+function teaserPlays(g){
+  const P=g.plays, ok=i=>{ const x=P[i]; return x&&num(x.quarter,1)<=3&&x.after&&x.after.status==='live'&&x.call&&(x.call.type==='run'||x.call.type==='pass'); };
+  let c=[]; for(let i=0;i<P.length;i++) if(ok(i)&&(P[i].highlight==='BIG'||P[i].highlight==='TD'||P[i].highlight==='SACK'||P[i].highlight==='INT'||P[i].highlight==='FUM')) c.push(i);
+  if(c.length<3) for(let i=0;i<P.length&&c.length<6;i++) if(ok(i)&&!c.includes(i)&&Math.abs(num(P[i].gain,0))>=10) c.push(i);
+  c.sort((a,b)=>a-b); if(c.length<=3) return c;
+  return [c[0],c[Math.floor(c.length/2)],c[c.length-1]];
+}
+let TEASER_ON=null;
+function teaserStart(g){
+  const T=g.teaser; T.k=0; T.running=true; T.done=false; TEASER_ON=g;
+  rpSeek(g,T.list[0]); spoilerMask(g); g.speed=3; g.paused=false; hideChip(g);
+}
+/* after each committed play of a teaser: the next marked play, or freeze */
+function teaserNext(g){
+  const T=g.teaser; if(!T||!T.running) return;
+  if(g.idx<=T.list[T.k]&&g.status==='live') return;
+  T.k++;
+  if(T.k<T.list.length){ rpSeek(g,T.list[T.k]); spoilerMask(g); hideChip(g); return; }
+  T.running=false; T.done=true; g.paused=true; g.speed=1; if(TEASER_ON===g) TEASER_ON=null;
+  g.chip={t:'Final · watch the replay',c:''}; showChip(g);
+}
+/* watched games (this browser, this week): the board shows their result */
+const WATCH_KEY='gc-watched-v1'; let WATCH_DIRTY=false;
+function watchedSet(){ const d=lsGet(WATCH_KEY); return d&&SW&&d.week===SW.week.start&&Array.isArray(d.ids)?d.ids:[]; }
+function watched(id){ return watchedSet().includes(id); }
+function markWatched(id){ if(!id||watched(id)) return; const ids=watchedSet(); ids.push(id); lsSet(WATCH_KEY,{week:SW.week.start,ids}); WATCH_DIRTY=true; }
 function makeBoardGame(s,mode,t){
   const f0=SEASON.feeds[s.id];
   if(mode!=='upcoming'&&!f0.plays.length) mode='upcoming';
@@ -4264,7 +4312,9 @@ function buildBoard(force){
   Object.keys(byId).forEach(k=>{ if(k.startsWith('pg-')) delete byId[k]; });
   games.length=0;
   for(const [s,m] of plan){ const g=makeBoardGame(s,m,t); games.push(g); byId[g.id]=g; }
+  if(TEASER_ON&&!games.includes(TEASER_ON)) TEASER_ON=null;
   games.forEach((g,i)=>{ if(i>0&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run */
+  BOARD_AT=performance.now();
   grid.innerHTML = games.length ? featTile(games[0]) + games.slice(1).map(miniTile).join('') + seasonNextTile(t) : seasonNextTile(t);
   document.querySelectorAll('#liveGrid .tile[data-gid]').forEach(tile=>{
     const g=byId[tile.dataset.gid];
@@ -4278,7 +4328,7 @@ function buildBoard(force){
 }
 function seasonTicker(){
   const t=nowMs();
-  const res=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end).slice(0,8).map(g=>{ const sc=scoreAt(g,t);
+  const res=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end).slice(0,8).map(g=>{ const sc=watched(g.id)?scoreAt(g,t):{home:MINUS,away:MINUS};   /* no spoiler */
     return `<span class="tk"><span class="abbr">${TEAMS[g.away].abbr}</span><span class="sc">${sc.away}</span><span class="clk">${MINUS}</span><span class="sc">${sc.home}</span><span class="abbr">${TEAMS[g.home].abbr}</span><span class="clk">FINAL${g.phase!=='regular'?' · '+esc(PHASE[g.phase]):''}</span></span>`; }).join('');
   const group=games.filter(g=>g.mode==='live').map(tkGameHTML).join('')+res;
   tkTrack.innerHTML=group?`<div class="tk-group">${group}</div><div class="tk-group" aria-hidden="true">${group}</div>`:'';
@@ -4287,7 +4337,7 @@ function seasonTicker(){
 /* Big plays: the highlights of the latest finished games (live ones are added as they happen) */
 function seasonMoments(t){
   headlines.length=0;
-  const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end).slice(0,4);
+  const fin=SCHED.filter(g=>gStatus(g,t)==='final'&&watched(g.id)).sort((a,b)=>b.end-a.end).slice(0,4);   /* no spoiler: games seen here only */
   for(const g of fin){ const f=SEASON.feeds[g.id];
     for(const P of f.plays.slice().reverse()){ if(P.highlight==='TD'||P.highlight==='INT'||P.highlight==='FUM'){
       headlines.push({k:P.highlight,gid:'rp:'+g.id,team:P.offense==='home'?g.home:g.away,text:String(P.text||''),when:`${TEAMS[g.away].abbr}@${TEAMS[g.home].abbr} ${qName(P.quarter)}`});
@@ -5708,11 +5758,13 @@ function frame(now){
   for(const v of views){
     /* perf: off-screen fields, and the boards behind the open big screen, are not drawn (their games still run) */
     if(!v.onScreen||(modalView&&v!==modalView)){ v._resnap=true; continue; }
-    if(v.g.preview){ if(v._sig&&!v._resnap) continue; v._resnap=true; v.draw(dt,null); continue; }   /* still preview: one frame */
+    const T=v.g.teaser;
+    if(T&&!T.running&&!T.done&&!TEASER_ON&&!modalView&&!REDUCED&&SET.fx&&now-BOARD_AT>1500) teaserStart(v.g);
+    if(v.g.preview&&!(T&&T.running)){ if(v._sig&&!v._resnap) continue; v._resnap=true; v.draw(dt,null); continue; }   /* still preview: one frame */
     if(v.draw(dt,now)) drew=true;
   }
   perfWatch(ms,drew,now);
-  if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
+  if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview||(g.teaser&&g.teaser.running)) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
