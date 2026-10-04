@@ -10,6 +10,8 @@ Les facteurs CALIBRATION ramènent les taux moyens de la ligue sur ceux du moteu
 seule la RÉPARTITION des résultats entre les actions change, pas leur fréquence globale.
 Bloc B : la décision porte en plus ses multiplicateurs (mod_int, mod_inc : anticipation, pressure response, erreur
 de lecture) ; les décisions du bloc B ont leur propre normalisation (CALIBRATION_B).
+Bloc C : mod_int / mod_inc portent aussi la réception (receveur contre défenseur responsable : catch in traffic,
+contested catch) et yards_c les yards après la réception ; normalisation CALIBRATION_C.
 """
 from .decision_qb import LANCER, THROWAWAY, SCRAMBLE, SACK
 from .reaction_defensive import LIBRE, SERRE, COUVERT, DOUBLE
@@ -27,6 +29,7 @@ SACK_SCRAMBLE = 0.12            # rattrapé en sortant de la poche
 # probabilités ajustées pour que la moyenne de la ligue reste celle du moteur historique
 CALIBRATION = {"int": 1.42, "sack": 1.10, "inc": 0.96, "yards": 0.45}
 CALIBRATION_B = {"int": 1.156, "sack": 1.237, "inc": 0.925, "yards": 0.531}   # calibrer_bloc_a.py --bloc B (V23)
+CALIBRATION_C = {"int": 1.166, "sack": 1.241, "inc": 0.921, "yards": 0.423}   # calibrer_bloc_a.py --bloc C (V24)
 
 # yards : profondeur de la cible réelle par rapport à la cible primaire (le concept a déjà son effet moyen)
 PROFONDEUR = {"court": 0.0, "moyen": 3.0, "profond": 8.0}
@@ -87,6 +90,7 @@ def ajustement_yards(decision, lectures, calibration=CALIBRATION):
     classe = {l["role"]: l["classe"] for l in lectures}
     d = (PROFONDEUR[classe.get(decision.cible, "court")] - PROFONDEUR[lectures[0]["classe"]]) * PART_PROFONDEUR
     d += YARDS_STATUT.get(decision.statut, 0.0) + calibration.get("yards", 0.0)
+    d += decision.yards_c                               # bloc C : separation du receveur contre pursuit
     return int(round(d))
 
 

@@ -2341,6 +2341,20 @@ function planScrimmage(g,call,imp){
         const p=kfAt(def[i],t0), dist=Math.hypot(p.x-C.x,p.y-C.y), k=clamp(1-dist/26,0.15,0.85);
         def[i]=kfCut(def[i],t0,[[Math.min(1,uc+0.08),lerp(p.x,C.x,k),lerp(p.y,C.y,k)],[1,lerp(p.x,C.x,k*1.1),lerp(p.y,C.y,k*1.1)]]);
       }
+      /* engine block C: the defender responsible for the target. Contested ball: he is on the receiver at the catch;
+         in traffic: closing a step behind; coverage bust: the receiver is alone (nobody near the catch point) */
+      if(imp.cov&&imp.kind!=='int'){
+        let ci=null, cd=1e9;
+        for(let i=4;i<11;i++){ if(rushers.has(i)) continue; const p=kfAt(def[i],t0); const dd=(p.x-C.x)**2+(p.y-C.y)**2; if(dd<cd){cd=dd;ci=i;} }
+        if(ci!=null&&imp.cov==='bust'){
+          for(let i=4;i<11;i++){ if(rushers.has(i)) continue; const p=kfAt(def[i],uc), dd=Math.hypot(p.x-C.x,p.y-C.y);
+            if(dd<9){ const k=(9-dd)/Math.max(dd,0.5); def[i]=kfCut(def[i],t0,[[Math.min(1,uc+0.08),p.x+(p.x-C.x)*k*0.6-d*1.5,p.y+(p.y-C.y)*k*0.6],[1,p.x+(p.x-C.x)*k*0.6-d*0.5,p.y+(p.y-C.y)*k*0.6]]); } }
+        } else if(ci!=null&&(imp.cov==='contested'||imp.cov==='traffic')){
+          const gap=imp.cov==='contested'?0.7:1.8, p0=kfAt(def[ci],Math.max(0.2,t0-0.1)), sy=p0.y>=C.y?1:-1;
+          def[ci]=kfCut(def[ci],Math.max(0.2,t0-0.1),[[uc,C.x+d*gap*0.5,C.y+sy*gap],[Math.min(1,uc+0.1),C.x+d*0.3,C.y+sy*0.6],[1,C.x+d*0.6,C.y+sy*0.9]]);
+          P.cov=ci;
+        }
+      }
       if(imp.kind==='comp'){
         const Fy=imp.endY!=null?clamp(imp.endY,1,52.3):clamp(C.y+(total-(C.x-L)*d>6?rand(-5,5):rand(-2,2)),2,51.3), Fx=L+d*total;
         off[tIdx]=kfCut(off[tIdx],uc,[[0.93,Fx,Fy],[1,Fx,Fy]]);
@@ -2771,7 +2785,8 @@ function planFromFeed(g,P){
   const scr=P.decision&&P.decision.action==='SCRAMBLE'&&t==='run';
   const kind= scr ? 'scramble' : t!=='pass' ? 'run' : r==='incomplete'?'inc' : r==='sack'?'sack' : r==='interception'?'int' : 'comp';
   const ey=g.latEngine&&P.spot?num(P.spot.y,null):null;
-  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,side:g.latEngine?(P.call.side||null):null});
+  const dk=P.decision||{}, cov=t==='pass'&&!scr?(dk.bust?'bust':dk.reception||null):null;   /* engine block C */
+  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,side:g.latEngine?(P.call.side||null):null,cov});
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
@@ -2789,7 +2804,14 @@ function rpKind(P){
 function rpReadNote(P){ const d=P.decision; if(!d||d.action!=='LANCER'||!P.call||P.call.type!=='pass') return '';
   if(P.result==='sack'||(P.result==='safety'&&P.safety_via==='sack')) return '';   /* sacked before the throw: no read to tell */
   /* block B: a throw in the closing pocket is said too */
-  return (num(d.read,1)>1?' · off his first read':'')+(d.hurried?' · under pressure':''); }
+  let s=(num(d.read,1)>1?' · off his first read':'')+(d.hurried?' · under pressure':'');
+  /* block C: the catch (open / in traffic / contested) and the defender responsible for the target */
+  const caught=P.result==='complete'||P.result==='touchdown'||P.result==='fumble_lost', cv=d.coverer&&d.coverer.name;
+  if(d.bust) s+=' · coverage bust'+(cv?` (${cv})`:'');
+  else if(caught&&d.reception==='contested') s+=' · contested catch';
+  else if(caught&&d.reception==='traffic') s+=' · caught in traffic';
+  else if(P.result==='incomplete'&&(d.reception==='contested'||d.reception==='traffic')&&cv) s+=` · ${cv} in coverage`;
+  return s; }
 function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||''),kind:'adj'})); }
@@ -3467,7 +3489,7 @@ function computeStats(g,n){
   const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
 }
 function computeStatsNow(g,n){
-  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0});
+  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
@@ -3480,7 +3502,9 @@ function computeStatsNow(g,n){
     const secs=Math.max(0,num(P.clock_start,0)-num(P.clock_end,0)), scrim=t==='run'||t==='pass', fdn=/1st down/i.test(P.text||'');
     const pp=P.players||{}, car=pp.carrier||{}, pas=pp.passer||null, df=pp.defender||{};
     S.top+=secs;
-    const dc=P.decision; if(dc){ S.db++; if(dc.action==='LANCER'&&num(dc.throw_time,null)!==null){ S.tt+=dc.throw_time; S.tn++; } if(dc.pressure||dc.hurried) S.pr++; if(dc.action==='SCRAMBLE') S.scr++; }
+    const dc=P.decision; if(dc){ S.db++; if(dc.action==='LANCER'&&num(dc.throw_time,null)!==null){ S.tt+=dc.throw_time; S.tn++; } if(dc.pressure||dc.hurried) S.pr++; if(dc.action==='SCRAMBLE') S.scr++;
+      /* block C: contested balls won by the offense, coverage busts given up by the defense */
+      if(dc.reception){ S.bc++; if(dc.reception==='contested'&&P.result!=='sack'){ S.ct++; if(P.result==='complete'||P.result==='touchdown'||P.result==='fumble_lost') S.cw++; } if(dc.bust) team[ds].bust++; } }
     if(scrim){
       S.plays++;
       if(fdn) S.fd++;
@@ -3554,6 +3578,8 @@ function renderStats(g){
       /* engine decisions (blocks A-B): time to throw, pressure, scrambles */
       if(a.db+h.db>0){ const tt=S=>S.tn?(S.tt/S.tn).toFixed(2)+' s':'—';
         rows.push(['Avg. time to throw',tt(a),tt(h),0],['Pressured dropbacks',`${a.pr}/${a.db} · ${pc(a.pr,a.db)}`,`${h.pr}/${h.db} · ${pc(h.pr,h.db)}`,-1,a.db?a.pr/a.db:0,h.db?h.pr/h.db:0],['QB scrambles',a.scr,h.scr,0]); }
+      /* engine block C: contested catches (won / thrown), coverage busts given up */
+      if(a.bc+h.bc>0) rows.push(['Contested catches',`${a.cw}/${a.ct}`,`${h.cw}/${h.ct}`,1,a.cw,h.cw],['Coverage busts allowed',a.bust,h.bust,-1]);
       body.innerHTML=`<div class="st-scroll"><table class="tst"><thead><tr><th scope="col">Team stats</th><th scope="col"><span class="abbr">${A.abbr}</span></th><th scope="col"><span class="abbr">${H.abbr}</span></th></tr></thead><tbody>${rows.map(([l,va,vh,better,na,nh])=>{
         const x=na!=null?na:parseFloat(va), y=nh!=null?nh:parseFloat(vh); let ca='', ch='';
         if(better && isFinite(x) && isFinite(y) && x!==y){ if((x>y)===(better>0)) ca='lead'; else ch='lead'; }
@@ -3590,6 +3616,8 @@ function renderStats(g){
    carrier / target, and the defender credited with the tackle, sack or interception. */
 const POS_NAME={QB:'Quarterback',RB:'Running back',WR:'Wide receiver',TE:'Tight end',LT:'Left tackle',LG:'Left guard',C:'Center',RG:'Right guard',RT:'Right tackle',
   EDGE:'Edge rusher',DT:'Defensive tackle',LB:'Linebacker',CB:'Cornerback',S:'Safety',K:'Kicker',P:'Punter'};
+const PLAYER_IQ_NAME={route_iq:'Route IQ',release:'Release',separation:'Separation',coverage_recognition:'Zone / man recognition',catch_in_traffic:'Catch in traffic',contested_catch:'Contested catch',
+  play_recognition:'Play recognition',zone_iq:'Zone IQ',man_iq:'Man IQ',awareness:'Awareness',reaction:'Reaction',discipline:'Discipline',pursuit:'Pursuit'};
 const QB_IQ_NAME={awareness:'Awareness',processing:'Processing',coverage_reading:'Coverage reading',decision_making:'Decision making',pocket_awareness:'Pocket awareness',pressure_response:'Pressure response',anticipation:'Anticipation',aggressiveness:'Aggressiveness'};
 const ATTR_NAME={throw_power:'Throw power',throw_accuracy:'Throw accuracy',mobility:'Mobility',decision_making:'Decision making',speed:'Speed',acceleration:'Acceleration',
   elusiveness:'Elusiveness',power:'Power',route_running:'Route running',catching:'Catching',run_block:'Run block',pass_block:'Pass block',strength:'Strength',
@@ -3626,6 +3654,8 @@ function slotMap(g){
     const idx= plan.int ? (plan.carrier.find(c=>c[2]==='def')||[])[3] : plan.sacker!=null ? plan.sacker : null;
     if(idx!=null) put(def,RD,idx,who);
   }
+  /* engine block C: the defender drawn on the contested ball is the one the engine made responsible */
+  if(plan && plan.cov!=null && P && P.decision && P.decision.coverer){ const cv=RD.find(r=>r.id===P.decision.coverer.id); if(cv) put(def,RD,plan.cov,cv); }
   const roles={off:OFF_ROLE.slice(), def:DEF_SLOT[df] ? DEF_SLOT[df].map(([p],i)=>(DEF_ROLE[df]||{})[i]||POS_NAME[p]) : []};
   if(call.formation==='I_FORM'||call.formation==='JUMBO') roles.off[10]='Fullback';
   if(call.formation==='JUMBO'){ roles.off[8]='Tight end'; roles.off[9]='Wing'; }
@@ -3674,6 +3704,7 @@ function playerCardHTML(g,side,idx){
     </div>
     <div class="pc-sec"><span class="label">Attributes</span>${bars||'<p class="pc-note">No attributes</p>'}</div>
     ${pl.qb_iq?`<div class="pc-sec"><span class="label">QB intelligence</span>${Object.keys(pl.qb_iq).map(k=>`<div class="pc-attr"><span>${QB_IQ_NAME[k]||esc(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(pl.qb_iq[k],0,100)}%"></b></i><em>${pl.qb_iq[k]}</em></div>`).join('')}<p class="pc-note">Weighs on his reads, timing and decisions under pressure (aggressiveness is a style, not a grade).</p></div>`:''}
+    ${pl.player_iq?(()=>{ const rec='route_iq' in pl.player_iq; return `<div class="pc-sec"><span class="label">${rec?'Receiver intelligence':'Coverage intelligence'}</span>${Object.keys(pl.player_iq).map(k=>`<div class="pc-attr"><span>${PLAYER_IQ_NAME[k]||esc(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(pl.player_iq[k],0,100)}%"></b></i><em>${pl.player_iq[k]}</em></div>`).join('')}<p class="pc-note">${rec?'Weighs on how he gets open, the catch in traffic or contested, and yards after the catch.':'Weighs on the separation he gives up, coverage busts, contested balls and yards after the catch.'}</p></div>`; })():''}
     <div class="pc-sec"><span class="label">This game</span>${lines.length?lines.map(([a,b])=>`<div class="pc-line"><span>${a}</span><b>${b}</b></div>`).join(''):'<p class="pc-note">No stats yet in this game</p>'}</div>
     <div class="pc-sec pc-season"><span class="label">Season rank</span>${(()=>{ const sr=typeof seasonRankFor==='function'?seasonRankFor(pl):null;
       return sr?`<div class="pc-line"><span>${esc(sr.label)}</span><b>${esc(sr.text)}</b></div>`:'<p class="pc-note">Arrives with the season engine (standings across all games).</p>'; })()}</div>`;
@@ -4561,9 +4592,10 @@ function renderExhibitions(){
     const low=document.querySelector('#viewLive .lower'); if(!low) return; low.after(box); }
   box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
     const kinds=(x.adjust_kinds||[]).length, D=x.decisions||{};
-    /* engine intelligence (blocks A-B): what the QBs did that the viewer will see */
+    /* engine intelligence (blocks A-C): what the QBs, receivers and defenders did that the viewer will see */
     const dec=[D.beyond_first_read?`${D.beyond_first_read} throws past the first read`:'',D.under_pressure?`${D.under_pressure} under pressure`:'',
       D.scrambles?`${D.scrambles} scramble${D.scrambles>1?'s':''}`:'',D.throwaways?`${D.throwaways} throwaway${D.throwaways>1?'s':''}`:'',
+      D.contested?`${D.contested} contested catch${D.contested>1?'es':''}`:'',D.broken_up?`${D.broken_up} pass${D.broken_up>1?'es':''} broken up`:'',D.busts?`${D.busts} coverage bust${D.busts>1?'s':''}`:'',
       D.safeties?`${D.safeties} safet${D.safeties>1?'ies':'y'}`:''].filter(Boolean).join(' · ');
     return `<article class="card exh-card"><div class="exh-main"><span class="pt-tag">Exhibition</span>
       <h3><span class="abbr">${esc(A.abbr)}</span> ${esc(A.name)} <em>@</em> <span class="abbr">${esc(H.abbr)}</span> ${esc(H.name)}</h3>
@@ -5260,10 +5292,16 @@ function playLine(g,P){
     case 'sack': prio=2; if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc==='B'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
       text=V([`Sacked! ${def||'The pass rush'} gets to ${sur(qb)}, loss of ${yds(gain)}.`,`${sur(qb)} goes down! ${def||'They'} with the sack.`,`Pressure… and ${sur(qb)} is sacked!`]); break;
     case 'complete':
+      { const dk=P.decision||{}, cv=dk.coverer&&dk.coverer.name;   /* engine block C */
+        if(dk.bust){ prio=2; text=V([`Coverage bust! ${car} is all alone${cv?', '+sur(cv)+' lost him':''}… ${yds(gain)}!`,`Nobody covering ${sur(car)}! Busted coverage, ${yds(gain)}.`]); break; }
+        if(dk.reception==='contested'){ prio=2; text=V([`${sur(qb)} fits it in… what a contested catch by ${car}! ${yds(gain)}.`,`${car} goes up and takes it away${cv?' from '+sur(cv):''}! ${yds(gain)}.`]); break; } }
       if(gain>=20){ prio=2; text=V([`${sur(qb)} goes deep for ${car} — caught! ${yds(gain)}!`,`What a grab by ${car}! ${yds(gain)} on the play.`,`${sur(qb)} to ${car}, and he's off! ${yds(gain)}!`]); }
       else text = gain<=0 ? `${sur(qb)} to ${sur(car)}, no gain.` : V([`${sur(qb)} to ${sur(car)}, ${yds(gain)}${fd?', first down':''}.`,`Complete to ${sur(car)} for ${yds(gain)}${fd?'. First down':''}.`,`${sur(car)} makes the catch, ${yds(gain)}${fd?', moves the chains':''}.`]);
       break;
-    case 'incomplete': text=V([`Incomplete, intended for ${sur(car)}.`,`${sur(qb)} throws… incomplete.`,`Pass falls incomplete.`]); break;
+    case 'incomplete':
+      { const dk=P.decision||{}, cv=dk.coverer&&dk.coverer.name;   /* engine block C */
+        if(cv&&!dk.bust&&(dk.reception==='contested'||dk.reception==='traffic')&&def===cv){ text=V([`Broken up by ${cv}!`,`${sur(cv)} gets a hand on it, incomplete.`,`Great coverage by ${cv}, the pass falls incomplete.`]); break; } }
+      text=V([`Incomplete, intended for ${sur(car)}.`,`${sur(qb)} throws… incomplete.`,`Pass falls incomplete.`]); break;
     case 'run':
       if(gain>=15){ prio=2; text=V([`${car} breaks free! ${yds(gain)}!`,`Big run by ${car}, ${yds(gain)}!`,`${car} finds a crease… ${yds(gain)}!`]); }
       else if(gain<=0) text=V([`Stuffed! ${def?sur(def)+' makes the stop':'No gain'}.`,`${sur(car)} is stopped ${gain<0?'behind the line':'for nothing'}.`]);

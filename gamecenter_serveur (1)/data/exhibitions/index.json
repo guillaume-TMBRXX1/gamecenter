@@ -1,33 +1,33 @@
 {
  "exhibitions": [
   {
-   "id": "exh-v23-vec-ctx",
-   "home": "CTX",
-   "away": "VEC",
-   "title": "Notebook V23 · QB intelligence, pocket & pressure · QB reads & post-snap coverage",
+   "id": "exh-v24-mnl-vec",
+   "home": "VEC",
+   "away": "MNL",
+   "title": "Notebook V24 · receiver & defender intelligence · QB intelligence, pocket & pressure",
    "created": "2026-10-04",
-   "plays": 169,
-   "adjustments": 14,
+   "plays": 151,
+   "adjustments": 11,
    "adjust_kinds": [
-    "clock",
     "d_attack",
     "d_deep",
     "d_heat",
-    "d_noblitz",
-    "d_press",
     "d_run",
     "hurry",
     "shelve",
     "shelve_form"
    ],
-   "concepts": 24,
+   "concepts": 25,
    "decisions": {
-    "beyond_first_read": 61,
-    "under_pressure": 23,
-    "scrambles": 2,
-    "throwaways": 4,
+    "beyond_first_read": 33,
+    "under_pressure": 11,
+    "scrambles": 4,
+    "throwaways": 5,
     "held_sacks": 5,
-    "safeties": 2
+    "safeties": 1,
+    "contested": 2,
+    "broken_up": 5,
+    "busts": 2
    }
   }
  ]

@@ -1,7 +1,7 @@
 # GameCenter — serveur de direct
 
 > **Feuille de route du projet** : `programme/Feuille_de_route.md` à la racine du dépôt (mise à jour le 04/10/2026 —
-> étape en cours : ENGINE INTELLIGENCE, blocs A → E ; bloc A allumé dans le notebook V22.1, prochain : bloc B).
+> étape en cours : ENGINE INTELLIGENCE, blocs A → E ; blocs A, B et C allumés dans le notebook V24, prochain : bloc D).
 
 La page servie est `gamecenter_source.html` au **design officiel « Glass éditorial »** (clair par défaut, sombre
 selon l'appareil ou au choix). Le serveur garde les semaines produites par le moteur et n'envoie au public
@@ -218,8 +218,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
   semaines produites avant (sans `play.decision`).
 - **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
-  Depuis V23 : VEC @ CTX (`exh-v23-vec-ctx`, remplace CTX-MNL V21), choisi parmi 40 candidats pour ses décisions visibles
-  (lectures, pression, scrambles, throwaways, safety) ; `--remplace <id>` retire l'ancienne exhibition.
+  Depuis V24 : MNL @ VEC (`exh-v24-mnl-vec`, remplace VEC @ CTX V23), choisi parmi 40 candidats pour ses duels
+  receveur / défenseur (contested catches, passes défendues, coverage busts) et ses décisions du QB (lectures, pression,
+  scrambles, throwaways, safety) ; `--remplace <id>` retire l'ancienne exhibition.
 - **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
   calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
 
@@ -248,6 +249,30 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - **Rapport de calibration** : charge jusqu'à 12.2 sexies ; `--bloc-b off` pour les décisions du bloc A ; mesure aussi
   les safeties et, bloc B, les erreurs de lecture et les stats par QB. `calibrer_bloc_a.py --bloc B` recalcule
   `CALIBRATION_B`.
+
+### 17. ENGINE INTELLIGENCE — bloc C : intelligence des joueurs (notebook V24, 04/10/2026, allumé)
+
+- **Receveurs et défenseurs** (cellule 12.2 septies, module `moteur/intelligence_joueurs.py`, voir `moteur/README.md`) :
+  6 attributs de receveur (route IQ, release, separation, reconnaissance zone / homme, catch in traffic, contested
+  catch) et 7 de défenseur (play recognition, zone IQ, man IQ, awareness, reaction, discipline, pursuit), dérivés des
+  notes du roster et de l'identité de la franchise, **hors OVR** (notes d'unité et cotes d'avant-match inchangées).
+  Ce qui pèse, c'est le **profil** (l'écart d'un attribut au niveau des notes du joueur, déjà dans le duel du bloc A).
+- **Abstraction statistique** : chaque receveur fait face au défenseur **responsable** (homme : son vis-à-vis ; zone :
+  un défenseur de la tranche attaquée). Les attributs déplacent sa séparation avant la lecture du QB (release, cassure,
+  lecture de la couverture, soupape, screen), l'écart entre la route dessinée et la route courue est tiré selon le
+  route IQ, et un défenseur peu discipliné laisse parfois un receveur seul (**coverage bust**, surtout sur play action
+  et double move). Puis la **réception** : libre (open), serrée (catch in traffic), couverte ou doublée (contested
+  catch ; un défenseur attentif intercepte plus) et les **yards après la réception** (separation contre pursuit). Le
+  défenseur responsable est crédité de l'interception et de la passe défendue sur un ballon disputé. Flux aléatoire à
+  part. Interrupteur `PLAYER_IQ_ENABLED` (allumé ; `GC_BLOC_C=0` : moteur V23). Exhibition : `--sans-bloc-c`.
+- **GameFeed** (additif) : `play.decision.{reception, coverer, bust, busts}` ; `roster[].player_iq` (WR, TE, RB, CB,
+  S, LB). **Site** : sur le terrain, le défenseur responsable colle le receveur sur un ballon disputé et personne
+  n'est près de la réception sur un coverage bust ; play-by-play « · contested catch », « · caught in traffic »,
+  « · X in coverage », « · coverage bust (X) » ; stats d'équipe « Contested catches » et « Coverage busts allowed » ;
+  fiche joueur « Receiver intelligence » / « Coverage intelligence » ; commentaire écrit (« Broken up by X! »,
+  « Coverage bust! … », contested catch). Le commentaire enregistré n'a pas de nouvelle prise (appels génériques).
+- **Rapport de calibration** : charge jusqu'à 12.2 septies ; `--bloc-c off` pour le moteur V23 ; mesure aussi les
+  réceptions par type et les coverage busts. `calibrer_bloc_a.py --bloc C` recalcule `CALIBRATION_C`.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
@@ -356,7 +381,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 `GC_DATA` (données, défaut `./data`) · `GC_SITE` (source du site) · `GC_NOTEBOOK` (notebook) · `GC_AUTOGEN=1` ·
 `GC_ADMIN_KEY` (sauvegardes) · `GC_DEMO_AT` (ISO ou `auto` : décale l'horloge, pour une démonstration) · `PORT` ·
 `GC_MOTEUR_DIR` (dossier qui contient `moteur/`, mis par `generer_semaine.py`) · `GC_DECISIONS=0` (notebook : décisions
-de passe du bloc A coupées, moteur V21 ; allumées par défaut).
+de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0` (intelligence du QB coupée : bloc A) ·
+`GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23).
 
 ## Test
 

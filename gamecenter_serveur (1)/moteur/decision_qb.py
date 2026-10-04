@@ -76,6 +76,13 @@ class QBDecision:
     mod_int: float = 1.0         # multiplicateurs de la résolution (anticipation, pressure response, erreur)
     mod_inc: float = 1.0
     bloc: str = "A"
+    # bloc C (moteur.intelligence_joueurs) : réception, défenseur responsable de la cible, coverage bust, yards après
+    # la réception — remplis par moteur.decider_passe après la décision du QB
+    reception: str = ""          # open / traffic / contested ("" sans lancer)
+    couvreur_id: str = ""
+    couvreur_nom: str = ""
+    bust: bool = False           # la cible a été oubliée par son défenseur
+    yards_c: float = 0.0
 
     def to_dict(self):
         return asdict(self)

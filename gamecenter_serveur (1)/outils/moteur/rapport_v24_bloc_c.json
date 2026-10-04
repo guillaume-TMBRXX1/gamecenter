@@ -1,0 +1,303 @@
+{
+ "games": 1008,
+ "completion_pct": 0.6509144326110907,
+ "sack_rate": 0.0797461841879609,
+ "int_rate": 0.024590525156077854,
+ "ypa": 7.615717958134411,
+ "net_ypa": 6.62438162078018,
+ "ypc": 5.6729336172154206,
+ "turnovers_pg": 3.7192460317460316,
+ "int_pg": 1.6607142857142858,
+ "fumbles_lost_pg": 2.058531746031746,
+ "points_pg": 52.13194444444444,
+ "drives_pg": 21.11706349206349,
+ "first_downs_pg": 43.410714285714285,
+ "plays_pg": 127.38789682539682,
+ "pass_rate": 0.590333860303566,
+ "attempts_pg": 67.53472222222223,
+ "sacks_pg": 5.997023809523809,
+ "scrambles_pg": 1.6696428571428572,
+ "safeties_pg": 0.10218253968253968,
+ "games_with_safety": 0.09821428571428571,
+ "win_pct": {
+  "CTX": 0.5238095238095238,
+  "VEC": 0.49603174603174605,
+  "AEG": 0.5396825396825397,
+  "MNL": 0.44047619047619047
+ },
+ "seconds_per_game": 0.1648549294583191,
+ "seconds_per_game_p95": 0.17025955999997677,
+ "decisions": "on",
+ "bloc_b": true,
+ "bloc_c": true,
+ "load_seconds": 78.9590106010437,
+ "decision_stats": {
+  "dropbacks": 75803,
+  "lancers": 67233,
+  "premiere_lecture": 31754,
+  "sous_pression": 15358,
+  "forcees": 5809,
+  "scrambles": 1952,
+  "throwaways": 3868,
+  "sacks_decision": 2750,
+  "sacks": 6045,
+  "temps_lancer": 144190.27000002225,
+  "par_role": {
+   "WR1": {
+    "cibles": 26990,
+    "completes": 17679,
+    "incompletes": 8530,
+    "int": 781,
+    "yards": 220398
+   },
+   "WR2": {
+    "cibles": 16811,
+    "completes": 11280,
+    "incompletes": 5067,
+    "int": 464,
+    "yards": 137257
+   },
+   "WR3": {
+    "cibles": 3640,
+    "completes": 2670,
+    "incompletes": 899,
+    "int": 71,
+    "yards": 29772
+   },
+   "TE": {
+    "cibles": 10127,
+    "completes": 7542,
+    "incompletes": 2395,
+    "int": 190,
+    "yards": 81142
+   },
+   "RB": {
+    "cibles": 6735,
+    "completes": 5140,
+    "incompletes": 1458,
+    "int": 137,
+    "yards": 49871
+   }
+  },
+  "par_statut": {
+   "SERRE": {
+    "cibles": 27664,
+    "completes": 16648,
+    "incompletes": 10106,
+    "int": 910,
+    "yards": 184630
+   },
+   "LIBRE": {
+    "cibles": 31106,
+    "completes": 25605,
+    "incompletes": 5225,
+    "int": 276,
+    "yards": 310215
+   },
+   "COUVERT": {
+    "cibles": 4800,
+    "completes": 1828,
+    "incompletes": 2567,
+    "int": 405,
+    "yards": 20992
+   },
+   "DOUBLE": {
+    "cibles": 733,
+    "completes": 230,
+    "incompletes": 451,
+    "int": 52,
+    "yards": 2603
+   }
+  },
+  "par_couverture": {
+   "Cover 1": {
+    "cibles": 23684,
+    "completes": 16265,
+    "incompletes": 6736,
+    "int": 683,
+    "yards": 196555
+   },
+   "Cover 4": {
+    "cibles": 8727,
+    "completes": 6068,
+    "incompletes": 2450,
+    "int": 209,
+    "yards": 59960
+   },
+   "Cover 3": {
+    "cibles": 14264,
+    "completes": 9767,
+    "incompletes": 4155,
+    "int": 342,
+    "yards": 115977
+   },
+   "Cover 2": {
+    "cibles": 13430,
+    "completes": 9214,
+    "incompletes": 3881,
+    "int": 335,
+    "yards": 106893
+   },
+   "Cover 0": {
+    "cibles": 4198,
+    "completes": 2997,
+    "incompletes": 1127,
+    "int": 74,
+    "yards": 39055
+   }
+  },
+  "par_lecture": {
+   "1": {
+    "cibles": 30477,
+    "completes": 20325,
+    "incompletes": 9309,
+    "int": 843,
+    "yards": 245389
+   },
+   "2": {
+    "cibles": 18527,
+    "completes": 12586,
+    "incompletes": 5453,
+    "int": 488,
+    "yards": 150408
+   },
+   "3": {
+    "cibles": 9864,
+    "completes": 7227,
+    "incompletes": 2432,
+    "int": 205,
+    "yards": 80103
+   },
+   "4": {
+    "cibles": 5435,
+    "completes": 4173,
+    "incompletes": 1155,
+    "int": 107,
+    "yards": 42540
+   }
+  },
+  "erreurs_lecture": 5157,
+  "presses": 15358,
+  "temps_poche": 242838.42999999737,
+  "int": 1643,
+  "int_decision": 558,
+  "par_qb": {
+   "VEC_QB1": {
+    "name": "Dax Holloway",
+    "dropbacks": 26096,
+    "lancers": 23552,
+    "premiere_lecture": 11379,
+    "erreurs_lecture": 1833,
+    "presses": 6094,
+    "sacks": 1639,
+    "sacks_decision": 525,
+    "int": 684,
+    "throwaways": 1295,
+    "scrambles": 724,
+    "temps_lancer": 54549.30999999635,
+    "taux_premiere_lecture": 0.4831436820652174,
+    "taux_erreur_lecture": 0.07782778532608696,
+    "temps_lancer_moyen": 2.3161221976900626,
+    "taux_sack": 0.0628065603923973,
+    "taux_int": 0.029042119565217392
+   },
+   "CTX_QB1": {
+    "name": "Ezra Vale",
+    "dropbacks": 20332,
+    "lancers": 17869,
+    "premiere_lecture": 9012,
+    "erreurs_lecture": 1263,
+    "presses": 4017,
+    "sacks": 1655,
+    "sacks_decision": 698,
+    "int": 401,
+    "throwaways": 1160,
+    "scrambles": 605,
+    "temps_lancer": 36034.36999999909,
+    "taux_premiere_lecture": 0.5043371201522189,
+    "taux_erreur_lecture": 0.07068106777100006,
+    "temps_lancer_moyen": 2.0165857070904414,
+    "taux_sack": 0.0813987802478851,
+    "taux_int": 0.022441099110190835
+   },
+   "AEG_QB1": {
+    "name": "Oren Lindqvist",
+    "dropbacks": 16550,
+    "lancers": 14553,
+    "premiere_lecture": 6524,
+    "erreurs_lecture": 1056,
+    "presses": 2794,
+    "sacks": 1512,
+    "sacks_decision": 773,
+    "int": 289,
+    "throwaways": 815,
+    "scrambles": 409,
+    "temps_lancer": 28241.210000002233,
+    "taux_premiere_lecture": 0.4482924482924483,
+    "taux_erreur_lecture": 0.07256235827664399,
+    "temps_lancer_moyen": 1.9405765134338098,
+    "taux_sack": 0.0913595166163142,
+    "taux_int": 0.019858448429877003
+   },
+   "MNL_QB1": {
+    "name": "Brandt Kessler",
+    "dropbacks": 12825,
+    "lancers": 11259,
+    "premiere_lecture": 4839,
+    "erreurs_lecture": 1005,
+    "presses": 2453,
+    "sacks": 1239,
+    "sacks_decision": 754,
+    "int": 269,
+    "throwaways": 598,
+    "scrambles": 214,
+    "temps_lancer": 25365.37999999997,
+    "taux_premiere_lecture": 0.4297895017319478,
+    "taux_erreur_lecture": 0.0892619237942979,
+    "temps_lancer_moyen": 2.2528981259436867,
+    "taux_sack": 0.09660818713450292,
+    "taux_int": 0.02389199751310063
+   }
+  },
+  "par_reception": {
+   "traffic": {
+    "cibles": 27664,
+    "completes": 16648,
+    "incompletes": 10106,
+    "int": 910,
+    "yards": 184630,
+    "completion": 0.601792943898207,
+    "part": 0.43021320933704493
+   },
+   "open": {
+    "cibles": 31106,
+    "completes": 25605,
+    "incompletes": 5225,
+    "int": 276,
+    "yards": 310215,
+    "completion": 0.8231530894361216,
+    "part": 0.4837410385207533
+   },
+   "contested": {
+    "cibles": 5533,
+    "completes": 2058,
+    "incompletes": 3018,
+    "int": 457,
+    "yards": 23595,
+    "completion": 0.37195011747695644,
+    "part": 0.08604575214220177
+   }
+  },
+  "busts": 2918,
+  "busts_cible": 1346,
+  "bloc_c": 64303,
+  "taux_premiere_lecture": 0.4722978299347047,
+  "taux_pression": 0.22842949146996266,
+  "temps_lancer_moyen": 2.1446353725108542,
+  "taux_erreur_lecture": 0.07670340457810897,
+  "temps_poche_moyen": 3.2035464295608005,
+  "part_int_decision": 0.33962264150943394,
+  "part_sacks_decision": 0.45492142266335817,
+  "taux_bust": 0.02093214935539555
+ }
+}
