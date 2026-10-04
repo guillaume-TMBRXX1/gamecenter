@@ -10,6 +10,9 @@
 (function(L){
 'use strict';
 const XF=1.2;                                     /* bed loop crossfade, seconds */
+/* makeup gains, measured on the generated files: beds −28 LUFS, reactions −23 LUFS, voice ≈ −17 LUFS.
+   Beds sit ≈ 7 dB under the voice, reactions reach the voice's level (plenty of headroom: peaks −10 to −15 dBFS). */
+const BED_MAKEUP=2.5, REACT_MAKEUP=2.2;
 function hsh(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 const RANK={cheer_small:1,disappointment:1,boo:2,cheer_medium:2,react_int:3,cheer_huge:3,react_td:4,react_victory:5};
 
@@ -78,8 +81,8 @@ class CrowdManager{
     if(!this.mx.ctx||!this.ready()) return;
     this.level=level; const t=this.mx.ctx.currentTime, on=level>0, k=level/.22;
     const idle=this.bedFor('idle'), ant=this.byKind.has('bed_anticipation')?this.bedFor('anticipation'):null, a=this.mood==='anticipation'&&ant;
-    if(idle){ this.setBed('idle',on); idle.g.gain.setTargetAtTime(on?(a?.45:1)*idle.a.gain*k:0,t,1.2); }
-    if(ant){ this.setBed('anticipation',on&&!!a); ant.g.gain.setTargetAtTime(on&&a?ant.a.gain*k:0,t,1.0); }
+    if(idle){ this.setBed('idle',on); idle.g.gain.setTargetAtTime(on?(a?.45:1)*idle.a.gain*k*BED_MAKEUP:0,t,1.2); }
+    if(ant){ this.setBed('anticipation',on&&!!a); ant.g.gain.setTargetAtTime(on&&a?ant.a.gain*k*BED_MAKEUP:0,t,1.0); }
   }
   setMood(m){ if(m!==this.mood){ this.mood=m; this.apply(this.level); } }
   /* ---------- reactions ---------- */
@@ -93,8 +96,8 @@ class CrowdManager{
       low.g.gain.setTargetAtTime(0,t,.12); try{ low.s.stop(t+.6); }catch(e){} this.live=this.live.filter(r=>r!==low);
     }
     for(const r of this.live) if(r.rank<rank) r.g.gain.setTargetAtTime(.35*r.v,t,.2);   /* a bigger moment pushes the older one down */
-    const s=ac.createBufferSource(), g=ac.createGain(), lv=(v==null?1:v)*(a.gain||1)*Math.max(.6,Math.min(1.3,this.level/.22||1));
-    s.buffer=buf; g.gain.value=lv; s.connect(g); g.connect(this.mx.input('crowd')); s.start(t);
+    const s=ac.createBufferSource(), g=ac.createGain(), lv=(v==null?1:v)*(a.gain||1)*REACT_MAKEUP*Math.max(.6,Math.min(1.3,this.level/.22||1));
+    s.buffer=buf; g.gain.value=lv; s.connect(g); g.connect(this.mx.input('crowdFx')); s.start(t);
     const r={s,g,rank,v:lv,end:t+buf.duration}; this.live.push(r);
     s.onended=()=>{ this.live=this.live.filter(x=>x!==r); try{ s.disconnect(); g.disconnect(); }catch(e){} };
     return true;

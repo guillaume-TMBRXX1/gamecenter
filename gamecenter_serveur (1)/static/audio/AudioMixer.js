@@ -9,7 +9,7 @@ const CATS=['commentary','crowd','sfx','music'];
 const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
 
 class AudioMixer{
-  constructor(){ this.ctx=null; this.cfg={enabled:false,master:70,vol:{commentary:100,crowd:100,sfx:100,music:100},mute:{master:false,commentary:false,crowd:false,sfx:false,music:false}}; }
+  constructor(){ this.ctx=null; this.duckDepth=.45; this.cfg={enabled:false,master:70,vol:{commentary:100,crowd:100,sfx:100,music:100},mute:{master:false,commentary:false,crowd:false,sfx:false,music:false}}; }
   /* Creates the context and the bus graph. Must be first called from a user gesture (browser autoplay rules). */
   ensure(){
     if(this.ctx) return this.ctx;
@@ -17,17 +17,23 @@ class AudioMixer{
     let ac; try{ ac=new C(); }catch(e){ return null; }
     this.ctx=ac;
     const g=v=>{ const n=ac.createGain(); n.gain.value=v; return n; };
-    this.master=g(0); this.master.connect(ac.destination);
+    this.master=g(0);
+    /* safety limiter on the way out: recorded crowd, voice and music can add up — never clip, never pump at normal levels */
+    try{ const l=ac.createDynamicsCompressor(); l.threshold.value=-3; l.knee.value=0; l.ratio.value=20; l.attack.value=.003; l.release.value=.25;
+      this.master.connect(l); l.connect(ac.destination); this.limiter=l; }catch(e){ this.master.connect(ac.destination); }
     /* every category is a gain into MASTER; the crowd has a second gain, the duck, in front of it */
     this.buses={};
     for(const c of CATS){ this.buses[c]=g(1); this.buses[c].connect(this.master); }
     this.duckNode=g(1); this.duckNode.connect(this.buses.crowd);
+    this.musicDuck=g(1); this.musicDuck.connect(this.buses.music);
     this.uiNode=this.master;              /* interface tones (bet placed, won…) go straight to MASTER, as before */
     this.apply();
     return ac;
   }
   /* where a category's sources connect */
-  input(cat){ if(!this.ctx) return null; return cat==='crowd'?this.duckNode:cat==='ui'?this.uiNode:this.buses[cat]; }
+  /* crowd = beds (ducked under the voice) · crowdFx = crowd reactions (not ducked: the roar rises under the call, as on TV)
+     music = ducked under the voice too */
+  input(cat){ if(!this.ctx) return null; return cat==='crowd'?this.duckNode:cat==='crowdFx'?this.buses.crowd:cat==='music'?this.musicDuck:cat==='ui'?this.uiNode:this.buses[cat]; }
   configure(cfg){
     const c=this.cfg; c.enabled=!!cfg.enabled; if(cfg.master!=null) c.master=clamp(+cfg.master||0,0,100);
     if(cfg.vol) for(const k of CATS) if(cfg.vol[k]!=null) c.vol[k]=clamp(+cfg.vol[k]||0,0,100);
@@ -46,7 +52,7 @@ class AudioMixer{
     this.buses.commentary.gain.setTargetAtTime(this.level('commentary'),t,.05);
     this.buses.music.gain.setTargetAtTime(this.level('music'),t,.4);
   }
-  duck(on){ if(this.ctx) this.duckNode.gain.setTargetAtTime(on?.45:1,this.ctx.currentTime,.15); }
+  duck(on){ if(!this.ctx) return; const t=this.ctx.currentTime; this.duckNode.gain.setTargetAtTime(on?this.duckDepth:1,t,.15); this.musicDuck.gain.setTargetAtTime(on?.5:1,t,.25); }
   resume(){ const ac=this.ctx; if(ac&&(ac.state==='suspended'||ac.state==='interrupted')){ try{ const p=ac.resume(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} } }
   state(){ return this.ctx?this.ctx.state:null; }
   running(){ return !!this.ctx&&this.ctx.state==='running'; }

@@ -5275,7 +5275,7 @@ function soundCard(){
   </div>`;
 }
 /* Audio System mixer (V0.1): one level per category + mute for the voice and the music (crowd and effects keep their switches) */
-const MIX_ROWS=[['commentary','Commentator level','The voice (captions stay when it is muted)'],['crowd','Crowd level','Stadium bed and reactions'],['sfx','Effects level','Whistle, hits, kicks, horn'],['music','Music level','Arrives with a later update']];
+const MIX_ROWS=[['commentary','Commentator level','The voice (captions stay when it is muted)'],['crowd','Crowd level','Stadium bed and reactions'],['sfx','Effects level','Whistle, hits, kicks, horn'],['music','Music level','Original broadcast music, under the game']];
 function mixerRows(){
   return `<div class="set-row col"><span class="set-l">Mixer<small>Each part of the sound on its own · saved in this browser</small></span></div>`+MIX_ROWS.map(([k,lab,desc])=>{
     const mute=k==='commentary'||k==='music', off=mute&&SET.mixMute[k];

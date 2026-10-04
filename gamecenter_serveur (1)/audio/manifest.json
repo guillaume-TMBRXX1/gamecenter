@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "02dd4b24e2",
+ "version": "99b272211e",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -2323,6 +2323,106 @@
    "text": "Stadium air horn blast celebrating a touchdown, big arena, large American football stadium, 60,000 fans, broadcast TV ambience, realistic, no music, no announcer",
    "dur": 2.05,
    "bytes": 16749
+  },
+  {
+   "id": "m:pregame",
+   "cat": "music",
+   "kind": "loop",
+   "state": "pregame",
+   "gain": 0.75,
+   "file": "music/pregame.8da672f8.mp3",
+   "text": "Musique originale GameCenter « pregame » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:gameplay",
+   "cat": "music",
+   "kind": "loop",
+   "state": "gameplay",
+   "gain": 0.45,
+   "file": "music/gameplay.cde44e74.mp3",
+   "text": "Musique originale GameCenter « gameplay » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:close_game",
+   "cat": "music",
+   "kind": "loop",
+   "state": "close_game",
+   "gain": 0.55,
+   "file": "music/close_game.c1357cfe.mp3",
+   "text": "Musique originale GameCenter « close_game » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:red_zone",
+   "cat": "music",
+   "kind": "loop",
+   "state": "red_zone",
+   "gain": 0.55,
+   "file": "music/red_zone.25a0e414.mp3",
+   "text": "Musique originale GameCenter « red_zone » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:final_drive",
+   "cat": "music",
+   "kind": "loop",
+   "state": "final_drive",
+   "gain": 0.6,
+   "file": "music/final_drive.9ddc3eee.mp3",
+   "text": "Musique originale GameCenter « final_drive » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:overtime",
+   "cat": "music",
+   "kind": "loop",
+   "state": "overtime",
+   "gain": 0.65,
+   "file": "music/overtime.57d2e51e.mp3",
+   "text": "Musique originale GameCenter « overtime » (synthèse, CC0)",
+   "bytes": 245804,
+   "license": "CC0 — composée par outils/audio/composer_musique.py",
+   "loopStart": 0.5,
+   "loopEnd": 16.5
+  },
+  {
+   "id": "m:victory",
+   "cat": "music",
+   "kind": "stinger",
+   "state": "victory",
+   "gain": 0.85,
+   "file": "music/victory.ad717fed.mp3",
+   "text": "Musique originale GameCenter « victory » (synthèse, CC0)",
+   "bytes": 126947,
+   "license": "CC0 — composée par outils/audio/composer_musique.py"
+  },
+  {
+   "id": "m:defeat",
+   "cat": "music",
+   "kind": "stinger",
+   "state": "defeat",
+   "gain": 0.7,
+   "file": "music/defeat.58683657.mp3",
+   "text": "Musique originale GameCenter « defeat » (synthèse, CC0)",
+   "bytes": 113050,
+   "license": "CC0 — composée par outils/audio/composer_musique.py"
   }
  ]
 }

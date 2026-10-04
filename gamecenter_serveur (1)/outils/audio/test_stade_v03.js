@@ -48,8 +48,10 @@ const feeds=[]; for(const w of fs.readdirSync(DATA)) for(const f of fs.readdirSy
         for(const e of A.log){ if(e.kind==='crowd') crowd[e.name]=(crowd[e.name]||0)+1; if(e.kind==='sfx'&&!e.muted){ if(e.rec) rec[e.rec]=(rec[e.rec]||0)+1; else proc++; } }
         const s=M.stats(); maxSfx=Math.max(maxSfx,s.sfx.active); maxLive=Math.max(maxLive,s.crowd.live);
         if(i%25===0) await new Promise(r=>setTimeout(r,30)); } }
-    await new Promise(r=>setTimeout(r,9000));
-    const after=M.stats();
+    /* le match à l'antenne continue de jouer sur la page : on le fait taire pendant la mesure (sinon il relance des sons) */
+    const sv=[M.snap,M.resolve]; M.snap=M.resolve=()=>{};
+    await new Promise(r=>setTimeout(r,10000));
+    const after=M.stats(); [M.snap,M.resolve]=sv;
     A.setSound(false); await new Promise(r=>setTimeout(r,3500)); const off=M.stats();
     return {ready,beds,crowd,rec,proc,maxSfx,maxLive,after:{sfx:after.sfx.active,live:after.crowd.live,cache:after.cache},off:off.crowd};
   },{feeds});
