@@ -6,3 +6,6 @@ __pycache__/
 .env.*
 *.key
 gamecenter_serveur (1)/outils/audio/ecoute.html
+
+# base des comptes créée par le serveur en local (jamais commitée)
+gamecenter_serveur (1)/data/gamecenter.db

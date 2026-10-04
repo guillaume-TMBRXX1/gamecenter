@@ -218,6 +218,8 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
   semaines produites avant (sans `play.decision`).
 - **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
+  Depuis V23 : VEC @ CTX (`exh-v23-vec-ctx`, remplace CTX-MNL V21), choisi parmi 40 candidats pour ses décisions visibles
+  (lectures, pression, scrambles, throwaways, safety) ; `--remplace <id>` retire l'ancienne exhibition.
 - **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
   calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
 

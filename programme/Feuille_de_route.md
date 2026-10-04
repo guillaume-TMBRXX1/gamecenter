@@ -308,6 +308,10 @@ site : les 39 matchs rejoués dans Chromium sans erreur, parité audio identique
 - Sacks : MNL 10,2 % et AEG 9,9 % contre VEC 6,6 % (ligne de VEC + QB) ; moyenne de la ligue inchangée.
 - Le commentaire enregistré du safety reste à générer (workflow « Commentaire audio »).
 
+**Exhibition** (site, onglet « Exhibition ») : VEC @ CTX V23 (`exh-v23-vec-ctx`, 30-26, graine 9 400 013) remplace
+CTX-MNL V21 — choisi parmi 40 candidats pour ce qu'il montre : 61 lancers au-delà de la 1re lecture, 23 sous pression,
+2 scrambles d'Ezra Vale, 4 throwaways, 5 sacks « ballon gardé », 2 safeties, 14 ajustements en direct.
+
 **Reste hors dépôt** : fiche technique du notebook (V22 / V22.1 / V23 : cellules 12.2 quinquies, 12.2 sexies, safety).
 
 ## Pour la conversation suivante
