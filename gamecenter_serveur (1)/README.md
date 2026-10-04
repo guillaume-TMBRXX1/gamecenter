@@ -1,5 +1,8 @@
 # GameCenter — serveur de direct
 
+> **Feuille de route du projet** : `programme/Feuille_de_route.md` à la racine du dépôt (mise à jour le 04/10/2026 —
+> prochaine étape : ENGINE INTELLIGENCE, blocs A → E).
+
 La page servie est `gamecenter_source.html` au **design officiel « Glass éditorial »** (clair par défaut, sombre
 selon l'appareil ou au choix). Le serveur garde les semaines produites par le moteur et n'envoie au public
 **que ce qui s'est déjà passé** : les résultats, les scores et les affiches des playoffs ne peuvent pas fuiter.
