@@ -1,0 +1,26 @@
+{
+ "exhibitions": [
+  {
+   "id": "exh-v21-ctx-mnl",
+   "home": "CTX",
+   "away": "MNL",
+   "title": "Notebook V21 · adaptive coordinators · V19/V20 playbooks",
+   "created": "2026-10-04",
+   "plays": 128,
+   "adjustments": 15,
+   "adjust_kinds": [
+    "clock",
+    "d_attack",
+    "d_deep",
+    "d_noblitz",
+    "d_press",
+    "d_prevent",
+    "d_run",
+    "hurry",
+    "shelve",
+    "shelve_form"
+   ],
+   "concepts": 25
+  }
+ ]
+}
