@@ -52,7 +52,7 @@ class AudioMixer{
     this.buses.commentary.gain.setTargetAtTime(this.level('commentary'),t,.05);
     this.buses.music.gain.setTargetAtTime(this.level('music'),t,.4);
   }
-  duck(on){ if(!this.ctx) return; const t=this.ctx.currentTime; this.duckNode.gain.setTargetAtTime(on?this.duckDepth:1,t,.15); this.musicDuck.gain.setTargetAtTime(on?.5:1,t,.25); }
+  duck(on){ if(!this.ctx) return; const t=this.ctx.currentTime; this.duckNode.gain.setTargetAtTime(on?this.duckDepth:1,t,.15); this.musicDuck.gain.setTargetAtTime(on?.7:1,t,.25); }
   resume(){ const ac=this.ctx; if(ac&&(ac.state==='suspended'||ac.state==='interrupted')){ try{ const p=ac.resume(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} } }
   state(){ return this.ctx?this.ctx.state:null; }
   running(){ return !!this.ctx&&this.ctx.state==='running'; }

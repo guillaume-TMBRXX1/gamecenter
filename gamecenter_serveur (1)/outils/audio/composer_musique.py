@@ -23,7 +23,7 @@ BAR = 4 * BEAT
 LOOP_BARS = 8
 L = LOOP_BARS * BAR            # 16 s
 PRE, TAIL = 0.5, 1.0
-VERSION = "m2"                 # changer si la composition change
+VERSION = "m3"                 # m3 : plus de médiums (audible sur haut-parleur de tablette / téléphone)                 # changer si la composition change
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 rng = np.random.default_rng(7)
@@ -86,6 +86,7 @@ def additive(freq, dur, nh, tilt=1.0, odd=False, detune=0.0, bright=None):
 
 # ------------------------------------------------------------------ instruments
 def pad(tr, t0, chord, dur, gain=0.05, nh=8, octave=0):
+    nh = max(nh, 10)
     for i, m in enumerate(CHORDS[chord]):
         f = hz(m + 12 * octave)
         for side, det in ((-0.6, -7), (0.6, 7)):
@@ -95,7 +96,8 @@ def pad(tr, t0, chord, dur, gain=0.05, nh=8, octave=0):
 
 
 def bass(tr, t0, m, dur, gain=0.16, nh=7):
-    s = additive(hz(m - 24), dur + 0.05, nh, tilt=1.0)
+    nh = max(nh, 14)          # harmoniques 150-1000 Hz : la basse s'entend aussi sur un petit haut-parleur
+    s = additive(hz(m - 24), dur + 0.05, nh, tilt=0.85)
     s *= env_adsr(len(s), 0.005, 0.12, 0.6, 0.05, hold=dur)
     tr.add(t0, s, gain)
 
@@ -183,6 +185,8 @@ def period(name, tr, t0):
                 bass(tr, tb + k * BEAT / 2, ROOT_OF[ch], BEAT * 0.4, 0.07, nh=5)
             for k in range(4):
                 hat(tr, tb + k * BEAT, 0.022)
+                pluck(tr, tb + k * BEAT, CHORDS[ch][k % 3] + (12 if k == 3 else 0), 0.04, pan=-0.3 if k % 2 else 0.3)
+            kick(tr, tb, 0.22)
     elif name == "close_game":
         prog = ["Dm", "Dm", "Bb", "Bb", "Gm", "Gm", "A", "A"]
         for b, ch in enumerate(prog):
@@ -280,9 +284,9 @@ def render_defeat():
 
 # ------------------------------------------------------------------ sortie
 PIECES = {  # id: (kind, état, gain relatif dans le mix musical)
-    "pregame": ("loop", "pregame", 0.75), "gameplay": ("loop", "gameplay", 0.45), "close_game": ("loop", "close_game", 0.55),
-    "red_zone": ("loop", "red_zone", 0.55), "final_drive": ("loop", "final_drive", 0.6), "overtime": ("loop", "overtime", 0.65),
-    "victory": ("stinger", "victory", 0.85), "defeat": ("stinger", "defeat", 0.7),
+    "pregame": ("loop", "pregame", 0.9), "gameplay": ("loop", "gameplay", 0.7), "close_game": ("loop", "close_game", 0.75),
+    "red_zone": ("loop", "red_zone", 0.8), "final_drive": ("loop", "final_drive", 0.85), "overtime": ("loop", "overtime", 0.85),
+    "victory": ("stinger", "victory", 1.0), "defeat": ("stinger", "defeat", 0.9),
 }
 
 
