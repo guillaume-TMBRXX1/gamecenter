@@ -994,6 +994,32 @@ def api_leaderboard(token: str = "", scope: str = "week"):
     return {"scope": "week", "week": w.start, "players": len(rows), "top": rows[:20], "me": mine}
 
 
+# ------------------------------------------------------------------ exhibitions (matchs hors calendrier)
+EXH_DIR = os.path.join(HERE, "data", "exhibitions")     # produits par outils/exhibition/simuler_exhibition.py, dans le dépôt
+_EXH_ID = re.compile(r"^[a-z0-9-]{3,60}$")
+
+
+@app.get("/api/exhibitions")
+def api_exhibitions():
+    """Liste des matchs d'exhibition (sans score : pas de spoiler)."""
+    try:
+        with open(os.path.join(EXH_DIR, "index.json"), encoding="utf-8") as fh:
+            idx = json.load(fh)
+    except Exception:
+        idx = {"exhibitions": []}
+    return JSONResponse(idx, headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/exhibitions/{gid}")
+def api_exhibition(gid: str):
+    if not _EXH_ID.match(gid):
+        raise HTTPException(404)
+    p = os.path.join(EXH_DIR, gid + ".json")
+    if not os.path.isfile(p):
+        raise HTTPException(404)
+    return FileResponse(p, media_type="application/json", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/api/health")
 def api_health():
     w = current_week()
