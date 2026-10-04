@@ -33,6 +33,8 @@ jobs:
         run: |
           pip install -r requirements-semaine.txt
           python -m ipykernel install --user
+      - name: Tester les modules du moteur (quelques secondes)
+        run: python -m unittest discover -s moteur/tests -t .
       - name: Calculer la semaine (≈ 15-20 min si elle est à produire)
         run: python generer_semaine.py --suivante --data data --notebook NFL_Sim_GameCenter.ipynb
       - name: Contrôler le moteur (audit de toutes les semaines)

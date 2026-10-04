@@ -1,7 +1,7 @@
 # GameCenter — serveur de direct
 
 > **Feuille de route du projet** : `programme/Feuille_de_route.md` à la racine du dépôt (mise à jour le 04/10/2026 —
-> étape en cours : ENGINE INTELLIGENCE, blocs A → E ; bloc A branché dans le notebook V22, interrupteur coupé).
+> étape en cours : ENGINE INTELLIGENCE, blocs A → E ; bloc A allumé dans le notebook V22.1, prochain : bloc B).
 
 La page servie est `gamecenter_source.html` au **design officiel « Glass éditorial »** (clair par défaut, sombre
 selon l'appareil ou au choix). Le serveur garde les semaines produites par le moteur et n'envoie au public
@@ -195,29 +195,31 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   voix allégée ; limiteur de sécurité sur la sortie (jamais de saturation). Aucun son régénéré.
 - **Tests** : `node outils/audio/test_musique_v04.js 8108`.
 
-### 15. ENGINE INTELLIGENCE — bloc A (notebook V22, 04/10/2026, interrupteur coupé)
+### 15. ENGINE INTELLIGENCE — bloc A (notebook V22.1, 04/10/2026, allumé)
 
 - **Modules Python du dépôt** : `moteur/` (voir `moteur/README.md`) — progression du playbook (primaire, secondaire,
   tertiaire, checkdown), `DefensiveReactionEngine` (état post-snap : couverture homme / zone Cover 0-4, rushers,
   receveur libre / serré / couvert / double, temps avant la pression), `QBDecisionEngine` (lecture dans l'ordre ->
   cible réelle, throwaway, scramble ou sack), résolution **ajustée** (les probabilités du tirage historique sont
   modulées par la décision, puis normalisées pour garder les moyennes de V21). Flux aléatoire dédié par action.
-- **Notebook V22** : cellule 12.2 quinquies, interrupteur `DECISIONS_ENABLED` (**coupé** : semaines identiques à V21,
-  vérifié GameFeed par GameFeed) ; `GC_DECISIONS=1` l'allume pour une exécution. `generer_semaine.py` indique au notebook
-  où est `moteur/` (`GC_MOTEUR_DIR`). Colab : cloner le dépôt avant d'exécuter (en-tête de 12.2 quinquies).
+- **Notebook V22.1** : cellule 12.2 quinquies, interrupteur `DECISIONS_ENABLED` **allumé par défaut** ; `GC_DECISIONS=0`
+  le coupe (moteur de V21). `generer_semaine.py` indique au notebook où est `moteur/` (`GC_MOTEUR_DIR`) : s'il manque,
+  le calcul s'arrête (jamais de semaine V21 en silence). Colab sans le dossier : décisions coupées, avec un message ;
+  cloner le dépôt avant d'exécuter (en-tête de 12.2 quinquies).
+- **Corrections de V22.1** : 13.2 contrôle les cotes réellement publiées (300 simulations) avec une tolérance de biais
+  statistique (2,5 écarts-types, au moins 3 %) ; le porteur n'est plus jamais arrêté derrière son en-but (le moteur
+  n'a pas de safety : arrêt sur la ligne des 1) ; le cache des cotes distingue décisions allumées / coupées.
 - **Rapport de calibration** (1 008 matchs, mêmes graines que 12.3) : `python3 outils/moteur/rapport_calibration.py`
   (`--decisions off --sortie ref.json`, puis `--decisions on --reference ref.json` -> verdict, code 1 hors tolérance) ;
   `outils/moteur/calibrer_bloc_a.py` recalcule les facteurs de normalisation.
 - **GameFeed** (additif) : `play.decision` = `{action, intended, target, read, reads, status, pressure, forced,
   throw_time, time_to_pressure, coverage, family, rushers, blitz}` ; `call.route` = route de la **cible réelle** ;
-  texte « Pass thrown away », « X scramble, +7 ». **Site** : la route animée suit le receveur choisi (déjà le cas :
-  le site anime la route du porteur) ; « · off his first read » dans le play-by-play quand le QB a lancé au-delà
-  de sa première lecture. Rien ne change pour les semaines sans `play.decision`.
-- **Exhibition** : `outils/exhibition/simuler_exhibition.py --decisions` montre le bloc avant une vraie semaine.
-- **Avant d'allumer pour une vraie semaine** : tolérances validées, 13.4 (cotes en direct) refait décisions allumées,
-  semaine re-produite et auditée (`audit_moteur.py`) — garde-fous 4 et 7 de la feuille de route.
-- **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes ; aussi lancés par GitHub, workflow
-  « Tests moteur », à chaque push qui touche `moteur/`).
+  texte « Pass thrown away », « X scramble, +7 ». **Site** : la route animée suit le receveur choisi ; « · off his
+  first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
+  semaines produites avant (sans `play.decision`).
+- **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
+- **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
+  calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
@@ -325,8 +327,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 
 `GC_DATA` (données, défaut `./data`) · `GC_SITE` (source du site) · `GC_NOTEBOOK` (notebook) · `GC_AUTOGEN=1` ·
 `GC_ADMIN_KEY` (sauvegardes) · `GC_DEMO_AT` (ISO ou `auto` : décale l'horloge, pour une démonstration) · `PORT` ·
-`GC_MOTEUR_DIR` (dossier qui contient `moteur/`, mis par `generer_semaine.py`) · `GC_DECISIONS=1` (notebook : décisions
-de passe du bloc A allumées).
+`GC_MOTEUR_DIR` (dossier qui contient `moteur/`, mis par `generer_semaine.py`) · `GC_DECISIONS=0` (notebook : décisions
+de passe du bloc A coupées, moteur V21 ; allumées par défaut).
 
 ## Test
 

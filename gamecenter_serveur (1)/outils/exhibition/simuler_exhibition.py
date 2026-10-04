@@ -4,7 +4,7 @@
 Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais SANS produire de semaine), puis
 une cellule ajoutée à la volée qui :
   1. reprend les staffs ajustés de la dernière semaine (staffs_next_week), comme le ferait la semaine suivante ;
-  2. joue N matchs candidats entre deux franchises avec le moteur courant (V21 : coordinateurs adaptatifs en
+  2. joue N matchs candidats entre deux franchises avec le moteur courant (V22.1 : lectures du QB, coordinateurs adaptatifs en
      direct, playbooks V19 + « Roman 2014 » V20) — graines hors saison et hors cotes ;
   3. garde le plus représentatif : beaucoup d'ajustements en direct, score serré, beaucoup de concepts différents ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
@@ -62,9 +62,9 @@ def main():
     ap.add_argument("--candidats", type=int, default=16); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V21 · adaptive coordinators · V19/V20 playbooks")
-    ap.add_argument("--decisions", action="store_true",
-                    help="V22 : décisions de passe du bloc A allumées (ENGINE INTELLIGENCE), pour montrer le bloc")
+    ap.add_argument("--titre", default="Notebook V22.1 · QB reads & post-snap coverage · adaptive coordinators")
+    ap.add_argument("--sans-decisions", action="store_true",
+                    help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     a = ap.parse_args()
     import nbformat
     from nbclient import NotebookClient
@@ -78,7 +78,7 @@ def main():
         os.environ.pop(k, None)               # surtout pas de semaine produite
     os.environ["GC_EXH"] = json.dumps(params)
     os.environ.setdefault("GC_MOTEUR_DIR", ROOT)        # modules moteur/ (V22)
-    os.environ["GC_DECISIONS"] = "1" if a.decisions else "0"
+    os.environ["GC_DECISIONS"] = "0" if a.sans_decisions else "1"
     nb = nbformat.read(a.notebook, as_version=4)
     nb.cells.append(nbformat.v4.new_code_cell(CELL))
     t0 = time.time()
