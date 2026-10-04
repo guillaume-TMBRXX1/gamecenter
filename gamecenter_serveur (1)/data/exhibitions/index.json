@@ -1,26 +1,34 @@
 {
  "exhibitions": [
   {
-   "id": "exh-v21-ctx-mnl",
+   "id": "exh-v23-vec-ctx",
    "home": "CTX",
-   "away": "MNL",
-   "title": "Notebook V21 · adaptive coordinators · V19/V20 playbooks",
+   "away": "VEC",
+   "title": "Notebook V23 · QB intelligence, pocket & pressure · QB reads & post-snap coverage",
    "created": "2026-10-04",
-   "plays": 128,
-   "adjustments": 15,
+   "plays": 169,
+   "adjustments": 14,
    "adjust_kinds": [
     "clock",
     "d_attack",
     "d_deep",
+    "d_heat",
     "d_noblitz",
     "d_press",
-    "d_prevent",
     "d_run",
     "hurry",
     "shelve",
     "shelve_form"
    ],
-   "concepts": 25
+   "concepts": 24,
+   "decisions": {
+    "beyond_first_read": 61,
+    "under_pressure": 23,
+    "scrambles": 2,
+    "throwaways": 4,
+    "held_sacks": 5,
+    "safeties": 2
+   }
   }
  ]
 }

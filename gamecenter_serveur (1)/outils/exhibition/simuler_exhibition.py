@@ -4,13 +4,16 @@
 Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais SANS produire de semaine), puis
 une cellule ajoutée à la volée qui :
   1. reprend les staffs ajustés de la dernière semaine (staffs_next_week), comme le ferait la semaine suivante ;
-  2. joue N matchs candidats entre deux franchises avec le moteur courant (V22.1 : lectures du QB, coordinateurs adaptatifs en
-     direct, playbooks V19 + « Roman 2014 » V20) — graines hors saison et hors cotes ;
-  3. garde le plus représentatif : beaucoup d'ajustements en direct, score serré, beaucoup de concepts différents ;
+  2. joue N matchs candidats entre deux franchises avec le moteur courant (V23 : intelligence du QB et poche — bloc B,
+     lectures du QB — bloc A, safety, coordinateurs adaptatifs en direct, playbooks V19 + « Roman 2014 » V20) — graines
+     hors saison et hors cotes ;
+  3. garde le plus représentatif : décisions visibles du QB (lectures au-delà de la première, passes sous pression,
+     scrambles, throwaways, sacks « ballon gardé »), safety, ajustements en direct, score serré, concepts variés ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
-    python3 outils/exhibition/simuler_exhibition.py --home CTX --away MNL [--candidats 16] [--id exh-v21-ctx-mnl]
+    python3 outils/exhibition/simuler_exhibition.py --home CTX --away VEC [--candidats 40] [--id exh-v23-ctx-vec]
+    (--remplace exh-v21-ctx-mnl : retire une ancienne exhibition de l'index et son fichier)
 Durée : l'exécution complète du notebook (≈ 15-20 min, tests compris) + quelques secondes.
 """
 import argparse, json, os, sys, tempfile, time
@@ -38,33 +41,44 @@ for _k in range(_P["candidates"]):
     _kinds = sorted({a.get("kind") for p in _pl for a in (p.get("adjust") or [])})
     _conc = len({(p.get("call") or {}).get("concept") for p in _pl if (p.get("call") or {}).get("type") in ("run", "pass")})
     _margin = abs(_m["home_score"] - _m["away_score"])
-    _score = _adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
-    _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin))
-    print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} {_kinds} · concepts {_conc}")
+    _d = [p["decision"] for p in _pl if p.get("decision")]
+    _dec = {"beyond_first_read": sum(1 for d in _d if d.get("action") == "LANCER" and (d.get("read") or 1) > 1),
+            "under_pressure": sum(1 for d in _d if d.get("action") == "LANCER" and d.get("hurried")),
+            "scrambles": sum(1 for d in _d if d.get("action") == "SCRAMBLE"),
+            "throwaways": sum(1 for d in _d if d.get("action") == "THROWAWAY"),
+            "held_sacks": sum(1 for d in _d if d.get("action") == "SACK"),
+            "safeties": sum(1 for p in _pl if p.get("result") == "safety")}
+    _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
+              + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
+              + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"]))
+    _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
+    print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
-_score, _seed, _m, _adj, _kinds, _conc, _margin = _cands[0]
+_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec = _cands[0]
 _odds = engine_pregame_odds(AI_FRANCHISES[_H], AI_FRANCHISES[_A], n_sims=_P["odds_sims"])
 attach_engine_odds(_m, _odds)
 _feed = export_gamefeed(_m, game_id=_P["id"], featured=False, season=(_prev or {}).get("week", {}).get("index", 0), week="Exhibition")
 _feed["game"].update(phase="exhibition", slot=None, kickoff=None, week_start=None,
     exhibition={"engine": _P["engine"], "seed": _seed, "staffs_from": _xo.path.basename(_xo.path.dirname(_weeks[-1])) if _weeks else "départ",
-                "adjustments": _adj, "adjust_kinds": _kinds, "concepts": _conc, "candidates": _P["candidates"]})
+                "adjustments": _adj, "adjust_kinds": _kinds, "concepts": _conc, "candidates": _P["candidates"],
+                "decisions": _dec})
 _xo.makedirs(_P["out"], exist_ok=True)
 with open(_xo.path.join(_P["out"], _P["id"] + ".json"), "w", encoding="utf-8") as _fh:
     _xj.dump(_feed, _fh, ensure_ascii=False, separators=(",", ":"))
-print("EXHIBITION_OK", _xj.dumps({"seed": _seed, "home": _m["home_score"], "away": _m["away_score"], "plays": len(_feed["plays"]), "adjust": _adj, "kinds": _kinds, "concepts": _conc}))
+print("EXHIBITION_OK", _xj.dumps({"seed": _seed, "home": _m["home_score"], "away": _m["away_score"], "plays": len(_feed["plays"]), "adjust": _adj, "kinds": _kinds, "concepts": _conc, "decisions": _dec}))
 '''
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--home", default="CTX"); ap.add_argument("--away", default="MNL")
-    ap.add_argument("--candidats", type=int, default=16); ap.add_argument("--id", default=None)
+    ap.add_argument("--home", default="CTX"); ap.add_argument("--away", default="VEC")
+    ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
     ap.add_argument("--titre", default="Notebook V23 · QB intelligence, pocket & pressure · QB reads & post-snap coverage")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
+    ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")
     ap.add_argument("--sans-bloc-b", action="store_true",
                     help="décisions du bloc A seulement : intelligence du QB (bloc B, V23) coupée")
     a = ap.parse_args()
@@ -99,9 +113,14 @@ def main():
     # index des exhibitions (lu par le serveur)
     idx_path = os.path.join(out, "index.json")
     idx = json.load(open(idx_path, encoding="utf-8")) if os.path.exists(idx_path) else {"exhibitions": []}
-    idx["exhibitions"] = [x for x in idx["exhibitions"] if x["id"] != gid] + [{
+    if a.remplace and a.remplace != gid:
+        old = os.path.join(out, a.remplace + ".json")
+        if os.path.exists(old):
+            os.remove(old)
+    idx["exhibitions"] = [x for x in idx["exhibitions"] if x["id"] not in (gid, a.remplace)] + [{
         "id": gid, "home": a.home, "away": a.away, "title": a.titre, "created": time.strftime("%Y-%m-%d"),
-        "plays": res["plays"], "adjustments": res["adjust"], "adjust_kinds": res["kinds"], "concepts": res["concepts"]}]
+        "plays": res["plays"], "adjustments": res["adjust"], "adjust_kinds": res["kinds"], "concepts": res["concepts"],
+        "decisions": res.get("decisions")}]
     with open(idx_path, "w", encoding="utf-8") as fh:
         json.dump(idx, fh, ensure_ascii=False, indent=1)
     print(f"Exhibition {gid} écrite en {int(time.time() - t0)} s : {res}")

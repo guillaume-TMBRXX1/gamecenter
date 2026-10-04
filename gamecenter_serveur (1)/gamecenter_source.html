@@ -4560,10 +4560,14 @@ function renderExhibitions(){
   if(!box){ box=document.createElement('section'); box.id='exhBox'; box.className='exh'; box.setAttribute('aria-label','Exhibition');
     const low=document.querySelector('#viewLive .lower'); if(!low) return; low.after(box); }
   box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
-    const kinds=(x.adjust_kinds||[]).length;
+    const kinds=(x.adjust_kinds||[]).length, D=x.decisions||{};
+    /* engine intelligence (blocks A-B): what the QBs did that the viewer will see */
+    const dec=[D.beyond_first_read?`${D.beyond_first_read} throws past the first read`:'',D.under_pressure?`${D.under_pressure} under pressure`:'',
+      D.scrambles?`${D.scrambles} scramble${D.scrambles>1?'s':''}`:'',D.throwaways?`${D.throwaways} throwaway${D.throwaways>1?'s':''}`:'',
+      D.safeties?`${D.safeties} safet${D.safeties>1?'ies':'y'}`:''].filter(Boolean).join(' · ');
     return `<article class="card exh-card"><div class="exh-main"><span class="pt-tag">Exhibition</span>
       <h3><span class="abbr">${esc(A.abbr)}</span> ${esc(A.name)} <em>@</em> <span class="abbr">${esc(H.abbr)}</span> ${esc(H.name)}</h3>
-      <p class="exh-sub">${esc(x.title||'')}${x.adjustments?` · ${x.adjustments} in-game adjustments${kinds?` (${kinds} kinds)`:''}`:''}${x.concepts?` · ${x.concepts} play concepts`:''} · outside the schedule, no bets</p></div>
+      <p class="exh-sub">${esc(x.title||'')}${dec?` · ${esc(dec)}`:''}${x.adjustments?` · ${x.adjustments} in-game adjustments${kinds?` (${kinds} kinds)`:''}`:''}${x.concepts?` · ${x.concepts} play concepts`:''} · outside the schedule, no bets</p></div>
       <button type="button" class="cta exh-go" data-exh="${esc(x.id)}">Watch the match</button></article>`; }).join('');
 }
 async function exhibitionOpen(id,btn){
