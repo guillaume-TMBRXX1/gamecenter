@@ -3,9 +3,9 @@
 Modules de décision du moteur GridironSim (`programme/Feuille_de_route.md`, étape 5). Python pur (bibliothèque
 standard seulement), indépendants du notebook : on échange des `dict` simples (`{"id", "name", "ratings"}`).
 Le notebook `NFL_Sim_GameCenter.ipynb` les importe (cellule **12.2 quinquies**) et les appelle depuis
-`simulate_drive_franchise` (12.2) derrière l'interrupteur `DECISIONS_ENABLED`.
+`simulate_drive_franchise` (12.2) derrière l'interrupteur `DECISIONS_ENABLED` (allumé depuis V22.1).
 
-## Bloc A — état post-snap, progression du QB, cible réelle (notebook V22)
+## Bloc A — état post-snap, progression du QB, cible réelle (notebook V22, allumé en V22.1)
 
 ```
 appel du coordinateur (play + couverture)
@@ -61,4 +61,5 @@ Le notebook cherche `moteur/` dans `GC_MOTEUR_DIR`, le dossier courant, `./gamec
 ```
 
 (dépôt privé : jeton « fine-grained » en lecture seule). Sans le dossier, le notebook tourne en V21 (interrupteur
-forcé à coupé, message dans 12.2 quinquies). `GC_DECISIONS=1` allume l'interrupteur pour toute l'exécution.
+forcé à coupé, message dans 12.2 quinquies) — sauf si `GC_MOTEUR_DIR` est donné ou `GC_DECISIONS=1` : il s'arrête alors.
+`GC_DECISIONS=0` coupe l'interrupteur pour toute l'exécution.

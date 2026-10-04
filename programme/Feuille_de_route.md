@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc A démarré)
+# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc A terminé)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — bloc A branché (V22, interrupteur coupé, rapport de calibration dans les tolérances proposées) ; à valider puis allumer | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; **prochain : bloc B** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -139,9 +139,9 @@ repère l'usage répété de WR2 → la couverture s'ajuste → le QB le voit �
 
 ---
 
-## Bloc A — état au 04/10/2026 (notebook V22, interrupteur coupé)
+## Bloc A — ✅ terminé le 04/10/2026 (notebook V22.1, décisions allumées)
 
-**Fait** (branche `claude/bloc-a-demarrage-6nom5b`) :
+**V22 — branchement** (PR #12, interrupteur coupé) :
 - Modules `gamecenter_serveur (1)/moteur/` (Python pur, `moteur/README.md`) : `progressions` (primaire, secondaire,
   tertiaire, checkdown et routes de 18 concepts ; HEAVY : WR1 inéligible), `reaction_defensive`
   (`DefensiveReactionEngine` → `PostSnapState` : homme / zone Cover 0-4, rushers, receveur LIBRE / SERRE / COUVERT /
@@ -157,28 +157,45 @@ repère l'usage répété de WR2 → la couverture s'ajuste → le QB le voit �
   clés des stats défensives varie, comme déjà d'une exécution à l'autre en V21 : ordre d'un `set` Python).
 - Site (et cellule 427) : « · off his first read » dans le play-by-play ; la route animée est déjà celle du porteur,
   donc de la cible réelle.
-- `generer_semaine.py` / `simuler_exhibition.py` : `GC_MOTEUR_DIR` ; exhibition `--decisions` pour montrer le bloc.
+- `generer_semaine.py` / `simuler_exhibition.py` : `GC_MOTEUR_DIR` (exhibition : `--sans-decisions` depuis V22.1).
 - Outils : `outils/moteur/rapport_calibration.py` (rapport automatique, verdict), `outils/moteur/calibrer_bloc_a.py`
   (facteurs de normalisation), `outils/moteur/reference_v21.json` (référence), `outils/moteur/rapport_v22_bloc_a.json`.
 
-**Référence V21 mesurée** (test d'équilibre 12.3, 1 008 matchs, mêmes graines) et **V22 décisions allumées** :
+**V22.1 — allumage** (PR #13) : `DECISIONS_ENABLED` allumé par défaut (`GC_DECISIONS=0` : moteur V21) ; moteur/
+introuvable avec `GC_MOTEUR_DIR` donné → le calcul s'arrête (jamais de semaine V21 en silence) ; tests du moteur lancés
+avant chaque calcul du samedi ; cache des cotes distinct allumé / coupé. Vérifié :
+- 12.3 décisions allumées : équilibre et identités (passe VEC > CTX > AEG > MNL, blitz, 4e essais, gros gains, course
+  MNL, défense AEG) passent.
+- 13.4 (cotes en direct, 1 008 matchs neufs) passe, mieux qu'en V21 : écart moyen 0,006 (V21 : 0,013), extrêmes à
+  ±0,013, outsiders −4,6 %.
+- 13.2 : contrôle désormais les cotes publiées (300 simulations, avant 150) avec une tolérance de biais statistique
+  (2,5 écarts-types, au moins 3 %). Avec 3 % fixes (1,7 écart-type), l'échantillon de 12.3 — un tirage bas : 47,9 % de
+  victoires à domicile, 48,8 % sur 4 jeux de 1 008 matchs — sortait à −3,3 % ; 300 simulations neuves : 49,8 %.
+- Bug de V21 corrigé : sans règle de safety, le porteur pouvait être arrêté DERRIÈRE son en-but (73 matchs sur 1 008
+  en V21 ; visible sur le site, détecté par la semaine d'exemple de 14.2 quand le ballon sortait du terrain) → arrêt
+  sur la ligne des 1. Le moteur coupé n'est donc plus identique octet par octet à V21 dans ces matchs-là.
+- Semaine du 12/10 produite par `generer_semaine.py` (notebook complet, décisions allumées) en 1 701 s :
+  `audit_moteur.py` 0 anomalie bloquante (mêmes types d'alerte que les semaines en ligne), 2 915 passes décidées,
+  aucune action dans un en-but, cotes sur tous les matchs ; le serveur la charge et la sert.
 
-| Mesure | V21 | V22 allumé | Tolérance proposée |
+**Rapport de calibration** (test d'équilibre 12.3, 1 008 matchs, mêmes graines ; tolérances de la PR #12, fusionnée) :
+
+| Mesure | V21 | V22.1 allumé | Tolérance |
 |---|---|---|---|
-| Complétion | 65,4 % | 65,3 % | ± 2 points |
+| Complétion | 65,4 % | 65,2 % | ± 2 points |
 | Sacks / dropback | 8,1 % | 8,2 % | ± 1 point |
 | INT / tentative | 2,4 % | 2,5 % | ± 0,5 point |
 | Yards / tentative | 7,67 | 7,53 | ± 0,3 |
 | Yards nets / dropback | 6,62 | 6,52 | ± 0,3 |
-| Yards / course | 5,64 | 5,63 | ± 0,2 |
+| Yards / course | 5,64 | 5,64 | ± 0,2 |
 | Pertes de balle / match | 3,61 | 3,72 | ± 0,3 |
-| Points / match | 51,8 | 51,5 | ± 2 |
+| Points / match | 51,8 | 51,4 | ± 2 |
 | Drives / match | 21,0 | 21,1 | ± 1 |
 | Premiers downs / match | 42,7 | 42,9 | ± 2 |
-| Actions / match | 126,5 | 127,0 | ± 5 |
+| Actions / match | 126,5 | 127,1 | ± 5 |
 | Part de dropbacks | 59,0 % | 58,7 % | ± 2 points |
-| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 53,5 · 48,7 · 52,0 · 45,8 % | chacune 40-60 % |
-| Temps par match | 140 ms | 142 ms (× 1,02) | ≤ × 2 |
+| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 53,8 · 48,5 · 52,4 · 45,3 % | chacune 40-60 % |
+| Temps par match | 128-140 ms | 133 ms (× 1,04 au plus) | ≤ × 2 |
 
 Temps : notebook V21 complet sans semaine 19,3 min sur la machine de test (13.4 : 256 s, 12.3 : 153 s) ;
 une semaine complète (`generer_semaine.py`) 1 733 s en V21 et 1 747 s en V22 coupé, mesurées en parallèle sur la
@@ -196,18 +213,21 @@ TE 18,9 % · RB 11,5 % · WR3 3,2 % (avant : WR1 ≈ 55-60 %, RB seulement sur l
 - Effets de concept 12.2 (profond / court) : ceux de la route réellement lancée ; aucun sans lancer.
 - Scramble = course du QB (comme en NFL : la tentative de passe devient une course).
 
-**Reste à faire pour finir le bloc A** :
-1. **Guillaume** : valider (ou corriger) les tolérances ci-dessus et les choix de calibrage.
-2. Allumer l'interrupteur : refaire 13.2 / 13.4 (cotes) décisions allumées (garde-fou 4), vérifier les contrôles de
-   12.3 (identités : passe VEC > CTX > AEG > MNL, blitz, 4e essais, gros gains, course MNL, défense AEG) avec
-   `GC_DECISIONS=1`, re-produire une semaine et l'auditer (garde-fou 7), puis mettre `DECISIONS_ENABLED = True`.
-3. Mettre à jour la fiche technique du notebook (hors dépôt) : V22, cellule 12.2 quinquies.
-4. À surveiller : MNL perd ≈ 10 points de victoires (55,7 → 45,8 %), ses receveurs étant les plus faibles ; taux de
-   1re lecture (43,8 %) peut-être bas — à affiner au bloc B (processing, anticipation).
+**Reste hors dépôt** : mettre à jour la fiche technique du notebook (V22 / V22.1, cellule 12.2 quinquies, 13.2).
+
+**À surveiller (bloc A)** :
+- MNL perd ≈ 10 points de victoires (55,7 → 45,3 % au test d'équilibre) : ses receveurs sont les plus faibles de la
+  ligue ; l'ajustement hebdomadaire (12.3) et le bloc B (intelligence du QB) peuvent le faire bouger.
+- Taux de 1re lecture 43,8 % et WR3 peu ciblé (3 %) : à affiner au bloc B (processing, anticipation) et dans les
+  progressions (le slot n'est lu que sur STICK / SCREEN).
+- **Safety** : le moteur n'a pas la règle (2 points + coup de pied) ; ≈ 7 % des matchs auraient un safety (fréquence
+  NFL). Proposition : l'ajouter comme petit chantier avant ou avec le bloc B (score, GameFeed `result: "safety"`, site,
+  commentateur, cotes 13.4 à revérifier).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et la section 15 du README du serveur.
-2. Reprendre « Reste à faire pour finir le bloc A » ; puis bloc B.
+2. Décider du safety (ci-dessus), puis **bloc B** — intelligence du QB, poche et pression (notebook V23) : mêmes
+   garde-fous, rapport `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`.
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
