@@ -218,6 +218,7 @@
   .field-hit:focus-visible{outline-offset:-3px}
   .field-hit::after{content:"Open board";position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);height:30px;padding:0 12px;border-radius:var(--r-sm);background:var(--l3);border:1px solid var(--cyan);box-shadow:0 0 18px rgba(46,230,255,.35);display:flex;align-items:center;font:700 11px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);opacity:0;transition:opacity .15s;white-space:nowrap}
   @media (hover:hover){ .field-hit:hover::after{opacity:1} }
+  .tile.preview .field-hit::after{content:"Watch replay"}
   .field-hit:focus-visible::after{opacity:1}
 
   .pill{position:absolute;z-index:3;top:8px;right:8px;display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:5px;background:var(--pink);font:700 italic 10.5px/1 var(--f-display);letter-spacing:.12em;color:#fff;white-space:nowrap;box-shadow:0 0 14px rgba(255,46,126,.55)}
@@ -3074,7 +3075,7 @@ function wpHTML(g,hover){
 /*@ui-end*/
 function miniTile(g){
   const A=TEAMS[g.away], H=TEAMS[g.home];
-  return `<article class="tile" data-gid="${g.id}">
+  return `<article class="tile${g.preview?' preview':''}" data-gid="${g.id}">
     ${fieldHTML(g,'',true)}
     <div class="tile-meta">
       <div class="matchup"><span><b>${A.name}</b><em>@</em><b>${H.name}</b></span>${g.sched?seasonTileMeta(g):`<span class="watch">${ICON.eye}${g.viewers}</span>`}</div>
@@ -4065,7 +4066,7 @@ document.addEventListener('click',e=>{
   const rpo=t.closest('[data-replay]'); if(rpo){ openReplay(rpo.dataset.replay); return; }
   const stb=t.closest('[data-st]'); if(stb){ const gid=stTab(stb); if(gid&&byId[gid]) renderStats(byId[gid]); return; }
   const rp=t.closest('[data-rp]'); if(rp){ if(rp.dataset.rp!=='seek'){ const host=rp.closest('[data-rpg]'); rpAction(byId[host&&host.dataset.rpg],rp.dataset.rp,rp); } return; }
-  const open=t.closest('[data-open]'); if(open){ const id=open.dataset.open; if(SEASON&&id.startsWith('rp:')) openReplayFeed(SEASON.feeds[id.slice(3)]); else openModal(id); return; }
+  const open=t.closest('[data-open]'); if(open){ const id=open.dataset.open; if(SEASON&&id.startsWith('rp:')) openReplayFeed(SEASON.feeds[id.slice(3)]); else if(byId[id]&&byId[id].preview) openReplay(id); else openModal(id); return; }
   const sch=t.closest('[data-sched]'); if(sch&&SEASON){ const s=SCHED_BY[sch.dataset.sched], st=gStatus(s,nowMs());
     if(st==='live'&&byId['s-'+s.id]) openModal('s-'+s.id); else if(st==='final') openReplayFeed(SEASON.feeds[s.id]); return; }
   if(t.closest('[data-snd]')){ setSound(!soundOn()); return; }
@@ -4199,6 +4200,14 @@ function boardPlan(t){
   const next=SCHED.filter(g=>g.ko===nextKo);
   return {plan,next};
 }
+/* Energy: a finished game in a side tile is a still preview of the whole match — final score, final win probability,
+   the field at the last play — and costs nothing (no replay stepping, the field drawn once). "Open board" plays it
+   from kickoff on the big screen (openReplay, a separate copy); the tile stays as it is. Prime Time and live games run. */
+function previewGame(g){
+  rpSeek(g,g.plays.length-1); rpResolve(g); rpCommit(g);
+  g.paused=true; g.loop=false; g.preview=true; g.tdFlash=false; g.toFlash=null; g.shake=null;
+  g.chip={t:'Final · watch the replay',c:''};
+}
 function makeBoardGame(s,mode,t){
   const f0=SEASON.feeds[s.id];
   if(mode!=='upcoming'&&!f0.plays.length) mode='upcoming';
@@ -4255,13 +4264,14 @@ function buildBoard(force){
   Object.keys(byId).forEach(k=>{ if(k.startsWith('pg-')) delete byId[k]; });
   games.length=0;
   for(const [s,m] of plan){ const g=makeBoardGame(s,m,t); games.push(g); byId[g.id]=g; }
+  games.forEach((g,i)=>{ if(i>0&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run */
   grid.innerHTML = games.length ? featTile(games[0]) + games.slice(1).map(miniTile).join('') + seasonNextTile(t) : seasonNextTile(t);
   document.querySelectorAll('#liveGrid .tile[data-gid]').forEach(tile=>{
     const g=byId[tile.dataset.gid];
     views.push(new FieldView(tile.querySelector('.field'),g,tile.classList.contains('feat')?62:54,tile.classList.contains('feat')?1.35:1.25));
   });
   seasonTicker();
-  games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); });
+  games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); if(g.preview) showChip(g); });
   NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* an AI Bowl still to be decided has no prices */
   syncPressed();
   return true;
@@ -5698,10 +5708,11 @@ function frame(now){
   for(const v of views){
     /* perf: off-screen fields, and the boards behind the open big screen, are not drawn (their games still run) */
     if(!v.onScreen||(modalView&&v!==modalView)){ v._resnap=true; continue; }
+    if(v.g.preview){ if(v._sig&&!v._resnap) continue; v._resnap=true; v.draw(dt,null); continue; }   /* still preview: one frame */
     if(v.draw(dt,now)) drew=true;
   }
   perfWatch(ms,drew,now);
-  if(now-lastUi>250){ lastUi=now; for(const g of games) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
+  if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
