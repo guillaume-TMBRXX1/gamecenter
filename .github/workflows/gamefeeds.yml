@@ -1,0 +1,45 @@
+# GameFeed.json de matchs joués par le moteur du notebook (V24), à charger sur le site : tuile Exhibition ->
+# « Watch the match » -> bouton « Load GameFeed ». Rien n'est ajouté au dépôt : les fichiers sont dans l'artefact
+# « gamefeeds » de l'exécution (Actions -> cette exécution -> Artifacts). ≈ 3 min.
+name: GameFeeds d'exhibition
+
+on:
+  workflow_dispatch:
+    inputs:
+      matchs:
+        description: "Affiches « VIS@DOM,… » ou « tous » (12 affiches)"
+        default: "tous"
+      par_affiche:
+        description: "Matchs par affiche"
+        default: "1"
+  push:
+    paths:
+      - ".github/workflows/gamefeeds.yml"
+      - "gamecenter_serveur (1)/outils/exhibition/gamefeeds.py"
+
+permissions:
+  contents: read
+
+jobs:
+  gamefeeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer
+        run: pip install -r requirements-semaine.txt
+      - name: Tests du moteur
+        run: python -m unittest discover -s moteur/tests -t .
+      - name: Jouer les matchs
+        run: python outils/exhibition/gamefeeds.py --matchs "${{ github.event.inputs.matchs || 'tous' }}" --par-affiche "${{ github.event.inputs.par_affiche || '1' }}" --sortie gamefeeds
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamefeeds
+          path: "gamecenter_serveur (1)/gamefeeds/*.json"
+          retention-days: 30
