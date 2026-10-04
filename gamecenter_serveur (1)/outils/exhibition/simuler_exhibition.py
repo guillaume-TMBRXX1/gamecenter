@@ -62,9 +62,11 @@ def main():
     ap.add_argument("--candidats", type=int, default=16); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V22.1 · QB reads & post-snap coverage · adaptive coordinators")
+    ap.add_argument("--titre", default="Notebook V23 · QB intelligence, pocket & pressure · QB reads & post-snap coverage")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
+    ap.add_argument("--sans-bloc-b", action="store_true",
+                    help="décisions du bloc A seulement : intelligence du QB (bloc B, V23) coupée")
     a = ap.parse_args()
     import nbformat
     from nbclient import NotebookClient
@@ -79,6 +81,7 @@ def main():
     os.environ["GC_EXH"] = json.dumps(params)
     os.environ.setdefault("GC_MOTEUR_DIR", ROOT)        # modules moteur/ (V22)
     os.environ["GC_DECISIONS"] = "0" if a.sans_decisions else "1"
+    os.environ["GC_BLOC_B"] = "0" if a.sans_bloc_b else "1"
     nb = nbformat.read(a.notebook, as_version=4)
     nb.cells.append(nbformat.v4.new_code_cell(CELL))
     t0 = time.time()

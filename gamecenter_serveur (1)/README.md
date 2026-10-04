@@ -208,7 +208,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   cloner le dépôt avant d'exécuter (en-tête de 12.2 quinquies).
 - **Corrections de V22.1** : 13.2 contrôle les cotes réellement publiées (300 simulations) avec une tolérance de biais
   statistique (2,5 écarts-types, au moins 3 %) ; le porteur n'est plus jamais arrêté derrière son en-but (le moteur
-  n'a pas de safety : arrêt sur la ligne des 1) ; le cache des cotes distingue décisions allumées / coupées.
+  n'avait pas de safety : arrêt sur la ligne des 1 — règle du safety ajoutée en V23, section 16) ; le cache des cotes distingue décisions allumées / coupées.
 - **Rapport de calibration** (1 008 matchs, mêmes graines que 12.3) : `python3 outils/moteur/rapport_calibration.py`
   (`--decisions off --sortie ref.json`, puis `--decisions on --reference ref.json` -> verdict, code 1 hors tolérance) ;
   `outils/moteur/calibrer_bloc_a.py` recalcule les facteurs de normalisation.
@@ -220,6 +220,32 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
 - **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
   calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
+
+### 16. Safety et ENGINE INTELLIGENCE — bloc B (notebook V23, 04/10/2026, allumés)
+
+- **Safety** (règle NFL) : porteur, receveur ou QB sacké arrêté dans son propre en-but -> **2 points pour la défense**,
+  puis free kick de l'équipe qui a concédé depuis sa ligne des 20 (distance tirée dans un flux dédié : le hasard du
+  moteur n'est pas consommé) ; en prolongation, un safety termine le match. Fumble perdu dans son en-but : ballon sur
+  la ligne des 1 (comme V22.1). ≈ 9-11 % des matchs en ont un (NFL ≈ 7 %). Interrupteur `SAFETY_ENABLED` (11.6).
+  GameFeed : `result: "safety"`, `possession_change: "safety"`, `safety_via` (`run` / `complete` / `sack` : ce que le
+  site anime), `highlight: "SAFETY"` ; le coup de pied suivant est un `kickoff` au texte « Free kick, N yds ».
+  `audit_moteur.py` vérifie que le safety donne exactement 2 points à la défense.
+- **Bloc B — intelligence du QB, poche et pression** (cellule 12.2 sexies, modules `moteur/intelligence_qb.py` et
+  `moteur/decision_qb.py`, voir `moteur/README.md`) : 8 attributs (awareness, processing, coverage reading, decision
+  making, pocket awareness, pressure response, anticipation, aggressiveness), dérivés des notes du QB et de l'identité
+  de sa franchise, **hors OVR** (notes d'unité et cotes d'avant-match inchangées). Chrono de poche, statut **perçu**
+  (erreurs de lecture), style, fin de poche : sacks et interceptions deviennent en partie la conséquence de mauvaises
+  décisions. Interrupteur `QB_IQ_ENABLED` (allumé ; `GC_BLOC_B=0` : décisions du bloc A). Exhibition : `--sans-bloc-b`.
+- **GameFeed** (additif) : `play.decision.{bloc, qb, perceived, misread, hurried, pocket_time}` ; `roster[].qb_iq` pour
+  le QB. **Site** : scramble animé (le QB recule, la poche se referme, il s'échappe), « · under pressure » dans le
+  play-by-play, stats d'équipe « Avg. time to throw », « Pressured dropbacks », « QB scrambles », fiche du QB avec
+  ses 8 attributs, safety (puce, éclair, play-by-play, stats, commentaire écrit, foule et effets).
+- **Commentaire enregistré** : cue `SAFETY` (4 prises dans `outils/audio/catalogue/commentary.json`) — à générer avec
+  le workflow « Commentaire audio » (mode `generer`, `seulement` = `SAFETY`) ; d'ici là, sous-titre et voix de
+  l'appareil.
+- **Rapport de calibration** : charge jusqu'à 12.2 sexies ; `--bloc-b off` pour les décisions du bloc A ; mesure aussi
+  les safeties et, bloc B, les erreurs de lecture et les stats par QB. `calibrer_bloc_a.py --bloc B` recalcule
+  `CALIBRATION_B`.
 
 ### Annexe — `.github/workflows/semaine.yml`
 

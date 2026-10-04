@@ -26,6 +26,7 @@ function resolveCues(c,P,g){
     case 'fumble_lost': out.push({cue:'FUMBLE',tags:T}); break;
     case 'field_goal_good': out.push({cue:'FIELD_GOAL_GOOD',tags:T}); break;
     case 'field_goal_missed': out.push({cue:'FIELD_GOAL_MISS',tags:T}); break;
+    case 'safety': out.push({cue:'SAFETY',tags:T}); break;
     case 'sack': out.push({cue:'SACK',tags:T}); break;
     case 'complete':
       if(gain>=20) out.push({cue:'BIG_PLAY',tags:T.concat('pass')});

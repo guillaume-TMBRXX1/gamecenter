@@ -3,6 +3,9 @@
 Chaque action de passe décidée porte entry["decision"] (écrit par le notebook, 12.2 quinquies) :
     {"action", "intended": {"role", "id", "name"}, "target": {...} | None, "read", "reads", "status",
      "pressure", "forced", "throw_time", "time_to_pressure", "coverage", "family", "rushers", "blitz", "double"}
+Bloc B (V23) ajoute : "qb": {"id", "name"}, "perceived", "misread", "hurried", "pocket_time" — d'où les stats par QB,
+les erreurs de lecture et la part des interceptions / sacks qui viennent d'une décision (passe forcée ou mal lue,
+ballon gardé trop longtemps).
 """
 
 COMPLETE, INCOMPLETE, INT, SACKS = "PASS_COMPLETE", "PASS_INCOMPLETE", "INTERCEPTION", ("SACK", "FUMBLE")
@@ -27,7 +30,8 @@ def stats_decisions(play_logs):
     """Agrège les décisions d'une liste de play_log (un par match). Renvoie un dict sérialisable."""
     s = {"dropbacks": 0, "lancers": 0, "premiere_lecture": 0, "sous_pression": 0, "forcees": 0,
          "scrambles": 0, "throwaways": 0, "sacks_decision": 0, "sacks": 0, "temps_lancer": 0.0,
-         "par_role": {}, "par_statut": {}, "par_couverture": {}, "par_lecture": {}, "par_joueur": {}}
+         "par_role": {}, "par_statut": {}, "par_couverture": {}, "par_lecture": {}, "par_joueur": {},
+         "erreurs_lecture": 0, "presses": 0, "temps_poche": 0.0, "int": 0, "int_decision": 0, "par_qb": {}}
     for log in play_logs:
         for e in log:
             d = e.get("decision")
@@ -38,6 +42,25 @@ def stats_decisions(play_logs):
             if out in SACKS and e.get("play_type") == "PASS":
                 s["sacks"] += 1
             a = d["action"]
+            s["temps_poche"] += d.get("pocket_time") or d.get("time_to_pressure") or 0.0
+            qid = (d.get("qb") or {}).get("id")
+            if qid:
+                q = s["par_qb"].setdefault(qid, {"name": d["qb"].get("name"), "dropbacks": 0, "lancers": 0,
+                                                 "premiere_lecture": 0, "erreurs_lecture": 0, "presses": 0,
+                                                 "sacks": 0, "sacks_decision": 0, "int": 0, "throwaways": 0,
+                                                 "scrambles": 0, "temps_lancer": 0.0})
+                q["dropbacks"] += 1
+                q["sacks"] += out in SACKS and e.get("play_type") == "PASS"
+                q["sacks_decision"] += a == "SACK"
+                q["throwaways"] += a == "THROWAWAY"
+                q["scrambles"] += a == "SCRAMBLE"
+                if a == "LANCER":
+                    q["lancers"] += 1
+                    q["premiere_lecture"] += d.get("read") == 1
+                    q["erreurs_lecture"] += bool(d.get("misread"))
+                    q["presses"] += bool(d.get("hurried"))
+                    q["int"] += out == INT
+                    q["temps_lancer"] += d.get("throw_time") or 0.0
             if a == "SCRAMBLE":
                 s["scrambles"] += 1
                 continue
@@ -52,6 +75,11 @@ def stats_decisions(play_logs):
             s["premiere_lecture"] += d.get("read") == 1
             s["sous_pression"] += bool(d.get("pressure"))
             s["forcees"] += bool(d.get("forced"))
+            s["erreurs_lecture"] += bool(d.get("misread"))
+            s["presses"] += bool(d.get("hurried"))
+            if out == INT:
+                s["int"] += 1
+                s["int_decision"] += bool(d.get("forced") or d.get("misread"))
             t = d.get("target") or {}
             y = int(e.get("yards_gained") or 0)
             if out in SACKS:
@@ -64,4 +92,15 @@ def stats_decisions(play_logs):
     s["taux_premiere_lecture"] = s["premiere_lecture"] / n
     s["taux_pression"] = s["sous_pression"] / n
     s["temps_lancer_moyen"] = s["temps_lancer"] / n
+    s["taux_erreur_lecture"] = s["erreurs_lecture"] / n
+    s["temps_poche_moyen"] = s["temps_poche"] / max(1, s["dropbacks"])
+    s["part_int_decision"] = s["int_decision"] / max(1, s["int"])
+    s["part_sacks_decision"] = s["sacks_decision"] / max(1, s["sacks"])
+    for q in s["par_qb"].values():
+        k = max(1, q["lancers"])
+        q["taux_premiere_lecture"] = q["premiere_lecture"] / k
+        q["taux_erreur_lecture"] = q["erreurs_lecture"] / k
+        q["temps_lancer_moyen"] = q["temps_lancer"] / k
+        q["taux_sack"] = q["sacks"] / max(1, q["dropbacks"])
+        q["taux_int"] = q["int"] / k
     return s

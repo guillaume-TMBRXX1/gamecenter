@@ -7,8 +7,10 @@ INT / tentative, complétion, yards par réception. Itération à point fixe sur
 que 12.3), le notebook chargé une seule fois.
 
     python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json [--graines 30] [--tours 6]
+    python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B         # CALIBRATION_B (V23)
 
-Affiche la ligne CALIBRATION à recopier dans moteur/resolution.py (puis relancer rapport_calibration.py).
+Affiche la ligne CALIBRATION (ou CALIBRATION_B) à recopier dans moteur/resolution.py (puis relancer
+rapport_calibration.py).
 """
 import argparse, json, os, sys
 
@@ -21,10 +23,11 @@ def main():
     ap.add_argument("--reference", required=True, help="rapport JSON V21 (rapport_calibration.py --decisions off)")
     ap.add_argument("--graines", type=int, default=30)
     ap.add_argument("--tours", type=int, default=6)
+    ap.add_argument("--bloc", choices=("A", "B"), default="A")
     a = ap.parse_args()
     ref = json.load(open(a.reference, encoding="utf-8"))
-    ns, _ = rc.charger(decisions=True)
-    k = ns["DECISION_CALIBRATION"]                      # le dict utilisé par le moteur (modifié en place)
+    ns, _ = rc.charger(decisions=True, bloc_b=a.bloc == "B")
+    k = ns["DECISION_CALIBRATION_B" if a.bloc == "B" else "DECISION_CALIBRATION"]   # dict du moteur (modifié en place)
     k.update({"int": 1.0, "sack": 1.0, "inc": 1.0, "yards": 0.0})
     for t in range(a.tours):
         games, temps = rc.mesurer(ns, a.graines)
@@ -38,7 +41,7 @@ def main():
         k["int"] *= ref["int_rate"] / m["int_rate"]
         k["inc"] *= (1 - ref["completion_pct"]) / (1 - m["completion_pct"])
         k["yards"] += ypr_ref - ypr
-    print("\nCALIBRATION = " + json.dumps({x: round(v, 3) for x, v in k.items()}))
+    print(f"\nCALIBRATION{'_B' if a.bloc == 'B' else ''} = " + json.dumps({x: round(v, 3) for x, v in k.items()}))
 
 
 if __name__ == "__main__":

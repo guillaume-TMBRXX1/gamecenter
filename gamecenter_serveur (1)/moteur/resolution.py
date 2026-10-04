@@ -8,6 +8,8 @@ transmet à son tirage (calculate_pass_outcome : interception / sack / incomplè
   - scramble : course du QB (yards tirés ici, avec le hasard du moteur).
 Les facteurs CALIBRATION ramènent les taux moyens de la ligue sur ceux du moteur V21 (garde-fou 3) :
 seule la RÉPARTITION des résultats entre les actions change, pas leur fréquence globale.
+Bloc B : la décision porte en plus ses multiplicateurs (mod_int, mod_inc : anticipation, pressure response, erreur
+de lecture) ; les décisions du bloc B ont leur propre normalisation (CALIBRATION_B).
 """
 from .decision_qb import LANCER, THROWAWAY, SCRAMBLE, SACK
 from .reaction_defensive import LIBRE, SERRE, COUVERT, DOUBLE
@@ -24,6 +26,7 @@ SACK_SCRAMBLE = 0.12            # rattrapé en sortant de la poche
 # normalisation (mesurée par outils/moteur/calibrer_bloc_a.py sur les passes de V21) : facteurs appliqués aux
 # probabilités ajustées pour que la moyenne de la ligue reste celle du moteur historique
 CALIBRATION = {"int": 1.42, "sack": 1.10, "inc": 0.96, "yards": 0.45}
+CALIBRATION_B = {"int": 1.156, "sack": 1.237, "inc": 0.925, "yards": 0.531}   # calibrer_bloc_a.py --bloc B (V23)
 
 # yards : profondeur de la cible réelle par rapport à la cible primaire (le concept a déjà son effet moyen)
 PROFONDEUR = {"court": 0.0, "moyen": 3.0, "profond": 8.0}
@@ -53,9 +56,9 @@ def probabilites_ajustees(base, decision, calibration=CALIBRATION):
     if decision.action == LANCER:
         st = decision.statut or SERRE
         pr = decision.sous_pression
-        p_int = base["int"] * M_INT[st] * (PRESSION["int"] if pr else 1.0) * k["int"]
+        p_int = base["int"] * M_INT[st] * (PRESSION["int"] if pr else 1.0) * k["int"] * decision.mod_int
         p_sack = base["sack"] * (PRESSION["sack"] if pr else SACK_LANCER_TOT) * k["sack"]
-        p_inc = base["inc"] * M_INC[st] * (PRESSION["inc"] if pr else 1.0) * k["inc"]
+        p_inc = base["inc"] * M_INC[st] * (PRESSION["inc"] if pr else 1.0) * k["inc"] * decision.mod_inc
         return _ferme(p_int, p_sack, p_inc)
     if decision.action == THROWAWAY:
         p_sack = min(0.9, base["sack"] * SACK_THROWAWAY * k["sack"])

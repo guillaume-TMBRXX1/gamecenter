@@ -31,6 +31,7 @@ function reactions(c,ev){
   else if(has('TURNOVER_ON_DOWNS')) out.push(!homeOff?['cheer_medium',.15,1]:['disappointment',.15,1]);
   else if(has('FIELD_GOAL_GOOD')) out.push(homeOff?[big?'cheer_huge':'cheer_medium',.2,1]:['disappointment',.25,.7]);
   else if(has('FIELD_GOAL_MISS')) out.push(homeOff?['disappointment',.2,1]:['cheer_medium',.2,.9]);
+  else if(has('SAFETY')) out.push(!homeOff?['cheer_huge',.15,1]:['disappointment',.15,1]);
   else if(has('SACK')) out.push(!homeOff?['cheer_medium',.1,big?1:.85]:['disappointment',.15,.8]);
   else if(has('BIG_PLAY')) out.push(homeOff?[big?'cheer_huge':'cheer_medium',.1,1]:['disappointment',.2,.8]);
   else if(has('FIRST_DOWN')){ if(homeOff) out.push(['cheer_small',.15,mid?1:.7]); }

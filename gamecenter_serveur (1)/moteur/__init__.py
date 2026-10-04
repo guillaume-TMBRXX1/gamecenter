@@ -10,14 +10,20 @@ Bloc A — état post-snap, progression du QB, cible réelle :
     resolution          probabilités ajustées transmises au tirage historique, yards selon la cible
     stats               statistiques des décisions (par cible réelle, première lecture, pression…)
     aleatoire           flux aléatoires dédiés (graine du match + n° d'action)
+
+Bloc B — intelligence du QB, poche et pression :
+    intelligence_qb     8 attributs (awareness, processing, coverage reading, decision making, pocket awareness,
+                        pressure response, anticipation, aggressiveness), dérivés des notes et de l'identité
+    decision_qb         QB avec qb["iq"] : chrono de poche, statut perçu (erreurs de lecture), style
 """
 from .aleatoire import flux
 from .progressions import progression
 from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
-from . import resolution, stats
+from . import resolution, stats, intelligence_qb
+from .intelligence_qb import attributs_qb
 
-VERSION = "bloc-A-1"
+VERSION = "bloc-B-1"
 FLUX_DECISION = "decision-passe"
 
 _REACTION = DefensiveReactionEngine()
@@ -28,10 +34,12 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
                   graine_match, numero_action):
     """Toute la chaîne du bloc A pour une passe, dans le flux dédié de cette action.
 
+    qb avec "iq" (moteur.intelligence_qb.attributs_qb) -> décision du bloc B ; sans -> bloc A à l'identique.
     Renvoie (lectures, etat_post_snap, decision).
     """
     rng = flux(FLUX_DECISION, graine_match, numero_action)
-    lectures = progression(concept, formation, tuple(r for r in receveurs if receveurs[r]))
+    lectures = progression(concept, formation, tuple(r for r in receveurs if receveurs[r]),
+                           bloc="B" if (qb or {}).get("iq") else "A")
     etat = _REACTION.react(concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng)
     decision = _QB.decide(etat, lectures, qb, rng)
     return lectures, etat, decision

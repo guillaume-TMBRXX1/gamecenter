@@ -28,6 +28,31 @@ resolution.probabilites_ajustees(...)                   probabilités du tirage 
 | `stats.py` | statistiques des décisions : par cible réelle, par statut, par couverture, taux de première lecture, pression, scramble, throwaway |
 | `aleatoire.py` | flux aléatoire dédié : `random.Random("decision-passe|<graine du match>|<n° d'action>")` — le hasard du moteur n'est jamais consommé par une décision |
 
+## Bloc B — intelligence du QB, poche et pression (notebook V23, allumé)
+
+```
+QB titulaire ── intelligence_qb.attributs_qb(qb, franchise)   8 attributs (dérivés des 4 notes + identité + écart du joueur)
+   ▼
+QBDecisionEngine.decide_b(...)        chrono de poche : reconnaissance (awareness) · pas de lecture (processing) ·
+   │                                  lancer avant l'ouverture (anticipation) · temps gagné dans la poche (pocket awareness)
+   │                                  statut PERÇU : erreurs de lecture (coverage reading, zone, pression × pressure response)
+   │                                  style : aggressiveness (fenêtres serrées, passes forcées) tempéré par decision making
+   ▼                                  fin de poche : scramble · throwaway · passe forcée · sack (ballon gardé trop longtemps)
+resolution.probabilites_ajustees(...) statut RÉEL + mod_int / mod_inc (anticipation, pressure response, erreur de lecture)
+                                      normalisés par CALIBRATION_B
+```
+
+| Fichier | Rôle |
+|---|---|
+| `intelligence_qb.py` | les 8 attributs (awareness, processing, coverage reading, decision making, pocket awareness, pressure response, anticipation, aggressiveness) ; une clé du même nom dans les notes du joueur est prise telle quelle ; ne s'ajoutent PAS aux notes (OVR, unités, cotes inchangés) |
+| `decision_qb.py` | `decide_b` (QB avec `qb["iq"]`) ; sans attributs : bloc A à l'identique. Poids : `B`, autour d'un QB de référence `REF = 80` (niveau moyen des titulaires) ; seule une part `POIDS` de l'écart d'une qualité à 80 pèse (aggressiveness, un style, pèse en entier) : c'est le réglage qui garde l'équilibre des franchises (12.3) |
+| `progressions.py` | `PROGRESSIONS_B` : le slot (WR3) lu aussi sur CURL, FOUR_VERTS, DAGGER (bloc B seulement) |
+| `resolution.py` | `CALIBRATION_B` ; `mod_int` / `mod_inc` de la décision |
+| `stats.py` | erreurs de lecture, QB pressé, temps de poche, part des INT sur décision fautive (forcée / mal lue), part des sacks « ballon gardé », stats par QB (`par_qb`) |
+
+Un QB élite se trompe aussi (erreur de lecture jamais nulle). Interrupteur du notebook : `QB_IQ_ENABLED`
+(`GC_BLOC_B=0` : décisions du bloc A, moteur V22.1 + safety).
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -40,15 +65,22 @@ couverture · blitz (moins de temps, plus de rushers, route « hot ») · Cover 
 QB mobile (plus de scrambles) · pression précoce · déterminisme (même graine = même décision, flux indépendant
 du hasard global) · probabilités valides · agrégation des stats.
 
+Bloc B (`test_bloc_b.py`, toujours en distribution) : processing 90 contre 65 sur la même situation · pression précoce
+(pocket awareness) · poche qui se referme (lectures, QB pressé, fins d'action) · pressure response · coverage reading
+(zone plus difficile) · erreur de lecture -> plus d'interceptions · aggressiveness · decision making · anticipation ·
+un QB élite se trompe aussi · attributs dérivés (bornes, identité, déterminisme) · slot lu au bloc B seulement ·
+sans attributs = bloc A · déterminisme · probabilités valides · stats par QB.
+
 ## Calibration (garde-fou 3)
 
 ```bash
 python3 outils/moteur/rapport_calibration.py --decisions off --sortie /tmp/v21.json          # référence V21
 python3 outils/moteur/rapport_calibration.py --decisions on --reference /tmp/v21.json         # verdict (code 1 si hors tolérance)
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json                            # recalcule CALIBRATION
+python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B                    # recalcule CALIBRATION_B
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 quinquies) et joue le test d'équilibre de 12.3
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 sexies) et joue le test d'équilibre de 12.3
 (1 008 matchs, mêmes graines). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
 ## Colab

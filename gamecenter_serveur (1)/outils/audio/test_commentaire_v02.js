@@ -42,7 +42,7 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
     check(Object.keys(r.missing).length===0,`toutes les cues ont une prise (${r.picks}/${r.moments} moments)`);
     check(r.repeats===0,'aucune prise répétée deux fois de suite pour un même cue');
     /* jamais entendues sur ces semaines : ajustements de coordinateurs (semaines V21, à partir du 12/10), intro / test (hors jeu), prolongation (1 seule) */
-    const rare=new Set(['ADJ_HURRY','ADJ_CLOCK','ADJ_SHELVE','ADJ_SHELVE_FORM','ADJ_D_DEEP','ADJ_D_HEAT','ADJ_D_RUN','ADJ_D_PRESS','ADJ_D_NOBLITZ','ADJ_D_PREVENT','ADJ_D_ATTACK','INTRO_LIVE','INTRO_JOIN','INTRO_REPLAY','TEST','OVERTIME']);
+    const rare=new Set(['ADJ_HURRY','ADJ_CLOCK','ADJ_SHELVE','ADJ_SHELVE_FORM','ADJ_D_DEEP','ADJ_D_HEAT','ADJ_D_RUN','ADJ_D_PRESS','ADJ_D_NOBLITZ','ADJ_D_PREVENT','ADJ_D_ATTACK','INTRO_LIVE','INTRO_JOIN','INTRO_REPLAY','TEST','OVERTIME','SAFETY']);
     console.log('   prises jamais choisies, par cue :',r.unused.join(' '));
     check(r.distinct>=r.total*0.7&&r.unused.every(c=>rare.has(c)||['TOUCHDOWN','VICTORY','DEFEAT','FIELD_GOAL_GOOD','FIELD_GOAL_MISS','INTERCEPTION','FUMBLE','BIG_PLAY'].includes(c)),`${r.distinct}/${r.total} prises utilisées sur la saison, les autres sont des cas rares`);
     check(errs.length===0,'aucune erreur JS'); await p.close(); }
