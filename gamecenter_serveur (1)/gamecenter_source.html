@@ -352,6 +352,14 @@
 
   /* ---------- Lower bento ---------- */
   .lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+  .exh{margin-top:20px}
+  .exh-card{display:flex;align-items:center;gap:20px;padding:20px 24px;flex-wrap:wrap}
+  .exh-main{flex:1 1 320px;min-width:0}
+  .exh-main h3{margin:10px 0 6px;font:800 20px/1.2 var(--f-display);letter-spacing:.01em}
+  .exh-main h3 em{font-style:normal;color:var(--ink-3);margin:0 4px}
+  .exh-sub{margin:0;color:var(--ink-2);font-size:13px}
+  .exh-go{width:auto;padding:0 26px;flex:0 0 auto}
+  @media (max-width:560px){ .exh-go{width:100%} }
   .card{background:var(--card);border:1px solid var(--line);box-shadow:var(--edge),var(--lift);border-radius:var(--r-lg);padding:20px 22px;min-width:0}
   .card.rank{grid-column:span 2}
   .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
@@ -4510,6 +4518,32 @@ function seasonRefresh(force){
   betTick(t);
   renderView(false);
 }
+/* ---------- Exhibition: matches played by the engine outside the schedule (no bets, no standings) ----------
+   Listed without a score (no spoiler); the GameFeed is fetched when the viewer asks for it and replayed on the big screen. */
+let EXH=[];
+async function exhibitionsLoad(){
+  try{ const r=await fetch('/api/exhibitions',{cache:'no-cache'}); if(!r.ok) return; EXH=((await r.json()).exhibitions||[]); }catch(e){ return; }
+  renderExhibitions();
+}
+function renderExhibitions(){
+  let box=document.getElementById('exhBox');
+  if(!EXH.length){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement('section'); box.id='exhBox'; box.className='exh'; box.setAttribute('aria-label','Exhibition');
+    const low=document.querySelector('#viewLive .lower'); if(!low) return; low.after(box); }
+  box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
+    const kinds=(x.adjust_kinds||[]).length;
+    return `<article class="card exh-card"><div class="exh-main"><span class="pt-tag">Exhibition</span>
+      <h3><span class="abbr">${esc(A.abbr)}</span> ${esc(A.name)} <em>@</em> <span class="abbr">${esc(H.abbr)}</span> ${esc(H.name)}</h3>
+      <p class="exh-sub">${esc(x.title||'')}${x.adjustments?` · ${x.adjustments} in-game adjustments${kinds?` (${kinds} kinds)`:''}`:''}${x.concepts?` · ${x.concepts} play concepts`:''} · outside the schedule, no bets</p></div>
+      <button type="button" class="cta exh-go" data-exh="${esc(x.id)}">Watch the match</button></article>`; }).join('');
+}
+async function exhibitionOpen(id,btn){
+  if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
+  try{ const r=await fetch('/api/exhibitions/'+encodeURIComponent(id)); if(!r.ok) throw new Error('HTTP '+r.status); openReplayFeed(await r.json(),''); }
+  catch(e){ toastErr('This exhibition could not be loaded. Try again in a moment.'); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='Watch the match'; } }
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-exh]'); if(b){ exhibitionOpen(b.dataset.exh,b); } });
 function seasonBoot(){
   for(const a in SW.teams) TEAMS[a]={abbr:a,name:SW.teams[a].name.replace(/[<>&"'`]/g,''),rec:''};
   const real=Date.now();
@@ -4522,7 +4556,7 @@ function seasonBoot(){
   loadWallet(); applySettings(); lastStake=SET.stake; slip.open=[];
   seasonRefresh(true);
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); }
+  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); }
 }
 
 
