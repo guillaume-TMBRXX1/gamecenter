@@ -1,0 +1,179 @@
+{
+ "games": 1008,
+ "completion_pct": 0.6527926322043969,
+ "sack_rate": 0.08172034428170438,
+ "int_rate": 0.024792038027332146,
+ "ypa": 7.533333333333333,
+ "net_ypa": 6.521690545556132,
+ "ypc": 5.632784714339765,
+ "turnovers_pg": 3.7242063492063493,
+ "int_pg": 1.6557539682539681,
+ "fumbles_lost_pg": 2.068452380952381,
+ "points_pg": 51.47420634920635,
+ "drives_pg": 21.10813492063492,
+ "first_downs_pg": 42.86011904761905,
+ "plays_pg": 127.01488095238095,
+ "pass_rate": 0.5871312416524123,
+ "attempts_pg": 66.78571428571429,
+ "sacks_pg": 6.094246031746032,
+ "scrambles_pg": 1.6944444444444444,
+ "win_pct": {
+  "CTX": 0.5347222222222222,
+  "VEC": 0.4871031746031746,
+  "AEG": 0.5198412698412699,
+  "MNL": 0.4583333333333333
+ },
+ "seconds_per_game": 0.14244773028968488,
+ "seconds_per_game_p95": 0.13650020600016433,
+ "decisions": "on",
+ "load_seconds": 60.62557888031006,
+ "decision_stats": {
+  "dropbacks": 75171,
+  "lancers": 65706,
+  "premiere_lecture": 28809,
+  "sous_pression": 11109,
+  "forcees": 3443,
+  "scrambles": 1974,
+  "throwaways": 4114,
+  "sacks_decision": 3377,
+  "sacks": 6143,
+  "temps_lancer": 141837.16000001214,
+  "par_role": {
+   "WR2": {
+    "cibles": 16822,
+    "completes": 11400,
+    "incompletes": 4944,
+    "int": 478,
+    "yards": 140275
+   },
+   "TE": {
+    "cibles": 12395,
+    "completes": 9285,
+    "incompletes": 2860,
+    "int": 250,
+    "yards": 102565
+   },
+   "WR1": {
+    "cibles": 24232,
+    "completes": 16022,
+    "incompletes": 7516,
+    "int": 694,
+    "yards": 193150
+   },
+   "RB": {
+    "cibles": 7565,
+    "completes": 5677,
+    "incompletes": 1708,
+    "int": 180,
+    "yards": 55978
+   },
+   "WR3": {
+    "cibles": 2104,
+    "completes": 1562,
+    "incompletes": 501,
+    "int": 41,
+    "yards": 15176
+   }
+  },
+  "par_statut": {
+   "SERRE": {
+    "cibles": 26205,
+    "completes": 15205,
+    "incompletes": 10051,
+    "int": 949,
+    "yards": 165519
+   },
+   "LIBRE": {
+    "cibles": 33647,
+    "completes": 27585,
+    "incompletes": 5656,
+    "int": 406,
+    "yards": 328812
+   },
+   "COUVERT": {
+    "cibles": 2852,
+    "completes": 1028,
+    "incompletes": 1579,
+    "int": 245,
+    "yards": 11399
+   },
+   "DOUBLE": {
+    "cibles": 414,
+    "completes": 128,
+    "incompletes": 243,
+    "int": 43,
+    "yards": 1414
+   }
+  },
+  "par_couverture": {
+   "Cover 1": {
+    "cibles": 23550,
+    "completes": 16183,
+    "incompletes": 6717,
+    "int": 650,
+    "yards": 192948
+   },
+   "Cover 4": {
+    "cibles": 8337,
+    "completes": 5991,
+    "incompletes": 2152,
+    "int": 194,
+    "yards": 59121
+   },
+   "Cover 3": {
+    "cibles": 13982,
+    "completes": 9783,
+    "incompletes": 3865,
+    "int": 334,
+    "yards": 113225
+   },
+   "Cover 2": {
+    "cibles": 13019,
+    "completes": 9042,
+    "incompletes": 3628,
+    "int": 349,
+    "yards": 104448
+   },
+   "Cover 0": {
+    "cibles": 4230,
+    "completes": 2947,
+    "incompletes": 1167,
+    "int": 116,
+    "yards": 37402
+   }
+  },
+  "par_lecture": {
+   "2": {
+    "cibles": 18500,
+    "completes": 12655,
+    "incompletes": 5339,
+    "int": 506,
+    "yards": 152218
+   },
+   "3": {
+    "cibles": 10846,
+    "completes": 8062,
+    "incompletes": 2558,
+    "int": 226,
+    "yards": 90690
+   },
+   "1": {
+    "cibles": 27703,
+    "completes": 18657,
+    "incompletes": 8273,
+    "int": 773,
+    "yards": 218053
+   },
+   "4": {
+    "cibles": 6069,
+    "completes": 4572,
+    "incompletes": 1359,
+    "int": 138,
+    "yards": 46183
+   }
+  },
+  "taux_premiere_lecture": 0.4384531093050863,
+  "taux_pression": 0.1690713176878824,
+  "temps_lancer_moyen": 2.1586637445592816
+ }
+}
