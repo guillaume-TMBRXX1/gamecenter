@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10 ; yards / course après quelques semaines : accepté, à surveiller) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -643,7 +643,7 @@ Chaque étage du moteur joue les 1 008 matchs du test d'équilibre (12.3, mêmes
 | Intégration : V21, A, A-B, A-C, A-D, A-E, puis A-E après 8, 16, 32 et 52 semaines (10 × 1 008 matchs) | ✅ GameFeed exporté et `validate_gamefeed` : 0 problème ; `audit_moteur.check_game` action par action : 0 anomalie bloquante, 0 alerte (hors deux artefacts d'un match joué hors semaine : pas de cotes, courbe vide) ; **stats joueurs = stats d'équipe** (passes, complétions, yards, TD, INT, courses, réceptions ; INT et sacks crédités à la défense adverse) : 0 écart sur 28 224 identités par étage ; champs de chaque bloc présents exactement quand le bloc est allumé |
 | Déterminisme | ✅ 720 matchs rejoués (dans l'ordre et à l'envers) identiques ; trajectoire de progression rejouée : même état ; **autre processus** (`PYTHONHASHSEED` différent) : 96 matchs identiques — après correction (ci-dessous) |
 | Non-régression | ✅ chaque étage redonne **à l'identique** (toutes les mesures) son rapport publié : V23 bloc A + safety, V23, V24, V25, V26 au départ, et les 4 trajectoires du rapport V26 (8, 16, 24, 32 semaines) ; bloc E au départ = V25 **match par match** |
-| Calibration contre V21 (tolérances de la PR #12) | ✅ tous les étages ; après 16, 32 et 52 semaines ✅ ; **après 8 semaines (trajectoire neuve 660 000) : yards / course 5,90 pour 5,64 ± 0,2 ❌** (voir « À décider ») |
+| Calibration contre V21 (tolérances de la PR #12) | ✅ tous les étages ; après 16, 32 et 52 semaines ✅ ; après 8 semaines (trajectoire neuve 660 000) : yards / course 5,90 pour 5,64 ± 0,2 — **accepté par Guillaume, à surveiller** (ci-dessous) |
 | Semaine réelle (notebook complet, cotes 13.2 / 13.4 comprises) | ✅ semaine du 12/10 reproduite (`generer_semaine.py`, 1 780 s, machine chargée par la validation) : 0 anomalie, 0 alerte, 39 matchs, **5 348 actions et force des équipes identiques au bloc E** ; ✅ **semaine du 19/10 enchaînée** (reprend `players_next_week` du 12/10) : 0 anomalie, 0 alerte, 5 357 actions, courbe des joueurs W2 → W3 → W4 |
 
 **Correction faite** (déterminisme) : 12.2 quater (V21) parcourait les ajustements défensifs d'une action dans un
@@ -672,7 +672,7 @@ passe vers la course (scrambles, comptés comme des courses depuis le bloc A).
 ≤ 0,48, garde-fou d'équipe actif presque chaque semaine, `controler` sans problème ; écart d'OVR à la base de − 16 à
 + 8 (vétérans / jeunes) ; victoires 43-57 % (VEC le plus bas : 43,4 % à 32 semaines, 43,9 % à 52).
 
-**À décider (Guillaume) — yards par course après quelques semaines de progression.** Sur une trajectoire, les semaines 6
+**Yards par course après quelques semaines de progression — décision de Guillaume (06/10) : option (a), on accepte et on surveille.** Sur une trajectoire, les semaines 6
 à 10 donnent 5,81 · 5,87 · 5,90 · 5,77 · 5,70 yards / course (V21 5,64, départ 5,70 ; tolérance ± 0,2) ; les rapports
 V26 avaient déjà + 0,05 à + 0,16. Ce n'est **pas** la forme (semaine 8 sans forme : 5,90 aussi) : ce sont les notes
 développées. Hypothèse, non démontrée : la moyenne de la ligue est recentrée sans tenir compte du temps de jeu ; si le RB
@@ -695,8 +695,9 @@ GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier da
 
 ## Pour la conversation suivante
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-19 du README du serveur.
-2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
-   — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
+2. **À surveiller** : yards par course après quelques semaines de progression (fin de programme : accepté le 06/10) —
+   regarder les repères de `audit_moteur.py` chaque semaine ; si la ligue dépasse durablement 5,85 yards / course ou si
+   les points sortent de ± 2, passer à l'option (b) (recentrage pondéré par le temps de jeu, rapport V26.1).
 3. **Étape 6 : plus de franchises / divisions**, avec les systèmes de l'étape 5 (aucune logique codée pour les 4 équipes de
    test) ; décider en même temps des **retraites et recrues** (bloc E : avec une année = 4 semaines, les plus âgés passent
    35 ans en quelques mois). Relancer `validation_complete.py` à la fin (les tolérances, l'équilibre 40-60 % et le temps
