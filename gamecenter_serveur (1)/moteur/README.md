@@ -219,6 +219,23 @@ Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 nonies) et jo
 (1 008 matchs, mêmes graines). Bloc E : `--semaines N` joue d'abord N semaines d'essai (36 matchs chacune) en faisant
 progresser les joueurs, puis mesure avec les rosters atteints (`--graine-trajectoire` : autre trajectoire). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
+## Validation complète (fin de programme, phases 13 et 14)
+
+```bash
+python3 outils/moteur/validation_complete.py --sortie outils/moteur/rapport_validation_complete.json   # ≈ 30 min, 3 cœurs
+python3 outils/moteur/validation_complete.py --rapide                                                   # ≈ 6 min : vérifie l'outil
+```
+
+Un seul outil (workflow manuel « Validation complète » sur GitHub) : tests unitaires ; pour chaque étage du moteur
+(V21, A, A-B, A-C, A-D, A-E) et après 8, 16, 32 et 52 semaines de progression, les 1 008 matchs du test d'équilibre
+exportés en GameFeed, validés (`validate_gamefeed`) et audités action par action (`audit_moteur.check_game`),
+identités stats joueurs = stats d'équipe (`season_stats` de 14.1), champs de chaque bloc ; déterminisme (rejeu dans
+l'ordre et à l'envers, autre processus avec un autre `PYTHONHASHSEED`, trajectoire de progression rejouée) ;
+non-régression (chaque étage redonne à l'identique son rapport publié, y compris les 4 trajectoires du rapport V26 ;
+bloc E au départ = V25 match par match) ; calibration contre V21 ; repères stats joueurs / équipes et Next Gen Stats.
+Code de sortie 1 si un contrôle bloquant échoue. La semaine réelle (cotes comprises) reste `generer_semaine.py` +
+`audit_moteur.py`.
+
 ## Colab
 
 Le notebook cherche `moteur/` dans `GC_MOTEUR_DIR`, le dossier courant, `./gamecenter_serveur (1)` et
