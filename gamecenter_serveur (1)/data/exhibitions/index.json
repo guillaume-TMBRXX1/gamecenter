@@ -1,33 +1,46 @@
 {
  "exhibitions": [
   {
-   "id": "exh-v24-mnl-vec",
+   "id": "exh-v25-ctx-vec",
    "home": "VEC",
-   "away": "MNL",
-   "title": "Notebook V24 · receiver & defender intelligence · QB intelligence, pocket & pressure",
-   "created": "2026-10-04",
-   "plays": 151,
-   "adjustments": 11,
+   "away": "CTX",
+   "title": "Notebook V25 · game plans & in-game adjustments · player & QB intelligence",
+   "created": "2026-10-05",
+   "plays": 164,
+   "adjustments": 27,
    "adjust_kinds": [
     "d_attack",
+    "d_bracket",
     "d_deep",
     "d_heat",
+    "d_noblitz",
+    "d_press",
+    "d_prevent",
+    "d_rotate",
     "d_run",
     "hurry",
-    "shelve",
-    "shelve_form"
+    "o_away",
+    "o_protect",
+    "o_quick",
+    "plan_d",
+    "plan_o",
+    "shelve"
    ],
    "concepts": 25,
    "decisions": {
-    "beyond_first_read": 33,
-    "under_pressure": 11,
-    "scrambles": 4,
-    "throwaways": 5,
-    "held_sacks": 5,
+    "beyond_first_read": 59,
+    "under_pressure": 26,
+    "scrambles": 2,
+    "throwaways": 7,
+    "held_sacks": 4,
     "safeties": 1,
-    "contested": 2,
-    "broken_up": 5,
-    "busts": 2
+    "contested": 4,
+    "broken_up": 6,
+    "busts": 1,
+    "gameplan_adjust": 9,
+    "counters": 5,
+    "bracket_throws": 1,
+    "gameplan_kinds": 5
    }
   }
  ]

@@ -218,9 +218,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
   semaines produites avant (sans `play.decision`).
 - **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
-  Depuis V24 : MNL @ VEC (`exh-v24-mnl-vec`, remplace VEC @ CTX V23), choisi parmi 40 candidats pour ses duels
-  receveur / défenseur (contested catches, passes défendues, coverage busts) et ses décisions du QB (lectures, pression,
-  scrambles, throwaways, safety) ; `--remplace <id>` retire l'ancienne exhibition.
+  Depuis V25 : CTX @ VEC (`exh-v25-ctx-vec`, remplace MNL @ VEC V24), choisi parmi 40 candidats pour ses plans de
+  jeu et ses ajustements du bloc D (quick game et protection contre le blitz, bascule hors du double, brackets et leurs
+  rotations), avec les duels receveur / défenseur et les décisions du QB ; `--remplace <id>` retire l'ancienne exhibition.
 - **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
   calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
 

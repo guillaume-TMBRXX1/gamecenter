@@ -505,8 +505,40 @@ VEC ne protège jamais et subit le plus de pressions déguisées adverses (105).
   chaque match (les doubles naturels du bloc A sur le WR1 en Cover 2 / 4 sont fréquents).
 - Le bracket du plan (menace adverse, + 8 points) est présent sur toutes les passes ; le site ne dit « into the bracket »
   que si le double a vraiment eu lieu sur la cible.
-- Aucun ajustement ne dépend du score (seulement de ce qui a été vu) : les cotes en direct ne devraient pas bouger —
-  vérifié par 13.2 / 13.4 (ci-dessous).
+- Aucun ajustement ne dépend du score (seulement de ce qui a été vu) : les cotes en direct ne bougent pas — 13.2 et
+  13.4 passent sans recalibrage dans le notebook complet (ci-dessous).
+
+**Semaine du 12/10** produite par `generer_semaine.py` (notebook complet, blocs A-B-C-D, 13.2 et 13.4 passés) en
+2 340 s, seule sur la machine de cette session (V24 : 1 911 s sur machine chargée ; V21 : 1 733 s ici -> × 1,35, budget
+× 2) ; `audit_moteur.py` : **0 anomalie bloquante, 0 alerte** (39 matchs, 5 374 actions, un plan de jeu dans chaque
+match, 3 018 passes jouées sous un plan dont 1 000 avec un double réel ; 73 brackets, 71 rotations, 63 bascules hors du
+double, 25 quick game contre le blitz, 20 protections, 8 pressions déguisées). Semaine non versée au dépôt : c'est le
+calcul du samedi qui la produit.
+
+**Exhibition** (site, onglet « Exhibition ») : CTX @ VEC V25 (`exh-v25-ctx-vec`, 37-45, graine 9 400 013) remplace
+MNL @ VEC V24 — choisi parmi 40 candidats pour ce qu'il montre du bloc D : les deux plans de jeu (CTX : « quick game vs
+the blitz, beat man coverage, take shots deep, target Zane Montague » ; VEC : bracket de Rafe Ellison), CTX qui répond
+au blitz de VEC par le quick game et un RB en protection, VEC qui bascule hors du double sur Nico Saint-Clair, deux
+brackets suivis chacun d'une rotation (contre-ajustements), 1 lancer dans un bracket ; avec les blocs A-C (59 lancers
+au-delà de la 1re lecture, 26 sous pression, 4 contested catches, 6 ballons défendus, 1 coverage bust), 1 safety et 27
+ajustements en direct (16 types). Rejoué dans Chromium (bureau et mobile 390 px) : onglet « Game plan », raisons dans
+le play-by-play, commentaire écrit, aucune erreur JS. `simuler_exhibition.py` note les ajustements du plan de jeu, les
+contre-ajustements et les lancers dans un bracket (`gameplan_adjust`, `counters`, `bracket_throws`).
+
+**À surveiller (bloc D)** :
+- VEC 46,6 % (le plus bas) : l'équipe qui blitze le plus subit le quick game et la protection adverses, et ne protège
+  pas elle-même (identité). Si elle approche 40 %, baisser `PROTECTION` ou `PLAN["quick"]`, ou laisser VEC protéger
+  rarement.
+- Beaucoup de lignes d'ajustement par match (≈ 11 du bloc D, plans compris, + ≈ 11 de V21) : réduire `MONTRER` si le
+  play-by-play paraît chargé.
+- AEG tourne souvent son bracket (552 fois sur 504 matchs) malgré son identité « lente » : sa tenue est longue (14
+  snaps) mais son seuil de rotation est celui de CTX (3) — à monter à 4 si Guillaume veut une AEG plus têtue.
+- Le commentaire enregistré des 7 cues du bloc D reste à générer (d'ici là : sous-titre et voix de l'appareil ; le test
+  `test_commentaire_v02.js` les comptera comme manquantes).
+- Tests du serveur hors dépôt (`tserver.py`, `tavance.py`, `taccounts.py`, `tparis2.py`, `tsearch.py`, `tadjust.py`) :
+  pas dans le dépôt, non relancés dans cette session (le serveur n'a pas changé ; le site a été vérifié dans Chromium).
+
+**Reste hors dépôt** : fiche technique du notebook (V22 → V25 : cellules 12.2 quinquies, sexies, septies, octies, safety).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-18 du README du serveur.
