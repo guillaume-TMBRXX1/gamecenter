@@ -342,6 +342,18 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   35 ans en quelques mois ; à traiter avec l'étape 6, plus de franchises — `developpement.completer` accueille déjà
   des joueurs nouveaux ou partis).
 
+### 20. ENGINE INTELLIGENCE — validation complète (06/10/2026)
+
+- `python3 outils/moteur/validation_complete.py` (≈ 30 min ; `--rapide` ≈ 6 min ; workflow manuel « Validation
+  complète ») : tests unitaires, intégration (GameFeed validé et audité action par action, stats joueurs = stats
+  d'équipe) pour chaque étage du moteur et après 8 à 52 semaines de progression, déterminisme (rejeu, autre processus),
+  non-régression (rapports publiés à l'identique), calibration contre V21. Résultats : `programme/Feuille_de_route.md`
+  (« Fin de programme ») et `outils/moteur/rapport_validation_complete.json`.
+- Corrigé : l'ordre d'affichage de deux ajustements défensifs V21 simultanés dépendait du hachage de Python (GameFeed
+  non reproductible octet par octet ; jeu inchangé).
+- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : 12 GameFeeds du moteur V26 (notes et staffs de
+  la dernière semaine) dans un artefact, à charger sur le site (« Load GameFeed »).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -451,7 +463,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 `GC_MOTEUR_DIR` (dossier qui contient `moteur/`, mis par `generer_semaine.py`) · `GC_DECISIONS=0` (notebook : décisions
 de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0` (intelligence du QB coupée : bloc A) ·
 `GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23) · `GC_BLOC_D=0` (plan de jeu et adaptation
-en match du bloc D coupés : moteur V24).
+en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueurs coupée : rosters de base chaque semaine,
+moteur V25).
 
 ## Test
 

@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 05/10/2026, bloc E terminé)
+# Feuille de route — GridironSim (mise à jour le 06/10/2026, validation complète de l'étape 5)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; **prochain : fin de programme (validation complète)** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -631,15 +631,77 @@ dépôt : c'est le calcul du samedi qui la produit.
 
 **Reste hors dépôt** : fiche technique du notebook (V22 → V26 : cellules 12.2 quinquies à nonies, safety).
 
+## Fin de programme — validation complète ✅ (06/10/2026)
+
+Outil : `outils/moteur/validation_complete.py` (≈ 30 min sur 3 cœurs ; `--rapide` ≈ 6 min) — rapport
+`outils/moteur/rapport_validation_complete.json` ; workflow manuel « Validation complète » (GitHub, `rapide` / `complet`).
+Chaque étage du moteur joue les 1 008 matchs du test d'équilibre (12.3, mêmes graines) dans son propre processus.
+
+| Contrôle | Résultat |
+|---|---|
+| Tests unitaires (5 modules de tests, blocs A → E) | ✅ 129 tests en 21 s (A 23 · B 20 · C 22 · D 32 · E 32) |
+| Intégration : V21, A, A-B, A-C, A-D, A-E, puis A-E après 8, 16, 32 et 52 semaines (10 × 1 008 matchs) | ✅ GameFeed exporté et `validate_gamefeed` : 0 problème ; `audit_moteur.check_game` action par action : 0 anomalie bloquante, 0 alerte (hors deux artefacts d'un match joué hors semaine : pas de cotes, courbe vide) ; **stats joueurs = stats d'équipe** (passes, complétions, yards, TD, INT, courses, réceptions ; INT et sacks crédités à la défense adverse) : 0 écart sur 28 224 identités par étage ; champs de chaque bloc présents exactement quand le bloc est allumé |
+| Déterminisme | ✅ 720 matchs rejoués (dans l'ordre et à l'envers) identiques ; trajectoire de progression rejouée : même état ; **autre processus** (`PYTHONHASHSEED` différent) : 96 matchs identiques — après correction (ci-dessous) |
+| Non-régression | ✅ chaque étage redonne **à l'identique** (toutes les mesures) son rapport publié : V23 bloc A + safety, V23, V24, V25, V26 au départ, et les 4 trajectoires du rapport V26 (8, 16, 24, 32 semaines) ; bloc E au départ = V25 **match par match** |
+| Calibration contre V21 (tolérances de la PR #12) | ✅ tous les étages ; après 16, 32 et 52 semaines ✅ ; **après 8 semaines (trajectoire neuve 660 000) : yards / course 5,90 pour 5,64 ± 0,2 ❌** (voir « À décider ») |
+| Semaine réelle (notebook complet, cotes 13.2 / 13.4 comprises) | ✅ semaine du 12/10 reproduite (`generer_semaine.py`, 1 780 s, machine chargée par la validation) : 0 anomalie, 0 alerte, 39 matchs, **5 348 actions et force des équipes identiques au bloc E** ; ✅ **semaine du 19/10 enchaînée** (reprend `players_next_week` du 12/10) : 0 anomalie, 0 alerte, 5 357 actions, courbe des joueurs W2 → W3 → W4 |
+
+**Correction faite** (déterminisme) : 12.2 quater (V21) parcourait les ajustements défensifs d'une action dans un
+`set` ; quand deux arrivaient ensemble (« Defense rolls to deep shells » et « Defense backs off the blitz »), leur
+**ordre d'affichage** dépendait du hachage de Python (4 matchs sur 36 touchés). Rien ne changeait au jeu (mêmes mesures
+partout), mais le GameFeed n'était pas reproductible octet par octet. `dict.fromkeys(hurt)` : ordre d'apparition.
+
+**Stats joueurs / équipes, Next Gen Stats** (repères, par équipe et par match ; V21 → A-E au départ → A-E après 52 semaines) :
+
+| | V21 | A-E | A-E, 52 sem. |
+|---|---|---|---|
+| Points · yards | 25,9 · 396 | 26,3 · 398 | 25,8 · 394 |
+| Yards à la passe · à la course | 263 · 146 | 254 · 158 | 251 · 157 |
+| INT · sacks subis · fumbles perdus | 0,8 · 2,9 · 1,0 | 0,8 · 3,0 · 1,0 | 0,8 · 3,0 · 1,0 |
+| 3e essais convertis · passes de 20+ · courses de 10+ | 46,9 % · 8,7 % · 20,5 % | 47,5 % · 8,3 % · 21,7 % | 46,6 % · 8,2 % · 21,8 % |
+| Yards à la réception WR1 · WR2 · WR3 · TE · RB | 53 · 13 · 14 · 15 · 6 % | 36 · 30 · 6 · 18 · 10 % | 33 · 32 · 7 · 18 · 10 % |
+| Défense créditée : plaquages · sacks · INT · passes défendues | 44,3 · 2,9 · 0,84 · 3,8 | 44,7 · 3,0 · 0,79 · 3,1 | — |
+| Lancer · QB pressé · 1re lecture | — | 2,12 s · 21,9 % · 47,1 % | 2,12 s · 22,6 % · 46,7 % |
+| Ballons open · in traffic · contested (complétion) | — | 50 % (82 %) · 42 % (60 %) · 8 % (37 %) | — |
+
+Leaders par match (A-E) : Dax Holloway 385 yards à la passe, Titus Okafor 146 à la course, Nico Saint-Clair 155 à la
+réception (V21 : 217 — l'attaque ne passe plus tout par le WR1). Le passage aux décisions déplace ≈ 10 yards de la
+passe vers la course (scrambles, comptés comme des courses depuis le bloc A).
+
+**Semaines enchaînées** (trajectoire neuve 660 000) : force de chaque franchise toujours à ± 0,2, dérive de la ligue
+≤ 0,48, garde-fou d'équipe actif presque chaque semaine, `controler` sans problème ; écart d'OVR à la base de − 16 à
++ 8 (vétérans / jeunes) ; victoires 43-57 % (VEC le plus bas : 43,4 % à 32 semaines, 43,9 % à 52).
+
+**À décider (Guillaume) — yards par course après quelques semaines de progression.** Sur une trajectoire, les semaines 6
+à 10 donnent 5,81 · 5,87 · 5,90 · 5,77 · 5,70 yards / course (V21 5,64, départ 5,70 ; tolérance ± 0,2) ; les rapports
+V26 avaient déjà + 0,05 à + 0,16. Ce n'est **pas** la forme (semaine 8 sans forme : 5,90 aussi) : ce sont les notes
+développées. Hypothèse, non démontrée : la moyenne de la ligue est recentrée sans tenir compte du temps de jeu ; si le RB
+de l'équipe qui court le plus (MNL) progresse pendant que d'autres déclinent, la moyenne ne bouge pas mais les yards de la
+ligue montent. Points par match : la valeur d'une seule semaine varie d'environ ± 0,6 (forme) — mesuré 54,1 une fois après 52
+semaines (hors tolérance), 52,9 · 53,5 · 52,9 · 53,5 sur les semaines 50 à 53 : léger glissement (+ 0,5 sur le départ),
+dans la tolérance. Options : (a) accepter (la tolérance s'applique à la moyenne de quelques semaines, pas à un seul état
+hebdomadaire) et surveiller ; (b) recentrer la ligue en pondérant par le temps de jeu (RB, puis tous les postes) ;
+(c) ramener la tolérance « yards / course » du bloc E à ± 0,3. (b) change les trajectoires : nouveau rapport V26.1 et
+semaine re-produite.
+
+**À surveiller** : VEC 43-48 % sur les trajectoires longues (comme au bloc E) ; la cue `SAFETY` et les 7 cues du bloc D
+restent à générer (workflow « Commentaire audio ») ; tests du serveur hors dépôt (`tserver.py`…) non relancés (serveur
+inchangé).
+
+**Action « GameFeeds d'exhibition »** (`.github/workflows/gamefeeds.yml`, `outils/exhibition/gamefeeds.py`) : reprise de
+la branche du bloc C (jamais fusionnée) et passée au moteur V26 (blocs A-E, notes et staffs de la dernière semaine de
+`data/weeks`) — 12 GameFeeds (une par affiche) dans l'artefact « gamefeeds-v26 », à charger sur le site (« Load
+GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier dans `main`.
+
 ## Pour la conversation suivante
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-19 du README du serveur.
-2. **Fin de programme — validation complète** (phases 13 et 14) : tests unitaires et d'intégration de tous les modules,
-   simulation complète, statistiques, déterminisme, non-régression (score, drives, actions, premiers downs, passe,
-   course, pertes de balle, sacks, stats joueurs / équipes, Next Gen Stats), y compris sur plusieurs semaines
-   enchaînées (bloc E : `rapport_calibration.py --semaines N`). Puis **étape 6 : plus de franchises**.
-3. **À décider** (Guillaume) : retraites et recrues (bloc E : avec une année = 4 semaines, les plus âgés passent 35 ans
-   en quelques mois) — naturellement avec l'étape 6.
-4. Générer le commentaire enregistré des 7 cues du bloc D (workflow « Commentaire audio », mode `generer`).
+2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
+   — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
+3. **Étape 6 : plus de franchises / divisions**, avec les systèmes de l'étape 5 (aucune logique codée pour les 4 équipes de
+   test) ; décider en même temps des **retraites et recrues** (bloc E : avec une année = 4 semaines, les plus âgés passent
+   35 ans en quelques mois). Relancer `validation_complete.py` à la fin (les tolérances, l'équilibre 40-60 % et le temps
+   par match restent les garde-fous).
+4. Générer le commentaire enregistré des 7 cues du bloc D et de `SAFETY` (workflow « Commentaire audio », mode `generer`).
 
 ## Référence : base d'extension du playbook (V0.1, reçue le 05/10/2026)
 `programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md` — base de connaissances football (personnel, formations,

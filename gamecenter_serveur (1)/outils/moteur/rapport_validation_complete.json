@@ -1,0 +1,2024 @@
+{
+ "programme": "ENGINE INTELLIGENCE — validation complète (fin de programme)",
+ "date": "2026-10-05",
+ "graines": 84,
+ "tests_unitaires": {
+  "ok": true,
+  "tests": 129,
+  "secondes": 21.301,
+  "par_fichier": {
+   "test_bloc_a": 23,
+   "test_bloc_b": 20,
+   "test_bloc_c": 22,
+   "test_bloc_d": 32,
+   "test_bloc_e": 32
+  }
+ },
+ "integration": {
+  "V21": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "A": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "AB": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 0,
+    "D": 0,
+    "E": 0
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "ABC": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 0,
+    "E": 0
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "ABCD": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 0
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "ABCDE": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 51408,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 1008
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "E8": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 1008
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "E16": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 1008
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "E32": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 1008
+   },
+   "exemples": [],
+   "ok": true
+  },
+  "E52": {
+   "matchs": 1008,
+   "validate_gamefeed": 0,
+   "audit_bloquant": 0,
+   "audit_alertes": 0,
+   "audit_hors_semaine_ignores": 1008,
+   "identites_fausses": {
+    "pass_att": 0,
+    "comp": 0,
+    "pass_yds": 0,
+    "pass_td": 0,
+    "ints": 0,
+    "rush_att": 0,
+    "rush_yds": 0,
+    "rush_td": 0,
+    "rec": 0,
+    "rec_yds": 0,
+    "rec_td": 0,
+    "def_int": 0,
+    "sacks": 0,
+    "targets<=pass_att": 0
+   },
+   "champs_blocs": {
+    "A": 1008,
+    "B": 1008,
+    "C": 1008,
+    "D": 1008,
+    "E": 1008
+   },
+   "exemples": [],
+   "ok": true
+  }
+ },
+ "determinisme": {
+  "V21": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "A": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "AB": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "ABC": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "ABCD": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "ABCDE": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "ABCDE_hash": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "v26_8_semaines": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "v26_16_semaines": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "v26_24_semaines": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "E8": {
+   "rejoues": 48,
+   "differents": 0,
+   "trajectoire_identique": true
+  },
+  "v26_32_semaines": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "E16": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "E32": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "E52": {
+   "rejoues": 48,
+   "differents": 0
+  },
+  "inter_processus": {
+   "matchs": 96,
+   "identiques": true
+  }
+ },
+ "non_regression": {
+  "A": {
+   "rapport": "rapport_v23_safety_bloc_a.json",
+   "identique": true,
+   "differences": {}
+  },
+  "AB": {
+   "rapport": "rapport_v23_bloc_b.json",
+   "identique": true,
+   "differences": {}
+  },
+  "ABC": {
+   "rapport": "rapport_v24_bloc_c.json",
+   "identique": true,
+   "differences": {}
+  },
+  "ABCD": {
+   "rapport": "rapport_v25_bloc_d.json",
+   "identique": true,
+   "differences": {}
+  },
+  "ABCDE": {
+   "rapport": "rapport_v26_bloc_e.json [depart]",
+   "identique": true,
+   "differences": {}
+  },
+  "v26_8_semaines": {
+   "rapport": "rapport_v26_bloc_e.json [8_semaines]",
+   "graine": 770000,
+   "identique": true,
+   "differences": {}
+  },
+  "v26_16_semaines": {
+   "rapport": "rapport_v26_bloc_e.json [16_semaines]",
+   "graine": 550000,
+   "identique": true,
+   "differences": {}
+  },
+  "v26_24_semaines": {
+   "rapport": "rapport_v26_bloc_e.json [24_semaines]",
+   "graine": 330000,
+   "identique": true,
+   "differences": {}
+  },
+  "v26_32_semaines": {
+   "rapport": "rapport_v26_bloc_e.json [32_semaines]",
+   "graine": 990000,
+   "identique": true,
+   "differences": {}
+  },
+  "E_depart_egal_V25": true
+ },
+ "calibration": {
+  "V21": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 0.7973793602110568,
+   "completion_pct": 0.653456340956341,
+   "sack_rate": 0.08134275899571601,
+   "int_rate": 0.024384961884961885,
+   "ypa": 7.663360475860475,
+   "net_ypa": 6.611562794275634,
+   "ypc": 5.646024640342822,
+   "turnovers_pg": 3.6359126984126986,
+   "points_pg": 51.84722222222222,
+   "drives_pg": 21.088293650793652,
+   "first_downs_pg": 42.782738095238095,
+   "plays_pg": 126.65575396825396,
+   "pass_rate": 0.5905662298600287,
+   "win_pct": {
+    "CTX": 0.4771825396825397,
+    "VEC": 0.48214285714285715,
+    "AEG": 0.48115079365079366,
+    "MNL": 0.5595238095238095
+   }
+  },
+  "A": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 0.8677567195048583,
+   "completion_pct": 0.6524908869987849,
+   "sack_rate": 0.08209747167909161,
+   "int_rate": 0.024656965889221467,
+   "ypa": 7.535177666478973,
+   "net_ypa": 6.522630196588226,
+   "ypc": 5.646704887324743,
+   "turnovers_pg": 3.7172619047619047,
+   "points_pg": 51.726190476190474,
+   "drives_pg": 21.150793650793652,
+   "first_downs_pg": 42.958333333333336,
+   "plays_pg": 127.21924603174604,
+   "pass_rate": 0.587864656846308,
+   "win_pct": {
+    "CTX": 0.5347222222222222,
+    "VEC": 0.4861111111111111,
+    "AEG": 0.5238095238095238,
+    "MNL": 0.45535714285714285
+   }
+  },
+  "AB": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 0.9014511798085568,
+   "completion_pct": 0.6533554119786508,
+   "sack_rate": 0.08275789083789718,
+   "int_rate": 0.024276653311057557,
+   "ypa": 7.537531232905066,
+   "net_ypa": 6.5266820117998785,
+   "ypc": 5.670018784509421,
+   "turnovers_pg": 3.6626984126984126,
+   "points_pg": 51.76190476190476,
+   "drives_pg": 21.11904761904762,
+   "first_downs_pg": 42.99702380952381,
+   "plays_pg": 127.27876984126983,
+   "pass_rate": 0.5892109714178819,
+   "win_pct": {
+    "CTX": 0.5763888888888888,
+    "VEC": 0.4503968253968254,
+    "AEG": 0.5327380952380952,
+    "MNL": 0.44047619047619047
+   }
+  },
+  "ABC": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 0.9152251766350415,
+   "completion_pct": 0.6509144326110907,
+   "sack_rate": 0.0797461841879609,
+   "int_rate": 0.024590525156077854,
+   "ypa": 7.615717958134411,
+   "net_ypa": 6.62438162078018,
+   "ypc": 5.6729336172154206,
+   "turnovers_pg": 3.7192460317460316,
+   "points_pg": 52.13194444444444,
+   "drives_pg": 21.11706349206349,
+   "first_downs_pg": 43.410714285714285,
+   "plays_pg": 127.38789682539682,
+   "pass_rate": 0.590333860303566,
+   "win_pct": {
+    "CTX": 0.5238095238095238,
+    "VEC": 0.49603174603174605,
+    "AEG": 0.5396825396825397,
+    "MNL": 0.44047619047619047
+   }
+  },
+  "ABCD": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 1.003109265068553,
+   "completion_pct": 0.6544217080528435,
+   "sack_rate": 0.08269305032158408,
+   "int_rate": 0.0235982940276106,
+   "ypa": 7.623289197984931,
+   "net_ypa": 6.6083998029215545,
+   "ypc": 5.704254035299442,
+   "turnovers_pg": 3.6597222222222223,
+   "points_pg": 52.64980158730159,
+   "drives_pg": 21.044642857142858,
+   "first_downs_pg": 43.37896825396825,
+   "plays_pg": 127.11210317460318,
+   "pass_rate": 0.5861046289286579,
+   "win_pct": {
+    "CTX": 0.5228174603174603,
+    "VEC": 0.4662698412698413,
+    "AEG": 0.5228174603174603,
+    "MNL": 0.4880952380952381
+   }
+  },
+  "ABCDE": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 1.0100325063281257,
+   "completion_pct": 0.6544217080528435,
+   "sack_rate": 0.08269305032158408,
+   "int_rate": 0.0235982940276106,
+   "ypa": 7.623289197984931,
+   "net_ypa": 6.6083998029215545,
+   "ypc": 5.704254035299442,
+   "turnovers_pg": 3.6597222222222223,
+   "points_pg": 52.64980158730159,
+   "drives_pg": 21.044642857142858,
+   "first_downs_pg": 43.37896825396825,
+   "plays_pg": 127.11210317460318,
+   "pass_rate": 0.5861046289286579,
+   "win_pct": {
+    "CTX": 0.5228174603174603,
+    "VEC": 0.4662698412698413,
+    "AEG": 0.5228174603174603,
+    "MNL": 0.4880952380952381
+   }
+  },
+  "E8": {
+   "ok": false,
+   "hors_tolerance": [
+    "ypc"
+   ],
+   "temps_x": 0.9960202641210156,
+   "completion_pct": 0.6505385996409335,
+   "sack_rate": 0.08355192719486082,
+   "int_rate": 0.023384201077199282,
+   "ypa": 7.563689407540395,
+   "net_ypa": 6.544151498929336,
+   "ypc": 5.894754539340955,
+   "turnovers_pg": 3.7192460317460316,
+   "points_pg": 52.4593253968254,
+   "drives_pg": 20.903769841269842,
+   "first_downs_pg": 43.74900793650794,
+   "plays_pg": 127.23412698412699,
+   "pass_rate": 0.5826030003430746,
+   "win_pct": {
+    "CTX": 0.5218253968253969,
+    "VEC": 0.4801587301587302,
+    "AEG": 0.5089285714285714,
+    "MNL": 0.48908730158730157
+   }
+  },
+  "E16": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 1.017661473118929,
+   "completion_pct": 0.6561988927065673,
+   "sack_rate": 0.08350464213255943,
+   "int_rate": 0.022671007817071525,
+   "ypa": 7.638344161202719,
+   "net_ypa": 6.607010896583229,
+   "ypc": 5.788251722211879,
+   "turnovers_pg": 3.5873015873015874,
+   "points_pg": 52.620039682539684,
+   "drives_pg": 20.78472222222222,
+   "first_downs_pg": 43.648809523809526,
+   "plays_pg": 127.12003968253968,
+   "pass_rate": 0.5808392579816914,
+   "win_pct": {
+    "CTX": 0.5555555555555556,
+    "VEC": 0.4593253968253968,
+    "AEG": 0.5198412698412699,
+    "MNL": 0.4652777777777778
+   }
+  },
+  "E32": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 1.0076005813273863,
+   "completion_pct": 0.6555568894624688,
+   "sack_rate": 0.08196522768866402,
+   "int_rate": 0.02301989855637924,
+   "ypa": 7.630961313364747,
+   "net_ypa": 6.615714823985359,
+   "ypc": 5.747635723515422,
+   "turnovers_pg": 3.564484126984127,
+   "points_pg": 52.023809523809526,
+   "drives_pg": 20.868055555555557,
+   "first_downs_pg": 43.30059523809524,
+   "plays_pg": 126.69742063492063,
+   "pass_rate": 0.5818762675102379,
+   "win_pct": {
+    "CTX": 0.5367063492063492,
+    "VEC": 0.43353174603174605,
+    "AEG": 0.5674603174603174,
+    "MNL": 0.4623015873015873
+   }
+  },
+  "E52": {
+   "ok": true,
+   "hors_tolerance": [],
+   "temps_x": 0.9776768343387152,
+   "completion_pct": 0.6541345537484534,
+   "sack_rate": 0.08434425573892873,
+   "int_rate": 0.02365796574290783,
+   "ypa": 7.561008333209106,
+   "net_ypa": 6.527661503186072,
+   "ypc": 5.6875260189986,
+   "turnovers_pg": 3.6319444444444446,
+   "points_pg": 51.53769841269841,
+   "drives_pg": 21.14186507936508,
+   "first_downs_pg": 42.96329365079365,
+   "plays_pg": 126.8452380952381,
+   "pass_rate": 0.5866885656186454,
+   "win_pct": {
+    "CTX": 0.49007936507936506,
+    "VEC": 0.439484126984127,
+    "AEG": 0.5674603174603174,
+    "MNL": 0.5029761904761905
+   }
+  }
+ },
+ "stats_et_ngs": {
+  "V21": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 25.92361111111111,
+     "yards": 395.74801587301585,
+     "pass_att": 34.45734126984127,
+     "comp": 22.55109126984127,
+     "pass_yds": 262.85069444444446,
+     "pass_td": 1.9995039682539681,
+     "ints": 0.8377976190476191,
+     "sacks_taken": 2.9419642857142856,
+     "rush_att": 25.928571428571427,
+     "rush_yds": 146.39335317460316,
+     "rush_td": 1.222718253968254,
+     "fumbles_lost": 0.9801587301587301,
+     "fg_att": 1.1909722222222223,
+     "fg_made": 1.0902777777777777,
+     "fourth_att": 0.9563492063492064
+    },
+    "fg_pct": 0.9154518950437318,
+    "fourth_conv": 0.571058091286307,
+    "blitz_rate": 0.1644721898033195,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.424603174603174,
+      "papg": 22.148809523809526,
+      "ypg": 347.0,
+      "pass_rate": 0.569681988241582,
+      "turnovers_pg": 1.5992063492063493
+     },
+     "CTX": {
+      "ppg": 25.25,
+      "papg": 25.863095238095237,
+      "ypg": 395.25396825396825,
+      "pass_rate": 0.6320838569283109,
+      "turnovers_pg": 1.7698412698412698
+     },
+     "MNL": {
+      "ppg": 25.384920634920636,
+      "papg": 24.20436507936508,
+      "ypg": 392.9861111111111,
+      "pass_rate": 0.39313001002004005,
+      "turnovers_pg": 1.8968253968253967
+     },
+     "VEC": {
+      "ppg": 30.634920634920636,
+      "papg": 31.478174603174605,
+      "ypg": 447.75198412698415,
+      "pass_rate": 0.7586674706059693,
+      "turnovers_pg": 2.005952380952381
+     }
+    },
+    "part_yards_reception": {
+     "RB": 0.055247430209451845,
+     "TE": 0.15002255112689586,
+     "WR1": 0.5266565642650503,
+     "WR2": 0.1312437842866767,
+     "WR3": 0.1368296701119253
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.27728174603175,
+     "sacks": 2.9419642857142856,
+     "def_int": 0.8377976190476191,
+     "passes_defended": 3.793154761904762,
+     "forced_fumbles": 0.9801587301587301
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 383.3392857142857
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 138.8670634920635
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 216.82142857142858
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.08531746031746
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9801587301587301
+     },
+     "def_int": {
+      "id": "MNL_CB1",
+      "par_match": 0.26587301587301587
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.0867186825209455,
+    "explosive_run_rate": 0.20519589837771657,
+    "stuffed_run_rate": 0.14359504132231404,
+    "third_down_conv": 0.46868889206848857,
+    "red_zone_td_per_play": 0.2976582060975011
+   }
+  },
+  "A": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 25.863095238095237,
+     "yards": 394.1041666666667,
+     "pass_att": 33.573412698412696,
+     "comp": 21.94047619047619,
+     "pass_yds": 251.80753968253967,
+     "pass_td": 1.9265873015873016,
+     "ints": 0.8253968253968254,
+     "sacks_taken": 2.9717261904761907,
+     "rush_att": 27.064484126984127,
+     "rush_yds": 155.83779761904762,
+     "rush_td": 1.3060515873015872,
+     "fumbles_lost": 1.033234126984127,
+     "fg_att": 1.1468253968253967,
+     "fg_made": 1.039186507936508,
+     "fourth_att": 1.007936507936508
+    },
+    "fg_pct": 0.9061418685121108,
+    "fourth_conv": 0.5684055118110236,
+    "blitz_rate": 0.16546706488766894,
+    "franchises": {
+     "AEG": {
+      "ppg": 21.734126984126984,
+      "papg": 21.283730158730158,
+      "ypg": 340.2559523809524,
+      "pass_rate": 0.5444025834230355,
+      "turnovers_pg": 1.6507936507936507
+     },
+     "CTX": {
+      "ppg": 26.878968253968253,
+      "papg": 25.444444444444443,
+      "ypg": 402.1607142857143,
+      "pass_rate": 0.6016329514989033,
+      "turnovers_pg": 1.7976190476190477
+     },
+     "MNL": {
+      "ppg": 24.091269841269842,
+      "papg": 25.47222222222222,
+      "ypg": 385.875,
+      "pass_rate": 0.3963261985229691,
+      "turnovers_pg": 1.9861111111111112
+     },
+     "VEC": {
+      "ppg": 30.748015873015873,
+      "papg": 31.251984126984127,
+      "ypg": 448.125,
+      "pass_rate": 0.7435144830857718,
+      "turnovers_pg": 2.0
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0010952557303937406,
+     "RB": 0.1107705399847137,
+     "TE": 0.20283111787000338,
+     "WR1": 0.3810426204190338,
+     "WR2": 0.2763649329057371,
+     "WR3": 0.030086044550905754
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.739087301587304,
+     "sacks": 2.9717261904761907,
+     "def_int": 0.8253968253968254,
+     "passes_defended": 3.0228174603174605,
+     "forced_fumbles": 1.033234126984127
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 372.25
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 133.80555555555554
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 144.26388888888889
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 7.902777777777778
+     },
+     "sacks": {
+      "id": "VEC_DT1",
+      "par_match": 0.9305555555555556
+     },
+     "def_int": {
+      "id": "AEG_S2",
+      "par_match": 0.2718253968253968
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08068376573488564,
+    "explosive_run_rate": 0.21452659359994136,
+    "stuffed_run_rate": 0.14442285839961877,
+    "third_down_conv": 0.4642822989385101,
+    "red_zone_td_per_play": 0.3014072162438526,
+    "taux_premiere_lecture": 0.4380245564510009,
+    "taux_pression": 0.16929988313679067,
+    "temps_lancer_moyen": 2.1582707280428166,
+    "temps_poche_moyen": 3.1944181943596495,
+    "taux_erreur_lecture": 0.0,
+    "taux_bust": 0.0,
+    "scrambles_pg": 1.9593253968253967,
+    "throwaways_pg": 4.098214285714286,
+    "cibles": {
+     "WR2": 0.256704457496699,
+     "TE": 0.18863543231798935,
+     "WR1": 0.3675575589248585,
+     "RB": 0.11533032827937896,
+     "WR3": 0.03205390884669672
+    }
+   }
+  },
+  "AB": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 25.88095238095238,
+     "yards": 395.00347222222223,
+     "pass_att": 33.6468253968254,
+     "comp": 22.01686507936508,
+     "pass_yds": 252.484126984127,
+     "pass_td": 1.9340277777777777,
+     "ints": 0.814484126984127,
+     "sacks_taken": 3.0064484126984126,
+     "rush_att": 26.98611111111111,
+     "rush_yds": 156.00347222222223,
+     "rush_td": 1.3040674603174602,
+     "fumbles_lost": 1.0168650793650793,
+     "fg_att": 1.1205357142857142,
+     "fg_made": 1.0317460317460319,
+     "fourth_att": 0.9578373015873016
+    },
+    "fg_pct": 0.9207613988490483,
+    "fourth_conv": 0.5800103573278095,
+    "blitz_rate": 0.1639009485802474,
+    "franchises": {
+     "AEG": {
+      "ppg": 21.8234126984127,
+      "papg": 21.543650793650794,
+      "ypg": 343.8313492063492,
+      "pass_rate": 0.5470160018786273,
+      "turnovers_pg": 1.6071428571428572
+     },
+     "CTX": {
+      "ppg": 26.95436507936508,
+      "papg": 24.650793650793652,
+      "ypg": 399.78769841269843,
+      "pass_rate": 0.5971926192071129,
+      "turnovers_pg": 1.7658730158730158
+     },
+     "MNL": {
+      "ppg": 24.109126984126984,
+      "papg": 25.94047619047619,
+      "ypg": 384.593253968254,
+      "pass_rate": 0.4046297167591983,
+      "turnovers_pg": 1.880952380952381
+     },
+     "VEC": {
+      "ppg": 30.636904761904763,
+      "papg": 31.38888888888889,
+      "ypg": 451.8015873015873,
+      "pass_rate": 0.7426032874278099,
+      "turnovers_pg": 2.0714285714285716
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0009056832112658347,
+     "RB": 0.09443859428535505,
+     "TE": 0.15739634740514885,
+     "WR1": 0.4127086411215541,
+     "WR2": 0.274506491057115,
+     "WR3": 0.06185560934209285
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.74801587301587,
+     "sacks": 3.0064484126984126,
+     "def_int": 0.814484126984127,
+     "passes_defended": 3.0823412698412698,
+     "forced_fumbles": 1.0168650793650793
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 373.1190476190476
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 132.8095238095238
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 170.16468253968253
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.0
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 1.0734126984126984
+     },
+     "def_int": {
+      "id": "AEG_S2",
+      "par_match": 0.27380952380952384
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.07968215591461257,
+    "explosive_run_rate": 0.2148739063304169,
+    "stuffed_run_rate": 0.13951180060289683,
+    "third_down_conv": 0.47047935453251066,
+    "red_zone_td_per_play": 0.30475115343084325,
+    "taux_premiere_lecture": 0.46485338756224115,
+    "taux_pression": 0.22759693168054787,
+    "temps_lancer_moyen": 2.1422198962277026,
+    "temps_poche_moyen": 3.2051431330528724,
+    "taux_erreur_lecture": 0.07516784544761278,
+    "taux_bust": 0.0,
+    "scrambles_pg": 1.994047619047619,
+    "throwaways_pg": 3.8521825396825395,
+    "cibles": {
+     "TE": 0.15135248291639877,
+     "WR2": 0.2548409767184533,
+     "WR3": 0.057119787071788504,
+     "WR1": 0.39246676734901387,
+     "RB": 0.09982505196106285
+    }
+   }
+  },
+  "ABC": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.06597222222222,
+     "yards": 399.1502976190476,
+     "pass_att": 33.851686507936506,
+     "comp": 22.063988095238095,
+     "pass_yds": 256.780753968254,
+     "pass_td": 1.9771825396825398,
+     "ints": 0.8303571428571429,
+     "sacks_taken": 2.914186507936508,
+     "rush_att": 26.928075396825395,
+     "rush_yds": 155.69593253968253,
+     "rush_td": 1.2708333333333333,
+     "fumbles_lost": 1.029265873015873,
+     "fg_att": 1.1691468253968254,
+     "fg_made": 1.0758928571428572,
+     "fourth_att": 0.9598214285714286
+    },
+    "fg_pct": 0.9202375901569793,
+    "fourth_conv": 0.5746770025839794,
+    "blitz_rate": 0.16247556597381763,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.78968253968254,
+      "papg": 21.1765873015873,
+      "ypg": 352.1170634920635,
+      "pass_rate": 0.5417614016316704,
+      "turnovers_pg": 1.5892857142857142
+     },
+     "CTX": {
+      "ppg": 26.363095238095237,
+      "papg": 25.982142857142858,
+      "ypg": 397.859126984127,
+      "pass_rate": 0.605231794150903,
+      "turnovers_pg": 1.7698412698412698
+     },
+     "MNL": {
+      "ppg": 23.696428571428573,
+      "papg": 25.873015873015873,
+      "ypg": 384.63492063492066,
+      "pass_rate": 0.3993179449935268,
+      "turnovers_pg": 1.9623015873015872
+     },
+     "VEC": {
+      "ppg": 31.41468253968254,
+      "papg": 31.232142857142858,
+      "ypg": 461.99007936507934,
+      "pass_rate": 0.7466502477497288,
+      "turnovers_pg": 2.117063492063492
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0008557575289276952,
+     "RB": 0.09620800896323912,
+     "TE": 0.15662294511947766,
+     "WR1": 0.4255355728552939,
+     "WR2": 0.2650085962099407,
+     "WR3": 0.057480634380976295
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.71478174603175,
+     "sacks": 2.914186507936508,
+     "def_int": 0.8303571428571429,
+     "passes_defended": 3.173611111111111,
+     "forced_fumbles": 1.029265873015873
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 383.19642857142856
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 134.1626984126984
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 177.58333333333334
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 7.853174603174603
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 1.1071428571428572
+     },
+     "def_int": {
+      "id": "MNL_CB1",
+      "par_match": 0.3333333333333333
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08239431460180233,
+    "explosive_run_rate": 0.21612909167940758,
+    "stuffed_run_rate": 0.14147033359736216,
+    "third_down_conv": 0.47116952892641273,
+    "red_zone_td_per_play": 0.29843660080567813,
+    "taux_premiere_lecture": 0.4722978299347047,
+    "taux_pression": 0.22842949146996266,
+    "temps_lancer_moyen": 2.1446353725108542,
+    "temps_poche_moyen": 3.2035464295608005,
+    "taux_erreur_lecture": 0.07670340457810897,
+    "taux_bust": 0.02093214935539555,
+    "scrambles_pg": 1.9365079365079365,
+    "throwaways_pg": 3.8373015873015874,
+    "cibles": {
+     "WR1": 0.4014397691609775,
+     "WR2": 0.25004090253298233,
+     "WR3": 0.05414008002022816,
+     "TE": 0.15062543691342048,
+     "RB": 0.10017402168577931
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.43021320933704493,
+      "completion": 0.601792943898207
+     },
+     "open": {
+      "part": 0.4837410385207533,
+      "completion": 0.8231530894361216
+     },
+     "contested": {
+      "part": 0.08604575214220177,
+      "completion": 0.37195011747695644
+     }
+    }
+   }
+  },
+  "ABCD": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.324900793650794,
+     "yards": 398.23859126984127,
+     "pass_att": 33.476190476190474,
+     "comp": 21.94097222222222,
+     "pass_yds": 254.06646825396825,
+     "pass_td": 1.9603174603174602,
+     "ints": 0.7876984126984127,
+     "sacks_taken": 2.9836309523809526,
+     "rush_att": 27.096230158730158,
+     "rush_yds": 157.578373015873,
+     "rush_td": 1.341765873015873,
+     "fumbles_lost": 1.0421626984126984,
+     "fg_att": 1.1274801587301588,
+     "fg_made": 1.0347222222222223,
+     "fourth_att": 0.9439484126984127
+    },
+    "fg_pct": 0.9177298724153101,
+    "fourth_conv": 0.5790856542301629,
+    "blitz_rate": 0.16173543850338332,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.581349206349206,
+      "papg": 22.089285714285715,
+      "ypg": 349.125,
+      "pass_rate": 0.5482257360593548,
+      "turnovers_pg": 1.7380952380952381
+     },
+     "CTX": {
+      "ppg": 26.396825396825395,
+      "papg": 25.978174603174605,
+      "ypg": 399.31944444444446,
+      "pass_rate": 0.6233389338628379,
+      "turnovers_pg": 1.7599206349206349
+     },
+     "MNL": {
+      "ppg": 24.827380952380953,
+      "papg": 25.192460317460316,
+      "ypg": 390.37301587301585,
+      "pass_rate": 0.3394942842942346,
+      "turnovers_pg": 1.9662698412698412
+     },
+     "VEC": {
+      "ppg": 31.49404761904762,
+      "papg": 32.03968253968254,
+      "ypg": 454.13690476190476,
+      "pass_rate": 0.7732754750860392,
+      "turnovers_pg": 1.8551587301587302
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0007419005931300005,
+     "RB": 0.10297970706640791,
+     "TE": 0.1776832396846532,
+     "WR1": 0.357379372820667,
+     "WR2": 0.29844122780643423,
+     "WR3": 0.06425835321496765
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.69295634920635,
+     "sacks": 2.9836309523809526,
+     "def_int": 0.7876984126984127,
+     "passes_defended": 3.111607142857143,
+     "forced_fumbles": 1.0421626984126984
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 385.33531746031747
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 146.36111111111111
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 154.57539682539684
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.011904761904763
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9761904761904762
+     },
+     "def_int": {
+      "id": "AEG_CB1",
+      "par_match": 0.2718253968253968
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08314070649596965,
+    "explosive_run_rate": 0.21714934280379306,
+    "stuffed_run_rate": 0.13775491524182623,
+    "third_down_conv": 0.4752408477842004,
+    "red_zone_td_per_play": 0.3100771360759494,
+    "taux_premiere_lecture": 0.4707840678370954,
+    "taux_pression": 0.21872387435805565,
+    "temps_lancer_moyen": 2.121840439508196,
+    "temps_poche_moyen": 3.2142536985498587,
+    "taux_erreur_lecture": 0.07295772124686492,
+    "taux_bust": 0.019005320234153078,
+    "scrambles_pg": 1.9067460317460319,
+    "throwaways_pg": 3.669642857142857,
+    "cibles": {
+     "TE": 0.16689060074047535,
+     "WR2": 0.28105219156813566,
+     "WR3": 0.06055177355786456,
+     "WR1": 0.3379165173772841,
+     "RB": 0.10484593335721963
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.4169870839153157,
+      "completion": 0.6013925479864509
+     },
+     "open": {
+      "part": 0.5000235408590844,
+      "completion": 0.818775305232102
+     },
+     "contested": {
+      "part": 0.0829893752255999,
+      "completion": 0.3729198184568835
+     }
+    }
+   }
+  },
+  "ABCDE": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.324900793650794,
+     "yards": 398.23859126984127,
+     "pass_att": 33.476190476190474,
+     "comp": 21.94097222222222,
+     "pass_yds": 254.06646825396825,
+     "pass_td": 1.9603174603174602,
+     "ints": 0.7876984126984127,
+     "sacks_taken": 2.9836309523809526,
+     "rush_att": 27.096230158730158,
+     "rush_yds": 157.578373015873,
+     "rush_td": 1.341765873015873,
+     "fumbles_lost": 1.0421626984126984,
+     "fg_att": 1.1274801587301588,
+     "fg_made": 1.0347222222222223,
+     "fourth_att": 0.9439484126984127
+    },
+    "fg_pct": 0.9177298724153101,
+    "fourth_conv": 0.5790856542301629,
+    "blitz_rate": 0.16173543850338332,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.581349206349206,
+      "papg": 22.089285714285715,
+      "ypg": 349.125,
+      "pass_rate": 0.5482257360593548,
+      "turnovers_pg": 1.7380952380952381
+     },
+     "CTX": {
+      "ppg": 26.396825396825395,
+      "papg": 25.978174603174605,
+      "ypg": 399.31944444444446,
+      "pass_rate": 0.6233389338628379,
+      "turnovers_pg": 1.7599206349206349
+     },
+     "MNL": {
+      "ppg": 24.827380952380953,
+      "papg": 25.192460317460316,
+      "ypg": 390.37301587301585,
+      "pass_rate": 0.3394942842942346,
+      "turnovers_pg": 1.9662698412698412
+     },
+     "VEC": {
+      "ppg": 31.49404761904762,
+      "papg": 32.03968253968254,
+      "ypg": 454.13690476190476,
+      "pass_rate": 0.7732754750860392,
+      "turnovers_pg": 1.8551587301587302
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0007419005931300005,
+     "RB": 0.10297970706640791,
+     "TE": 0.1776832396846532,
+     "WR1": 0.357379372820667,
+     "WR2": 0.29844122780643423,
+     "WR3": 0.06425835321496765
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.69295634920635,
+     "sacks": 2.9836309523809526,
+     "def_int": 0.7876984126984127,
+     "passes_defended": 3.111607142857143,
+     "forced_fumbles": 1.0421626984126984
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 385.33531746031747
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 146.36111111111111
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 154.57539682539684
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.011904761904763
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9761904761904762
+     },
+     "def_int": {
+      "id": "AEG_CB1",
+      "par_match": 0.2718253968253968
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08314070649596965,
+    "explosive_run_rate": 0.21714934280379306,
+    "stuffed_run_rate": 0.13775491524182623,
+    "third_down_conv": 0.4752408477842004,
+    "red_zone_td_per_play": 0.3100771360759494,
+    "taux_premiere_lecture": 0.4707840678370954,
+    "taux_pression": 0.21872387435805565,
+    "temps_lancer_moyen": 2.121840439508196,
+    "temps_poche_moyen": 3.2142536985498587,
+    "taux_erreur_lecture": 0.07295772124686492,
+    "taux_bust": 0.019005320234153078,
+    "scrambles_pg": 1.9067460317460319,
+    "throwaways_pg": 3.669642857142857,
+    "cibles": {
+     "TE": 0.16689060074047535,
+     "WR2": 0.28105219156813566,
+     "WR3": 0.06055177355786456,
+     "WR1": 0.3379165173772841,
+     "RB": 0.10484593335721963
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.4169870839153157,
+      "completion": 0.6013925479864509
+     },
+     "open": {
+      "part": 0.5000235408590844,
+      "completion": 0.818775305232102
+     },
+     "contested": {
+      "part": 0.0829893752255999,
+      "completion": 0.3729198184568835
+     }
+    }
+   }
+  },
+  "E8": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.2296626984127,
+     "yards": 400.93650793650795,
+     "pass_att": 33.25396825396825,
+     "comp": 21.66765873015873,
+     "pass_yds": 250.3606150793651,
+     "pass_td": 1.9370039682539681,
+     "ints": 0.7752976190476191,
+     "sacks_taken": 2.9975198412698414,
+     "rush_att": 27.365575396825395,
+     "rush_yds": 164.12847222222223,
+     "rush_td": 1.3596230158730158,
+     "fumbles_lost": 1.0843253968253967,
+     "fg_att": 1.1220238095238095,
+     "fg_made": 1.0203373015873016,
+     "fourth_att": 1.0138888888888888
+    },
+    "fg_pct": 0.9093722369584438,
+    "fourth_conv": 0.5724070450097848,
+    "blitz_rate": 0.16184542931104387,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.13293650793651,
+      "papg": 21.82936507936508,
+      "ypg": 352.49603174603175,
+      "pass_rate": 0.5469393219317915,
+      "turnovers_pg": 1.6785714285714286
+     },
+     "CTX": {
+      "ppg": 26.92063492063492,
+      "papg": 27.01388888888889,
+      "ypg": 404.281746031746,
+      "pass_rate": 0.608536361971057,
+      "turnovers_pg": 1.7757936507936507
+     },
+     "MNL": {
+      "ppg": 25.03174603174603,
+      "papg": 24.72222222222222,
+      "ypg": 392.1190476190476,
+      "pass_rate": 0.3368605597645733,
+      "turnovers_pg": 2.0595238095238093
+     },
+     "VEC": {
+      "ppg": 30.833333333333332,
+      "papg": 31.353174603174605,
+      "ypg": 454.8492063492063,
+      "pass_rate": 0.7734952638299136,
+      "turnovers_pg": 1.9246031746031746
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.000725144484047812,
+     "RB": 0.10171835467490346,
+     "TE": 0.18317030790902805,
+     "WR1": 0.3466705763709887,
+     "WR2": 0.29725772546346835,
+     "WR3": 0.07190818006565926
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.65228174603175,
+     "sacks": 2.9975198412698414,
+     "def_int": 0.7752976190476191,
+     "passes_defended": 3.0734126984126986,
+     "forced_fumbles": 1.0843253968253967
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 381.3452380952381
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 152.33531746031747
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 157.09325396825398
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.353174603174603
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 1.0615079365079365
+     },
+     "def_int": {
+      "id": "CTX_CB1",
+      "par_match": 0.2837301587301587
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08259248210023866,
+    "explosive_run_rate": 0.22445576320034802,
+    "stuffed_run_rate": 0.1290036070981892,
+    "third_down_conv": 0.47589982076248605,
+    "red_zone_td_per_play": 0.3030875866414619,
+    "taux_premiere_lecture": 0.4739340063281603,
+    "taux_pression": 0.2232635226759078,
+    "temps_lancer_moyen": 2.124189242127746,
+    "temps_poche_moyen": 3.2069103319058048,
+    "taux_erreur_lecture": 0.07634473406659635,
+    "taux_bust": 0.020054535654269318,
+    "scrambles_pg": 1.9345238095238095,
+    "throwaways_pg": 3.8581349206349205,
+    "cibles": {
+     "TE": 0.17149314449299383,
+     "WR1": 0.3302244990206419,
+     "WR2": 0.27973481994877203,
+     "WR3": 0.06516498417959922,
+     "RB": 0.10378182913967154
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.4235232569200038,
+      "completion": 0.6070746771476698
+     },
+     "contested": {
+      "part": 0.0902850439138844,
+      "completion": 0.3787532923617208
+     },
+     "open": {
+      "part": 0.4861916991661118,
+      "completion": 0.8186709273509848
+     }
+    }
+   }
+  },
+  "E16": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.310019841269842,
+     "yards": 399.9925595238095,
+     "pass_att": 33.15823412698413,
+     "comp": 21.7921626984127,
+     "pass_yds": 252.1155753968254,
+     "pass_td": 1.9821428571428572,
+     "ints": 0.7495039682539683,
+     "sacks_taken": 2.984623015873016,
+     "rush_att": 27.4171626984127,
+     "rush_yds": 161.4141865079365,
+     "rush_td": 1.3174603174603174,
+     "fumbles_lost": 1.0441468253968254,
+     "fg_att": 1.1344246031746033,
+     "fg_made": 1.035218253968254,
+     "fourth_att": 0.9464285714285714
+    },
+    "fg_pct": 0.9125491910800175,
+    "fourth_conv": 0.5870020964360587,
+    "blitz_rate": 0.1634344490662338,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.265873015873016,
+      "papg": 21.859126984126984,
+      "ypg": 348.75,
+      "pass_rate": 0.5416722408026756,
+      "turnovers_pg": 1.5912698412698412
+     },
+     "CTX": {
+      "ppg": 27.297619047619047,
+      "papg": 25.46031746031746,
+      "ypg": 411.8095238095238,
+      "pass_rate": 0.5958966565349544,
+      "turnovers_pg": 1.751984126984127
+     },
+     "MNL": {
+      "ppg": 24.36904761904762,
+      "papg": 25.54563492063492,
+      "ypg": 385.8611111111111,
+      "pass_rate": 0.345613154261328,
+      "turnovers_pg": 1.9265873015873016
+     },
+     "VEC": {
+      "ppg": 31.307539682539684,
+      "papg": 32.375,
+      "ypg": 453.5496031746032,
+      "pass_rate": 0.7783023095999283,
+      "turnovers_pg": 1.9047619047619047
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0008342105004279264,
+     "RB": 0.10309385851868612,
+     "TE": 0.17513698562757615,
+     "WR1": 0.34989424807925,
+     "WR2": 0.3048567184441187,
+     "WR3": 0.06785239983079693
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.8655753968254,
+     "sacks": 2.984623015873016,
+     "def_int": 0.7495039682539683,
+     "passes_defended": 3.0719246031746033,
+     "forced_fumbles": 1.0441468253968254
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 387.12103174603175
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 143.1984126984127
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 160.04960317460316
+     },
+     "tackles": {
+      "id": "VEC_S2",
+      "par_match": 8.579365079365079
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9920634920634921
+     },
+     "def_int": {
+      "id": "MNL_CB1",
+      "par_match": 0.2976190476190476
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08344428321390639,
+    "explosive_run_rate": 0.21940187795126012,
+    "stuffed_run_rate": 0.13661281276572648,
+    "third_down_conv": 0.47925911634188695,
+    "red_zone_td_per_play": 0.304392088423502,
+    "taux_premiere_lecture": 0.4757810260819719,
+    "taux_pression": 0.22196074881959843,
+    "temps_lancer_moyen": 2.123781056252137,
+    "temps_poche_moyen": 3.2086494148628164,
+    "taux_erreur_lecture": 0.07678267034740764,
+    "taux_bust": 0.01961219891466472,
+    "scrambles_pg": 1.869047619047619,
+    "throwaways_pg": 3.7281746031746033,
+    "cibles": {
+     "TE": 0.16284261815329382,
+     "WR1": 0.33680288425276433,
+     "WR2": 0.2837338401894676,
+     "WR3": 0.06311565672564903,
+     "RB": 0.10419212261091249
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.4177271429024785,
+      "completion": 0.6074603054015042
+     },
+     "contested": {
+      "part": 0.08968296785249595,
+      "completion": 0.38517338995046
+     },
+     "open": {
+      "part": 0.49258988924502556,
+      "completion": 0.8235407808272129
+     }
+    }
+   }
+  },
+  "E32": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 26.011904761904763,
+     "yards": 397.97718253968253,
+     "pass_att": 33.13789682539682,
+     "comp": 21.752480158730158,
+     "pass_yds": 251.8452380952381,
+     "pass_td": 1.9494047619047619,
+     "ints": 0.7609126984126984,
+     "sacks_taken": 2.9379960317460316,
+     "rush_att": 27.27281746031746,
+     "rush_yds": 159.42559523809524,
+     "rush_td": 1.3010912698412698,
+     "fumbles_lost": 1.0213293650793651,
+     "fg_att": 1.1493055555555556,
+     "fg_made": 1.0550595238095237,
+     "fourth_att": 0.9528769841269841
+    },
+    "fg_pct": 0.9179974104445403,
+    "fourth_conv": 0.571056741280583,
+    "blitz_rate": 0.16163055649082694,
+    "franchises": {
+     "AEG": {
+      "ppg": 23.21031746031746,
+      "papg": 21.053571428571427,
+      "ypg": 348.7142857142857,
+      "pass_rate": 0.5361536656498274,
+      "turnovers_pg": 1.5257936507936507
+     },
+     "CTX": {
+      "ppg": 26.496031746031747,
+      "papg": 25.15674603174603,
+      "ypg": 404.7420634920635,
+      "pass_rate": 0.5987983569370363,
+      "turnovers_pg": 1.742063492063492
+     },
+     "MNL": {
+      "ppg": 23.88095238095238,
+      "papg": 25.13293650793651,
+      "ypg": 386.859126984127,
+      "pass_rate": 0.34689741191144374,
+      "turnovers_pg": 1.9880952380952381
+     },
+     "VEC": {
+      "ppg": 30.46031746031746,
+      "papg": 32.70436507936508,
+      "ypg": 451.593253968254,
+      "pass_rate": 0.7857056767506327,
+      "turnovers_pg": 1.873015873015873
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.0006913259276766721,
+     "RB": 0.10000196958953754,
+     "TE": 0.16959150712991414,
+     "WR1": 0.32596312928385723,
+     "WR2": 0.33968722918143857,
+     "WR3": 0.06544749074292917
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.75347222222222,
+     "sacks": 2.9379960317460316,
+     "def_int": 0.7609126984126984,
+     "passes_defended": 3.0942460317460316,
+     "forced_fumbles": 1.0213293650793651
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 388.73015873015873
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 143.91666666666666
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 150.34722222222223
+     },
+     "tackles": {
+      "id": "VEC_S1",
+      "par_match": 9.055555555555555
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9682539682539683
+     },
+     "def_int": {
+      "id": "MNL_CB1",
+      "par_match": 0.29563492063492064
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08372002514744184,
+    "explosive_run_rate": 0.21772580117129242,
+    "stuffed_run_rate": 0.1358808337274017,
+    "third_down_conv": 0.4748547000336231,
+    "red_zone_td_per_play": 0.30543623166938233,
+    "taux_premiere_lecture": 0.46226358179240445,
+    "taux_pression": 0.22085306627251064,
+    "temps_lancer_moyen": 2.128310156556534,
+    "temps_poche_moyen": 3.205673107977155,
+    "taux_erreur_lecture": 0.07467346384724442,
+    "taux_bust": 0.019958815143354982,
+    "scrambles_pg": 1.8640873015873016,
+    "throwaways_pg": 3.628968253968254,
+    "cibles": {
+     "TE": 0.16038731863292208,
+     "WR2": 0.31225302404150707,
+     "WR3": 0.061642182739585535,
+     "WR1": 0.3152393592953455,
+     "RB": 0.1026364212240958
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.40701726595913196,
+      "completion": 0.598482194979568
+     },
+     "open": {
+      "part": 0.5063836527799779,
+      "completion": 0.8206644144144144
+     },
+     "contested": {
+      "part": 0.08659908126089022,
+      "completion": 0.37900128040973113
+     }
+    }
+   }
+  },
+  "E52": {
+   "box": {
+    "par_equipe_match": {
+     "pts": 25.768849206349206,
+     "yards": 393.9940476190476,
+     "pass_att": 33.38045634920635,
+     "comp": 21.87202380952381,
+     "pass_yds": 251.12698412698413,
+     "pass_td": 1.9017857142857142,
+     "ints": 0.7872023809523809,
+     "sacks_taken": 3.0322420634920637,
+     "rush_att": 27.009920634920636,
+     "rush_yds": 156.51934523809524,
+     "rush_td": 1.3005952380952381,
+     "fumbles_lost": 1.0287698412698412,
+     "fg_att": 1.1656746031746033,
+     "fg_made": 1.0783730158730158,
+     "fourth_att": 0.9310515873015873
+    },
+    "fg_pct": 0.9251063829787234,
+    "fourth_conv": 0.5412892914224827,
+    "blitz_rate": 0.16276396058188644,
+    "franchises": {
+     "AEG": {
+      "ppg": 22.061507936507937,
+      "papg": 20.428571428571427,
+      "ypg": 347.3888888888889,
+      "pass_rate": 0.5425121415740802,
+      "turnovers_pg": 1.632936507936508
+     },
+     "CTX": {
+      "ppg": 25.706349206349206,
+      "papg": 25.68452380952381,
+      "ypg": 393.19444444444446,
+      "pass_rate": 0.6139151232675089,
+      "turnovers_pg": 1.7837301587301588
+     },
+     "MNL": {
+      "ppg": 24.464285714285715,
+      "papg": 24.525793650793652,
+      "ypg": 386.21230158730157,
+      "pass_rate": 0.34285892361868553,
+      "turnovers_pg": 1.9801587301587302
+     },
+     "VEC": {
+      "ppg": 30.84325396825397,
+      "papg": 32.43650793650794,
+      "ypg": 449.18055555555554,
+      "pass_rate": 0.7878659697253527,
+      "turnovers_pg": 1.867063492063492
+     }
+    },
+    "part_yards_reception": {
+     "QB": -0.000805890904494027,
+     "RB": 0.10455644396687946,
+     "TE": 0.17976502749510145,
+     "WR1": 0.33182953037102586,
+     "WR2": 0.31747558624612854,
+     "WR3": 0.0671793028253587
+    },
+    "defense_par_equipe_match": {
+     "tackles": 44.65079365079365,
+     "sacks": 3.0322420634920637,
+     "def_int": 0.7872023809523809,
+     "passes_defended": 3.1304563492063493,
+     "forced_fumbles": 1.0287698412698412
+    },
+    "leaders": {
+     "pass_yds": {
+      "id": "VEC_QB1",
+      "par_match": 385.81349206349205
+     },
+     "rush_yds": {
+      "id": "MNL_RB1",
+      "par_match": 143.70634920634922
+     },
+     "rec_yds": {
+      "id": "VEC_WR1",
+      "par_match": 150.53968253968253
+     },
+     "tackles": {
+      "id": "VEC_S1",
+      "par_match": 8.39484126984127
+     },
+     "sacks": {
+      "id": "VEC_DT2",
+      "par_match": 0.9821428571428571
+     },
+     "def_int": {
+      "id": "MNL_CB1",
+      "par_match": 0.29563492063492064
+     }
+    }
+   },
+   "ngs": {
+    "explosive_pass_rate": 0.08205661639051935,
+    "explosive_run_rate": 0.21824726364504518,
+    "stuffed_run_rate": 0.14157423051494894,
+    "third_down_conv": 0.4662787370027664,
+    "red_zone_td_per_play": 0.30160063234858214,
+    "taux_premiere_lecture": 0.4670517981950701,
+    "taux_pression": 0.22602032416899892,
+    "temps_lancer_moyen": 2.1234830956196715,
+    "temps_poche_moyen": 3.1985070786786247,
+    "taux_erreur_lecture": 0.0740979092147208,
+    "taux_bust": 0.020068626833721587,
+    "scrambles_pg": 1.945436507936508,
+    "throwaways_pg": 3.6478174603174605,
+    "cibles": {
+     "TE": 0.16606552224733226,
+     "WR2": 0.29998353712378584,
+     "WR3": 0.062484098358202254,
+     "WR1": 0.3179729709505066,
+     "RB": 0.10432973644431806
+    },
+    "receptions": {
+     "traffic": {
+      "part": 0.4121230246175156,
+      "completion": 0.5990528205324065
+     },
+     "open": {
+      "part": 0.500220361392684,
+      "completion": 0.8233480176211454
+     },
+     "contested": {
+      "part": 0.08765661398980042,
+      "completion": 0.3643383013108278
+     }
+    }
+   }
+  }
+ },
+ "semaines_enchainees": {
+  "8": {
+   "force": {
+    "CTX": -0.1,
+    "VEC": 0.2,
+    "AEG": -0.02,
+    "MNL": -0.05
+   },
+   "derive_ligue_max": 0.37,
+   "semaines_garde_fou": 7,
+   "controler": [],
+   "ovr_ecart": {
+    "moyen": 0.04,
+    "min": -7,
+    "max": 5
+   },
+   "secondes_trajectoire": 40.87434673309326,
+   "ok": true
+  },
+  "16": {
+   "force": {
+    "CTX": -0.2,
+    "VEC": -0.2,
+    "AEG": 0.15,
+    "MNL": -0.1
+   },
+   "derive_ligue_max": 0.48,
+   "semaines_garde_fou": 15,
+   "controler": [],
+   "ovr_ecart": {
+    "moyen": -0.09,
+    "min": -12,
+    "max": 7
+   },
+   "secondes_trajectoire": 81.00253772735596,
+   "ok": true
+  },
+  "32": {
+   "force": {
+    "CTX": -0.2,
+    "VEC": -0.05,
+    "AEG": 0.15,
+    "MNL": -0.05
+   },
+   "derive_ligue_max": 0.48,
+   "semaines_garde_fou": 31,
+   "controler": [],
+   "ovr_ecart": {
+    "moyen": -0.07,
+    "min": -16,
+    "max": 8
+   },
+   "secondes_trajectoire": 161.19145727157593,
+   "ok": true
+  },
+  "52": {
+   "force": {
+    "CTX": -0.2,
+    "VEC": -0.15,
+    "AEG": 0.03,
+    "MNL": -0.17
+   },
+   "derive_ligue_max": 0.48,
+   "semaines_garde_fou": 51,
+   "controler": [],
+   "ovr_ecart": {
+    "moyen": -0.1,
+    "min": -9,
+    "max": 5
+   },
+   "secondes_trajectoire": 266.86957263946533,
+   "ok": true
+  }
+ },
+ "bloquants": [
+  "calibration E8 hors tolérance : ['ypc']"
+ ],
+ "secondes": 1785.6095819473267
+}
