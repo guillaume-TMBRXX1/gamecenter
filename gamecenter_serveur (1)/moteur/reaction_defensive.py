@@ -139,7 +139,8 @@ class DefensiveReactionEngine:
     """Construit le PostSnapState d'une passe."""
 
     def react(self, concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng, bruit=BRUIT,
-              echelle=ECHELLE_DUEL):
+              echelle=ECHELLE_DUEL, bracket="", p_bracket=None, p_bracket_bonus=0.0, bonus_poche=0.0,
+              bonus_rusher5=0.0):
         """
         concept_defensif : appel du coordinateur ("COVER_2", "BLITZ"…)
         lectures         : progression (moteur.progressions.progression)
@@ -151,6 +152,12 @@ class DefensiveReactionEngine:
                            mêmes tirages consommés)
         echelle          : points de note pour un « pas » de séparation (bloc C : intelligence_joueurs.ECHELLE_C,
                            20 comme au bloc A — le niveau des joueurs reste dans ce duel de notes)
+        bracket          : bloc D (moteur.plan_de_jeu) — rôle que la défense a choisi de doubler (au lieu de la
+                           meilleure menace) ; p_bracket : probabilité minimale du double (jamais en
+                           Cover 0) ; p_bracket_bonus : points ajoutés à la base (bracket préparé avant le match).
+                           Même tirage consommé qu'au bloc A.
+        bonus_poche      : bloc D — protection (un RB reste bloquer) : secondes gagnées avant la pression ;
+                           bonus_rusher5 : part du 5e rusher ramassée par ce bloqueur
         """
         famille, choix, rushers = COUVERTURES.get(concept_defensif, COUVERTURE_DEFAUT)
         couverture = _tirage(choix, rng)
@@ -187,9 +194,14 @@ class DefensiveReactionEngine:
         menaces = [l for l in lectures if l["niveau"] != "checkdown" and l["route"] != "SCREEN"]
         if menaces:
             cible = max(menaces, key=lambda l: talent_route(receveurs.get(l["role"]) or {}, l["role"]))
+            visee = next((l for l in menaces if l["role"] == bracket), None) if bracket else None
+            if visee is not None:
+                cible = visee                    # bloc D : la défense double le receveur qu'elle a choisi
             p = DOUBLE_BASE.get(couverture, 0.0)
             if p > 0:
                 p = max(0.0, min(0.6, p + (talent_route(receveurs.get(cible["role"]) or {}, cible["role"]) - 80) * 0.01))
+                if visee is not None:
+                    p = min(0.75, max(p, p_bracket) if p_bracket is not None else p + p_bracket_bonus)
             if rng.random() < p:
                 double_sur = cible["role"]
 
@@ -209,7 +221,8 @@ class DefensiveReactionEngine:
 
         t = POCHE["base"] - (niveau_pression - 0.5) * POCHE["pente_pression"]
         if rushers >= 5:
-            t -= POCHE["rusher5"]
+            t -= POCHE["rusher5"] - bonus_rusher5
+        t += bonus_poche
         if rushers >= 6:
             t -= POCHE["rusher6"]
         t += gauss_borne(rng, POCHE["bruit"], 1.0)

@@ -86,6 +86,36 @@ _completer_bloc_c                             réception : open · traffic (catc
 Interrupteur du notebook : `PLAYER_IQ_ENABLED` (cellule 12.2 septies ; `GC_BLOC_C=0` : moteur V23, blocs A + B). Sans
 attributs sur les receveurs, `decider_passe` rend exactement la décision du bloc B (même bruit, aucun champ du bloc C).
 
+## Bloc D — adaptation en match et plan de jeu (notebook V25, allumé)
+
+```
+avant le match ── plan_de_jeu.plan_de_jeu(attaque, défense)    scouting sans hasard : blitz adverse -> jeu rapide ·
+   │                                                           homme / zone -> concepts · duels en homme -> CIBLE
+   │                                                           FAVORITE · receveurs / safeties -> passes profondes ·
+   │                                                           unités -> course / passe · menace adverse -> bracket
+   ▼
+chaque snap ── MemoireTendances.observer(action)               ce que chaque camp a vu de l'autre (cibles, blitz sur 3e
+   │                                                           essai, pression, doubles, jeu rapide contre le blitz)
+   ▼
+AdaptiveGameplanEngine.attaque / .defense                      o_quick · o_protect · o_away  /  d_bracket · d_rotate ·
+   │                                                           d_disguise (contre-ajustements) — chacun avec sa raison
+   ▼
+feuille d'appel (multiplicateur_concept) · appel défensif · plan_passe(...) -> moteur.decider_passe(..., plan=...)
+                                                               progression ajustée (flux « plan-de-jeu ») · bracket
+                                                               et protection dans l'état post-snap
+```
+
+| Fichier | Rôle |
+|---|---|
+| `plan_de_jeu.py` | `plan_de_jeu` (plan par adversaire, poids `PLAN`), `MemoireTendances`, `EtatAdaptation`, `AdaptiveGameplanEngine` (profils `PROFILS` : CTX vite, AEG lent et long, VEC ne protège pas, MNL têtu ; affichage limité : `MONTRER`), `multiplicateur_concept`, `plan_passe`, `appliquer_progression` (protection : RB retiré ; receveur doublé évité ; cible favorite lue en premier avec la probabilité `PLAN["favori"]`), `options_reaction` |
+| `reaction_defensive.py` | `react(..., bracket, p_bracket, p_bracket_bonus, bonus_poche, bonus_rusher5)` : le double va sur le receveur choisi (même tirage consommé, jamais en Cover 0) ; protection : poche plus longue, 5e rusher ramassé en partie |
+| `decision_qb.py` | `QBDecision.plan` : ce que le plan a changé (bracket, double réel, protection, receveur évité, cible favorite) |
+| `__init__.py` | `decider_passe(..., plan=None)` : sans plan, bloc C à l'identique |
+
+Interrupteur du notebook : `GAMEPLAN_ENABLED` (cellule 12.2 octies ; `GC_BLOC_D=0` : moteur V24). Le notebook construit
+les observations depuis le play_log, appelle le moteur une fois par snap et par camp, et transmet les événements au
+journal des ajustements de V21 (`play.adjust`, avec `reason`).
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -112,6 +142,16 @@ reconnaissance de la zone · réception (open / traffic / contested, contested c
 faible, défenseur attentif -> interceptions) · yards après la réception · chaîne complète déterministe · sans attributs
 = bloc B à l'identique · flux du bloc C séparé · stats.
 
+Bloc D (`test_bloc_d.py`) : **détection de tendance** (cibles sur la fenêtre, blitz sur 3e essai, doubles, courses
+ignorées) · **ajustement offensif** (blitz répétés -> quick game / screen / draw, surtout sur 3e essai ; protection après
+la pression sur blitz, VEC ne protège pas ; bascule hors du double ; identité CTX plus rapide qu'AEG ; expiration) ·
+**ajustement défensif** (receveur trop ciblé et productif -> bracket ; ciblé mais inefficace : rien ; le RB n'est pas
+brackété ; bracket -> plus de doubles sur ce receveur, en distribution ; jamais en Cover 0 ; pression déguisée) ·
+**contre-ajustement** (bracket -> l'attaque lit ailleurs -> le bracket tourne vers le TE -> l'évitement expire) · plan
+de jeu (blitz, homme / zone, cible favorite = meilleur mismatch, course / passe, fond du terrain, déterministe) ·
+progression (protection, screen, cible favorite une fois sur trois) · chaîne : sans plan = bloc C à l'identique,
+déterministe, le bracket détourne les lancers, flux du plan séparé.
+
 ## Calibration (garde-fou 3)
 
 ```bash
@@ -121,9 +161,10 @@ python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json              
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B                    # recalcule CALIBRATION_B
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc C                    # recalcule CALIBRATION_C
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off                       # V23 (blocs A + B)
+python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off                       # V24 (blocs A + B + C)
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 septies) et joue le test d'équilibre de 12.3
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 octies) et joue le test d'équilibre de 12.3
 (1 008 matchs, mêmes graines). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
 ## Colab

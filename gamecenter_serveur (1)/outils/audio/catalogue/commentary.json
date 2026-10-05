@@ -1238,6 +1238,153 @@
    "tier": "excited",
    "tags": [],
    "text": "Touchdown! This is how GameCenter sounds."
+  },
+  {
+   "id": "adj_gameplan_calm_01",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "text": "Here's the game plan."
+  },
+  {
+   "id": "adj_gameplan_calm_02",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "text": "They came in with a plan for this one."
+  },
+  {
+   "id": "adj_gameplan_calm_03",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "text": "You can see the game plan taking shape."
+  },
+  {
+   "id": "adj_o_quick_calm_01",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "text": "They've seen the blitz, so it's quick throws now."
+  },
+  {
+   "id": "adj_o_quick_calm_02",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "text": "The answer to the blitz: get the ball out fast."
+  },
+  {
+   "id": "adj_o_quick_calm_03",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Quick game to beat the pressure."
+  },
+  {
+   "id": "adj_o_protect_calm_01",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They keep a back in to protect."
+  },
+  {
+   "id": "adj_o_protect_calm_02",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Extra protection for the quarterback now."
+  },
+  {
+   "id": "adj_o_protect_calm_03",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "text": "More help in pass protection."
+  },
+  {
+   "id": "adj_o_away_calm_01",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "text": "He's doubled, so they look elsewhere."
+  },
+  {
+   "id": "adj_o_away_calm_02",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "text": "They work away from the double coverage."
+  },
+  {
+   "id": "adj_o_away_calm_03",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "text": "With the double coming, the ball goes somewhere else."
+  },
+  {
+   "id": "adj_d_bracket_calm_01",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "text": "He's been the go-to man, and now he's bracketed."
+  },
+  {
+   "id": "adj_d_bracket_calm_02",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "text": "Double coverage on the top target."
+  },
+  {
+   "id": "adj_d_bracket_calm_03",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense brackets their favorite receiver."
+  },
+  {
+   "id": "adj_d_rotate_calm_01",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense rotates the help over."
+  },
+  {
+   "id": "adj_d_rotate_calm_02",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "text": "Counter-move: the bracket slides to the new target."
+  },
+  {
+   "id": "adj_d_rotate_calm_03",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "text": "The double coverage follows the ball."
+  },
+  {
+   "id": "adj_d_disguise_calm_01",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "text": "The defense disguises the pressure, two deep."
+  },
+  {
+   "id": "adj_d_disguise_calm_02",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "text": "No more free blitzes: two safeties back."
+  },
+  {
+   "id": "adj_d_disguise_calm_03",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "text": "They show blitz… and drop into coverage."
   }
  ]
 }

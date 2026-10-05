@@ -20,38 +20,51 @@ Bloc C — intelligence des joueurs (receveurs et défenseurs) :
     intelligence_joueurs  6 attributs de receveur (route IQ, release, separation, zone / man recognition, catch in
                           traffic, contested catch) et 7 de défenseur (play recognition, zone IQ, man IQ, awareness,
                           reaction, discipline, pursuit) ; séparation post-snap, coverage bust, réception, yards après
+
+Bloc D — adaptation en match et plan de jeu :
+    plan_de_jeu         plan par adversaire (scouting : blitz, couvertures, mismatchs, fond, course / passe),
+                        mémoire de tendances, AdaptiveGameplanEngine (quick game contre le blitz, protection,
+                        bascule hors du double ; bracket, rotation du bracket, pression déguisée) ; plan d'une passe
 """
 from .aleatoire import flux
 from .progressions import progression
 from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
-from . import resolution, stats, intelligence_qb, intelligence_joueurs
+from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu
 from .intelligence_qb import attributs_qb
 from .intelligence_joueurs import attributs_joueur
+from .plan_de_jeu import plan_de_jeu as plan_de_jeu_adverse, AdaptiveGameplanEngine, MemoireTendances
 
-VERSION = "bloc-C-1"
+VERSION = "bloc-D-1"
 FLUX_DECISION = "decision-passe"
 FLUX_JOUEURS = "joueurs-passe"           # bloc C : son propre flux (garde-fou 2)
+FLUX_PLAN = "plan-de-jeu"                # bloc D : son propre flux (cible favorite lue en premier)
 
 _REACTION = DefensiveReactionEngine()
 _QB = QBDecisionEngine()
 
 
 def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, qb, niveau_pression,
-                  graine_match, numero_action):
+                  graine_match, numero_action, plan=None):
     """Toute la chaîne d'une passe, dans le flux dédié de cette action.
 
     qb avec "iq" (moteur.intelligence_qb.attributs_qb) -> décision du bloc B ; sans -> bloc A à l'identique.
     Receveurs avec "iq" (moteur.intelligence_joueurs.attributs_joueur, défenseurs aussi) -> bloc C : séparation selon
     l'intelligence des joueurs (flux à part : « joueurs-passe »), puis réception et yards après la réception.
-    Renvoie (lectures, etat_post_snap, decision).
+    plan (moteur.plan_de_jeu.plan_passe) -> bloc D : progression ajustée (protection, receveur doublé évité, cible
+    favorite ; flux à part « plan-de-jeu »), bracket et protection dans l'état post-snap ; None -> bloc C à l'identique.
+    Renvoie (lectures, etat_post_snap, decision) ; avec un plan, decision.plan note ce qui a joué.
     """
     rng = flux(FLUX_DECISION, graine_match, numero_action)
     bloc_c = any((r or {}).get("iq") for r in receveurs.values())
     lectures = progression(concept, formation, tuple(r for r in receveurs if receveurs[r]),
                            bloc="B" if (qb or {}).get("iq") else "A")
+    notes = {}
+    if plan:
+        lectures, notes = plan_de_jeu.appliquer_progression(lectures, plan, flux(FLUX_PLAN, graine_match, numero_action))
     etat = _REACTION.react(concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng,
-                           **({"bruit": intelligence_joueurs.BRUIT_C, "echelle": intelligence_joueurs.ECHELLE_C} if bloc_c else {}))
+                           **({"bruit": intelligence_joueurs.BRUIT_C, "echelle": intelligence_joueurs.ECHELLE_C} if bloc_c else {}),
+                           **plan_de_jeu.options_reaction(plan))
     qui = None
     if bloc_c:
         qui = intelligence_joueurs.ajuster_post_snap(etat, lectures, receveurs, defenseurs, concept,
@@ -59,6 +72,9 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
     decision = _QB.decide(etat, lectures, qb, rng)
     if bloc_c:
         _completer_bloc_c(decision, etat, receveurs, qui)
+    if plan:
+        decision.plan = dict(notes, **({"bracket": plan["bracket"], "bracketed": etat.double_sur == plan["bracket"]}
+                                       if plan.get("bracket") else {}))
     return lectures, etat, decision
 
 

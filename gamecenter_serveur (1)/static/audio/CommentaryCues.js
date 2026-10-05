@@ -48,7 +48,10 @@ function resolveCues(c,P,g){
   return out.slice(-2);
 }
 const ADJ={hurry:'ADJ_HURRY',clock:'ADJ_CLOCK',shelve:'ADJ_SHELVE',shelve_form:'ADJ_SHELVE_FORM',d_deep:'ADJ_D_DEEP',d_heat:'ADJ_D_HEAT',
-  d_run:'ADJ_D_RUN',d_press:'ADJ_D_PRESS',d_noblitz:'ADJ_D_NOBLITZ',d_prevent:'ADJ_D_PREVENT',d_attack:'ADJ_D_ATTACK'};
+  d_run:'ADJ_D_RUN',d_press:'ADJ_D_PRESS',d_noblitz:'ADJ_D_NOBLITZ',d_prevent:'ADJ_D_PREVENT',d_attack:'ADJ_D_ATTACK',
+  /* engine block D (12.2 octies): game plans, adjustments and counter-adjustments */
+  plan_o:'ADJ_GAMEPLAN',plan_d:'ADJ_GAMEPLAN',o_quick:'ADJ_O_QUICK',o_protect:'ADJ_O_PROTECT',o_away:'ADJ_O_AWAY',
+  d_bracket:'ADJ_D_BRACKET',d_rotate:'ADJ_D_ROTATE',d_disguise:'ADJ_D_DISGUISE'};
 function snapCues(c,P){
   const out=[], A=Array.isArray(P.adjust)?P.adjust:[];
   for(const a of A){ const k=ADJ[a&&a.kind]; if(k){ out.push({cue:k,tags:[],tier:'calm'}); break; } }

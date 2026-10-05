@@ -12,6 +12,8 @@ Bloc B : la décision porte en plus ses multiplicateurs (mod_int, mod_inc : anti
 de lecture) ; les décisions du bloc B ont leur propre normalisation (CALIBRATION_B).
 Bloc C : mod_int / mod_inc portent aussi la réception (receveur contre défenseur responsable : catch in traffic,
 contested catch) et yards_c les yards après la réception ; normalisation CALIBRATION_C.
+Bloc D : les passes jouées sous un plan de jeu (bracket, protection, progression ajustée — moteur.plan_de_jeu) ont leur
+propre normalisation, CALIBRATION_D (choisie par le notebook quand GAMEPLAN_ENABLED).
 """
 from .decision_qb import LANCER, THROWAWAY, SCRAMBLE, SACK
 from .reaction_defensive import LIBRE, SERRE, COUVERT, DOUBLE
@@ -30,6 +32,7 @@ SACK_SCRAMBLE = 0.12            # rattrapé en sortant de la poche
 CALIBRATION = {"int": 1.42, "sack": 1.10, "inc": 0.96, "yards": 0.45}
 CALIBRATION_B = {"int": 1.156, "sack": 1.237, "inc": 0.925, "yards": 0.531}   # calibrer_bloc_a.py --bloc B (V23)
 CALIBRATION_C = {"int": 1.166, "sack": 1.241, "inc": 0.921, "yards": 0.423}   # calibrer_bloc_a.py --bloc C (V24)
+CALIBRATION_D = {"int": 1.092, "sack": 1.376, "inc": 0.914, "yards": 0.361}   # calibrer_bloc_a.py --bloc D (V25)
 
 # yards : profondeur de la cible réelle par rapport à la cible primaire (le concept a déjà son effet moyen)
 PROFONDEUR = {"court": 0.0, "moyen": 3.0, "profond": 8.0}
