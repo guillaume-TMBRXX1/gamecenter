@@ -11,6 +11,12 @@ Les ALERTES (statistiques inhabituelles) sont signalées sans bloquer.
 import json, os, sys, glob, statistics
 from collections import Counter, defaultdict
 
+try:                                    # bloc E (V26) : notes effectives et contrôles de l'état des joueurs
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from moteur import developpement as _dev
+except Exception:                       # audit sans le dossier moteur/ : contrôles du bloc E réduits
+    _dev = None
+
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
 
@@ -167,11 +173,27 @@ def check_game(A, week, g_sched, feed):
     po = game.get("pregame_odds") or {}
     if not po.get("ml"):
         bad(None, "pas de cotes d'avant-match")
+    ratings = {}
+    for side in ("home", "away"):                       # bloc E (V26) : roster[].progression
+        for r in (game.get(side) or {}).get("roster") or []:
+            ratings[r["id"]] = r.get("ratings") or {}
+            pg = r.get("progression")
+            if pg is None:
+                continue
+            if any(not 40 <= v <= 99 for v in (r.get("ratings") or {}).values()):
+                bad(None, f"{r['id']} : note hors 40-99 {r['ratings']}")
+            if {k: pg["base"][k] + d for k, d in (pg.get("delta") or {}).items()} != (r.get("ratings") or {}):
+                bad(None, f"{r['id']} : notes ≠ base + écart ({r.get('ratings')} / {pg.get('base')} / {pg.get('delta')})")
+            if abs(pg.get("form", 0)) > 3.0 + 1e-9:
+                bad(None, f"{r['id']} : forme {pg.get('form')} hors ± 3")
+            if not pg.get("history"):
+                warn(None, f"{r['id']} : courbe de progression vide")
     return {"plays": len(plays), "pts": (fs or {}).get("home", 0) + (fs or {}).get("away", 0),
             "home": fs["home"] if fs else 0, "away": fs["away"] if fs else 0,
             "tie": bool(fs and fs["home"] == fs["away"]), "ot": bool(game.get("overtime")),
             "res": Counter(p["result"] for p in plays),
-            "td_len": [p["gain"] for p in plays if p["result"] == "touchdown" and p["gain"] is not None]}
+            "td_len": [p["gain"] for p in plays if p["result"] == "touchdown" and p["gain"] is not None],
+            "ratings": ratings}
 
 
 def check_week(A, folder):
@@ -188,6 +210,12 @@ def check_week(A, folder):
         if st:
             st["phase"] = g["phase"]; st["id"] = g["id"]; stats.append(st)
     # --- semaine ---
+    vues = {}                                           # bloc E : notes figées pendant toute la semaine
+    for st in stats:
+        for pid, r in st.pop("ratings", {}).items():
+            if vues.setdefault(pid, r) != r:
+                A.add(BLOQUANT, name, st["id"], None, f"{pid} : notes qui changent pendant la semaine ({vues[pid]} / {r})")
+    check_progression(A, name, w)
     reg = [g for g in sched if g["phase"] == "regular"]
     teams = list(w["teams"]) if isinstance(w["teams"], dict) else [t["abbr"] for t in w["teams"]]
     per = Counter()
@@ -223,6 +251,33 @@ def check_week(A, folder):
         if {final["home"], final["away"]} != winners:
             A.add(BLOQUANT, name, None, None, f"AI Bowl {final['home']}–{final['away']} ≠ vainqueurs des demi-finales {winners}")
     return stats
+
+
+def check_progression(A, name, w):
+    """Bloc E (V26) : état des joueurs pour la semaine suivante (players_next_week) et rapport (progression)."""
+    etat, rap = w.get("players_next_week"), w.get("progression")
+    if etat is None:
+        return
+    J = etat.get("joueurs") or {}
+    roster = {r["id"] for t in (w["teams"].values() if isinstance(w["teams"], dict) else w["teams"]) for r in t.get("roster") or []}
+    if roster and set(J) != roster:
+        A.add(BLOQUANT, name, None, None, f"players_next_week : {len(J)} joueurs pour {len(roster)} au roster")
+    if _dev is not None:
+        for pb in _dev.controler(etat):
+            A.add(BLOQUANT, name, None, None, f"players_next_week : {pb}")
+    if etat.get("semaines", 0) < 1:
+        A.add(BLOQUANT, name, None, None, "players_next_week : aucune semaine de progression comptée")
+    e_max = _dev.ECART_EQUIPE_MAX if _dev is not None else 3.0
+    f_max = _dev.FORCE_EQUIPE_MAX if _dev is not None else None
+    for t, us in ((rap or {}).get("team_units") or {}).items():
+        for u, d in us.items():
+            if abs(d) > e_max + 1e-6:
+                A.add(BLOQUANT, name, None, None, f"progression : {t} {u} à {d:+.2f} de sa base (± {e_max} au plus)")
+    for t, f in ((rap or {}).get("team_strength") or {}).items():
+        if f_max is not None and abs(f) > f_max + 0.005:
+            A.add(BLOQUANT, name, None, None, f"progression : force de {t} à {f:+.2f} de sa base (± {f_max} au plus)")
+    if rap and rap.get("league_drift_max", 0) > 0.5:
+        A.add(ALERTE, name, None, None, f"progression : dérive de la ligue {rap['league_drift']}")
 
 
 def stat_alerts(A, stats, label):

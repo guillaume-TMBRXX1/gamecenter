@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 05/10/2026, bloc D terminé)
+# Feuille de route — GridironSim (mise à jour le 05/10/2026, bloc E terminé)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; **prochain : bloc E** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; **prochain : fin de programme (validation complète)** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -540,14 +540,106 @@ contre-ajustements et les lancers dans un bracket (`gameplan_adjust`, `counters`
 
 **Reste hors dépôt** : fiche technique du notebook (V22 → V25 : cellules 12.2 quinquies, sexies, septies, octies, safety).
 
+## Bloc E — ✅ terminé le 05/10/2026 (notebook V26, allumé)
+
+**Décisions de Guillaume** (début du bloc, 05/10) : une saison = une semaine, **une « année » = 4 semaines** (l'âge
+augmente d'un an toutes les 4 semaines) ; les **vraies notes** évoluent (notes d'unité, OVR et cotes suivent) ;
+anti-inflation **« ligue + écart d'équipe borné »** ; **forme figée pour la semaine** (tout se met à jour entre deux
+semaines : les cotes calculées avant la semaine restent justes).
+
+**Progression des joueurs** — cellule **12.2 nonies**, module `moteur/developpement.py` (`PlayerDevelopmentEngine` du
+programme), interrupteur `PROGRESSION_ENABLED` (`GC_BLOC_E=0` : rosters de base chaque semaine, moteur V25) :
+- **Notes séparées** : base (roster 12.1), actuelle (développée), **forme** (± 3 points sur toutes les notes de la
+  semaine, tirée des performances de la semaine jouée — mesurées dans le groupe de poste — et du bilan de l'équipe),
+  **potentiel** (marge au-dessus de la base, plus grande chez les jeunes), rythme de **développement** (slow · normal
+  · fast · star), **âge** et **expérience** (déterministes : hash de l'id). Notes jouées = arrondi(actuelle + forme).
+- **Évolution par attribut** : physique (vitesse, accélération, puissance, force, mobilité, bras, jambe, esquive) —
+  pic à 29 ans (RB : 27) puis régression rapide ; technique (précision, routes, réception, blocs, pass rush,
+  couverture, plaquage) — pic à 31 ans, régression lente ; mental (decision_making) — progresse avec les années
+  jouées, pic à 34 ans. Jouer fait progresser (temps de jeu : RB2 selon ses courses).
+- **Expérience** -> bonus (relatif à la ligue, somme nulle, ± 4 au plus) sur les attributs d'intelligence des blocs B
+  et C : lecture, processing, anticipation du QB ; route IQ et reconnaissance des receveurs ; reconnaissance du jeu,
+  zone / man IQ, awareness et discipline des défenseurs.
+- **Anti-inflation** : (1) moyenne de chaque note par unité (RB1 et RB2 à part) ramenée sur sa valeur de départ ;
+  (2) plafonds (potentiel, 99) ; (3) **écart d'équipe borné** : **force** (moyenne des 4 notes d'unité) à **± 0,2**
+  point de sa base, par un **décalage commun** des notes de l'équipe (ses joueurs gardent leurs écarts entre eux : le
+  jeune monte, le vétéran baisse), et chaque **note d'unité** à **± 0,75** (réduction des écarts du côté concerné).
+- **Persistance** : `week.json -> players_next_week` (état complet) et `progression` (dérive de la ligue, écarts
+  d'unité, force, corrections, plus fortes hausses / baisses), repris par 15.1 ; semaine précédente sans état (avant
+  V26) : **amorce** depuis ses stats. Le serveur ne publie pas ces champs (pas de spoiler).
+- **Hasard** : flux `progression|<semaine>|<id>` (garde-fou 2). Au départ (aucune semaine jouée), notes = roster : le
+  moteur joue exactement comme V25 (contrôlé dans la cellule et au test d'équilibre : mêmes chiffres qu'en V25).
+- **GameFeed** (additif) : `roster[].progression` (`age`, `ovr`, `ovr_base`, `potential`, `form`, `dev`,
+  `experience`, `iq_bonus`, `base`, `delta`, `history`). **Site** (et cellule 427) : fiche joueur — âge et potentiel
+  sous la note, écart à la base sur chaque attribut (▲ / ▼), section **« Development »** et **courbe de la note par
+  semaine** (base en pointillés). Commentaire : rien de nouveau (la progression se passe entre deux semaines).
+- **Audit** (`audit_moteur.py`) : notes = base + écart, 40-99, forme ± 3, **notes figées pendant la semaine**,
+  `players_next_week` contrôlé, force ± 0,2 et unités ± 0,75 — bloquant ; dérive de la ligue > 0,5 — alerte.
+- **Tests** : 32 tests du bloc E (`moteur/tests/test_bloc_e.py`) — progression, régression, potentiel, forme,
+  évolution par attribut, expérience, déterminisme, anti-inflation (ligue, RB à part, force et unités dans un cas
+  extrême, sans effacer les écarts entre joueurs), persistance JSON, roster complété, courbe ; 128 tests en ≈ 25 s.
+
+**Rapport de calibration** (12.3, 1 008 matchs, mêmes graines, après N semaines de progression jouées —
+`rapport_calibration.py --semaines N --graine-trajectoire G` ; `outils/moteur/rapport_v26_bloc_e.json`) :
+
+| Mesure | V21 | V25 / V26 au départ | 8 sem. | 16 sem. | 24 sem. | 32 sem. | Tolérance |
+|---|---|---|---|---|---|---|---|
+| Complétion | 65,4 % | 65,4 % | 65,3 % | 65,2 % | 65,4 % | 65,9 % | ± 2 points |
+| Sacks / dropback | 8,1 % | 8,3 % | 8,2 % | 8,2 % | 8,2 % | 8,1 % | ± 1 point |
+| INT / tentative | 2,4 % | 2,4 % | 2,3 % | 2,2 % | 2,4 % | 2,4 % | ± 0,5 point |
+| Yards / tentative | 7,67 | 7,62 | 7,60 | 7,57 | 7,59 | 7,69 | ± 0,3 |
+| Yards / course | 5,64 | 5,70 | 5,75 | 5,74 | 5,80 | 5,71 | ± 0,2 |
+| Pertes de balle / match | 3,61 | 3,66 | 3,61 | 3,56 | 3,70 | 3,68 | ± 0,3 |
+| Points / match | 51,8 | 52,7 | 52,4 | 51,9 | 52,6 | 52,7 | ± 2 |
+| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 52,3 · 46,6 · 52,3 · 48,8 % | 55,6 · 43,6 · 51,7 · 49,2 % | 52,1 · 47,1 · 51,7 · 49,1 % | 53,3 · 41,0 · 55,6 · 50,2 % | 51,6 · 46,7 · 55,2 · 46,5 % | chacune 40-60 % |
+
+Toutes les autres mesures (drives, premiers downs, actions, part de dropbacks, yards nets) restent dans leurs
+tolérances ; temps par match × 1,2 à × 1,3 sur la référence (machine chargée). Une semaine de progression coûte
+≈ 1 s (mise à jour + garde-fou) ; la cellule 12.2 nonies ≈ 20 s (trois semaines d'essai).
+
+**Choix faits pendant le calibrage** (à relire) :
+- **La borne d'équipe proposée au départ (± 3 par unité) ne protégeait pas l'équilibre** : mesuré, VEC 72 % et MNL
+  24 % après 8 semaines ; ± 1 : MNL 34-36 % ; ± 1,5 : MNL 35 %. Le moteur est très sensible : ≈ 15 points de % de
+  victoires par point de force (et les notes individuelles jouent aussi : duels receveur / défenseur, QB). D'où une
+  borne de **force** (moyenne des 4 unités) à ± 0,2, plus une borne par unité à ± 0,75 (à ± 1 et force ± 0,25, MNL
+  tombait à 40,1 % sur une trajectoire : course − 1,0, passe − 0,9). Le principe choisi (écart d'équipe borné) est
+  gardé ; seule la valeur a changé.
+- **Décalage commun plutôt que réduction** pour la force : réduire tous les écarts d'une équipe (λ) effaçait, chez une
+  équipe âgée comme MNL, à la fois le déclin de ses vétérans et la progression de ses jeunes ; le décalage commun ne
+  retire que la dérive de l'équipe entière.
+- **RB1 et RB2 à part** dans la moyenne de la ligue : sur les 8 RB ensemble, les yards par course montaient (jusqu'à
+  + 0,20) quand les RB1, plus jeunes, progressaient aux dépens des RB2.
+- Forme : 0,35 × forme d'avant + 1,6 × performance (écarts-types dans le groupe de poste) + bruit 0,5, ± 3 ; bilan de
+  l'équipe ± 0,5. Croissance 4 points / an à 21 ans → 0,4 à 29 ; régression physique − 0,9 / an au pic, + 0,7 par an.
+- Âges de départ tirés du hash de l'id (22-31 ans, QB 24-33, K / P 24-35, remplaçants plus jeunes) : MNL a les
+  titulaires les plus âgés (27,2 ans de moyenne), VEC son WR1 (Nico Saint-Clair, 31 ans, rythme lent).
+
+**Semaine du 12/10** produite par `generer_semaine.py` (notebook complet, blocs A-E ; amorce depuis les stats de la
+semaine du 05/10) en 2 036 s — machine de cette session, chargée en partie par trois rapports de calibration en parallèle (V25 : 2 340 s seule ; V21 : 1 733 s -> × 1,17, budget × 2) ; `audit_moteur.py` : **0 anomalie bloquante, 0 alerte** (39 matchs, 5 348 actions ; notes figées pendant la semaine, notes = base + écart dans chaque GameFeed, `players_next_week` contrôlé). Semaine 3 ; 12.2 nonies, 12.3, 13.2 et 13.4 passés dans le notebook complet. Progression pour la semaine du 19/10 : dérive de la ligue 0,16, force CTX −0,15 · VEC +0,20 · AEG −0,17 · MNL +0,07 ; hausses Adrien Pellegrini (MNL CB, 26 ans) +3, Lazlo Hargrove (AEG CB, 24 ans) +2 ; baisses Bastien Kincaid (VEC WR, 22 ans) −4, Lazlo Coventry (VEC EDGE, 31 ans) −2. Site : fiche joueur rejouée dans Chromium (bureau et mobile 390 px) — section « Development », courbe W2 -> W3, écarts ▲ / ▼, aucune erreur JS, pas de défilement horizontal. Semaine non versée au
+dépôt : c'est le calcul du samedi qui la produit.
+
+**À surveiller (bloc E)** :
+- **VEC** : 41-47 % selon la trajectoire (départ 46,6 %) — son jeu de passe passe par un WR1 de 31 ans qui décline ;
+  la force moyenne ne voit pas cet effet « joueur clé ». Si VEC approche 40 %, baisser `FORCE_EQUIPE_MAX` (0,15) ou
+  pondérer la force par le jeu de l'équipe (part de passes, cible principale).
+- **Retraites et recrues** : avec une année = 4 semaines, les titulaires les plus âgés passent 35 ans en quelques mois
+  (fortes baisses individuelles : − 10 à − 16 d'OVR après 26 semaines pour les plus vieux). À décider avec l'étape 6
+  (plus de franchises) ; `developpement.completer` accueille déjà des joueurs nouveaux ou partis.
+- Le bonus d'expérience est relatif à la ligue (pas à l'équipe) : une équipe jeune gagne un peu d'intelligence ; effet
+  modeste (± 4 points d'attribut au plus, POIDS 0,45), à surveiller avec l'équilibre.
+- Tests du serveur hors dépôt (`tserver.py`…) : non relancés (le serveur n'a changé que pour son crochet de test).
+
+**Reste hors dépôt** : fiche technique du notebook (V22 → V26 : cellules 12.2 quinquies à nonies, safety).
+
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-18 du README du serveur.
-2. **Bloc E** — progression des joueurs (notes base / actuelle / forme / développement / potentiel, évolution par
-   attribut, expérience, âge), notebook V26 : décider d'abord l'échelle de temps, la persistance d'une semaine à
-   l'autre et le garde-fou anti-inflation ; mêmes garde-fous, rapport
-   `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`. Les attributs des blocs B et C
-   (dérivés des notes) sont la base naturelle de « l'évolution par attribut ».
-3. Générer le commentaire enregistré des 7 cues du bloc D (workflow « Commentaire audio », mode `generer`).
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-19 du README du serveur.
+2. **Fin de programme — validation complète** (phases 13 et 14) : tests unitaires et d'intégration de tous les modules,
+   simulation complète, statistiques, déterminisme, non-régression (score, drives, actions, premiers downs, passe,
+   course, pertes de balle, sacks, stats joueurs / équipes, Next Gen Stats), y compris sur plusieurs semaines
+   enchaînées (bloc E : `rapport_calibration.py --semaines N`). Puis **étape 6 : plus de franchises**.
+3. **À décider** (Guillaume) : retraites et recrues (bloc E : avec une année = 4 semaines, les plus âgés passent 35 ans
+   en quelques mois) — naturellement avec l'étape 6.
+4. Générer le commentaire enregistré des 7 cues du bloc D (workflow « Commentaire audio », mode `generer`).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
@@ -555,6 +647,9 @@ contre-ajustements et les lancers dans un bracket (`gameplan_adjust`, `counters`
 - Cotes en direct recalibrées pour V21 (13.4 : outsiders −0,3 %) ; à re-vérifier si l'adaptation change.
 
 ## Pièges connus
+- Bloc E : `reset_franchises()` remet les rosters ET l'état de progression à la base (12.3, 14.2 l'appellent) ; les
+  notes d'une vraie semaine viennent de `progression_reprendre(prev)` (15.1, exhibition). Les caches d'intelligence
+  des blocs B / C (`QB_IQ`, `PLAYER_IQ`) sont vidés à chaque changement de notes (`appliquer_progression`).
 - La page du site a un **espace de noms JavaScript unique** : vérifier qu'un nom est libre avant de l'ajouter
   (`AC` = contexte audio ; un second `let AC` avait cassé la page).
 - Une IA qui change de plan selon le score **fausse le modèle de cotes en direct** → refaire 13.4 après tout changement.

@@ -25,17 +25,22 @@ Bloc D — adaptation en match et plan de jeu :
     plan_de_jeu         plan par adversaire (scouting : blitz, couvertures, mismatchs, fond, course / passe),
                         mémoire de tendances, AdaptiveGameplanEngine (quick game contre le blitz, protection,
                         bascule hors du double ; bracket, rotation du bracket, pression déguisée) ; plan d'une passe
+
+Bloc E — progression des joueurs :
+    developpement       notes de base / actuelle / forme, potentiel, rythme de développement, âge (une année = 4
+                        semaines), expérience (bonus d'intelligence des blocs B et C) ; évolution par attribut ;
+                        anti-inflation (moyenne par unité, plafonds, écart d'équipe borné) ; état persistant (JSON)
 """
 from .aleatoire import flux
 from .progressions import progression
 from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
-from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu
+from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu, developpement
 from .intelligence_qb import attributs_qb
 from .intelligence_joueurs import attributs_joueur
 from .plan_de_jeu import plan_de_jeu as plan_de_jeu_adverse, AdaptiveGameplanEngine, MemoireTendances
 
-VERSION = "bloc-D-1"
+VERSION = "bloc-E-1"
 FLUX_DECISION = "decision-passe"
 FLUX_JOUEURS = "joueurs-passe"           # bloc C : son propre flux (garde-fou 2)
 FLUX_PLAN = "plan-de-jeu"                # bloc D : son propre flux (cible favorite lue en premier)

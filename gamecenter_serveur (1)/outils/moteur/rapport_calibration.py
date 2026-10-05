@@ -13,6 +13,9 @@ allumées, ajoute les stats des décisions (cible réelle, première lecture, pr
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-b off                   # décisions du bloc A
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off                   # blocs A + B (V23)
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off                   # blocs A + B + C (V24)
+    python3 outils/moteur/rapport_calibration.py --decisions on --bloc-e off                   # blocs A-D (V25)
+    python3 outils/moteur/rapport_calibration.py --decisions on --semaines 12                  # bloc E : rosters après
+                                                                                               # 12 semaines de progression
 
 Code de sortie 1 si une mesure sort de sa tolérance (TOLERANCES, à valider par Guillaume).
 """
@@ -22,7 +25,7 @@ import __future__
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVEUR = os.path.abspath(os.path.join(HERE, "..", ".."))
 NOTEBOOK = os.path.join(SERVEUR, "NFL_Sim_GameCenter.ipynb")
-JUSQUA = "12.2 octies"            # V25 : bloc D (V24 : « 12.2 septies », V23 : « 12.2 sexies », V22 : « 12.2 quinquies »)
+JUSQUA = "12.2 nonies"            # V26 : bloc E (V25 : « 12.2 octies », V24 : « 12.2 septies », V23 : « 12.2 sexies »)
 
 # tolérances proposées (bloc A, 04/10/2026) : écart absolu toléré par rapport à la référence V21
 TOLERANCES = {
@@ -42,12 +45,13 @@ TOLERANCES = {
 EQUILIBRE = (0.40, 0.60)          # % de victoires de chaque franchise (test 12.3, inchangé)
 
 
-def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc_c=True, bloc_d=True):
+def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc_c=True, bloc_d=True, bloc_e=True):
     """Exécute les cellules de code du notebook jusqu'à celle dont l'en-tête contient `jusqua` (incluse)."""
     os.environ["GC_DECISIONS"] = "1" if decisions else "0"
     os.environ["GC_BLOC_B"] = "1" if bloc_b else "0"
     os.environ["GC_BLOC_C"] = "1" if bloc_c else "0"
     os.environ["GC_BLOC_D"] = "1" if bloc_d else "0"
+    os.environ["GC_BLOC_E"] = "1" if bloc_e else "0"
     os.environ.setdefault("GC_MOTEUR_DIR", SERVEUR)
     nb = json.load(open(notebook, encoding="utf-8"))
     mod = types.ModuleType("__nb__")
@@ -190,13 +194,34 @@ def main():
     ap.add_argument("--bloc-b", choices=("off", "on"), default="on", help="intelligence du QB (bloc B, V23)")
     ap.add_argument("--bloc-c", choices=("off", "on"), default="on", help="intelligence des joueurs (bloc C, V24)")
     ap.add_argument("--bloc-d", choices=("off", "on"), default="on", help="adaptation en match et plan de jeu (bloc D, V25)")
+    ap.add_argument("--bloc-e", choices=("off", "on"), default="on", help="progression des joueurs (bloc E, V26)")
+    ap.add_argument("--semaines", type=int, default=0,
+                    help="bloc E : semaines de progression jouées (36 matchs chacune) avant le test d'équilibre")
+    ap.add_argument("--graine-trajectoire", type=int, default=990_000, help="bloc E : graines des semaines d'essai")
+    ap.add_argument("--force-equipe", type=float, help="bloc E : écart maximal de la force d'une franchise (essai)")
+    ap.add_argument("--ecart-equipe", type=float, help="bloc E : écart d'unité maximal d'une franchise (essai ; "
+                                                          "défaut : moteur.developpement.ECART_EQUIPE_MAX)")
     ap.add_argument("--reference", help="rapport JSON de référence (V21, décisions coupées)")
     ap.add_argument("--sortie", help="écrit le rapport JSON ici")
     a = ap.parse_args()
 
     ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on",
-                          bloc_c=a.bloc_c == "on", bloc_d=a.bloc_d == "on")
+                          bloc_c=a.bloc_c == "on", bloc_d=a.bloc_d == "on", bloc_e=a.bloc_e == "on")
     assert ns.get("DECISIONS_ENABLED", False) == (a.decisions == "on")
+    trajectoire = None
+    if a.semaines:
+        assert ns.get("PROGRESSION_ENABLED"), "--semaines demande le bloc E"
+        if a.ecart_equipe is not None:
+            ns["DEV"].ECART_EQUIPE_MAX = a.ecart_equipe
+        if a.force_equipe is not None:
+            ns["DEV"].FORCE_EQUIPE_MAX = a.force_equipe
+        t0 = time.time()
+        trajectoire = ns["progression_trajectoire"](a.semaines, seed_base=a.graine_trajectoire)
+        print(f"Bloc E : {a.semaines} semaines de progression ({time.time() - t0:.0f} s) — notes d'unité après :")
+        for ab, t in ns["AI_FRANCHISES"].items():
+            d = trajectoire[-1]["team_units"][ab]
+            print(f"  {ab} " + " · ".join(f"{u} {t.units[u]:.1f} ({d[u]:+.1f})" for u in d)
+                  + f" · force {trajectoire[-1]['team_strength'][ab]:+.2f}")
     games, temps = mesurer(ns, a.graines)
     rep = _stats(games, temps, ns)
     rep["decisions"] = a.decisions
@@ -204,6 +229,16 @@ def main():
     rep["bloc_c"] = bool(ns.get("PLAYER_IQ_ENABLED", False))
     rep["bloc_d"] = bool(ns.get("GAMEPLAN_ENABLED", False))
     rep["load_seconds"] = t_charge
+    rep["bloc_e"] = bool(ns.get("PROGRESSION_ENABLED", False))
+    if trajectoire:
+        rep["progression"] = {"semaines": a.semaines, "graine": a.graine_trajectoire,
+                              "ecart_equipe_max": ns["DEV"].ECART_EQUIPE_MAX,
+                              "force_equipe_max": ns["DEV"].FORCE_EQUIPE_MAX,
+                              "team_strength": trajectoire[-1].get("team_strength"),
+                              "league_drift_max": max(r["league_drift_max"] for r in trajectoire),
+                              "team_units": trajectoire[-1]["team_units"],
+                              "team_guard_weeks": sum(bool(r["team_guard"]) for r in trajectoire),
+                              "units": {ab: dict(t.units) for ab, t in ns["AI_FRANCHISES"].items()}}
     if a.decisions == "on":
         rep["decision_stats"] = {k: v for k, v in ns["decision_report"](games).items() if k not in ("par_joueur", "par_couvreur")}
     if "gameplan_report" in ns:
