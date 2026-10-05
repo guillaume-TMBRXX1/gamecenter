@@ -305,6 +305,43 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   ajustements par match et les passes jouées sous un plan (bracket, protection, cible évitée, cible favorite).
   `calibrer_bloc_a.py --bloc D` recalcule `CALIBRATION_D`.
 
+### 19. ENGINE INTELLIGENCE — bloc E : progression des joueurs (notebook V26, 05/10/2026, allumé)
+
+- **Décisions de Guillaume** (début du bloc) : une saison = une semaine, **une « année » = 4 semaines** (l'âge augmente
+  d'un an toutes les 4 semaines) ; les **vraies notes** évoluent (notes d'unité, OVR et cotes suivent) ; anti-inflation
+  « ligue + écart d'équipe borné » ; tout est **figé pendant la semaine** (forme comprise) : les cotes calculées avant
+  la semaine restent justes.
+- **Chaque joueur des franchises** (cellule 12.2 nonies, module `moteur/developpement.py`, voir `moteur/README.md`) :
+  notes de **base** (roster), **actuelles** (développées), **forme** (± 3 points sur toutes ses notes, tirée de ses
+  performances de la semaine jouée et du bilan de l'équipe), **potentiel**, rythme de **développement** (slow · normal ·
+  fast · star), **âge**, **expérience**. Évolution **par attribut** : physique (pic vers 27-29 ans, puis régression
+  rapide), technique (pic plus tard, régression lente), mental (decision_making : progresse avec l'expérience). Jouer
+  fait progresser ; l'expérience donne un bonus — relatif à la ligue — aux attributs d'intelligence des blocs B et C
+  (lecture du QB, route IQ, reconnaissance, zone / man IQ, discipline).
+- **Anti-inflation** : (1) moyenne de chaque note, par unité, ramenée sur sa valeur de départ ; (2) plafonds (potentiel,
+  99) ; (3) **écart d'équipe borné** — la **force** d'une franchise (moyenne de ses 4 notes d'unité) reste à ± 0,2 point
+  de sa base par un décalage commun de ses notes (ses joueurs gardent leurs écarts entre eux), chaque note d'unité à
+  ± 0,75. Bornes fixées après mesure : le moteur est très sensible (≈ 15 points de % de victoires par point de force ; à
+  ± 3 par unité, la valeur proposée au départ, VEC montait à 72 % et MNL tombait à 24 % après 8 semaines).
+- **Persistance** (comme `staffs_next_week`) : `week.json -> players_next_week` (état complet) et `progression`
+  (dérive de la ligue, écarts d'unité, force, corrections du garde-fou, plus fortes hausses / baisses) ; la semaine
+  suivante les reprend (15.1). Semaine précédente produite avant V26 : **amorce** depuis ses stats. Non publiés par
+  l'API (le serveur ne sert que les champs publics de `week.json`). Interrupteur `PROGRESSION_ENABLED` (allumé ;
+  `GC_BLOC_E=0` : rosters de base chaque semaine, moteur V25). Au départ, notes = roster : le moteur joue comme V25.
+- **GameFeed** (additif) : `roster[].progression` (`age`, `ovr`, `ovr_base`, `potential`, `form`, `dev`, `experience`,
+  `iq_bonus`, `base`, `delta`, `history` : un point par semaine). **Site** : fiche joueur — âge et potentiel sous la
+  note, écart à la base sur chaque attribut (▲ / ▼), section « Development » (âge · expérience, forme, note · base ·
+  potentiel, rythme, expérience sur les lectures) et **courbe de la note par semaine** (base en pointillés).
+- **Audit** (`audit_moteur.py`) : notes = base + écart, 40-99, forme ± 3, **notes figées pendant la semaine** (même
+  joueur, mêmes notes dans tous les matchs), `players_next_week` contrôlé (bornes, plafonds, joueurs du roster), force
+  ± 0,2 et unités ± 0,75 au plus — bloquant ; dérive de la ligue > 0,5 — alerte.
+- **Rapport de calibration** : charge jusqu'à 12.2 nonies ; `--semaines N` joue N semaines de progression (36 matchs
+  chacune) avant le test d'équilibre, `--graine-trajectoire` change de trajectoire ; `--bloc-e off` : moteur V25.
+  Exhibition : `simuler_exhibition.py` reprend aussi les notes des joueurs de la dernière semaine.
+- **À décider plus tard** : retraites et recrues (avec une année = 4 semaines, les titulaires les plus âgés passent
+  35 ans en quelques mois ; à traiter avec l'étape 6, plus de franchises — `developpement.completer` accueille déjà
+  des joueurs nouveaux ou partis).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

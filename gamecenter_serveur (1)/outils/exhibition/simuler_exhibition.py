@@ -3,7 +3,8 @@
 
 Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais SANS produire de semaine), puis
 une cellule ajoutée à la volée qui :
-  1. reprend les staffs ajustés de la dernière semaine (staffs_next_week), comme le ferait la semaine suivante ;
+  1. reprend les staffs ajustés de la dernière semaine (staffs_next_week) et, depuis V26, les notes des joueurs
+     (players_next_week — bloc E, progression ; amorce depuis ses stats sinon), comme le ferait la semaine suivante ;
   2. joue N matchs candidats entre deux franchises avec le moteur courant (V25 : plan de jeu et adaptation en match —
      bloc D, intelligence des receveurs et des défenseurs — bloc C, intelligence du QB et poche — bloc B, lectures du
      QB — bloc A, safety, coordinateurs adaptatifs en direct, playbooks V19 + « Roman 2014 » V20) — graines hors
@@ -34,6 +35,8 @@ _prev = _xj.load(open(_weeks[-1], encoding="utf-8")) if _weeks else None
 apply_staff_snapshots(INITIAL_STAFFS)
 if _prev and _prev.get("staffs_next_week"):
     apply_staff_snapshots(_prev["staffs_next_week"])
+if "progression_reprendre" in globals():                 # V26, bloc E : notes des joueurs de la semaine suivante
+    print("bloc E : notes depuis", progression_reprendre(_prev))
 _H, _A = _P["home"], _P["away"]
 _cands = []
 for _k in range(_P["candidates"]):

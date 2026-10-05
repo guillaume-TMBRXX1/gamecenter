@@ -640,6 +640,10 @@
   .pc-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink-3)}
   .pc-line b{font:600 11.5px var(--f-mono);color:var(--ink);text-align:right}
   .pc-note{margin:0;font-size:11.5px;color:var(--ink-3)}
+  .pc-dl{font:600 10px var(--f-mono);margin-left:5px;vertical-align:1px}
+  .pc-dl.up{color:var(--cyan)} .pc-dl.dn{color:var(--pink)}
+  .pc-dev{display:block;width:100%;height:64px}
+  .pc-dev text{font:600 9px var(--f-mono);fill:var(--ink-3)}
   .pc-season{padding-top:10px;border-top:1px solid var(--line)}
 
   /* ---------- Neumorphic depth (raised surfaces, pressed wells) ---------- */
@@ -3653,6 +3657,34 @@ const QB_IQ_NAME={awareness:'Awareness',processing:'Processing',coverage_reading
 const ATTR_NAME={throw_power:'Throw power',throw_accuracy:'Throw accuracy',mobility:'Mobility',decision_making:'Decision making',speed:'Speed',acceleration:'Acceleration',
   elusiveness:'Elusiveness',power:'Power',route_running:'Route running',catching:'Catching',run_block:'Run block',pass_block:'Pass block',strength:'Strength',
   pass_rush:'Pass rush',tackling:'Tackling',coverage:'Coverage',run_support:'Run support',leg_power:'Leg power',accuracy:'Accuracy'};
+const DVP_PACE={slow:'Slow',normal:'Normal',fast:'Fast',star:'Star'};
+/* V26 (block E): player development — age, form, potential, pace, experience, OVR curve week by week */
+function dvpCurveSVG(p,tone){
+  const h=(p.history||[]).filter(x=>typeof x.ovr==='number'); if(h.length<2) return '';
+  const W=240,H=64,L=22,R=8,T=8,B=16, vals=h.map(x=>x.ovr).concat([p.ovr_base]);
+  let lo=Math.min(...vals)-1, hi=Math.max(...vals)+1; if(hi-lo<6){ const m=(hi+lo)/2; lo=m-3; hi=m+3; }
+  const X=i=>L+(W-L-R)*i/(h.length-1), Y=v=>T+(H-T-B)*(hi-v)/(hi-lo), col=tone==='o'?'var(--cyan)':'var(--pink)';
+  const pts=h.map((x,i)=>`${X(i).toFixed(1)},${Y(x.ovr).toFixed(1)}`).join(' ');
+  return `<svg class="pc-dev" viewBox="0 0 ${W} ${H}" role="img" aria-label="Rating by week: ${h.map(x=>`week ${x.week} ${x.ovr}`).join(', ')}">
+    <line x1="${L}" x2="${W-R}" y1="${Y(p.ovr_base).toFixed(1)}" y2="${Y(p.ovr_base).toFixed(1)}" stroke="var(--ink-3)" stroke-dasharray="3 3" stroke-width="1"/>
+    <text x="0" y="${(Y(p.ovr_base)+3).toFixed(1)}">${p.ovr_base}</text>
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${h.map((x,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(x.ovr).toFixed(1)}" r="${i===h.length-1?3:2}" fill="${col}"/>`).join('')}
+    <text x="${L}" y="${H-3}">W${h[0].week}</text><text x="${W-R}" y="${H-3}" text-anchor="end">W${h[h.length-1].week} · ${h[h.length-1].ovr}</text></svg>`;
+}
+function dvpHTML(p,tone){
+  if(!p) return '';
+  const f=p.form||0, form=Math.abs(f)<0.5?'Steady':f>0?`Hot +${f.toFixed(1)}`:`Cold ${f.toFixed(1)}`;
+  const curve=dvpCurveSVG(p,tone);
+  return `<div class="pc-sec"><span class="label">Development</span>
+    <div class="pc-line"><span>Age · experience</span><b>${p.age} · ${p.experience} yrs</b></div>
+    <div class="pc-line"><span>Form this week</span><b>${form}</b></div>
+    <div class="pc-line"><span>Rating · base · potential</span><b>${p.ovr} · ${p.ovr_base} · ${p.potential}</b></div>
+    <div class="pc-line"><span>Development pace</span><b>${DVP_PACE[p.dev]||esc(p.dev||'—')}</b></div>
+    ${p.iq_bonus&&Math.abs(p.iq_bonus)>=0.5?`<div class="pc-line"><span>Experience on his reads</span><b>${p.iq_bonus>0?'+':''}${p.iq_bonus.toFixed(1)}</b></div>`:''}
+    ${curve||'<p class="pc-note">His rating curve grows week by week.</p>'}
+    <p class="pc-note">Ratings move between weeks: growth toward his potential, decline with age (a year is 4 weeks), form from last week's games. League averages stay stable.</p></div>`;
+}
 const OFF_SLOT=[['C',1],['LG',1],['RG',1],['LT',1],['RT',1],['TE',1],['QB',1],['RB',1],['WR',1],['WR',2],['WR',3]];
 const OFF_ROLE=['Center','Left guard','Right guard','Left tackle','Right tackle','Tight end','Quarterback','Running back','Wide receiver 1','Wide receiver 2','Slot receiver'];
 const DEF_SLOT={
@@ -3724,18 +3756,20 @@ function playerCardHTML(g,side,idx){
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${T.name} · ${unit}${role?' · '+esc(role):''}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
   if(!pl) return head+`<p class="pc-note">${g.plays?'The engine has no roster player in this spot.':'Player cards arrive with the engine feed for this board.'}</p>`;
-  const ov=ratingOverall(pl.ratings), R=pl.ratings||{};
-  const bars=Object.keys(R).map(k=>`<div class="pc-attr"><span>${ATTR_NAME[k]||esc(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(R[k],0,100)}%"></b></i><em>${R[k]}</em></div>`).join('');
+  const ov=ratingOverall(pl.ratings), R=pl.ratings||{}, PG=pl.progression||null, DL=(PG&&PG.delta)||{};
+  const dl=k=>DL[k]?`<i class="pc-dl ${DL[k]>0?'up':'dn'}" title="vs base ${PG.base[k]}">${DL[k]>0?'▲':'▼'}${Math.abs(DL[k])}</i>`:'';
+  const bars=Object.keys(R).map(k=>`<div class="pc-attr"><span>${ATTR_NAME[k]||esc(k)}${dl(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(R[k],0,100)}%"></b></i><em>${R[k]}</em></div>`).join('');
   const st=computeStats(g,rpDone(g)).pl[teamSide][pl.id], lines=st?statLine(st):[];
   return head+`
     <div class="pc-top">
       <div class="pc-pos"><span class="label">Position</span><b>${esc(pl.pos)}</b><small>${POS_NAME[pl.pos]||''}</small></div>
-      <div class="pc-ovr"><span class="label">Rating</span><b>${ov==null?'—':ov}</b><small>average of attributes</small></div>
+      <div class="pc-ovr"><span class="label">Rating</span><b>${ov==null?'—':ov}</b><small>${PG?`age ${PG.age} · potential ${PG.potential}`:'average of attributes'}</small></div>
       <div class="pc-arch"><span class="label">Profile</span><b>${pl.archetype?esc(pretty(pl.archetype)):'—'}</b><small>engine archetype</small></div>
     </div>
     <div class="pc-sec"><span class="label">Attributes</span>${bars||'<p class="pc-note">No attributes</p>'}</div>
     ${pl.qb_iq?`<div class="pc-sec"><span class="label">QB intelligence</span>${Object.keys(pl.qb_iq).map(k=>`<div class="pc-attr"><span>${QB_IQ_NAME[k]||esc(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(pl.qb_iq[k],0,100)}%"></b></i><em>${pl.qb_iq[k]}</em></div>`).join('')}<p class="pc-note">Weighs on his reads, timing and decisions under pressure (aggressiveness is a style, not a grade).</p></div>`:''}
     ${pl.player_iq?(()=>{ const rec='route_iq' in pl.player_iq; return `<div class="pc-sec"><span class="label">${rec?'Receiver intelligence':'Coverage intelligence'}</span>${Object.keys(pl.player_iq).map(k=>`<div class="pc-attr"><span>${PLAYER_IQ_NAME[k]||esc(k)}</span><i class="pc-bar ${tone}"><b style="width:${clamp(pl.player_iq[k],0,100)}%"></b></i><em>${pl.player_iq[k]}</em></div>`).join('')}<p class="pc-note">${rec?'Weighs on how he gets open, the catch in traffic or contested, and yards after the catch.':'Weighs on the separation he gives up, coverage busts, contested balls and yards after the catch.'}</p></div>`; })():''}
+    ${dvpHTML(PG,tone)}
     <div class="pc-sec"><span class="label">This game</span>${lines.length?lines.map(([a,b])=>`<div class="pc-line"><span>${a}</span><b>${b}</b></div>`).join(''):'<p class="pc-note">No stats yet in this game</p>'}</div>
     <div class="pc-sec pc-season"><span class="label">Season rank</span>${(()=>{ const sr=typeof seasonRankFor==='function'?seasonRankFor(pl):null;
       return sr?`<div class="pc-line"><span>${esc(sr.label)}</span><b>${esc(sr.text)}</b></div>`:'<p class="pc-note">Arrives with the season engine (standings across all games).</p>'; })()}</div>`;

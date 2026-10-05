@@ -116,6 +116,46 @@ Interrupteur du notebook : `GAMEPLAN_ENABLED` (cellule 12.2 octies ; `GC_BLOC_D=
 les observations depuis le play_log, appelle le moteur une fois par snap et par camp, et transmet les événements au
 journal des ajustements de V21 (`play.adjust`, avec `reason`).
 
+## Bloc E — progression des joueurs (notebook V26, allumé)
+
+Décisions de Guillaume (05/10/2026) : une saison = une semaine, **une « année » = 4 semaines** ; les **vraies notes**
+évoluent (notes d'unité, OVR et cotes suivent) ; **anti-inflation** = moyenne de chaque note par unité ramenée sur sa
+valeur de départ + plafonds (potentiel, 99) + **écart d'équipe borné** ; tout est **figé pendant la semaine** (forme
+comprise). Bornes d'équipe retenues après mesure : **force** (moyenne des 4 notes d'unité) à ± 0,2 point de sa base,
+chaque **note d'unité** à ± 0,75 — le moteur est très sensible (≈ 15 points de % de victoires par point de force : à ± 3
+par unité, la valeur proposée au départ, VEC montait à 72 % et MNL tombait à 24 % après 8 semaines).
+
+```
+semaine jouée ── stats des joueurs et des équipes, bilans
+   ▼
+developpement.semaine_suivante(etat, ...)     flux « progression|<semaine>|<id> » par joueur
+   │  participation (temps de jeu) · performance (écarts-types dans son groupe de poste) + bilan de l'équipe
+   │  forme      = 0,35 × forme d'avant + 1,6 × performance + bruit, bornée ± 3
+   │  par note   croissance (âge, rythme de développement, temps de jeu) vers le plafond (base + potentiel)
+   │             − régression (âge, catégorie : physique / technique / mental) + bruit
+   │  expérience années jouées ; apprentissage -> bonus d'intelligence (relatif à la ligue)
+   ▼
+anti-inflation   (1) moyenne par (unité, note) ramenée sur la base — RB1 et RB2 à part · (2) plafonds · (3) équipe : force
+   ▼             ± 0,2 par un DÉCALAGE commun des notes de l'équipe (ses joueurs gardent leurs écarts entre eux), puis
+                 chaque unité ± 0,75 par λ ≤ 1 sur les écarts du côté concerné ; en alternance, λ commun en dernier recours
+état de la semaine suivante (JSON : week.json -> players_next_week)
+   ▼
+notes effectives = arrondi(actuelle + forme), 40-99 -> rosters ; attributs des blocs B / C + bonus d'expérience
+```
+
+| Fichier | Rôle |
+|---|---|
+| `developpement.py` | `etat_initial` (âge, rythme, potentiel, expérience déterministes : hash de l'id ; actuelle = base, forme 0 -> moteur identique), `semaine_suivante`, `notes_effectives`, `ovr`, `appliquer_bonus_iq` (attributs mentaux des blocs B / C : lecture, anticipation, route IQ, reconnaissance, zone / man IQ, awareness, discipline), `marquer_semaine` (courbe par semaine), `resume_joueur` (GameFeed `roster[].progression`), `completer` (joueurs ajoutés / retirés du roster), `rapport_semaine`, `controler` |
+
+Catégories : **physique** (speed, acceleration, mobility, throw_power, power, strength, leg_power, elusiveness) — pic
+29 ans (RB : 27), puis − 0,9 point par an, + 0,7 par an de plus ; **technique** (précision, routes, réception, blocs,
+pass rush, couverture, plaquage, run support) — pic 31 ans, − 0,5 / an + 0,35 ; **mental** (decision_making) — + 1 point
+par année jouée (plafond base + potentiel + 3), pic 34 ans. Croissance : 4 points par an à 21 ans, 2,4 à 25, 0,4 à 29
+(× rythme : slow 0,6 · normal 1 · fast 1,4 · star 1,8 ; × 0,5 à 1 selon le temps de jeu), freinée près du plafond.
+
+Interrupteur du notebook : `PROGRESSION_ENABLED` (cellule 12.2 nonies ; `GC_BLOC_E=0` : rosters de base chaque
+semaine, moteur V25). Au départ (aucune semaine jouée), les notes sont celles du roster : le moteur joue comme V25.
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -152,6 +192,15 @@ de jeu (blitz, homme / zone, cible favorite = meilleur mismatch, course / passe,
 progression (protection, screen, cible favorite une fois sur trois) · chaîne : sans plan = bloc C à l'identique,
 déterministe, le bracket détourne les lancers, flux du plan séparé.
 
+Bloc E (`test_bloc_e.py`) : **progression** (jeune avec du potentiel, rythme de développement, jouer fait progresser) ·
+**régression** (vétéran : physique plus que technique, RB plus tôt, le mental progresse encore) · **potentiel**
+(plafond jamais dépassé, sans potentiel pas de croissance) · âge (+1 toutes les 4 semaines) · **forme** (bonne semaine
+-> bonne forme, en distribution ; bornée, centrée par unité ; sur toutes les notes ; bilan de l'équipe ; temps de jeu)
+· **anti-inflation** (moyenne de la ligue stable sur 30 semaines ; garde-fou d'équipe ≤ 3 dans un cas extrême, sans
+effacer la meilleure équipe ; bornes 40-99) · expérience (bonus d'intelligence relatif, somme nulle, seulement sur les
+attributs mentaux) · **déterminisme** (même entrée -> même état, flux propre, entrée non modifiée, aller-retour JSON,
+roster complété) · courbe (idempotente, bornée) · résumé de la fiche joueur.
+
 ## Calibration (garde-fou 3)
 
 ```bash
@@ -162,10 +211,13 @@ python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B     
 python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc C                    # recalcule CALIBRATION_C
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off                       # V23 (blocs A + B)
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off                       # V24 (blocs A + B + C)
+python3 outils/moteur/rapport_calibration.py --decisions on --bloc-e off                       # V25 (blocs A-D)
+python3 outils/moteur/rapport_calibration.py --decisions on --semaines 16                      # bloc E : après 16 semaines
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 octies) et joue le test d'équilibre de 12.3
-(1 008 matchs, mêmes graines). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 nonies) et joue le test d'équilibre de 12.3
+(1 008 matchs, mêmes graines). Bloc E : `--semaines N` joue d'abord N semaines d'essai (36 matchs chacune) en faisant
+progresser les joueurs, puis mesure avec les rosters atteints (`--graine-trajectoire` : autre trajectoire). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
 ## Colab
 

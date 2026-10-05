@@ -1,0 +1,488 @@
+{
+ "programme": "ENGINE INTELLIGENCE bloc E (notebook V26)",
+ "date": "2026-10-05",
+ "bornes": {
+  "FORCE_EQUIPE_MAX": 0.2,
+  "ECART_EQUIPE_MAX": 0.75,
+  "SEMAINES_PAR_AN": 4
+ },
+ "note": "test d'équilibre 12.3 (1 008 matchs) après N semaines de progression (36 matchs chacune) ; départ = V25",
+ "rapports": {
+  "depart": {
+   "games": 1008,
+   "completion_pct": 0.6544217080528435,
+   "sack_rate": 0.08269305032158408,
+   "int_rate": 0.0235982940276106,
+   "ypa": 7.623289197984931,
+   "net_ypa": 6.6083998029215545,
+   "ypc": 5.704254035299442,
+   "turnovers_pg": 3.6597222222222223,
+   "int_pg": 1.5753968253968254,
+   "fumbles_lost_pg": 2.0843253968253967,
+   "points_pg": 52.64980158730159,
+   "drives_pg": 21.044642857142858,
+   "first_downs_pg": 43.37896825396825,
+   "plays_pg": 127.11210317460318,
+   "pass_rate": 0.5861046289286579,
+   "attempts_pg": 66.75892857142857,
+   "sacks_pg": 6.160714285714286,
+   "scrambles_pg": 1.5813492063492063,
+   "safeties_pg": 0.10615079365079365,
+   "games_with_safety": 0.10119047619047619,
+   "win_pct": {
+    "CTX": 0.5228174603174603,
+    "VEC": 0.4662698412698413,
+    "AEG": 0.5228174603174603,
+    "MNL": 0.4880952380952381
+   },
+   "seconds_per_game": 0.1872437851815479,
+   "seconds_per_game_p95": 0.2271479849998741,
+   "decisions": "on",
+   "bloc_b": true,
+   "bloc_c": true,
+   "bloc_d": true,
+   "load_seconds": 105.84462380409241,
+   "bloc_e": true
+  },
+  "8_semaines": {
+   "games": 1008,
+   "completion_pct": 0.6525544169346997,
+   "sack_rate": 0.08202925781774259,
+   "int_rate": 0.023337571994913608,
+   "ypa": 7.598623681651582,
+   "net_ypa": 6.590095289222923,
+   "ypc": 5.7518726766667285,
+   "turnovers_pg": 3.6081349206349205,
+   "int_pg": 1.5476190476190477,
+   "fumbles_lost_pg": 2.060515873015873,
+   "points_pg": 52.419642857142854,
+   "drives_pg": 21.011904761904763,
+   "first_downs_pg": 43.45238095238095,
+   "plays_pg": 127.02678571428571,
+   "pass_rate": 0.5819138883031482,
+   "attempts_pg": 66.31448412698413,
+   "sacks_pg": 6.063492063492063,
+   "scrambles_pg": 1.5406746031746033,
+   "safeties_pg": 0.10317460317460317,
+   "games_with_safety": 0.10218253968253968,
+   "win_pct": {
+    "CTX": 0.5555555555555556,
+    "VEC": 0.435515873015873,
+    "AEG": 0.5168650793650794,
+    "MNL": 0.49206349206349204
+   },
+   "seconds_per_game": 0.17656119176189936,
+   "seconds_per_game_p95": 0.18920857299963245,
+   "decisions": "on",
+   "bloc_b": true,
+   "bloc_c": true,
+   "bloc_d": true,
+   "load_seconds": 109.73735809326172,
+   "bloc_e": true,
+   "progression": {
+    "semaines": 8,
+    "graine": 770000,
+    "ecart_equipe_max": 0.75,
+    "force_equipe_max": 0.2,
+    "team_strength": {
+     "CTX": -0.02,
+     "VEC": -0.02,
+     "AEG": 0.0,
+     "MNL": -0.08
+    },
+    "league_drift_max": 0.31,
+    "team_units": {
+     "CTX": {
+      "pass_off": -0.7,
+      "run_off": 0.5,
+      "pass_def": 0.0,
+      "run_def": 0.1,
+      "special_teams": -0.2
+     },
+     "VEC": {
+      "pass_off": 0.3,
+      "run_off": 0.5,
+      "pass_def": -0.5,
+      "run_def": -0.4,
+      "special_teams": 0.0
+     },
+     "AEG": {
+      "pass_off": 0.6,
+      "run_off": -0.1,
+      "pass_def": 0.0,
+      "run_def": -0.5,
+      "special_teams": 0.6
+     },
+     "MNL": {
+      "pass_off": -0.4,
+      "run_off": -0.7,
+      "pass_def": 0.7,
+      "run_def": 0.1,
+      "special_teams": -0.2
+     }
+    },
+    "team_guard_weeks": 8,
+    "units": {
+     "CTX": {
+      "pass_off": 82.9,
+      "run_off": 81.8,
+      "pass_def": 82.3,
+      "run_def": 82.3,
+      "special_teams": 83.0
+     },
+     "VEC": {
+      "pass_off": 87.6,
+      "run_off": 78.3,
+      "pass_def": 81.0,
+      "run_def": 77.8,
+      "special_teams": 81.0
+     },
+     "AEG": {
+      "pass_off": 80.3,
+      "run_off": 80.5,
+      "pass_def": 85.4,
+      "run_def": 85.6,
+      "special_teams": 87.8
+     },
+     "MNL": {
+      "pass_off": 80.3,
+      "run_off": 91.5,
+      "pass_def": 80.3,
+      "run_def": 86.3,
+      "special_teams": 79.0
+     }
+    }
+   }
+  },
+  "16_semaines": {
+   "games": 1008,
+   "completion_pct": 0.6516250616970042,
+   "sack_rate": 0.08160635670568023,
+   "int_rate": 0.022315619437921597,
+   "ypa": 7.569960663485843,
+   "net_ypa": 6.563701277783744,
+   "ypc": 5.741202263613537,
+   "turnovers_pg": 3.564484126984127,
+   "int_pg": 1.4801587301587302,
+   "fumbles_lost_pg": 2.0843253968253967,
+   "points_pg": 51.92063492063492,
+   "drives_pg": 21.055555555555557,
+   "first_downs_pg": 43.20337301587302,
+   "plays_pg": 126.85515873015873,
+   "pass_rate": 0.5826542582310159,
+   "attempts_pg": 66.32837301587301,
+   "sacks_pg": 6.031746031746032,
+   "scrambles_pg": 1.5525793650793651,
+   "safeties_pg": 0.12103174603174603,
+   "games_with_safety": 0.11706349206349206,
+   "win_pct": {
+    "CTX": 0.5208333333333334,
+    "VEC": 0.4712301587301587,
+    "AEG": 0.5168650793650794,
+    "MNL": 0.49107142857142855
+   },
+   "seconds_per_game": 0.1709220867251792,
+   "seconds_per_game_p95": 0.18368192100024316,
+   "decisions": "on",
+   "bloc_b": true,
+   "bloc_c": true,
+   "bloc_d": true,
+   "load_seconds": 110.61911678314209,
+   "bloc_e": true,
+   "progression": {
+    "semaines": 16,
+    "graine": 550000,
+    "ecart_equipe_max": 0.75,
+    "force_equipe_max": 0.2,
+    "team_strength": {
+     "CTX": -0.08,
+     "VEC": -0.05,
+     "AEG": 0.05,
+     "MNL": 0.1
+    },
+    "league_drift_max": 0.5,
+    "team_units": {
+     "CTX": {
+      "pass_off": -0.7,
+      "run_off": 0.7,
+      "pass_def": -0.4,
+      "run_def": 0.1,
+      "special_teams": -0.2
+     },
+     "VEC": {
+      "pass_off": -0.1,
+      "run_off": -0.4,
+      "pass_def": 0.1,
+      "run_def": 0.2,
+      "special_teams": -0.2
+     },
+     "AEG": {
+      "pass_off": 0.5,
+      "run_off": 0.5,
+      "pass_def": -0.1,
+      "run_def": -0.7,
+      "special_teams": 0.6
+     },
+     "MNL": {
+      "pass_off": 0.3,
+      "run_off": -0.6,
+      "pass_def": 0.7,
+      "run_def": 0.0,
+      "special_teams": -0.4
+     }
+    },
+    "team_guard_weeks": 16,
+    "units": {
+     "CTX": {
+      "pass_off": 82.9,
+      "run_off": 82.0,
+      "pass_def": 81.9,
+      "run_def": 82.3,
+      "special_teams": 83.0
+     },
+     "VEC": {
+      "pass_off": 87.2,
+      "run_off": 77.4,
+      "pass_def": 81.6,
+      "run_def": 78.4,
+      "special_teams": 80.8
+     },
+     "AEG": {
+      "pass_off": 80.2,
+      "run_off": 81.1,
+      "pass_def": 85.3,
+      "run_def": 85.4,
+      "special_teams": 87.8
+     },
+     "MNL": {
+      "pass_off": 81.0,
+      "run_off": 91.6,
+      "pass_def": 80.3,
+      "run_def": 86.2,
+      "special_teams": 78.8
+     }
+    }
+   }
+  },
+  "24_semaines": {
+   "games": 1008,
+   "completion_pct": 0.6541671634672708,
+   "sack_rate": 0.08156460489842923,
+   "int_rate": 0.02392094908787409,
+   "ypa": 7.593120305234291,
+   "net_ypa": 6.58870870549165,
+   "ypc": 5.7982357357357355,
+   "turnovers_pg": 3.699404761904762,
+   "int_pg": 1.5922619047619047,
+   "fumbles_lost_pg": 2.107142857142857,
+   "points_pg": 52.57738095238095,
+   "drives_pg": 21.008928571428573,
+   "first_downs_pg": 43.5406746031746,
+   "plays_pg": 126.94146825396825,
+   "pass_rate": 0.5836101190243598,
+   "attempts_pg": 66.56349206349206,
+   "sacks_pg": 6.04265873015873,
+   "scrambles_pg": 1.4781746031746033,
+   "safeties_pg": 0.10813492063492064,
+   "games_with_safety": 0.10416666666666667,
+   "win_pct": {
+    "CTX": 0.5327380952380952,
+    "VEC": 0.4097222222222222,
+    "AEG": 0.5555555555555556,
+    "MNL": 0.501984126984127
+   },
+   "seconds_per_game": 0.16555147354961264,
+   "seconds_per_game_p95": 0.18870575599976291,
+   "decisions": "on",
+   "bloc_b": true,
+   "bloc_c": true,
+   "bloc_d": true,
+   "load_seconds": 111.26854538917542,
+   "bloc_e": true,
+   "progression": {
+    "semaines": 24,
+    "graine": 330000,
+    "ecart_equipe_max": 0.75,
+    "force_equipe_max": 0.2,
+    "team_strength": {
+     "CTX": 0.03,
+     "VEC": -0.2,
+     "AEG": -0.12,
+     "MNL": 0.05
+    },
+    "league_drift_max": 0.44,
+    "team_units": {
+     "CTX": {
+      "pass_off": -0.6,
+      "run_off": 0.4,
+      "pass_def": -0.3,
+      "run_def": 0.6,
+      "special_teams": -0.2
+     },
+     "VEC": {
+      "pass_off": 0.6,
+      "run_off": -0.4,
+      "pass_def": -0.6,
+      "run_def": -0.4,
+      "special_teams": 0.5
+     },
+     "AEG": {
+      "pass_off": -0.4,
+      "run_off": 0.2,
+      "pass_def": 0.4,
+      "run_def": -0.7,
+      "special_teams": -0.4
+     },
+     "MNL": {
+      "pass_off": -0.1,
+      "run_off": -0.7,
+      "pass_def": 0.7,
+      "run_def": 0.3,
+      "special_teams": -0.2
+     }
+    },
+    "team_guard_weeks": 23,
+    "units": {
+     "CTX": {
+      "pass_off": 83.0,
+      "run_off": 81.7,
+      "pass_def": 82.0,
+      "run_def": 82.8,
+      "special_teams": 83.0
+     },
+     "VEC": {
+      "pass_off": 87.9,
+      "run_off": 77.4,
+      "pass_def": 80.9,
+      "run_def": 77.8,
+      "special_teams": 81.5
+     },
+     "AEG": {
+      "pass_off": 79.3,
+      "run_off": 80.8,
+      "pass_def": 85.8,
+      "run_def": 85.4,
+      "special_teams": 86.8
+     },
+     "MNL": {
+      "pass_off": 80.6,
+      "run_off": 91.5,
+      "pass_def": 80.3,
+      "run_def": 86.5,
+      "special_teams": 79.0
+     }
+    }
+   }
+  },
+  "32_semaines": {
+   "games": 1008,
+   "completion_pct": 0.6589606533036377,
+   "sack_rate": 0.08063503932276715,
+   "int_rate": 0.023815887156644396,
+   "ypa": 7.694090571640683,
+   "net_ypa": 6.687500834523921,
+   "ypc": 5.708830188679245,
+   "turnovers_pg": 3.675595238095238,
+   "int_pg": 1.5912698412698412,
+   "fumbles_lost_pg": 2.0843253968253967,
+   "points_pg": 52.68452380952381,
+   "drives_pg": 21.025793650793652,
+   "first_downs_pg": 43.538690476190474,
+   "plays_pg": 126.87797619047619,
+   "pass_rate": 0.5855910800434738,
+   "attempts_pg": 66.81547619047619,
+   "sacks_pg": 5.991071428571429,
+   "scrambles_pg": 1.492063492063492,
+   "safeties_pg": 0.10218253968253968,
+   "games_with_safety": 0.09722222222222222,
+   "win_pct": {
+    "CTX": 0.5158730158730159,
+    "VEC": 0.46726190476190477,
+    "AEG": 0.5515873015873016,
+    "MNL": 0.4652777777777778
+   },
+   "seconds_per_game": 0.15767288250989378,
+   "seconds_per_game_p95": 0.16497451900067972,
+   "decisions": "on",
+   "bloc_b": true,
+   "bloc_c": true,
+   "bloc_d": true,
+   "load_seconds": 100.89704823493958,
+   "bloc_e": true,
+   "progression": {
+    "semaines": 32,
+    "graine": 990000,
+    "ecart_equipe_max": 0.75,
+    "force_equipe_max": 0.2,
+    "team_strength": {
+     "CTX": -0.15,
+     "VEC": -0.1,
+     "AEG": 0.0,
+     "MNL": 0.0
+    },
+    "league_drift_max": 0.41,
+    "team_units": {
+     "CTX": {
+      "pass_off": -0.2,
+      "run_off": 0.7,
+      "pass_def": -0.7,
+      "run_def": -0.4,
+      "special_teams": 0.3
+     },
+     "VEC": {
+      "pass_off": 0.6,
+      "run_off": -0.2,
+      "pass_def": -0.5,
+      "run_def": -0.3,
+      "special_teams": 0.5
+     },
+     "AEG": {
+      "pass_off": -0.7,
+      "run_off": -0.1,
+      "pass_def": 0.7,
+      "run_def": 0.1,
+      "special_teams": 0.6
+     },
+     "MNL": {
+      "pass_off": -0.2,
+      "run_off": -0.7,
+      "pass_def": 0.6,
+      "run_def": 0.3,
+      "special_teams": -0.7
+     }
+    },
+    "team_guard_weeks": 31,
+    "units": {
+     "CTX": {
+      "pass_off": 83.4,
+      "run_off": 82.0,
+      "pass_def": 81.6,
+      "run_def": 81.8,
+      "special_teams": 83.5
+     },
+     "VEC": {
+      "pass_off": 87.9,
+      "run_off": 77.6,
+      "pass_def": 81.0,
+      "run_def": 77.9,
+      "special_teams": 81.5
+     },
+     "AEG": {
+      "pass_off": 79.0,
+      "run_off": 80.5,
+      "pass_def": 86.1,
+      "run_def": 86.2,
+      "special_teams": 87.8
+     },
+     "MNL": {
+      "pass_off": 80.5,
+      "run_off": 91.5,
+      "pass_def": 80.2,
+      "run_def": 86.5,
+      "special_teams": 78.5
+     }
+    }
+   }
+  }
+ }
+}
