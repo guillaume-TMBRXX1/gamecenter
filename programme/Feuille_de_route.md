@@ -641,6 +641,24 @@ dépôt : c'est le calcul du samedi qui la produit.
    en quelques mois) — naturellement avec l'étape 6.
 4. Générer le commentaire enregistré des 7 cues du bloc D (workflow « Commentaire audio », mode `generer`).
 
+## Référence : base d'extension du playbook (V0.1, reçue le 05/10/2026)
+`programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md` — base de connaissances football (personnel, formations,
+alignements, motion, concepts de course / passe, routes, option / RPO, blocage, protection, fronts, run fits,
+couvertures, pression, équipes spéciales, situations, archétypes, relations entre concepts, compatibilité).
+**Statut : référence / réserve, pas une donnée active.** Rien n'est branché au moteur ni attribué aux franchises ;
+le playbook V0.1, les formations (offense `SHOTGUN / SINGLEBACK / I_FORM / PISTOL / EMPTY`, défense `4-3 / 3-4 /
+NICKEL / DIME / GOAL_LINE` — conformes aux enums du notebook) et les lectures du QB (`moteur/progressions.py`,
+`decision_qb.py`) restent tels quels. On y puise au cas par cas, surtout à l'étape 6 (nouvelles franchises).
+Correspondance avec l'existant (pour piocher sans doublon, règle « normalisation » §36 du document) :
+- Déjà présents (`moteur/progressions.py`) : SLANT (QUICK_SLANT), STICK, CURL (≈ CURL_FLAT), DAGGER, SAIL, MESH,
+  FOUR_VERTICALS (FOUR_VERTS), BOOT (≈ PA_BOOT), CHAMP, POP, PLAY_ACTION, SCREEN ; routes GO, SEAM, DIG, POST, OUT,
+  SLANT, DRAG, CURL, CORNER, FLAT, IN, CROSS (≈ SHALLOW_CROSS / DEEP_CROSS), FLAG (≈ CORNER).
+- En réserve : la plupart des concepts de course nommés (IZ / OZ / DUO / POWER / COUNTER…), SMASH, LEVELS, FLOOD, Y_CROSS,
+  MILLS, DRIVE, SPOT_SNAG, option / RPO, protections nommées, fronts et techniques, couvertures match, familles de
+  pression (sim pressure, creeper, green dog…), personnel 10 / 11 / 12 / 21 / 22, motion / shift.
+- Toute reprise suit les garde-fous du programme ENGINE INTELLIGENCE (interrupteur, flux aléatoire dédié, rapport de
+  calibration, cotes en direct, audit de semaine).
+
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
   l'équipe qui court le plus ; à suivre sur les semaines réelles.
