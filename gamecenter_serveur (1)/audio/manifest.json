@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "fb1db4a56f",
+ "version": "7d18d3c6fe",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -2469,6 +2469,237 @@
    "text": "Touchdown! This is how GameCenter sounds.",
    "dur": 2.64,
    "bytes": 16077
+  },
+  {
+   "id": "c:adj_gameplan_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_gameplan_calm_01.d4040165.mp3",
+   "text": "Here's the game plan.",
+   "dur": 1.13,
+   "bytes": 7005
+  },
+  {
+   "id": "c:adj_gameplan_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_gameplan_calm_02.c915fb72.mp3",
+   "text": "They came in with a plan for this one.",
+   "dur": 1.92,
+   "bytes": 11757
+  },
+  {
+   "id": "c:adj_gameplan_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_GAMEPLAN",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_gameplan_calm_03.e2f38bb5.mp3",
+   "text": "You can see the game plan taking shape.",
+   "dur": 2.4,
+   "bytes": 14637
+  },
+  {
+   "id": "c:adj_o_quick_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_quick_calm_01.162f88d1.mp3",
+   "text": "They've seen the blitz, so it's quick throws now.",
+   "dur": 2.83,
+   "bytes": 17229
+  },
+  {
+   "id": "c:adj_o_quick_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_quick_calm_02.f4d6e2ad.mp3",
+   "text": "The answer to the blitz: get the ball out fast.",
+   "dur": 2.95,
+   "bytes": 17949
+  },
+  {
+   "id": "c:adj_o_quick_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_O_QUICK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_quick_calm_03.7d2ca608.mp3",
+   "text": "Quick game to beat the pressure.",
+   "dur": 1.73,
+   "bytes": 10605
+  },
+  {
+   "id": "c:adj_o_protect_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_protect_calm_01.3be0d9c4.mp3",
+   "text": "They keep a back in to protect.",
+   "dur": 1.61,
+   "bytes": 9885
+  },
+  {
+   "id": "c:adj_o_protect_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_protect_calm_02.362e5903.mp3",
+   "text": "Extra protection for the quarterback now.",
+   "dur": 2.16,
+   "bytes": 13197
+  },
+  {
+   "id": "c:adj_o_protect_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_O_PROTECT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_protect_calm_03.cec50a73.mp3",
+   "text": "More help in pass protection.",
+   "dur": 1.7,
+   "bytes": 10461
+  },
+  {
+   "id": "c:adj_o_away_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_away_calm_01.ffc6b7d6.mp3",
+   "text": "He's doubled, so they look elsewhere.",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:adj_o_away_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_away_calm_02.9e781807.mp3",
+   "text": "They work away from the double coverage.",
+   "dur": 2.04,
+   "bytes": 12477
+  },
+  {
+   "id": "c:adj_o_away_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_O_AWAY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_o_away_calm_03.0b7e508a.mp3",
+   "text": "With the double coming, the ball goes somewhere else.",
+   "dur": 3.12,
+   "bytes": 18957
+  },
+  {
+   "id": "c:adj_d_bracket_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_bracket_calm_01.32e4df4c.mp3",
+   "text": "He's been the go-to man, and now he's bracketed.",
+   "dur": 3.29,
+   "bytes": 19965
+  },
+  {
+   "id": "c:adj_d_bracket_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_bracket_calm_02.e7fea1b4.mp3",
+   "text": "Double coverage on the top target.",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:adj_d_bracket_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_BRACKET",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_bracket_calm_03.a54bf3e8.mp3",
+   "text": "The defense brackets their favorite receiver.",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:adj_d_rotate_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_rotate_calm_01.aded0ccc.mp3",
+   "text": "The defense rotates the help over.",
+   "dur": 2.26,
+   "bytes": 13773
+  },
+  {
+   "id": "c:adj_d_rotate_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_rotate_calm_02.6c0a5224.mp3",
+   "text": "Counter-move: the bracket slides to the new target.",
+   "dur": 3.19,
+   "bytes": 19389
+  },
+  {
+   "id": "c:adj_d_rotate_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_ROTATE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_rotate_calm_03.d77af0c0.mp3",
+   "text": "The double coverage follows the ball.",
+   "dur": 2.14,
+   "bytes": 13053
+  },
+  {
+   "id": "c:adj_d_disguise_calm_01",
+   "cat": "commentary",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_disguise_calm_01.4f56fbc1.mp3",
+   "text": "The defense disguises the pressure, two deep.",
+   "dur": 2.66,
+   "bytes": 16221
+  },
+  {
+   "id": "c:adj_d_disguise_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_disguise_calm_02.e615c324.mp3",
+   "text": "No more free blitzes: two safeties back.",
+   "dur": 2.59,
+   "bytes": 15789
+  },
+  {
+   "id": "c:adj_d_disguise_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_DISGUISE",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_disguise_calm_03.201c2d88.mp3",
+   "text": "They show blitz… and drop into coverage.",
+   "dur": 2.38,
+   "bytes": 14493
   }
  ]
 }
