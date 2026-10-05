@@ -331,7 +331,7 @@ def _lancer(taches, jobs, dossier):
             nom, args, env_extra = attente.pop(0)
             out = os.path.join(dossier, f"{nom}.json")
             log = open(os.path.join(dossier, f"{nom}.log"), "w")
-            env = dict(os.environ, PYTHONHASHSEED="0", **env_extra)
+            env = {**os.environ, "PYTHONHASHSEED": "0", **env_extra}
             p = subprocess.Popen([sys.executable, os.path.abspath(__file__), "--travailleur", *args, "--sortie-travailleur", out],
                                  stdout=log, stderr=subprocess.STDOUT, env=env, cwd=SERVEUR)
             actifs[nom] = (p, out, log, time.time())
