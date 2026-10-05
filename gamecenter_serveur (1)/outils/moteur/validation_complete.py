@@ -51,8 +51,15 @@ ETAGES = {
     "ABCDE": dict(flags=(True, True, True, True, True), titre="blocs A-E (V26), au départ",
                   historique=("rapport_v26_bloc_e.json", "depart")),
 }
-GRAINE_TRAJECTOIRE_V26 = 990_000         # trajectoire des rapports du bloc E
-GRAINE_TRAJECTOIRE_NEUVE = 770_000       # trajectoire jamais mesurée
+GRAINE_TRAJECTOIRE_V26 = 990_000         # graine par défaut de rapport_calibration (--graine-trajectoire)
+GRAINE_TRAJECTOIRE_NEUVE = 660_000       # trajectoire jamais mesurée (le rapport V26 a utilisé 770 000, 550 000,
+                                         # 330 000 et 990 000 pour 8, 16, 24 et 32 semaines)
+
+
+def trajectoires_v26():
+    """{nom du rapport: (semaines, graine)} des rapports publiés du bloc E (non-régression)."""
+    doc = json.load(open(os.path.join(HERE, "rapport_v26_bloc_e.json"), encoding="utf-8"))["rapports"]
+    return {k: (r["progression"]["semaines"], r["progression"]["graine"]) for k, r in doc.items() if r.get("progression")}
 # mesures comparées à l'identique avec un rapport publié (pas les temps : ils dépendent de la machine)
 MESURES_EXACTES = ("games", "completion_pct", "sack_rate", "int_rate", "ypa", "net_ypa", "ypc", "turnovers_pg",
                    "int_pg", "fumbles_lost_pg", "points_pg", "drives_pg", "first_downs_pg", "plays_pg", "pass_rate",
@@ -408,8 +415,9 @@ def main():
     taches.append(("ABCDE_hash", ["ABCDE", "--graines", str(min(a.graines, 8)), "--sans-controles"],
                    {"PYTHONHASHSEED": "12345"}))
     if "ABCDE" in etages and complet:
-        taches.append(("E8_v26", ["ABCDE", "--graines", str(a.graines), "--n-semaines", "8", "--sans-controles",
-                                  "--graine-trajectoire", str(GRAINE_TRAJECTOIRE_V26)], {}))
+        for cle, (n, g) in trajectoires_v26().items():
+            taches.append((f"v26_{cle}", ["ABCDE", "--graines", str(a.graines), "--n-semaines", str(n), "--sans-controles",
+                                         "--graine-trajectoire", str(g)], {}))
     for k, n in enumerate(semaines):
         taches.append((f"E{n}", ["ABCDE", "--graines", str(a.graines), "--n-semaines", str(n),
                                  "--graine-trajectoire", str(GRAINE_TRAJECTOIRE_NEUVE)] + (["--traj-det"] if k == 0 else []), {}))
@@ -496,15 +504,19 @@ def main():
               + ("(toutes les mesures à l'identique)" if not diff else f"différences : {diff}"))
         if diff:
             bloquants.append(f"non-régression {nom} : {diff}")
-    r = R.get("E8_v26")
-    if r and "erreur" not in r:
-        doc = json.load(open(os.path.join(HERE, "rapport_v26_bloc_e.json"), encoding="utf-8"))["rapports"]["8_semaines"]
+    docs = json.load(open(os.path.join(HERE, "rapport_v26_bloc_e.json"), encoding="utf-8"))["rapports"]
+    for cle, (n, g) in (trajectoires_v26().items() if complet else ()):
+        r = R.get(f"v26_{cle}")
+        if not r or "erreur" in r:
+            continue
+        doc = docs[cle]
         diff = {k: (doc.get(k), r["mesures"].get(k)) for k in MESURES_EXACTES if k in doc and not _egal(doc.get(k), r["mesures"].get(k))}
-        nonreg["E8_v26"] = {"rapport": "rapport_v26_bloc_e.json [8_semaines]", "identique": not diff, "differences": diff}
-        print(f"   {'✅' if not diff else '❌'} 8 semaines de progression = rapport V26 [8_semaines] "
+        nonreg[f"v26_{cle}"] = {"rapport": f"rapport_v26_bloc_e.json [{cle}]", "graine": g, "identique": not diff,
+                                "differences": diff}
+        print(f"   {'✅' if not diff else '❌'} {n} semaines de progression (trajectoire {g}) = rapport V26 [{cle}] "
               + ("(à l'identique)" if not diff else f"différences : {diff}"))
         if diff:
-            bloquants.append(f"non-régression 8 semaines : {diff}")
+            bloquants.append(f"non-régression {cle} : {diff}")
     if R.get("ABCD") and R.get("ABCDE") and "erreur" not in R["ABCD"] and "erreur" not in R["ABCDE"]:
         same = R["ABCD"]["signatures"] == R["ABCDE"]["signatures"]
         nonreg["E_depart_egal_V25"] = same
