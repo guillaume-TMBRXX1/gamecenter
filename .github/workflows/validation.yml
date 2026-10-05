@@ -1,0 +1,42 @@
+# Validation complète du moteur ENGINE INTELLIGENCE (fin de programme, feuille de route étape 5) — à la demande.
+# Tests unitaires, intégration (GameFeed + audit de chaque action + stats joueurs = stats d'équipe), déterminisme,
+# non-régression (rapports de calibration publiés), calibration contre V21, semaines de progression enchaînées.
+# « rapide » (8 graines, 2 et 4 semaines) vérifie l'outil en ≈ 15 min ; « complet » (1 008 matchs par étage) ≈ 1 h 30
+# sur une machine GitHub à 2 cœurs. Ne touche ni aux semaines ni au site.
+name: Validation complète
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "rapide (≈ 15 min) ou complet (≈ 1 h 30)"
+        type: choice
+        options: [rapide, complet]
+        default: rapide
+
+permissions:
+  contents: read
+
+jobs:
+  valider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Valider le moteur
+        run: |
+          python outils/moteur/validation_complete.py --jobs 2 --sortie rapport_validation.json \
+            ${{ inputs.mode == 'rapide' && '--rapide' || '' }}
+      - name: Garder le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-validation
+          path: "gamecenter_serveur (1)/rapport_validation.json"
+          if-no-files-found: ignore
