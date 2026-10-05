@@ -213,6 +213,8 @@ class QBDecisionEngine:
                 return QBDecision(LANCER, primaire, l["role"], lectures.index(l) + 1, n, e.statut, True, False, t_fin)
         dm, mob = _note(qb, "decision_making"), _note(qb, "mobility")
         p_scr = max(0.0, (mob - FIN["scramble_seuil"]) * FIN["scramble_mob"])
+        if getattr(etat, "scramble", 1.0) != 1.0:
+            p_scr *= etat.scramble
         p_away = max(0.05, FIN["throwaway"] + (dm - 70) * FIN["throwaway_dm"])
         p_force = max(0.04, FIN["forcee"] + (dm - 70) * FIN["forcee_dm"])
         r = rng.random()
@@ -242,7 +244,10 @@ class QBDecisionEngine:
             n += 1
             e = etat.receveurs[l["role"]]
             presse = t > hate
-            percu = percevoir(e.statut, p_erreur_lecture(qb, etat.famille, presse), rng)
+            p_err = p_erreur_lecture(qb, etat.famille, presse)
+            if getattr(etat, "deguisement", 0.0):       # extension : coquille déguisée (+) / motion, shift (−)
+                p_err = _borne(p_err * (1 + etat.deguisement), B["erreur"]["min"], B["erreur"]["max"])
+            percu = percevoir(e.statut, p_err, rng)
             vues.append((l, e, percu))
             if rng.random() < p_lancer_b(qb, percu, l["niveau"], i == 0):
                 return self._lancer_b(qb, primaire, l, e, percu, i + 1, n, presse, round(t, 2), ttp)
@@ -259,6 +264,8 @@ class QBDecisionEngine:
         dm, mob = _iq(qb, "decision_making"), float(((qb or {}).get("ratings") or {}).get("mobility", 70))
         aw, pa, aggr = _iq(qb, "awareness"), _iq(qb, "pocket_awareness"), _iq(qb, "aggressiveness")
         p_scr = max(0.0, (mob - FIN["scramble_seuil"]) * FIN["scramble_mob"] + (pa - REF) * F["scramble_pa"])
+        if getattr(etat, "scramble", 1.0) != 1.0:        # extension : contain (−), blitz intérieur (+)
+            p_scr *= etat.scramble
         p_away = max(0.05, FIN["throwaway"] + (dm - 70) * FIN["throwaway_dm"] + (aw - REF) * F["away_aw"]
                      + (pa - REF) * F["away_pa"])
         p_force = max(0.04, FIN["forcee"] + (dm - 70) * FIN["forcee_dm"] + (aggr - 50) * F["force_aggr"])

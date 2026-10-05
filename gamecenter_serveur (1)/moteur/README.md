@@ -156,6 +156,48 @@ par année jouée (plafond base + potentiel + 3), pic 34 ans. Croissance : 4 poi
 Interrupteur du notebook : `PROGRESSION_ENABLED` (cellule 12.2 nonies ; `GC_BLOC_E=0` : rosters de base chaque
 semaine, moteur V25). Au départ (aucune semaine jouée), les notes sont celles du roster : le moteur joue comme V25.
 
+## Extension du playbook V0.1 (notebook 12.2 decies, allumée)
+
+Source : `programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md`. `playbook_expansion.py` est le **catalogue** de
+ce que la base apporte et que le moteur n'avait pas ; **rien de ce qui existait n'est recréé** : chaque nom de la base
+déjà porté par le moteur (même sous un autre nom : SMASH = CHAMP, MILLS = DEEP_POST, GUN_SPLIT = PONY, COVER_1 = MAN…)
+est dans `ALIAS`, ce qui manque de définition est dans `RESERVE` (SALEM, SPILL_PROTECTION, personnel 10 avec les
+rosters actuels, équipes spéciales).
+
+```
+appel du coordinateur (V20 + parts des nouveaux concepts dans leur ancre)        play · intention course / passe
+   ▼
+appel défensif (inchangé : MAN / ZONE / COVER_x / BLITZ / BOX_STACK)
+   ▼  crochet du snap (12.2 decies), chaque système dans son flux « xp-… »
+choisir_paquet · choisir_front · choisir_rush · tirer_mouvement      la défense : coquille réelle, présentation, front
+choisir_motion · choisir_shift · enchainement                        l'attaque : information avant le snap, suite
+lecture_rpo                                                          RPO : donner (course) ou lancer (passe décidée)
+   ▼
+passe  -> moteur.decider_passe(..., appel=appel_passe(...))          coquille / rushers / présentation (déguisement),
+                                                                     receveur laissé par un blitzeur, protection
+                                                                     (rôles retirés, chip), motion, enchaînement
+course -> lecture_option (porteur) · effet_course (yards)            front, motion, shift, mouvement (moyenne nulle)
+```
+
+| Élément | Contenu |
+|---|---|
+| Formations (22) | gun tight, y-off, wing, stack, quads, trips open / tight, flex ; singleback bunch, wing, tight, deuce, wing pair, nasty ; pistol strong, wing, full house ; I-form slot, wing ; strong I, weak I ; wildcat — chacune avec son `personnel` (10 / 11 / 12 / 21 / 22), ses modificateurs (`mods`) et son alignement (site) ; `SHIFT_DEPUIS` (structure de départ d'un shift) |
+| Compatibilité | `compatibilite(personnel, roster)` -> PRIMARY / SUPPORTED / UNNATURAL / INVALID (avec la raison structurelle) : un filtre, pas une fréquence |
+| Concepts | 23 de course (dont 6 options et 6 RPO) et 18 de passe ; `ancre`, `porteur` (OffensivePlayType), `modif` (yards), `classe`, `plan` (familles du bloc D) ; `PROGRESSIONS` et `DESSIN_PASSE` ; 9 routes (`ROUTES`) |
+| Plays (144) | `PLAYS` : nouveaux concepts dans les formations compatibles, et concepts existants dans les nouvelles formations |
+| Identités | `PARTS` (part du budget restant de l'ancre, ≤ 0,6 par ancre), `FORMATIONS_STYLE`, `EXCLUS_CONCEPTS` / `EXCLUS_FORMATIONS` (MNL : courses toujours à ses RB ; VEC : pas d'option ni de wildcat) |
+| Feuille d'appel | `SITUATIONS` (short, long, red_zone, goal_line, backed_up, first_down) ; `RELATIONS` / `enchainement` (préparation -> suite : appel un peu plus probable ; si la défense l'a vue deux fois, petite réponse défensive) |
+| Motions, protections | `MOTIONS` (jet, orbit, across, return, trade : déguisement retiré, séparation contre l'homme, yards de course) ; `PROTECTIONS` (5 / 6 / 7, slides, man, chip, scat) et `PROTECTION_VS` |
+| Défense | `PAQUETS` (33 : couvertures, pression présentée sans être jouée, vraie pression, variantes contre la course) et `PAQUETS_STYLE` ; `COQUILLES` (16 nouvelles coquilles : avantage des routes, double) ; `RUSH` ; `FRONTS` (11) et `MOUVEMENTS` |
+| Lectures | `lecture_rpo` (la boîte : chargée -> lancer), `lecture_option` (le bord qui ferme -> le QB garde) ; le QB se trompe parfois (`p_erreur_lecture`, decision_making) |
+| `brancher()` | inscrit routes, progressions, coquilles et familles du bloc D dans les autres modules (idempotent ; sans lui, les modules sont ceux du bloc E) |
+
+Autres modules : `reaction_defensive.react(..., appel=None)` (coquille / rushers du paquet, `_effet_appel`, poche ;
+`PostSnapState.paquet / presente / deguisement / scramble`), `decision_qb` (erreurs de lecture × (1 + déguisement),
+sorties de poche × `scramble`), `decider_passe(..., appel=None)` (`ajuster_lectures` : protection). Sans appel : bloc E
+à l'identique (mêmes tirages, mêmes valeurs — test). Interrupteur du notebook : `EXPANSION_ENABLED` (cellule 12.2 decies ;
+`GC_EXPANSION=0` : moteur V26).
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -201,6 +243,14 @@ effacer la meilleure équipe ; bornes 40-99) · expérience (bonus d'intelligenc
 attributs mentaux) · **déterminisme** (même entrée -> même état, flux propre, entrée non modifiée, aller-retour JSON,
 roster complété) · courbe (idempotente, bornée) · résumé de la fiche joueur.
 
+Extension du playbook (`test_expansion.py`) : pas de doublon avec l'existant (formations, concepts, paquets, fronts,
+routes, plays) · catalogue cohérent (plays, progressions, dessins, porteurs, parts ≤ 0,6 par ancre, identités) ·
+chaque route dessinée existe sur le site · compatibilité de personnel (INVALID avec raison) · `brancher()` idempotent
+et réversible · sans appel = bloc E · déterminisme · pression réelle contre présentée · présentation qui trompe le QB ·
+motion qui révèle l'homme · protection max · blitz qui laisse un receveur · nouvelles coquilles · lectures RPO / option
+(en distribution, le QB se trompe) · paquets (parts), banjo contre les groupes, fronts de situation, rush jamais sur
+un blitz, mouvement de moyenne nulle · effets de course, motion, shift, enchaînement.
+
 ## Calibration (garde-fou 3)
 
 ```bash
@@ -213,9 +263,10 @@ python3 outils/moteur/rapport_calibration.py --decisions on --bloc-c off        
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off                       # V24 (blocs A + B + C)
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-e off                       # V25 (blocs A-D)
 python3 outils/moteur/rapport_calibration.py --decisions on --semaines 16                      # bloc E : après 16 semaines
+python3 outils/moteur/rapport_calibration.py --decisions on --expansion off                    # V26 (sans l'extension)
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 nonies) et joue le test d'équilibre de 12.3
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 decies) et joue le test d'équilibre de 12.3
 (1 008 matchs, mêmes graines). Bloc E : `--semaines N` joue d'abord N semaines d'essai (36 matchs chacune) en faisant
 progresser les joueurs, puis mesure avec les rosters atteints (`--graine-trajectoire` : autre trajectoire). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 
