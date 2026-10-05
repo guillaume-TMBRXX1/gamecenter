@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 04/10/2026, bloc C terminé)
+# Feuille de route — GridironSim (mise à jour le 05/10/2026, bloc D terminé)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,7 +21,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; **prochain : bloc D** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; **prochain : bloc E** | notebook (+ modules Python) + site + serveur |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -422,14 +422,100 @@ et 11 ajustements en direct (7 types). `simuler_exhibition.py` note ces duels da
 **Reste hors dépôt** : fiche technique du notebook (V22 / V22.1 / V23 / V24 : cellules 12.2 quinquies, sexies,
 septies, safety).
 
+## Bloc D — ✅ terminé le 05/10/2026 (notebook V25, allumé)
+
+**Adaptation en match et plan de jeu** — cellule **12.2 octies**, module `moteur/plan_de_jeu.py` (+ `decider_passe`,
+`reaction_defensive`, `resolution`), interrupteur `GAMEPLAN_ENABLED` (`GC_BLOC_D=0` : moteur V24) :
+- **Plan de jeu par adversaire** (avant le match, sans hasard) : fréquence de blitz du coordinateur adverse -> part du
+  jeu rapide (quick game, screens, draws) ; couvertures préférées (part d'homme) -> concepts contre l'homme (mesh,
+  croisements, slants) ou contre la zone (curl, stick, dagger, sail, champ) ; duels en homme (Cover 1) -> **cible
+  favorite** (meilleur mismatch, lue en premier une fois sur trois quand elle dépasse le 2e duel de 3 points ; flux à
+  part « plan-de-jeu ») ; receveurs extérieurs contre safeties -> part des passes profondes ; écart des notes d'unité
+  -> probabilité de passer ± 0,05 au plus ; en défense, la **menace** de l'attaque adverse (meilleur receveur) est
+  brackétée un peu plus souvent (+ 8 points). Résumé lisible : « quick game vs the blitz, beat man coverage, take shots
+  deep, target Zane Montague » / « bracket Nico Saint-Clair ».
+- **Mémoire de tendances** (`MemoireTendances`, fenêtre de 8 à 10 dropbacks selon l'équipe) : ce que chaque camp a vu
+  de l'autre — cibles du QB (réussite, yards), blitz sur 3e essai et sur les dropbacks, sacks / lancers pressés sur
+  blitz, doubles par receveur, jeu rapide réussi contre le blitz.
+- **AdaptiveGameplanEngine** (déterministe ; chaque ajustement dure `tenue` snaps et dit sa **raison**) :
+  attaque **o_quick** (blitz répétés -> quick pass / screen / draw, surtout sur 3e essai ; passes profondes moins
+  appelées) · **o_protect** (3 sacks / lancers pressés sur blitz -> un RB reste protéger : poche + 0,20 s, 5e rusher
+  ramassé en partie, une route de moins) · **o_away** (un receveur doublé 3-4 fois -> la progression l'évite, bascule
+  vers WR2 / TE / RB) ; défense **d_bracket** (receveur ≥ 40-50 % des cibles récentes et productif -> double sur lui) ·
+  **d_rotate** (contre-ajustement : l'attaque a basculé -> le bracket suit la nouvelle cible) · **d_disguise**
+  (contre-ajustement : le jeu rapide a puni le blitz -> moins de blitz sur 3e essai, Cover 2 / 4). Profils : CTX vite
+  (2 blitz sur 3e essai suffisent, bracket 50 %), AEG lent et long (tenue 14 snaps), VEC garde son style (ne protège
+  pas, tourne peu, déguise peu), MNL têtu (seuils les plus hauts). Affichage : une fois par équipe et par type (rotation :
+  deux).
+- **Effets sur la passe** (`moteur.decider_passe(..., plan=...)`) : bracket (le double va sur le receveur choisi, même
+  tirage consommé qu'au bloc A ; jamais en Cover 0), protection, progression réordonnée. Sans plan : bloc C à
+  l'identique (testé). Branchements du notebook : feuille d'appel (`pb_play_weight`), probabilité de passer, appel
+  défensif (pression déguisée), passe décidée (12.2 quinquies).
+- **GameFeed** (additif) : `play.adjust[].reason`, kinds `plan_o` / `plan_d` / `o_quick` / `o_protect` / `o_away` /
+  `d_bracket` / `d_rotate` / `d_disguise`, `game.gameplan`, `play.decision.plan`. **Site** : raison dans le
+  play-by-play ; onglet **« Game plan »** du Match centre (plan des deux équipes + ajustements faits jusqu'à l'action
+  affichée, sans spoiler) ; « · into the bracket », « · game-plan read » ; commentaire écrit des 8 nouveaux types ;
+  carte d'exhibition. Corrigé au passage : « holds it too long… sacked » ne s'affichait plus depuis le bloc C (test
+  `bloc==='B'`). Commentaire enregistré : 7 cues ajoutées au catalogue (`ADJ_GAMEPLAN`, `ADJ_O_QUICK`, `ADJ_O_PROTECT`,
+  `ADJ_O_AWAY`, `ADJ_D_BRACKET`, `ADJ_D_ROTATE`, `ADJ_D_DISGUISE`, 3 prises chacune) — **à générer** (workflow
+  « Commentaire audio »). `audit_moteur.py` : ajustement mal formé (bloquant), ajustement du bloc D sans raison (alerte),
+  `game.gameplan` mal formé (bloquant).
+- **Tests** : 32 tests du bloc D (`moteur/tests/test_bloc_d.py`) — détection de tendance, ajustement offensif,
+  ajustement défensif (dont le bracket en distribution), **contre-ajustement** (bracket -> l'attaque lit ailleurs -> le
+  bracket tourne vers le TE -> l'évitement expire), plan de jeu, progression, chaîne (sans plan = bloc C, déterminisme,
+  le bracket détourne les lancers, flux séparé) ; 97 tests en ≈ 11 s.
+
+**Rapport de calibration** (12.3, 1 008 matchs, mêmes graines ; `outils/moteur/rapport_v25_bloc_d.json`) :
+
+| Mesure | V21 | V24 (bloc C) | V25 (bloc D) | Tolérance |
+|---|---|---|---|---|
+| Complétion | 65,4 % | 65,1 % | 65,4 % | ± 2 points |
+| Sacks / dropback | 8,1 % | 8,0 % | 8,3 % | ± 1 point |
+| INT / tentative | 2,4 % | 2,5 % | 2,4 % | ± 0,5 point |
+| Yards / tentative | 7,67 | 7,62 | 7,62 | ± 0,3 |
+| Yards nets / dropback | 6,62 | 6,62 | 6,61 | ± 0,3 |
+| Yards / course | 5,64 | 5,67 | 5,70 | ± 0,2 |
+| Pertes de balle / match | 3,61 | 3,72 | 3,66 | ± 0,3 |
+| Points / match | 51,8 | 52,1 | 52,7 | ± 2 |
+| Drives / match | 21,0 | 21,1 | 21,0 | ± 1 |
+| Premiers downs / match | 42,7 | 43,4 | 43,4 | ± 2 |
+| Actions / match | 126,5 | 127,4 | 127,1 | ± 5 |
+| Part de dropbacks | 59,0 % | 59,0 % | 58,6 % | ± 2 points |
+| Victoires CTX · VEC · AEG · MNL | 48,5 · 48,8 · 47,0 · 55,7 % | 52,4 · 49,6 · 54,0 · 44,0 % | **52,3 · 46,6 · 52,3 · 48,8 %** | chacune 40-60 % |
+| Temps par match | 128-140 ms | 165 ms* | 149 ms* (× 1,06 sur la référence) | ≤ × 2 |
+
+\* machine de cette session, chargée par d'autres calculs.
+
+Bloc D (V25) : par match, ≈ 1,9 bracket, 1,5 rotation du bracket, 1,6 bascule hors du double, 0,6 quick game contre le
+blitz, 0,4 protection, 0,14 pression déguisée (+ les 2 plans de jeu de chaque équipe, dits à leur première action) ; les
+ajustements V21 ne changent pas (≈ 11 par match). **Cibles : WR1 40,1 % -> 33,8 %, WR2 25,0 -> 28,1 %, TE 15,1 -> 16,7 %,
+WR3 5,4 -> 6,1 %** — l'attaque bascule quand son WR1 est brackété ; 32 % des dropbacks voient un double réel, et le QB
+ne lance dans le bracket que 1,5 % du temps. Par équipe : CTX tourne son bracket 462 fois sur 504 matchs, VEC 47 ;
+VEC ne protège jamais et subit le plus de pressions déguisées adverses (105). MNL remonte de 44,0 % à 48,8 %.
+
+**Choix faits pendant le calibrage** (à relire) :
+- Mesuré composant par composant (1 008 matchs chacun) : la **protection** (+ 0,35 s au départ) ajoutait ≈ 0,7 point
+  par match et faisait tomber VEC (l'équipe qui blitze le plus, et qui par identité ne protège pas) à 42,6 % ; les
+  **brackets** ajoutent ≈ 0,9 point (le safety qui aide laisse de la place aux autres receveurs, règle du bloc A) ;
+  les concepts du plan et le déplacement course / passe ne changent presque rien aux points. Retenu : protection
+  + 0,20 s / 5e rusher 0,10, seuil de pression 3 pour CTX et AEG (réglage B parmi trois essayés : VEC 46,0 · 46,5 · 43,8 %).
+- Normalisation propre au bloc D : `CALIBRATION_D` (int 1,092 · sack 1,376 · inc 0,914 · yards 0,361), partie de
+  `CALIBRATION_C` (`calibrer_bloc_a.py --bloc D`).
+- Bascule hors du double : 3 doubles (CTX, AEG) ou 4 (VEC, MNL) dans la fenêtre ; à 2, elle se déclenchait presque à
+  chaque match (les doubles naturels du bloc A sur le WR1 en Cover 2 / 4 sont fréquents).
+- Le bracket du plan (menace adverse, + 8 points) est présent sur toutes les passes ; le site ne dit « into the bracket »
+  que si le double a vraiment eu lieu sur la cible.
+- Aucun ajustement ne dépend du score (seulement de ce qui a été vu) : les cotes en direct ne devraient pas bouger —
+  vérifié par 13.2 / 13.4 (ci-dessous).
+
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-17 du README du serveur.
-2. **Bloc D** — adaptation en match et plan de jeu (prolonge V21 : mémoire de tendances, blitz répétés -> quick
-   pass / screen / draw / protection, WR1 trop ciblé -> bracket / double, l'attaque bascule vers WR2 / TE / RB,
-   contre-ajustements ; plan de jeu par adversaire), notebook V25 : mêmes garde-fous, rapport
-   `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`. Le bloc C fournit déjà le
-   défenseur responsable de chaque cible et ses duels : base naturelle pour « qui couvre WR1 » et le bracket.
-   Attention : une IA qui change de plan selon le score fausse les cotes en direct (refaire 13.4).
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-18 du README du serveur.
+2. **Bloc E** — progression des joueurs (notes base / actuelle / forme / développement / potentiel, évolution par
+   attribut, expérience, âge), notebook V26 : décider d'abord l'échelle de temps, la persistance d'une semaine à
+   l'autre et le garde-fou anti-inflation ; mêmes garde-fous, rapport
+   `outils/moteur/rapport_calibration.py --reference outils/moteur/reference_v21.json`. Les attributs des blocs B et C
+   (dérivés des notes) sont la base naturelle de « l'évolution par attribut ».
+3. Générer le commentaire enregistré des 7 cues du bloc D (workflow « Commentaire audio », mode `generer`).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

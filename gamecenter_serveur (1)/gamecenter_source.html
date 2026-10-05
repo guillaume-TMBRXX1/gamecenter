@@ -578,6 +578,12 @@
   .pst caption{text-align:left;font:600 10.5px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);padding:0 0 6px}
   .pst td{color:var(--ink-2)}
   .pst .pos{display:inline-block;min-width:34px;margin-right:8px;font:700 italic 10.5px var(--f-display);letter-spacing:.06em;color:var(--ink-3)}
+  .pst.gp td{text-align:left;white-space:normal;font-family:var(--f-ui)}
+  .gp-cap{margin:14px 0 6px;font:600 10.5px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+  .gp-l{margin:0;padding:0;list-style:none;font:500 12.5px var(--f-ui);color:var(--ink-2)}
+  .gp-l li{padding:7px 0;border-top:1px solid var(--line);line-height:1.4}
+  .gp-t{display:inline-block;min-width:74px;margin-right:6px;font:500 11.5px var(--f-mono);color:var(--ink-3)}
+  .gp-r{color:var(--ink-3)}
   .dst td{color:var(--ink-2)}
   .dst th:nth-child(-n+3),.dst td:nth-child(-n+3){text-align:left}
   .dst td.res{color:var(--ink-2);font-family:var(--f-ui);font-weight:600}
@@ -2811,10 +2817,15 @@ function rpReadNote(P){ const d=P.decision; if(!d||d.action!=='LANCER'||!P.call|
   else if(caught&&d.reception==='contested') s+=' · contested catch';
   else if(caught&&d.reception==='traffic') s+=' · caught in traffic';
   else if(P.result==='incomplete'&&(d.reception==='contested'||d.reception==='traffic')&&cv) s+=` · ${cv} in coverage`;
+  /* block D: a throw into the bracket the defense set, the game plan's target read first */
+  const pl=d.plan||{}, tr=d.target&&d.target.role;
+  if(pl.bracketed&&tr&&tr===pl.bracket) s+=' · into the bracket';
+  else if(pl.focus&&tr===pl.focus&&num(d.read,1)===1) s+=' · game-plan read';
   return s; }
 function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P),kind:rpKind(P)}; }
-/* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each */
-function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||''),kind:'adj'})); }
+/* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
+   engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
+function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
 function rpChip(P){
   const r=P.result, gn=Math.round(num(P.gain,0)), sg=(gn>=0?'+':MINUS)+Math.abs(gn);
   switch(r){
@@ -3547,12 +3558,30 @@ function computeStatsNow(g,n){
   return {team,pl,drives};
 }
 function statsHTML(g){
-  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives']];
+  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives'],['plan','Game plan']];
   return `<section class="panel stats" data-g="${g.id}" data-f="stats" data-tab="team" aria-label="Match centre">
     <div class="st-head"><span class="label">Match centre</span>
       <div class="seg st-tabs" role="tablist" aria-label="Match statistics">${tabs.map(([k,l],i)=>`<button type="button" role="tab" data-st="${k}" aria-selected="${i===0}">${l}</button>`).join('')}</div></div>
     <div class="st-body" data-f="stbody"></div>
   </section>`;
+}
+/* engine block D (feed game.gameplan + play.adjust): each team's game plan, then the in-game adjustments made so far
+   (only plays already shown: no spoiler) */
+function gamePlanHTML(g,n){
+  const GP=(g.gf&&g.gf.game&&g.gf.game.gameplan)||{}, adj={home:[],away:[]};
+  for(let i=0;i<n&&i<g.plays.length;i++){ const P=g.plays[i];
+    for(const a of (Array.isArray(P.adjust)?P.adjust:[])) if(a&&!/^plan_/.test(String(a.kind))&&adj[a.team]) adj[a.team].push({P,a}); }
+  if(!GP.home&&!GP.away&&!adj.home.length&&!adj.away.length) return '<p class="st-empty"><b>No game plan in this feed</b>Game plans and their in-game adjustments come with engine V25 (notebook block D).</p>';
+  const side=s=>{
+    const T=TEAMS[s==='home'?g.home:g.away], p=GP[s]||{}, o=p.offense||{}, d=p.defense||{};
+    const row=(k,v)=>v?`<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>`:'';
+    const plan=row('Offense',o.summary)+row('Key target',o.focus)+row('Defense',d.summary);
+    const list=adj[s].map(({P,a})=>`<li><span class="gp-t">${qName(P.quarter)} ${clockStr(num(P.clock_start,0))}</span>${esc(String(a.text||''))}${a.reason?`<span class="gp-r"> — ${esc(String(a.reason))}</span>`:''}</li>`).join('');
+    return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>
+      ${plan?`<table class="pst gp"><caption>Game plan</caption><tbody>${plan}</tbody></table>`:''}
+      <p class="gp-cap">In-game adjustments</p>${list?`<ol class="gp-l">${list}</ol>`:'<p class="st-none">None yet</p>'}</div>`;
+  };
+  return `<div class="st-cols">${side('away')}${side('home')}</div>`;
 }
 function stTab(btn){
   const sec=btn.closest('[data-f="stats"]'); if(!sec) return null;
@@ -3597,6 +3626,8 @@ function renderStats(g){
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
+    } else if(tab==='plan'){
+      body.innerHTML=gamePlanHTML(g,n);
     } else {
       const live=st.drives.length && !st.drives[st.drives.length-1].done && g.status!=='final';
       body.innerHTML = st.drives.length ? `<div class="st-scroll"><table class="dst"><thead><tr><th scope="col">#</th><th scope="col">Team</th><th scope="col">Start</th><th scope="col">From</th><th scope="col">Plays</th><th scope="col">Yds</th><th scope="col">Time</th><th scope="col">Result</th></tr></thead><tbody>${st.drives.map((d,i)=>{
@@ -4592,8 +4623,9 @@ function renderExhibitions(){
     const low=document.querySelector('#viewLive .lower'); if(!low) return; low.after(box); }
   box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
     const kinds=(x.adjust_kinds||[]).length, D=x.decisions||{};
-    /* engine intelligence (blocks A-C): what the QBs, receivers and defenders did that the viewer will see */
-    const dec=[D.beyond_first_read?`${D.beyond_first_read} throws past the first read`:'',D.under_pressure?`${D.under_pressure} under pressure`:'',
+    /* engine intelligence (blocks A-D): what the coaches, QBs, receivers and defenders did that the viewer will see */
+    const dec=[D.gameplan_adjust?`${D.gameplan_adjust} game-plan adjustment${D.gameplan_adjust>1?'s':''}${D.counters?` (${D.counters} counter-move${D.counters>1?'s':''})`:''}`:'',D.bracket_throws?`${D.bracket_throws} throw${D.bracket_throws>1?'s':''} into a bracket`:'',
+      D.beyond_first_read?`${D.beyond_first_read} throws past the first read`:'',D.under_pressure?`${D.under_pressure} under pressure`:'',
       D.scrambles?`${D.scrambles} scramble${D.scrambles>1?'s':''}`:'',D.throwaways?`${D.throwaways} throwaway${D.throwaways>1?'s':''}`:'',
       D.contested?`${D.contested} contested catch${D.contested>1?'es':''}`:'',D.broken_up?`${D.broken_up} pass${D.broken_up>1?'es':''} broken up`:'',D.busts?`${D.busts} coverage bust${D.busts>1?'s':''}`:'',
       D.safeties?`${D.safeties} safet${D.safeties>1?'ies':'y'}`:''].filter(Boolean).join(' · ');
@@ -5268,6 +5300,15 @@ function adjLine(g,P){
       case 'd_noblitz': return `The ${n} back off the blitz.`;
       case 'd_prevent': return `The ${n} drop into a prevent defense.`;
       case 'd_attack': return `The ${n} defense sells out for a stop.`;
+      /* engine block D (12.2 octies): game plans, adjustments and counter-adjustments, with their reason */
+      case 'plan_o': return V([`The ${n} game plan: ${L}.`,`Here's what the ${n} want to do today: ${L}.`]);
+      case 'plan_d': return V([`On defense, the ${n} plan to ${L}.`,`The ${n} defensive plan: ${L}.`]);
+      case 'o_quick': return V([`The ${n} answer the blitz with the quick game.`,`They've seen the blitz: the ${n} go to quick throws.`]);
+      case 'o_protect': return V([`The ${n} keep a back in to protect.`,`Extra protection now for the ${n} quarterback.`]);
+      case 'o_away': return V([`The ${n} work away from the double on ${L}.`,`${L} is doubled, so the ${n} look elsewhere.`]);
+      case 'd_bracket': return V([`The ${n} bracket ${L}${a.reason?': '+String(a.reason):''}.`,`${L} has been the go-to man, and now the ${n} double him.`]);
+      case 'd_rotate': return V([`The ${n} rotate the bracket to ${L}.`,`Counter-move: the ${n} slide their help over to ${L}.`]);
+      case 'd_disguise': return V([`The ${n} disguise the pressure and play two deep.`,`No more free blitzes: the ${n} drop into a two-deep shell.`]);
     }
     return String(a.text||''); });
   return {prio:2,text:parts.join(' ')};
@@ -5289,7 +5330,7 @@ function playLine(g,P){
         : V([`${car} is dropped in the end zone — safety!`,`Tackled in his own end zone! Two points for the ${nick(dfT)}!`,`Safety! ${def?sur(def)+' wraps up '+sur(car):'They bring him down'} behind the goal line!`]);
       text+=' '+scoreLine(g); break;
     case 'field_goal_missed': prio=2; text=V([`No good! ${car} misses it.`,`The kick is wide! No points for the ${nick(off)}.`]); break;
-    case 'sack': prio=2; if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc==='B'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
+    case 'sack': prio=2; if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc&&P.decision.bloc!=='A'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
       text=V([`Sacked! ${def||'The pass rush'} gets to ${sur(qb)}, loss of ${yds(gain)}.`,`${sur(qb)} goes down! ${def||'They'} with the sack.`,`Pressure… and ${sur(qb)} is sacked!`]); break;
     case 'complete':
       { const dk=P.decision||{}, cv=dk.coverer&&dk.coverer.name;   /* engine block C */

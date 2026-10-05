@@ -131,6 +131,12 @@ def check_game(A, week, g_sched, feed):
             warn(s, f"« {r} » sans porteur du ballon")
         if p["call"]["type"] == "pass" and r in ("complete", "incomplete", "interception") and not pl.get("passer"):
             warn(s, "passe sans passeur")
+        # --- ajustements des coordinateurs (V21) et du plan de jeu (bloc D, V25) ---
+        for x in p.get("adjust") or []:
+            if x.get("team") not in ("home", "away") or not x.get("text"):
+                bad(s, f"ajustement mal formé : {x}")
+            elif x.get("kind") in ("o_quick", "o_protect", "o_away", "d_bracket", "d_rotate", "d_disguise") and not x.get("reason"):
+                warn(s, f"ajustement « {x['kind']} » sans raison")
         # --- cotes en direct ---
         o = p.get("odds") or {}
         if a["status"] == "live" and o.get("ml"):
@@ -155,6 +161,9 @@ def check_game(A, week, g_sched, feed):
         bad(None, "match de playoffs terminé à égalité")
     if last["clock_end"] != 0 and not game.get("overtime"):
         warn(last["seq"], f"match fini avec {last['clock_end']} s au chrono sans prolongation")
+    gp = game.get("gameplan")
+    if gp is not None and not (set(gp) <= {"home", "away"} and all(isinstance(v, dict) for v in gp.values())):
+        bad(None, f"plan de jeu mal formé : {gp}")
     po = game.get("pregame_odds") or {}
     if not po.get("ml"):
         bad(None, "pas de cotes d'avant-match")

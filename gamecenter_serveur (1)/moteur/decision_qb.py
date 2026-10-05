@@ -83,6 +83,9 @@ class QBDecision:
     couvreur_nom: str = ""
     bust: bool = False           # la cible a été oubliée par son défenseur
     yards_c: float = 0.0
+    # bloc D (moteur.plan_de_jeu) : ce que le plan de jeu a changé sur cette passe (bracket, protection, receveur
+    # évité, cible favorite lue en premier) — rempli par moteur.decider_passe
+    plan: dict = None
 
     def to_dict(self):
         return asdict(self)

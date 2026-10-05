@@ -9,8 +9,9 @@ que 12.3), le notebook chargé une seule fois.
     python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json [--graines 30] [--tours 6]
     python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc B         # CALIBRATION_B (V23)
     python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc C         # CALIBRATION_C (V24)
+    python3 outils/moteur/calibrer_bloc_a.py --reference /tmp/v21.json --bloc D         # CALIBRATION_D (V25)
 
-Affiche la ligne CALIBRATION (ou CALIBRATION_B / _C) à recopier dans moteur/resolution.py (puis relancer
+Affiche la ligne CALIBRATION (ou CALIBRATION_B / _C / _D) à recopier dans moteur/resolution.py (puis relancer
 rapport_calibration.py).
 """
 import argparse, json, os, sys
@@ -24,12 +25,14 @@ def main():
     ap.add_argument("--reference", required=True, help="rapport JSON V21 (rapport_calibration.py --decisions off)")
     ap.add_argument("--graines", type=int, default=30)
     ap.add_argument("--tours", type=int, default=6)
-    ap.add_argument("--bloc", choices=("A", "B", "C"), default="A")
+    ap.add_argument("--bloc", choices=("A", "B", "C", "D"), default="A")
     a = ap.parse_args()
     ref = json.load(open(a.reference, encoding="utf-8"))
-    ns, _ = rc.charger(decisions=True, bloc_b=a.bloc in ("B", "C"), bloc_c=a.bloc == "C")
-    k = ns[{"A": "DECISION_CALIBRATION", "B": "DECISION_CALIBRATION_B", "C": "DECISION_CALIBRATION_C"}[a.bloc]]   # modifié en place
-    k.update({"int": 1.0, "sack": 1.0, "inc": 1.0, "yards": 0.0})
+    ns, _ = rc.charger(decisions=True, bloc_b=a.bloc in ("B", "C", "D"), bloc_c=a.bloc in ("C", "D"), bloc_d=a.bloc == "D")
+    k = ns[{"A": "DECISION_CALIBRATION", "B": "DECISION_CALIBRATION_B", "C": "DECISION_CALIBRATION_C",
+            "D": "DECISION_CALIBRATION_D"}[a.bloc]]   # modifié en place
+    if a.bloc != "D":
+        k.update({"int": 1.0, "sack": 1.0, "inc": 1.0, "yards": 0.0})     # bloc D : on part de CALIBRATION_C
     for t in range(a.tours):
         games, temps = rc.mesurer(ns, a.graines)
         m = rc._stats(games, temps, ns)

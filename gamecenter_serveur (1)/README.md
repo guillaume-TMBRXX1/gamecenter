@@ -274,6 +274,37 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - **Rapport de calibration** : charge jusqu'à 12.2 septies ; `--bloc-c off` pour le moteur V23 ; mesure aussi les
   réceptions par type et les coverage busts. `calibrer_bloc_a.py --bloc C` recalcule `CALIBRATION_C`.
 
+### 18. ENGINE INTELLIGENCE — bloc D : adaptation en match et plan de jeu (notebook V25, 05/10/2026, allumé)
+
+- **Plan de jeu par adversaire** (cellule 12.2 octies, module `moteur/plan_de_jeu.py`, voir `moteur/README.md`) : avant
+  le match, chaque coordinateur fait le scouting de l'adversaire, sans hasard — fréquence de blitz -> part du jeu
+  rapide (quick game, screens, draws) ; couvertures préférées -> concepts contre l'homme (mesh, croisements, slants) ou
+  contre la zone (curl, stick, dagger, sail, champ) ; duels en homme -> **cible favorite** (meilleur mismatch, lue en
+  premier une fois sur trois) ; receveurs contre safeties -> passes profondes ; notes d'unité -> léger déplacement
+  course / passe. En défense : la menace principale de l'attaque adverse est brackétée plus souvent.
+- **Mémoire de tendances et ajustements** (prolonge V21, section 10) : chaque camp retient ce qu'il a vu (cibles du QB,
+  blitz sur 3e essai, pression, doubles, jeu rapide contre le blitz). Attaque : **quick game** contre les blitz
+  répétés, un **RB qui reste protéger** (poche plus longue, une route de moins ; VEC, qui force, ne le fait pas),
+  **bascule hors du double** vers WR2 / TE / RB. Défense : **bracket** sur un receveur trop ciblé et productif,
+  **contre-ajustements** — le bracket suit la nouvelle cible quand l'attaque bascule, pression déguisée (deux safeties
+  profonds, moins de blitz sur 3e essai) quand le jeu rapide punit le blitz. Profils : CTX réagit vite, AEG lentement et
+  longtemps, VEC garde son style, MNL têtu. Interrupteur `GAMEPLAN_ENABLED` (allumé ; `GC_BLOC_D=0` : moteur V24).
+  Normalisation `CALIBRATION_D` (passes jouées sous un plan de jeu). Exhibition : `--sans-bloc-d`.
+- **GameFeed** (additif) : `play.adjust[].reason` (« 5 of the last 8 targets »), nouveaux `kind` (`plan_o`, `plan_d`,
+  `o_quick`, `o_protect`, `o_away`, `d_bracket`, `d_rotate`, `d_disguise`), `game.gameplan` (`{home|away: {offense:
+  {summary, focus, …}, defense: {summary, bracket}}}`), `play.decision.plan` (`bracket`, `bracketed`, `protection`,
+  `away`, `focus`). **Site** : la raison de chaque ajustement dans le play-by-play ; onglet **« Game plan »** du Match
+  centre (plan de chaque équipe, ajustements faits jusqu'à l'action affichée — pas de spoiler) ; « · into the
+  bracket », « · game-plan read » ; commentaire écrit (plans, quick game, protection, bracket, rotation, pression
+  déguisée) ; carte d'exhibition (ajustements du plan de jeu, contre-ajustements). Corrigé au passage : « holds it too
+  long… sacked » ne s'affichait plus depuis le bloc C.
+- **Commentaire enregistré** : 7 nouvelles cues (`ADJ_GAMEPLAN`, `ADJ_O_QUICK`, `ADJ_O_PROTECT`, `ADJ_O_AWAY`,
+  `ADJ_D_BRACKET`, `ADJ_D_ROTATE`, `ADJ_D_DISGUISE`, 3 prises chacune dans `outils/audio/catalogue/commentary.json`) —
+  à générer avec le workflow « Commentaire audio » (mode `generer`) ; d'ici là, sous-titre et voix de l'appareil.
+- **Rapport de calibration** : charge jusqu'à 12.2 octies ; `--bloc-d off` pour le moteur V24 ; mesure aussi les
+  ajustements par match et les passes jouées sous un plan (bracket, protection, cible évitée, cible favorite).
+  `calibrer_bloc_a.py --bloc D` recalcule `CALIBRATION_D`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -382,7 +413,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 `GC_ADMIN_KEY` (sauvegardes) · `GC_DEMO_AT` (ISO ou `auto` : décale l'horloge, pour une démonstration) · `PORT` ·
 `GC_MOTEUR_DIR` (dossier qui contient `moteur/`, mis par `generer_semaine.py`) · `GC_DECISIONS=0` (notebook : décisions
 de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0` (intelligence du QB coupée : bloc A) ·
-`GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23).
+`GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23) · `GC_BLOC_D=0` (plan de jeu et adaptation
+en match du bloc D coupés : moteur V24).
 
 ## Test
 
