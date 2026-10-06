@@ -949,12 +949,17 @@
     --f-mono:'Archivo',system-ui,sans-serif;
     /* Franchises */
     --t-ctx:#B38332; --t-vec:#16858A; --t-aeg:#315A87; --t-mnl:#9E3B3F;
+    --t-axm:#2E8A5E; --t-glt:#6B4FA8; --t-cph:#C4672B; --t-nva:#B03A78;
     --tc:var(--ink-3);
   }
   [data-tm="CTX"],[data-team="CTX"]{--tc:var(--t-ctx)}
   [data-tm="VEC"],[data-team="VEC"]{--tc:var(--t-vec)}
   [data-tm="AEG"],[data-team="AEG"]{--tc:var(--t-aeg)}
   [data-tm="MNL"],[data-team="MNL"]{--tc:var(--t-mnl)}
+  [data-tm="AXM"],[data-team="AXM"]{--tc:var(--t-axm)}
+  [data-tm="GLT"],[data-team="GLT"]{--tc:var(--t-glt)}
+  [data-tm="CPH"],[data-team="CPH"]{--tc:var(--t-cph)}
+  [data-tm="NVA"],[data-team="NVA"]{--tc:var(--t-nva)}
 
   body{background:var(--bg);color:var(--ink);font:400 14px/1.5 var(--f-ui);font-variant-numeric:tabular-nums;padding-inline:24px}
   body::before{display:none}
@@ -1310,6 +1315,10 @@
   .power:has(.pw-side.fav .abbr[data-tm="VEC"]) .pw-track{background:var(--t-vec)}
   .power:has(.pw-side.fav .abbr[data-tm="AEG"]) .pw-track{background:var(--t-aeg)}
   .power:has(.pw-side.fav .abbr[data-tm="MNL"]) .pw-track{background:var(--t-mnl)}
+  .power:has(.pw-side.fav .abbr[data-tm="AXM"]) .pw-track{background:var(--t-axm)}
+  .power:has(.pw-side.fav .abbr[data-tm="GLT"]) .pw-track{background:var(--t-glt)}
+  .power:has(.pw-side.fav .abbr[data-tm="CPH"]) .pw-track{background:var(--t-cph)}
+  .power:has(.pw-side.fav .abbr[data-tm="NVA"]) .pw-track{background:var(--t-nva)}
   .pw-track{transition:background-color .6s ease}
   /* Fiche joueur : l'attaquant prend la couleur de sa franchise (la défense ne change pas) */
   .pcard[data-tm] .pc-mark.o{background:var(--l1);color:var(--tc);box-shadow:0 0 0 1.5px var(--tc)}
@@ -1602,6 +1611,7 @@
     --pink:#E2584A; --pink-soft:rgba(226,88,74,.16); --pink-2:#F08A7E; --violet:#4C82BA;
     --turf:#13201A; --turf-2:#16251D; --endzone:#1A2B21;
     --t-ctx:#D2A24F; --t-vec:#2FB4B9; --t-aeg:#5E92D2; --t-mnl:#D45C61;
+    --t-axm:#4FBF8A; --t-glt:#9C82D6; --t-cph:#E58A4E; --t-nva:#D9649F;
     --glass:rgba(22,30,43,.52); --glass-2:rgba(24,32,46,.72); --glass-in:rgba(255,255,255,.05);
     --glass-line:rgba(255,255,255,.1);
     --glass-edge:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px rgba(255,255,255,.03);
@@ -1866,14 +1876,14 @@ const FIELD = {
 
 /* Teams are identified by name and abbreviation only — no per-team colour */
 /* DESIGN OFFICIEL : couleur de franchise de l'équipe en attaque */
-const DA_TEAM={CTX:tok('--t-ctx','#B38332'),VEC:tok('--t-vec','#16858A'),AEG:tok('--t-aeg','#315A87'),MNL:tok('--t-mnl','#9E3B3F')};
+const DA_TEAM={CTX:tok('--t-ctx','#B38332'),VEC:tok('--t-vec','#16858A'),AEG:tok('--t-aeg','#315A87'),MNL:tok('--t-mnl','#9E3B3F'),AXM:tok('--t-axm','#2E8A5E'),GLT:tok('--t-glt','#6B4FA8'),CPH:tok('--t-cph','#C4672B'),NVA:tok('--t-nva','#B03A78')};
 const daOff=g=>DA_TEAM[offTeam(g)]||FIELD.cyan;
 /* DESIGN OFFICIEL : thème clair/sombre — relit les jetons CSS à chaud (le terrain est redessiné à chaque image) */
 const DA_FX={tag:'rgba(255,255,255,.96)',vig:'236,238,230'};
 window.__gcRetheme=function(){ const C=getComputedStyle(document.documentElement), v=(n,f)=>C.getPropertyValue(n).trim()||f;
   const M={turf:'--turf',turf2:'--turf-2',endzone:'--endzone',ink:'--ink',cyan:'--cyan',pink:'--pink',cyan2:'--cyan-2',pink2:'--pink-2',cyanInk:'--cyan-ink',violet:'--violet',bg:'--bg'};
   for(const k in M) FIELD[k]=v(M[k],FIELD[k]);
-  DA_TEAM.CTX=v('--t-ctx',DA_TEAM.CTX); DA_TEAM.VEC=v('--t-vec',DA_TEAM.VEC); DA_TEAM.AEG=v('--t-aeg',DA_TEAM.AEG); DA_TEAM.MNL=v('--t-mnl',DA_TEAM.MNL);
+  for(const k in DA_TEAM) DA_TEAM[k]=v('--t-'+k.toLowerCase(),DA_TEAM[k]);
   DA_FX.tag=v('--da-tag','rgba(255,255,255,.96)'); DA_FX.vig=v('--da-vig','236,238,230'); };
 window.__gcRetheme();
 const TEAMS = {
@@ -3740,6 +3750,7 @@ function dvpHTML(p,tone){
   const curve=dvpCurveSVG(p,tone);
   return `<div class="pc-sec"><span class="label">Development</span>
     <div class="pc-line"><span>Age · experience</span><b>${p.age} · ${p.experience} yrs</b></div>
+    ${p.rookie?`<div class="pc-line"><span>Rookie</span><b>Replaced ${esc(p.rookie.replaces)} · week ${p.rookie.week}</b></div>`:''}
     <div class="pc-line"><span>Form this week</span><b>${form}</b></div>
     <div class="pc-line"><span>Rating · base · potential</span><b>${p.ovr} · ${p.ovr_base} · ${p.potential}</b></div>
     <div class="pc-line"><span>Development pace</span><b>${DVP_PACE[p.dev]||esc(p.dev||'—')}</b></div>
@@ -4319,6 +4330,7 @@ const SCHED=SEASON?SW.schedule.map(g=>{ const f=SEASON.feeds[g.id]; const ko=Dat
   const n=g.n!=null?g.n:f.plays.length, end=g.end_ms!=null?g.end_ms:(SERVER?Infinity:ko+n*PLAY_SEC*1000);
   return Object.assign({},g,{ko,n,end}); }):[];
 const SCHED_BY={}; SCHED.forEach(g=>SCHED_BY[g.id]=g);
+const NSLOTS=Math.max(0,...SCHED.filter(g=>g.phase==='regular').map(g=>g.slot)); /* 18 créneaux à 4 équipes, 14 à 8 (étape 6) */
 const LOCK=SEASON?Date.parse(SW.week.standings_locked_at):0;
 const W_FIRST=SEASON?Math.min(...SCHED.map(g=>g.ko)):0, W_END=SEASON?Math.max(...SCHED.map(g=>isFinite(g.end)?g.end:g.ko+95*60e3)):0;
 const CLOCK={demo:false,base:0,at:0};
@@ -4328,7 +4340,7 @@ const fmtD=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,weekday:'short',day:'num
 const fmtDay=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,weekday:'long',day:'numeric',month:'long'});
 const tStr=ms=>fmtT.format(new Date(ms)), dStr=ms=>fmtD.format(new Date(ms));
 const wRange=()=>{ const f=o=>new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:TZ},o)); const a=f({day:'numeric'}).format(new Date(W_FIRST)), b=f({day:'numeric',month:'short'}).format(new Date(W_END)); return a+'–'+b; };
-const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance']};
+const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays']};
 const tStyle=T=>(STYLE_EN[T.abbr]||[T.style])[0], tIdent=T=>(STYLE_EN[T.abbr]||[0,T.identity])[1];
 const PHASE={regular:'Regular season',semifinal:'Semi-final',ai_bowl:'AI Bowl'};
 function gStatus(g,t){ return t<g.ko?'upcoming':t<g.end?'live':'final'; }
@@ -4553,7 +4565,7 @@ function renderSeasonCards(t){
       <div class="n r">${r.w}-${r.l}-${r.t}</div>
       <div class="n r c-diff ${r.diff>=0?'pos-d':'neg-d'}">${r.diff>=0?'+':MINUS}${Math.abs(r.diff)}</div>
       <div class="r">${formDots(r.last5)}</div>`; }).join('');
-  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of 18 slots · updated when both games of a slot are final` : 'The table fills in after the first slot (Monday 13:00)';
+  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of ${NSLOTS} slots · updated when all games of a slot are final` : 'The table fills in after the first slot (Monday 13:00)';
   document.getElementById('agentsTitle').textContent='Season leaders';
   document.getElementById('agentsLabel').textContent='This week';
   const cats=[['QB','pass','y','pass yds'],['RB','rush','y','rush yds'],['WR','rec','y','rec yds'],['LB','def','tk','tackles'],['EDGE','def','sk','sacks']];
@@ -4618,7 +4630,7 @@ function renderStandings(t){
     return `<div class="bk-g"><div class="bk-h"><span class="label">${esc(PHASE[g.phase])}</span><span class="bk-when">${esc(dStr(g.ko))} ${esc(tStr(g.ko))}</span></div>${line('away')}${line('home')}
       ${st!=='upcoming'?`<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch live →':'Replay →'}</button>`:''}</div>`; };
   const mk=(m,lab)=>`<tr><th scope="row">${lab}</th>${Object.keys(SW.teams).map(a=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`;
-  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of 18 slots · locks Friday 23:30`}</p></div>
+  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} slots · locks Friday 23:30`}</p></div>
     <div class="card"><div class="st-scroll"><table class="tst stand"><thead><tr><th>#</th><th scope="col">Team</th><th>W</th><th>L</th><th>T</th><th>Pct</th><th>PF</th><th>PA</th><th>Diff</th><th>Home</th><th>Away</th><th>Strk</th><th>Last 5</th><th>Tiebreak</th></tr></thead><tbody>${tb}</tbody></table></div>
     <p class="np-note">Tiebreakers: win percentage (ties count half) → head-to-head among tied teams → point differential → points scored → draw.</p></div>
     <div class="st-two"><div class="card"><div class="card-h"><h2>Playoffs</h2><span class="label">${locked?'Seeds set':'Seeds after the lock'}</span></div><div class="bracket">${bx(po[0])}${bx(po[1])}${bx(po[2])}</div></div>
@@ -4793,7 +4805,7 @@ const FUT_M={regular_season:['Regular season winner','to win the regular season'
 function anyLive(t){ return SCHED.some(g=>gStatus(g,t)==='live'); }
 function futClose(m){
   const ko=ph=>SCHED.filter(g=>g.phase===ph).map(g=>g.ko);
-  return m==='regular_season'?Math.max(...SCHED.filter(g=>g.phase==='regular'&&g.slot===18).map(g=>g.ko)):m==='reach_final'?Math.min(...ko('semifinal')):Math.min(...ko('ai_bowl'));
+  return m==='regular_season'?Math.max(...SCHED.filter(g=>g.phase==='regular'&&g.slot===NSLOTS).map(g=>g.ko)):m==='reach_final'?Math.min(...ko('semifinal')):Math.min(...ko('ai_bowl'));
 }
 function pgOdds(s){ const o=SEASON.feeds[s.id].game.pregame_odds||{};
   return {ml:o.ml||null,sp:o.spread_home!=null?{home:o.spread_home,away:-o.spread_home}:null,tot:o.total!=null?o.total:null,np:null,spp:o.spread_prices||null,totp:o.total_prices||null}; }
@@ -6021,7 +6033,7 @@ requestAnimationFrame(frame);
 <script id="da-editorial-teams">
 /* DESIGN OFFICIEL — couleurs de franchise : lit l'abréviation déjà affichée et pose data-tm. Aucun effet sur la logique. */
 (function(){
-  var C={CTX:1,VEC:1,AEG:1,MNL:1}, t=0;
+  var C={CTX:1,VEC:1,AEG:1,MNL:1,AXM:1,GLT:1,CPH:1,NVA:1}, t=0;
   function run(){ t=0;
     var els=document.querySelectorAll('.abbr,.badge,.team-page,.bug .bt,.pcard');
     for(var i=0;i<els.length;i++){ var e=els[i], v=null;

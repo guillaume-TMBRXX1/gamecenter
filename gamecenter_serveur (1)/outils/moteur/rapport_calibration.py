@@ -2,8 +2,8 @@
 """Rapport de calibration automatique du programme ENGINE INTELLIGENCE (garde-fou 3).
 
 Charge le moteur du notebook (cellules de code jusqu'à 12.2 quinquies incluse, sans Jupyter), joue le test
-d'équilibre de 12.3 (chaque franchise reçoit chacune des 3 autres, 84 graines -> 1 008 matchs, mêmes graines
-que le notebook) et mesure : passes (complétion, sacks, INT, YPA, yards / tentative nette), courses, pertes de
+d'équilibre de 12.3 (chaque franchise reçoit chacune des autres : 84 graines à 4 équipes, 18 à 8 -> 1 008 matchs,
+mêmes graines que le notebook) et mesure : passes (complétion, sacks, INT, YPA, yards / tentative nette), courses, pertes de
 balle, points, drives, premiers downs, actions, équilibre par équipe, temps par match. Avec les décisions
 allumées, ajoute les stats des décisions (cible réelle, première lecture, pression, scramble, throwaway).
 
@@ -83,9 +83,10 @@ def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc
     raise SystemExit(f"cellule « {jusqua} » introuvable")
 
 
-def mesurer(ns, graines=84, base=50_000):
+def mesurer(ns, graines=None, base=50_000):
     """Le test d'équilibre de 12.3 (mêmes graines), mesuré action par action."""
     teams = list(ns["AI_FRANCHISES"])
+    graines = graines or (84 if len(teams) == 4 else max(1, round(1008 / (len(teams) * (len(teams) - 1)))))
     games, temps = [], []
     for h in teams:
         for a in teams:
@@ -193,7 +194,10 @@ def comparer(rep, ref):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--decisions", choices=("off", "on"), default="off")
-    ap.add_argument("--graines", type=int, default=84, help="matchs par affiche et par terrain (84 -> 1 008 matchs)")
+    ap.add_argument("--graines", type=int, default=None,
+                    help="matchs par affiche et par terrain (défaut : ≈ 1 008 matchs — 84 à 4 équipes, 18 à 8)")
+    ap.add_argument("--franchises", choices=("4", "8"), default=None,
+                    help="taille de la ligue (GC_FRANCHISES ; défaut : celle du notebook, 8 depuis l'étape 6)")
     ap.add_argument("--notebook", default=NOTEBOOK)
     ap.add_argument("--jusqua", default=JUSQUA, help="dernière cellule chargée (V21 : « 12.2 quater »)")
     ap.add_argument("--bloc-b", choices=("off", "on"), default="on", help="intelligence du QB (bloc B, V23)")
@@ -203,7 +207,7 @@ def main():
     ap.add_argument("--expansion", choices=("off", "on"), default="on", help="extension du playbook V0.1 (12.2 decies)")
     ap.add_argument("--fin-periode", choices=("off", "on"), default="on", help="field goal ou continuer en fin de Q2 / Q4 (12.2 undecies)")
     ap.add_argument("--semaines", type=int, default=0,
-                    help="bloc E : semaines de progression jouées (36 matchs chacune) avant le test d'équilibre")
+                    help="bloc E : semaines de progression jouées (une semaine de la ligue chacune) avant le test d'équilibre")
     ap.add_argument("--graine-trajectoire", type=int, default=990_000, help="bloc E : graines des semaines d'essai")
     ap.add_argument("--force-equipe", type=float, help="bloc E : écart maximal de la force d'une franchise (essai)")
     ap.add_argument("--ecart-equipe", type=float, help="bloc E : écart d'unité maximal d'une franchise (essai ; "
@@ -211,6 +215,8 @@ def main():
     ap.add_argument("--reference", help="rapport JSON de référence (V21, décisions coupées)")
     ap.add_argument("--sortie", help="écrit le rapport JSON ici")
     a = ap.parse_args()
+    if a.franchises:
+        os.environ["GC_FRANCHISES"] = a.franchises
 
     ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on",
                           bloc_c=a.bloc_c == "on", bloc_d=a.bloc_d == "on", bloc_e=a.bloc_e == "on",
@@ -230,7 +236,9 @@ def main():
             d = trajectoire[-1]["team_units"][ab]
             print(f"  {ab} " + " · ".join(f"{u} {t.units[u]:.1f} ({d[u]:+.1f})" for u in d)
                   + f" · force {trajectoire[-1]['team_strength'][ab]:+.2f}")
-    games, temps = mesurer(ns, a.graines)
+    n_eq = len(ns["AI_FRANCHISES"])
+    graines = a.graines or (84 if n_eq == 4 else max(1, round(1008 / (n_eq * (n_eq - 1)))))   # comme 12.3
+    games, temps = mesurer(ns, graines)
     rep = _stats(games, temps, ns)
     rep["decisions"] = a.decisions
     rep["bloc_b"] = bool(ns.get("QB_IQ_ENABLED", False))

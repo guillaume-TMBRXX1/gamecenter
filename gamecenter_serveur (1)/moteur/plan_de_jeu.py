@@ -70,6 +70,16 @@ PROFILS = {
                 cible_ok=0.45, tenue=14, protege=True, quick=1.45, bracket=0.55, rotation=3, deguise=2, deguise_k=0.45),
     "MNL": dict(fenetre=10, blitz3=3, blitz_part=0.50, pression=3, doubles=4, cible_part=0.50, cible_min=6,
                 cible_ok=0.50, tenue=10, protege=True, quick=1.25, bracket=0.45, rotation=4, deguise=3, deguise_k=0.55),
+    # étape 6 : AXM répond vite par le jeu rapide (son identité) ; GLT garde sa pression ; CPH souple ; NVA protège
+    # tôt (max protect) et met son bracket sur la menace profonde
+    "AXM": dict(fenetre=8, blitz3=2, blitz_part=0.40, pression=3, doubles=3, cible_part=0.42, cible_min=4,
+                cible_ok=0.50, tenue=10, protege=True, quick=1.60, bracket=0.50, rotation=3, deguise=2, deguise_k=0.50),
+    "GLT": dict(fenetre=8, blitz3=3, blitz_part=0.50, pression=3, doubles=4, cible_part=0.45, cible_min=5,
+                cible_ok=0.50, tenue=6, protege=True, quick=1.30, bracket=0.40, rotation=4, deguise=3, deguise_k=0.75),
+    "CPH": dict(fenetre=8, blitz3=2, blitz_part=0.45, pression=3, doubles=3, cible_part=0.42, cible_min=5,
+                cible_ok=0.50, tenue=8, protege=True, quick=1.35, bracket=0.45, rotation=3, deguise=2, deguise_k=0.55),
+    "NVA": dict(fenetre=10, blitz3=3, blitz_part=0.50, pression=2, doubles=4, cible_part=0.45, cible_min=5,
+                cible_ok=0.50, tenue=10, protege=True, quick=1.20, bracket=0.55, rotation=3, deguise=2, deguise_k=0.45),
 }
 PROFIL_DEFAUT = PROFILS["CTX"]
 PROTECTION = {"poche": 0.20, "rusher5": 0.10}     # s gagnées par la protection ; un 5e rusher ramassé en partie

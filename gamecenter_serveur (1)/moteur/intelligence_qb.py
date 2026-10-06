@@ -43,6 +43,11 @@ PROFILS = {
     "VEC": {"anticipation": 4, "pocket_awareness": -2, "aggressiveness": 28},                    # précision, risque
     "AEG": {"pocket_awareness": 5, "coverage_reading": 3, "pressure_response": 2, "aggressiveness": -18},  # discipline
     "MNL": {"pressure_response": 4, "pocket_awareness": 2, "aggressiveness": -5},                 # physique, solide
+    # étape 6 (franchises 05-08 de la bible des identités)
+    "AXM": {"processing": 3, "anticipation": 4, "coverage_reading": 2, "aggressiveness": -8},     # exécution, timing
+    "GLT": {"pressure_response": 2, "aggressiveness": 8},                                        # opportuniste
+    "CPH": {"awareness": 2, "pressure_response": 3, "pocket_awareness": -2, "aggressiveness": 4},  # mobile, improvise
+    "NVA": {"coverage_reading": 2, "anticipation": -2, "pocket_awareness": 2, "aggressiveness": 22},  # bras, coups profonds
 }
 
 _CLES = {"dm": "decision_making", "acc": "throw_accuracy", "pow": "throw_power", "mob": "mobility"}

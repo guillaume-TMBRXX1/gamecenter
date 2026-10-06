@@ -8,7 +8,7 @@ Comme la semaine suivante (15.1) et simuler_exhibition.py : staffs ajustés (sta
 (bloc E : players_next_week, amorce depuis les stats sinon) de la dernière semaine de data/weeks.
 
     python3 outils/exhibition/gamefeeds.py --matchs "MNL@VEC,CTX@AEG" --par-affiche 2 --sortie /tmp/feeds
-    python3 outils/exhibition/gamefeeds.py --matchs tous --par-affiche 1      # les 12 affiches
+    python3 outils/exhibition/gamefeeds.py --matchs tous --par-affiche 1      # toutes les affiches (56 à 8 équipes)
     python3 outils/exhibition/gamefeeds.py --base                             # notes de base (sans semaine précédente)
 """
 import argparse, ast, glob, json, os, sys
@@ -34,7 +34,7 @@ def _staffs(ns):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--matchs", default="tous", help="« VIS@DOM,… » ou « tous » (12 affiches)")
+    ap.add_argument("--matchs", default="tous", help="« VIS@DOM,… » ou « tous » (toutes les affiches : 56 à 8 équipes)")
     ap.add_argument("--par-affiche", type=int, default=1)
     ap.add_argument("--graine", type=int, default=9_500_000, help="hors saison, hors cotes")
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
