@@ -24,7 +24,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | ✅ **terminé** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; étape 6 lancée | notebook (+ modules Python) + site + serveur |
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
-| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms à valider) ; prochain : palier 2 (09-12) | notebook (+ modules) + site + serveur |
+| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi ; prochain : palier 2 (09-12) | notebook (+ modules) + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
 ---
@@ -697,9 +697,8 @@ GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier da
 
 ## Pour la conversation suivante
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-22 du README du serveur.
-2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
-   — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
-3. **Étape 6** : ✅ palier 1 (8 franchises, retraites et recrues) ; valider les noms proposés ; puis palier 2 (09-12).
+2. ~~Yards par course~~ : décidé le 06/10 — on laisse (les coordinateurs offensifs s'adaptent).
+3. **Étape 6** : ✅ palier 1 (8 franchises, noms validés, retraites et recrues) ; puis palier 2 (09-12), toujours sous 75 min.
    `validation_complete.py --franchises 8` pour la ligue de 8 (`--franchises 4` : non-régression contre les rapports publiés).
 4. Générer le commentaire enregistré des 7 cues du bloc D et de `SAFETY` (workflow « Commentaire audio », mode `generer`).
 
@@ -756,11 +755,18 @@ section 23, et `moteur/README.md` (« Étape 6 », « Retraites et recrues »).
   pour ± 0,2) ; victoires 44,8-59,7 % (1 008 matchs), 43,1-54,4 % (3 024) ; semaine du 12/10 produite en 35,5 min
   (2 processus ; ≈ 50 min estimées sur GitHub, limite 75) : 0 anomalie, 0 alerte ; site vérifié dans Chromium.
 
-**À décider / valider (Guillaume)** :
-1. **Noms, codes, couleurs et coordinateurs** des 4 franchises (proposition ci-dessus).
-2. **Mise en ligne** : la fusion fait passer la semaine du samedi à 8 équipes (la semaine du 12/10 en cours reste à 4).
-   Les paris et classements multi-semaines des joueurs ne dépendent pas du nombre d'équipes.
-3. Toujours ouvert (étape 5) : yards par course après quelques semaines de progression (options a / b / c).
+**Décisions de Guillaume (06/10, après le palier 1)** :
+1. Noms, codes, couleurs (et coordinateurs) des 4 franchises **validés**.
+2. **Yards par course** (question ouverte de l'étape 5) : **on laisse comme ça** — les équipes s'adaptent par leur
+   coordinateur offensif (ajustement hebdomadaire 12.3, réglages en match V21). Option (a) de la fin de programme.
+3. **Budget** : le calcul du samedi doit **toujours rester sous les 75 min** de GitHub, quitte à réduire les
+   simulations par affiche. Appliqué : `SEASON_ODDS_BUDGET` (13.1) — le total des simulations de la saison régulière
+   reste celui de la ligue de 8 (≈ 8 400) : 150 par affiche à 8 équipes, 64 à 12, plancher 60. À mesurer à chaque palier
+   (`generer_semaine.py`, 2 processus) ; si besoin : 12.3 et 13.4 en parallèle, moins de matchs au test d'équilibre.
+4. Site (avant le palier 2) : rubrique **My team**, **fiches joueurs** depuis les rosters, **plein écran agrandi** du
+   match — README du serveur, section 24.
+
+**Mise en ligne** : la fusion fait passer la semaine du samedi à 8 équipes (la semaine en cours reste à 4).
 
 **À surveiller (palier 1)** :
 - **AEG** 59,7 % au test officiel de 12.3 (54,4 % sur 3 024 matchs : échantillon haut) et **MNL / VEC** autour de
