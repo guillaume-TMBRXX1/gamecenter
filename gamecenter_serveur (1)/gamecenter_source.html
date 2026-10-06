@@ -367,6 +367,9 @@
   /* ---------- Lower bento ---------- */
   .lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
   .exh{margin-top:20px}
+  .rail-btn[hidden]{display:none}
+  .exh.exh-flash .exh-card{animation:exhFlash 1.4s ease-out}
+  @keyframes exhFlash{0%,40%{box-shadow:0 0 0 3px var(--accent,#2b7cff)}100%{box-shadow:0 0 0 0 transparent}}
   .exh-card{display:flex;align-items:center;gap:20px;padding:20px 24px;flex-wrap:wrap}
   .exh-main{flex:1 1 320px;min-width:0}
   .exh-main h3{margin:10px 0 6px;font:800 20px/1.2 var(--f-display);letter-spacing:.01em}
@@ -1765,6 +1768,9 @@
     </button>
     <button class="rail-btn" type="button" data-view="myteam">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>My team
+    </button>
+    <button class="rail-btn" type="button" data-exh-go hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="12" rx="2"/><path d="M10.5 9v5l4-2.5z" fill="currentColor"/><path d="M8 20.5h8"/></svg>Exhibition
     </button>
     <button class="rail-btn" type="button" data-view="bets">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7a2 2 0 012-2h12a2 2 0 012 2v2.5a2.5 2.5 0 000 5V17a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.5a2.5 2.5 0 000-5z"/><path d="M14 6v12" stroke-dasharray="2 2.2"/></svg>My bets
@@ -4911,9 +4917,11 @@ async function exhibitionsLoad(){
 }
 function renderExhibitions(){
   let box=document.getElementById('exhBox');
+  document.querySelectorAll('[data-exh-go]').forEach(b=>b.hidden=!EXH.length);
   if(!EXH.length){ if(box) box.remove(); return; }
+  /* right under the live board (above the standings), and reachable from the rail */
   if(!box){ box=document.createElement('section'); box.id='exhBox'; box.className='exh'; box.setAttribute('aria-label','Exhibition');
-    const low=document.querySelector('#viewLive .lower'); if(!low) return; low.after(box); }
+    const grid=document.getElementById('liveGrid'); if(!grid) return; grid.after(box); }
   box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
     const kinds=(x.adjust_kinds||[]).length, D=x.decisions||{};
     /* engine intelligence (blocks A-D): what the coaches, QBs, receivers and defenders did that the viewer will see */
@@ -4934,6 +4942,11 @@ async function exhibitionOpen(id,btn){
   finally{ if(btn){ btn.disabled=false; btn.textContent='Watch the match'; } }
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-exh]'); if(b){ exhibitionOpen(b.dataset.exh,b); } });
+document.addEventListener('click',e=>{ if(!(e.target.closest&&e.target.closest('[data-exh-go]'))) return;
+  closeDrawer(); setView('live');
+  requestAnimationFrame(()=>{ const box=document.getElementById('exhBox'); if(!box) return;
+    box.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'center'});
+    box.classList.remove('exh-flash'); void box.offsetWidth; box.classList.add('exh-flash'); }); });
 function seasonBoot(){
   for(const a in SW.teams) TEAMS[a]={abbr:a,name:SW.teams[a].name.replace(/[<>&"'`]/g,''),rec:''};
   const real=Date.now();
