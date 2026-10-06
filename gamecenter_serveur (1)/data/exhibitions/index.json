@@ -1,18 +1,18 @@
 {
  "exhibitions": [
   {
-   "id": "exh-v25-ctx-vec",
-   "home": "VEC",
+   "id": "exh-v27-ctx-mnl",
+   "home": "MNL",
    "away": "CTX",
-   "title": "Notebook V25 · game plans & in-game adjustments · player & QB intelligence",
-   "created": "2026-10-05",
-   "plays": 164,
-   "adjustments": 27,
+   "title": "Notebook V27 · playbook expansion · new formations, RPO & options, disguised defenses",
+   "created": "2026-10-06",
+   "plays": 136,
+   "adjustments": 26,
    "adjust_kinds": [
+    "clock",
     "d_attack",
     "d_bracket",
     "d_deep",
-    "d_heat",
     "d_noblitz",
     "d_press",
     "d_prevent",
@@ -24,23 +24,30 @@
     "o_quick",
     "plan_d",
     "plan_o",
-    "shelve"
+    "shelve",
+    "shelve_form"
    ],
-   "concepts": 25,
+   "concepts": 40,
    "decisions": {
-    "beyond_first_read": 59,
-    "under_pressure": 26,
-    "scrambles": 2,
-    "throwaways": 7,
-    "held_sacks": 4,
-    "safeties": 1,
-    "contested": 4,
+    "beyond_first_read": 45,
+    "under_pressure": 17,
+    "scrambles": 1,
+    "throwaways": 2,
+    "held_sacks": 1,
+    "safeties": 0,
+    "contested": 1,
     "broken_up": 6,
-    "busts": 1,
-    "gameplan_adjust": 9,
-    "counters": 5,
+    "busts": 0,
+    "gameplan_adjust": 8,
+    "counters": 4,
     "bracket_throws": 1,
-    "gameplan_kinds": 5
+    "gameplan_kinds": 5,
+    "xp_formations": 17,
+    "motions": 8,
+    "rpo": 0,
+    "rpo_throws": 0,
+    "options": 3,
+    "disguised": 12
    }
   }
  ]
