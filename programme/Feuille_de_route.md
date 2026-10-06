@@ -23,6 +23,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
 | **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
+| 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -695,7 +696,7 @@ la branche du bloc C (jamais fusionnée) et passée au moteur V26 (blocs A-E, no
 GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier dans `main`.
 
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-21 du README du serveur.
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-22 du README du serveur.
 2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
    — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
 3. **Étape 6 : plus de franchises / divisions**, avec les systèmes de l'étape 5 (aucune logique codée pour les 4 équipes de
@@ -725,6 +726,15 @@ déjà présents ne sont pas recopiés (alias). Détail : README du serveur, sec
 - Réserve à compléter par Guillaume : définition de **SALEM** et de **SPILL_PROTECTION** ; formations **10 personnel**
   (4 WR) dès que les rosters de l'étape 6 en auront.
 - Commentaire enregistré : aucune cue nouvelle (motion, RPO, option, paquet déguisé : sous-titres seulement).
+
+## Fin de période : field goal ou continuer — ✅ 06/10/2026 (notebook V28, cellule 12.2 undecies)
+Demande de Guillaume avant l'étape 6 : en fin de Q2 / Q4, une équipe à portée jouait presque toujours une action au lieu
+de tirer (4 field goals sur 166 dernières actions à portée). Cause : field goal regardé au 4e essai seulement. Module
+`moteur/fin_de_periode.py` : comparaison « field goal / continuer » (points attendus au Q2, probabilité de victoire au Q4)
+à chaque snap des 45 dernières secondes. Après : 39 / 145 (les autres : match déjà gagné, touchdown nécessaire, touchdown
+plus rentable près de la ligne de but). Calibration dans les tolérances (+1,5 point par match). Détail : README section 22.
+**À surveiller / plus tard** : poser le genou quand on mène ; temps morts et horloge entre les actions (le moteur n'en a
+pas : à décider avec l'étape 6 si on veut une gestion de l'horloge plus réaliste).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
