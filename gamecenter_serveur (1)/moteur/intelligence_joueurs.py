@@ -117,6 +117,15 @@ PROFILS = {
             "pursuit": 3, "reaction": 2, "play_recognition": 1},
     "NVA": {"separation": 2, "contested_catch": 3, "route_iq": -1,                       # verticale ; défense profonde
             "zone_iq": 3, "awareness": 3, "discipline": 2},
+    # palier 2 (franchises 09-12)
+    "PLS": {"release": 2, "separation": 1, "route_iq": 2,                                 # rythme : tout va vite
+            "pursuit": 2, "reaction": 1, "discipline": -1},
+    "ONX": {"catch_in_traffic": 1,                                                      # chasse au ballon
+            "zone_iq": 5, "awareness": 5, "reaction": 4, "play_recognition": 4, "man_iq": 2, "discipline": -2},
+    "FRG": {"contested_catch": 3, "catch_in_traffic": 3, "separation": -1,              # physique
+            "pursuit": 2, "play_recognition": 2, "discipline": 2},
+    "MRD": {"route_iq": 2, "catch_in_traffic": 1,                                       # discipline, zone
+            "zone_iq": 4, "discipline": 5, "awareness": 2},
 }
 
 # ---- poids des attributs (en « pas » de séparation, pour 10 points d'écart EFFECTIF) ----

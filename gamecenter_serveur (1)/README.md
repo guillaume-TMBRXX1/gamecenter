@@ -486,6 +486,28 @@ Demandes de Guillaume (06/10, avant le palier 2 de l'étape 6) :
 - Vérifié dans Chromium (bureau 1440 px et mobile 390 px) : aucune erreur JS, pas de défilement horizontal ; API :
   refus sans compte (401) et équipe inconnue (400).
 
+### 25. Étape 6, palier 2 : 12 franchises (notebook V30, 07/10/2026)
+
+Franchises 09-12 de la bible des identités, dans les **mêmes tables** que le palier 1 (aucune logique propre à une
+équipe). Noms, codes, couleurs et coordinateurs **proposés par Claude, à valider par Guillaume** :
+
+| Code | Franchise | Bible | Couleur | Coordinateurs (att. · déf.) | Identité dans le moteur |
+|---|---|---|---|---|---|
+| PLS | Pulse Jackals | 09 No-Huddle / Tempo | `#1C8FC0` | Kade Ferris · Mira Solberg | tempo −3 s par action, hurry-up tôt, jeu rapide (écrans, Stick, Mesh, RPO), défense simple (Cover 3, Quarters) |
+| ONX | Onyx Hawks | 10 Turnover / Ball Hawk | `#3E4A59` | Lucien Abara · Saskia Delmont | DB et LB lecteurs (zone_iq, awareness, réaction), appâts et rotations (Robber, Cover 3 Match, Mug drop, Palms), attaque prudente |
+| FRG | Forge Bison | 11 Trench Warfare | `#7A4E2D` | Harlan Brody · Tamsin Okeke | OL / DL dominantes, Power / Counter / Duo et play action de poche (≈ 55 / 45), pression à quatre (interior collapse), 4e essais |
+| MRD | Meridian Owls | 12 Field Position / Territory | `#6E7F2A` | Ansel Whitford · Priya Lindgren | K / P à 91, field goals longs, 4e essais rares, jeu court sûr, Cover 2 / Cover 3, horloge tuée tôt |
+
+- **Calendrier** : à 12, **aller simple** (11 rondes, 66 matchs, 11 par équipe — 5 ou 6 à domicile), 11 créneaux de 6
+  matchs du lundi au jeudi (13:00, 18:00, 22:00 ; jeudi 18:00 et 22:00) ; verrou du classement vendredi 23:30, playoffs
+  inchangés. `league_rounds` (12.1) : aller-retour à 8, aller simple à partir de 12.
+- **Cotes** : budget inchangé (`SEASON_ODDS_BUDGET` = 8 400 simulations) : 64 par affiche à 12 équipes.
+- **Contrôles** (décision de Guillaume, 07/10 : pas d'audit ni de tests lourds avant les 24 franchises) : à 12, le test
+  d'équilibre de 12.3 **signale** (⚠️) une franchise hors de 40-60 % au lieu de bloquer, et affiche les identités
+  sans les contrôler ; calibrage, rapport de calibration, audit et tests repris à 24 franchises. `GC_FRANCHISES=4` /
+  `8` gardent les ligues précédentes et leurs contrôles.
+- Site : couleurs `--t-pls`, `--t-onx`, `--t-frg`, `--t-mrd` (thèmes clair / sombre), styles en anglais (Teams).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

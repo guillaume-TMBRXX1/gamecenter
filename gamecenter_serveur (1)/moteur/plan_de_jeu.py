@@ -80,6 +80,16 @@ PROFILS = {
                 cible_ok=0.50, tenue=8, protege=True, quick=1.35, bracket=0.45, rotation=3, deguise=2, deguise_k=0.55),
     "NVA": dict(fenetre=10, blitz3=3, blitz_part=0.50, pression=2, doubles=4, cible_part=0.45, cible_min=5,
                 cible_ok=0.50, tenue=10, protege=True, quick=1.20, bracket=0.55, rotation=3, deguise=2, deguise_k=0.45),
+    # palier 2 : PLS répond vite et simplement (jeu rapide) ; ONX lit et attend son ballon (bracket, rotations) ;
+    # FRG protège et gagne à quatre ; MRD discipline, peu de pression
+    "PLS": dict(fenetre=6, blitz3=2, blitz_part=0.40, pression=3, doubles=3, cible_part=0.42, cible_min=4,
+                cible_ok=0.50, tenue=8, protege=True, quick=1.55, bracket=0.45, rotation=3, deguise=2, deguise_k=0.45),
+    "ONX": dict(fenetre=8, blitz3=3, blitz_part=0.45, pression=3, doubles=3, cible_part=0.45, cible_min=5,
+                cible_ok=0.50, tenue=10, protege=True, quick=1.35, bracket=0.60, rotation=2, deguise=2, deguise_k=0.70),
+    "FRG": dict(fenetre=10, blitz3=3, blitz_part=0.50, pression=3, doubles=4, cible_part=0.50, cible_min=6,
+                cible_ok=0.50, tenue=12, protege=True, quick=1.20, bracket=0.45, rotation=4, deguise=3, deguise_k=0.45),
+    "MRD": dict(fenetre=12, blitz3=4, blitz_part=0.55, pression=2, doubles=4, cible_part=0.45, cible_min=6,
+                cible_ok=0.45, tenue=14, protege=True, quick=1.40, bracket=0.55, rotation=3, deguise=2, deguise_k=0.45),
 }
 PROFIL_DEFAUT = PROFILS["CTX"]
 PROTECTION = {"poche": 0.20, "rusher5": 0.10}     # s gagnées par la protection ; un 5e rusher ramassé en partie
