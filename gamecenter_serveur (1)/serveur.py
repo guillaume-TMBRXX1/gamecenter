@@ -351,7 +351,7 @@ with db() as _c:
     # ce joueur. Sans compte on parie comme avant (« invité ») ; le compte garde le portefeuille sur tous les appareils
     # et donne une place au classement de la saison. Migration douce : colonnes ajoutées à la base existante.
     _cols = {r[1] for r in _c.execute("PRAGMA table_info(players)")}
-    for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER")):
+    for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER"), ("fav_team", "TEXT")):
         if _col not in _cols:
             _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
     _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
@@ -442,7 +442,7 @@ def _note_fail(*keys):
 
 
 def account_public(p):
-    return {"token": p["token"], "name": p["name"], "account": bool(p.get("login"))}
+    return {"token": p["token"], "name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team")}
 
 
 def bet_row(r):
@@ -807,7 +807,46 @@ def api_me(token: str = ""):
     mine = next((r for r in rows if r["id"] == p["id"]), None)
     season = {"rank": mine["rank"] if mine else None, "net": mine["net"] if mine else season_net(p["id"], t)["net"],
               "players": len(rows)}
-    return {"name": p["name"], "account": bool(p.get("login")), "week": w.start, "now": t, "season": season, **L}
+    return {"name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team"), "week": w.start, "now": t,
+            "season": season, **L}
+
+
+# ------------------------------------------------------------------ « My team » : équipe favorite d'un compte
+_TEAM_RE = re.compile(r"^[A-Z]{2,4}$")
+
+
+@app.post("/api/account/team")
+async def api_fav_team(req: Request):
+    """Équipe favorite (rubrique « My team » du site) : comptes seulement ; team vide = aucune."""
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p or not p.get("login"):
+        raise HTTPException(401, "account_required")
+    team = str(body.get("team") or "").strip().upper() or None
+    if team is not None:
+        known = {a for w in load_weeks().values() for a in w.doc["teams"]}
+        if not _TEAM_RE.match(team) or team not in known:
+            raise HTTPException(400, "unknown_team")
+    with _db_lock, db() as c:
+        c.execute("UPDATE players SET fav_team=? WHERE id=?", (team, p["id"]))
+    return {"fav_team": team}
+
+
+@app.get("/api/teams/history")
+def api_teams_history():
+    """Semaines TERMINÉES (AI Bowl joué) : champion, finaliste, têtes de série et classement final de chaque équipe —
+    rien d'une semaine en cours (pas de spoiler)."""
+    t = now_ms()
+    out = []
+    for w in sorted(load_weeks().values(), key=lambda w: w.monday):
+        if w.open > t or w.status(w.final, t) != "final":
+            continue
+        d = w.doc
+        out.append({"week": w.start, "index": d["week"]["index"], "champion": d.get("champion"),
+                    "runner_up": d.get("runner_up"), "seeds": d.get("seeds"),
+                    "standings": [{k: r.get(k) for k in ("rank", "team", "w", "l", "t", "pf", "pa")}
+                                  for r in d.get("standings") or []]})
+    return {"now": t, "weeks": out}
 
 
 def _check_pick(w, pk, t):

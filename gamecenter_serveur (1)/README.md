@@ -426,9 +426,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 ### 23. Étape 6, palier 1 : 8 franchises, retraites et recrues (notebook V29, 06/10/2026)
 
 **Décisions de Guillaume (06/10)** : par paliers (franchises 05-08 de la bible des identités d'abord) ; noms, codes et
-couleurs **proposés par Claude, à valider** ; moins de matchs par équipe ; **retraite + recrue générée**.
+couleurs proposés par Claude — **validés par Guillaume le 06/10** ; moins de matchs par équipe ; **retraite + recrue générée**.
 
-| Code | Franchise (proposée) | Bible | Couleur | Coordinateurs (att. · déf.) | Ce qui se mesure (12.3) |
+| Code | Franchise | Bible | Couleur | Coordinateurs (att. · déf.) | Ce qui se mesure (12.3) |
 |---|---|---|---|---|---|
 | AXM | Axiom Falcons | 05 Precision / West Coast — *Execute* | vert `#2E8A5E` | Lena Strand · Owen Achterberg | meilleure complétion de la ligue (≈ 70 %), jeu court de timing, peu d'INT |
 | GLT | Glitch Hornets | 06 Blitz / Chaos — *Disrupt* | violet `#6B4FA8` | Rhys Calloway · Vera Kovac | blitz le plus fréquent (≈ 40 % des snaps), le plus de sacks, presse |
@@ -464,6 +464,27 @@ couleurs **proposés par Claude, à valider** ; moins de matchs par équipe ; **
   GLT 50,0 · CPH 51,6 · NVA 49,6 % (sur 3 024 matchs : 43,1 à 54,4 %) ; temps × 1,11. **Semaine du 12/10 produite**
   (`generer_semaine.py`, notebook complet, 2 processus) en 35,5 min : `audit_moteur.py` **0 anomalie, 0 alerte** (59 matchs,
   8 279 actions) ; site rejoué dans Chromium (bureau et 390 px), aucune erreur.
+
+### 24. Site : My team, fiches joueurs depuis les rosters, plein écran agrandi (06/10/2026)
+
+Demandes de Guillaume (06/10, avant le palier 2 de l'étape 6) :
+- **My team** (barre latérale, et « My team » dans la recherche sur mobile) : un compte choisit son **équipe favorite**
+  (gardée sur le serveur : colonne `players.fav_team`, `POST /api/account/team {token, team}` — comptes seulement, équipe
+  connue d'une semaine ; `fav_team` dans `/api/me` et les réponses de connexion). La page montre le bilan (W-L, rang,
+  points marqués / encaissés, yards à la passe / à la course, sacks, interceptions, domicile / extérieur, série, 5
+  derniers), les matchs **joués** (replay) et **à jouer** (direct, cotes), l'**historique de l'AI Bowl** (titres,
+  finales, bilan et rang de chaque semaine terminée : `GET /api/teams/history`, jamais une semaine en cours — pas de
+  spoiler), les coordinateurs, les unités et le roster. Sans compte : invitation à en créer un (Settings).
+- **Fiche joueur depuis un roster** (Teams et My team) : un clic (ou Entrée) sur un joueur ouvre la **même tuile**
+  qu'en match — attributs, intelligence (QB, receveur, défenseur : lue dans les GameFeed de la semaine), développement
+  (âge, potentiel, courbe, recrue), stats de la semaine et rang. Code commun : `playerBodyHTML` / `showCardEl`.
+- **Plein écran agrandi** (bouton dans l'en-tête du match, retenu sur l'appareil) : terrain plus grand avec le score,
+  la ligne des jeux appelés et le commentaire (play-by-play) en haut ; probabilité de victoire, cotes et statistiques
+  descendent en bas. Mobile : tout en une colonne, terrain plus haut.
+- Au passage : raccourcis d'horloge selon le nombre de créneaux (« Midweek », dernier créneau), « N franchises » sur
+  la page Teams.
+- Vérifié dans Chromium (bureau 1440 px et mobile 390 px) : aucune erreur JS, pas de défilement horizontal ; API :
+  refus sans compte (401) et équipe inconnue (400).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
