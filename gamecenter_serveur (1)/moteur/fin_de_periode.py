@@ -38,7 +38,9 @@ PART_PASSE = 0.6             # mélange course / passe du coordinateur dans ces 
 ARRET = 0.32                 # action sans gain (passe incomplète, sack, course bloquée) hors touchdown / perte de balle
 
 # temps d'une action (secondes -> probabilité), mesuré
-TEMPS = {1: .005, 2: .066, 3: .106, 4: .173, 5: .195, 6: .173, 7: .135, 8: .09, 9: .047, 10: .006, 11: .005}
+TEMPS_MESURE = {1: .005, 2: .066, 3: .106, 4: .173, 5: .195, 6: .173, 7: .135, 8: .09, 9: .047, 10: .006, 11: .005}
+# regroupé sur 6 points (moyenne 5,4 s comme la mesure) : le modèle va presque deux fois plus vite
+TEMPS = {2: .177, 4: .173, 5: .195, 6: .173, 8: .225, 10: .057}
 # par zone de 5 yards (distance à l'en-but // 5, 8 = 40 yards et plus) : (touchdown, perte de balle, gain moyen)
 ZONES = {
     "PASS": [(.549, .031, 1.0), (.458, .030, 2.9), (.308, .029, 5.3), (.169, .022, 6.3), (.079, .017, 6.5),
@@ -68,6 +70,17 @@ def _action(en_but, ecart_unites):
     return td, to, g
 
 
+def classe_ecart(quart, ecart):
+    """Écart canonique : même utilité pour 0, 3 et 7 points (Q2 : l'écart ne compte pas) — partage du cache."""
+    if quart == 2:
+        return 0
+    if ecart >= 1:
+        return 1
+    if ecart == 0:
+        return 0
+    return {-1: -1, -2: -1, -3: -3, -4: -4, -5: -4, -6: -4, -7: -7}.get(ecart, -8)
+
+
 def _utilite(quart, ecart, points):
     if quart == 2:
         return float(points)
@@ -75,7 +88,7 @@ def _utilite(quart, ecart, points):
     return 1.0 if d > 0 else 0.5 if d == 0 else 0.0
 
 
-@lru_cache(maxsize=200_000)
+@lru_cache(maxsize=600_000)
 def _valeurs(quart, secondes, essai, a_gagner, en_but, ecart, st, ecart_unites):
     """(valeur du field goal ou None, valeur de jouer) — récursion sur le temps qui reste."""
     dist = en_but + 17
@@ -123,9 +136,10 @@ def decider(quart, secondes, essai, a_gagner, en_but, ecart, special_teams_ratin
     if quart not in (2, 4) or secondes > FENETRE or secondes <= 0:
         return None
     en_but = max(1, int(round(en_but)))
-    st = round(float(special_teams_rating), 1)
-    eu = round(max(-15.0, min(15.0, float(ecart_unites))), 1)
-    v_fg, v_jouer = _valeurs(quart, int(secondes), int(essai), max(1, int(round(a_gagner))), en_but, int(ecart), st, eu)
+    st = float(round(special_teams_rating))
+    eu = float(round(max(-15.0, min(15.0, float(ecart_unites)))))
+    v_fg, v_jouer = _valeurs(quart, int(secondes), int(essai), max(1, int(round(a_gagner))), en_but,
+                             classe_ecart(quart, int(ecart)), st, eu)
     dist = en_but + 17
     p = probabilite_fg(dist, st)
     objectif = "points attendus" if quart == 2 else "probabilité de victoire"
