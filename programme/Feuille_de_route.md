@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 06/10/2026, validation complète de l'étape 5)
+# Feuille de route — GridironSim (mise à jour le 06/10/2026, validation complète de l'étape 5, extension du playbook branchée)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -22,6 +22,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
 | **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
+| 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
@@ -694,7 +695,7 @@ la branche du bloc C (jamais fusionnée) et passée au moteur V26 (blocs A-E, no
 GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier dans `main`.
 
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-19 du README du serveur.
+1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-21 du README du serveur.
 2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
    — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
 3. **Étape 6 : plus de franchises / divisions**, avec les systèmes de l'étape 5 (aucune logique codée pour les 4 équipes de
@@ -703,23 +704,27 @@ GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier da
    par match restent les garde-fous).
 4. Générer le commentaire enregistré des 7 cues du bloc D et de `SAFETY` (workflow « Commentaire audio », mode `generer`).
 
-## Référence : base d'extension du playbook (V0.1, reçue le 05/10/2026)
-`programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md` — base de connaissances football (personnel, formations,
-alignements, motion, concepts de course / passe, routes, option / RPO, blocage, protection, fronts, run fits,
-couvertures, pression, équipes spéciales, situations, archétypes, relations entre concepts, compatibilité).
-**Statut : référence / réserve, pas une donnée active.** Rien n'est branché au moteur ni attribué aux franchises ;
-le playbook V0.1, les formations (offense `SHOTGUN / SINGLEBACK / I_FORM / PISTOL / EMPTY`, défense `4-3 / 3-4 /
-NICKEL / DIME / GOAL_LINE` — conformes aux enums du notebook) et les lectures du QB (`moteur/progressions.py`,
-`decision_qb.py`) restent tels quels. On y puise au cas par cas, surtout à l'étape 6 (nouvelles franchises).
-Correspondance avec l'existant (pour piocher sans doublon, règle « normalisation » §36 du document) :
-- Déjà présents (`moteur/progressions.py`) : SLANT (QUICK_SLANT), STICK, CURL (≈ CURL_FLAT), DAGGER, SAIL, MESH,
-  FOUR_VERTICALS (FOUR_VERTS), BOOT (≈ PA_BOOT), CHAMP, POP, PLAY_ACTION, SCREEN ; routes GO, SEAM, DIG, POST, OUT,
-  SLANT, DRAG, CURL, CORNER, FLAT, IN, CROSS (≈ SHALLOW_CROSS / DEEP_CROSS), FLAG (≈ CORNER).
-- En réserve : la plupart des concepts de course nommés (IZ / OZ / DUO / POWER / COUNTER…), SMASH, LEVELS, FLOOD, Y_CROSS,
-  MILLS, DRIVE, SPOT_SNAG, option / RPO, protections nommées, fronts et techniques, couvertures match, familles de
-  pression (sim pressure, creeper, green dog…), personnel 10 / 11 / 12 / 21 / 22, motion / shift.
-- Toute reprise suit les garde-fous du programme ENGINE INTELLIGENCE (interrupteur, flux aléatoire dédié, rapport de
-  calibration, cotes en direct, audit de semaine).
+
+## Extension du playbook V0.1 — ✅ branchée le 06/10/2026 (notebook V27, cellule 12.2 decies)
+`programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md` : à la demande de Guillaume, **tout ce qui n'était pas
+encore dans le notebook est branché** avant l'étape 6 (pendant la validation du programme) ; les formations et concepts
+déjà présents ne sont pas recopiés (alias). Détail : README du serveur, section 21, et `moteur/README.md`.
+- Catalogue `moteur/playbook_expansion.py` (tests `test_expansion.py`) : 22 formations, 144 plays, 41 concepts (dont
+  6 options et 6 RPO), 9 routes, motions / shifts, protections, enchaînements ; défense : 33 paquets, 11 fronts, jeux
+  de rush, mouvements ; `ALIAS` (131 noms déjà portés par le moteur), `RESERVE` (5, avec la raison).
+- Crochets : `simulate_drive_franchise` (après l'appel défensif : `_XP_SNAP_HOOK`), `_decision_pass_hook`
+  (`_dec_expansion` -> `moteur.decider_passe(..., appel=...)`). Interrupteur `EXPANSION_ENABLED` / `GC_EXPANSION`.
+- Mesuré : rapport de calibration dans les tolérances (points 52,7 -> 51,7, victoires 46,6-54,7 %), semaine du 12/10
+  produite et auditée (0 anomalie, 0 alerte), exhibition V27 CTX @ MNL.
+
+**À surveiller (extension)** :
+- **Temps du calcul du samedi** : ≈ ×1,3 par match (230 contre 175 ms) ; semaine d'essai 49 min sur une machine chargée
+  (limite du job : 75 min). Si le samedi dépasse 60 min, réduire le nombre de plays candidats ou mettre en cache les
+  enveloppes de la feuille d'appel (V21 / bloc D).
+- **MNL 46,6 %** (VEC 48,0 %) : dans 40-60 %, mais MNL perd 2 points ; à suivre sur les semaines réelles.
+- Réserve à compléter par Guillaume : définition de **SALEM** et de **SPILL_PROTECTION** ; formations **10 personnel**
+  (4 WR) dès que les rosters de l'étape 6 en auront.
+- Commentaire enregistré : aucune cue nouvelle (motion, RPO, option, paquet déguisé : sous-titres seulement).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

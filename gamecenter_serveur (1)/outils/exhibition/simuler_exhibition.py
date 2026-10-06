@@ -5,7 +5,8 @@ Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais
 une cellule ajoutée à la volée qui :
   1. reprend les staffs ajustés de la dernière semaine (staffs_next_week) et, depuis V26, les notes des joueurs
      (players_next_week — bloc E, progression ; amorce depuis ses stats sinon), comme le ferait la semaine suivante ;
-  2. joue N matchs candidats entre deux franchises avec le moteur courant (V25 : plan de jeu et adaptation en match —
+  2. joue N matchs candidats entre deux franchises avec le moteur courant (V27 : extension du playbook V0.1 —
+     nouvelles formations, RPO, options, motions, paquets défensifs ; V25 : plan de jeu et adaptation en match —
      bloc D, intelligence des receveurs et des défenseurs — bloc C, intelligence du QB et poche — bloc B, lectures du
      QB — bloc A, safety, coordinateurs adaptatifs en direct, playbooks V19 + « Roman 2014 » V20) — graines hors
      saison et hors cotes ;
@@ -13,7 +14,8 @@ une cellule ajoutée à la volée qui :
      double, bracket, rotation du bracket, pression déguisée — surtout les contre-ajustements), décisions visibles du
      QB (lectures au-delà de la première, passes sous pression, scrambles, throwaways, sacks « ballon gardé »), duels
      receveur / défenseur (réceptions disputées réussies, ballons défendus, coverage busts), safety, ajustements en
-     direct, score serré, concepts variés ;
+     direct, score serré, concepts variés ; depuis V27 : nouvelles formations, motions, lectures RPO et option, défense
+     déguisée (pression présentée, coquille qui tourne) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -38,6 +40,7 @@ if _prev and _prev.get("staffs_next_week"):
 if "progression_reprendre" in globals():                 # V26, bloc E : notes des joueurs de la semaine suivante
     print("bloc E : notes depuis", progression_reprendre(_prev))
 _H, _A = _P["home"], _P["away"]
+_XPF = set(moteur.playbook_expansion.FORMATIONS) if globals().get("EXPANSION_ENABLED") else set()
 _cands = []
 for _k in range(_P["candidates"]):
     _seed = _P["seed_base"] + _k
@@ -63,13 +66,23 @@ for _k in range(_P["candidates"]):
             "gameplan_adjust": sum(1 for p in _pl for a in (p.get("adjust") or []) if a.get("kind") in ("o_quick", "o_protect", "o_away", "d_bracket", "d_rotate", "d_disguise")),
             "counters": sum(1 for p in _pl for a in (p.get("adjust") or []) if a.get("kind") in ("d_rotate", "d_disguise", "o_away")),
             "bracket_throws": sum(1 for p in _pl if ((p.get("decision") or {}).get("plan") or {}).get("bracketed") and ((p.get("decision") or {}).get("target") or {}).get("role") == ((p.get("decision") or {}).get("plan") or {}).get("bracket")),
-            "gameplan_kinds": len({a.get("kind") for p in _pl for a in (p.get("adjust") or []) if a.get("kind") in ("o_quick", "o_protect", "o_away", "d_bracket", "d_rotate", "d_disguise")})}
+            "gameplan_kinds": len({a.get("kind") for p in _pl for a in (p.get("adjust") or []) if a.get("kind") in ("o_quick", "o_protect", "o_away", "d_bracket", "d_rotate", "d_disguise")}),
+            # extension du playbook V0.1 (12.2 decies) : nouvelles formations, motions, lectures RPO / option, défense déguisée
+            "xp_formations": len({(p.get("call") or {}).get("formation") for p in _pl if (p.get("call") or {}).get("formation") in _XPF}),
+            "motions": sum(1 for p in _pl if (p.get("call") or {}).get("motion") or (p.get("call") or {}).get("shift_from")),
+            "rpo": sum(1 for p in _pl if (p.get("call") or {}).get("rpo")),
+            "rpo_throws": sum(1 for p in _pl if ((p.get("call") or {}).get("rpo") or {}).get("read") == "throw"),
+            "options": sum(1 for p in _pl if (p.get("call") or {}).get("option")),
+            "disguised": sum(1 for p in _pl if (p.get("call") or {}).get("type") == "pass"
+                             and any(k in str(((p.get("call") or {}).get("defense") or {}).get("presented") or "") for k in ("mug", "rotating")))}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
               + 4 * min(_dec["contested"], 5) + 3 * min(_dec["broken_up"], 4) + 10 * min(_dec["busts"], 3)
               + 4 * min(_dec["gameplan_adjust"], 8) + 12 * _dec["gameplan_kinds"] + 6 * min(_dec["counters"], 4)
-              + 2 * min(_dec["bracket_throws"], 4))
+              + 2 * min(_dec["bracket_throws"], 4)
+              + 3 * min(_dec["xp_formations"], 12) + min(_dec["motions"], 12) + 4 * min(_dec["rpo"], 4)
+              + 6 * min(_dec["rpo_throws"], 2) + 4 * min(_dec["options"], 4) + 2 * min(_dec["disguised"], 6))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
@@ -94,7 +107,7 @@ def main():
     ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V25 · game plans & in-game adjustments · player & QB intelligence")
+    ap.add_argument("--titre", default="Notebook V27 · playbook expansion · new formations, RPO & options, disguised defenses")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")
@@ -104,6 +117,8 @@ def main():
                     help="blocs A + B seulement : intelligence des receveurs et des défenseurs (bloc C, V24) coupée")
     ap.add_argument("--sans-bloc-d", action="store_true",
                     help="blocs A + B + C seulement : plan de jeu et adaptation en match (bloc D, V25) coupés")
+    ap.add_argument("--sans-expansion", action="store_true",
+                    help="moteur V26 : extension du playbook V0.1 (12.2 decies) coupée")
     a = ap.parse_args()
     import nbformat
     from nbclient import NotebookClient
@@ -121,6 +136,7 @@ def main():
     os.environ["GC_BLOC_B"] = "0" if a.sans_bloc_b else "1"
     os.environ["GC_BLOC_C"] = "0" if a.sans_bloc_c else "1"
     os.environ["GC_BLOC_D"] = "0" if a.sans_bloc_d else "1"
+    os.environ["GC_EXPANSION"] = "0" if a.sans_expansion else "1"
     nb = nbformat.read(a.notebook, as_version=4)
     nb.cells.append(nbformat.v4.new_code_cell(CELL))
     t0 = time.time()

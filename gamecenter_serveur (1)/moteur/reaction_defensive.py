@@ -86,6 +86,11 @@ class PostSnapState:
     double_sur: str              # rôle du receveur doublé (ou "")
     temps_pression: float        # secondes avant que la pression n'arrive
     receveurs: dict = field(default_factory=dict)     # rôle -> EtatReceveur
+    # extension du playbook (moteur.playbook_expansion) : paquet joué, présentation, effets sur le QB
+    paquet: str = ""             # paquet défensif réellement joué ("" : l'appel de base)
+    presente: str = ""           # ce que la défense a montré avant le snap
+    deguisement: float = 0.0     # erreurs de lecture du QB en plus (+) / en moins (− : motion, shift)
+    scramble: float = 1.0        # multiplicateur des sorties de poche (contain, blitz intérieur…)
 
     def to_dict(self):
         d = asdict(self)
@@ -140,7 +145,7 @@ class DefensiveReactionEngine:
 
     def react(self, concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng, bruit=BRUIT,
               echelle=ECHELLE_DUEL, bracket="", p_bracket=None, p_bracket_bonus=0.0, bonus_poche=0.0,
-              bonus_rusher5=0.0):
+              bonus_rusher5=0.0, appel=None):
         """
         concept_defensif : appel du coordinateur ("COVER_2", "BLITZ"…)
         lectures         : progression (moteur.progressions.progression)
@@ -158,14 +163,27 @@ class DefensiveReactionEngine:
                            Même tirage consommé qu'au bloc A.
         bonus_poche      : bloc D — protection (un RB reste bloquer) : secondes gagnées avant la pression ;
                            bonus_rusher5 : part du 5e rusher ramassée par ce bloqueur
+        appel            : extension du playbook (moteur.playbook_expansion.appel_passe) — paquet défensif (coquille,
+                           rushers, présentation, receveur laissé par un blitzeur…), jeu de rush, front, protection,
+                           motion, shift, enchaînement. None : bloc D à l'identique (mêmes tirages, mêmes valeurs).
         """
-        famille, choix, rushers = COUVERTURES.get(concept_defensif, COUVERTURE_DEFAUT)
+        a = appel or {}
+        if a.get("paquet"):
+            famille, choix, rushers = a["famille"], a["coquilles"], a["rushers"]
+        else:
+            famille, choix, rushers = COUVERTURES.get(concept_defensif, COUVERTURE_DEFAUT)
         couverture = _tirage(choix, rng)
         blitz = concept_defensif == "BLITZ"
         if blitz and couverture == "Cover 0":
-            rushers = 6
+            rushers = max(rushers, 6)
         roles = [l["role"] for l in lectures]
-        homme = _affectations_homme(roles, defenseurs, couverture) if famille == "homme" else {}
+        homme = {}
+        if famille == "homme":
+            comme = couverture
+            if a:
+                from .playbook_expansion import COQUILLE_HOMME
+                comme = COQUILLE_HOMME.get(couverture, couverture)
+            homme = _affectations_homme(roles, defenseurs, comme)
 
         # séparation de chaque receveur
         etats, brut = {}, {}
@@ -187,6 +205,8 @@ class DefensiveReactionEngine:
             if rushers >= 5 and l["classe"] == "court":
                 sep += BONUS_HOT
             sep += gauss_borne(rng, bruit, 2.5)
+            if a:
+                sep += _effet_appel(a, l, famille)
             brut[role] = (sep, nom_d, j)
 
         # double couverture : un safety penche sur la meilleure menace hors checkdown (souvent WR1)
@@ -225,7 +245,37 @@ class DefensiveReactionEngine:
         t += bonus_poche
         if rushers >= 6:
             t -= POCHE["rusher6"]
-        t += gauss_borne(rng, POCHE["bruit"], 1.0)
-        return PostSnapState(concept_defensif=concept_defensif, famille=famille, couverture=couverture,
+        if a:
+            if rushers >= 5:
+                t += a.get("rusher5", 0.0) * POCHE["rusher5"]
+            if rushers >= 7:
+                t -= POCHE["rusher6"]
+            t += a.get("poche", 0.0)
+            k = a.get("bruit_poche", 1.0)
+            t += gauss_borne(rng, POCHE["bruit"] * k, 1.0 * k)
+        else:
+            t += gauss_borne(rng, POCHE["bruit"], 1.0)
+        etat = PostSnapState(concept_defensif=concept_defensif, famille=famille, couverture=couverture,
                              rushers=rushers, blitz=blitz, double_sur=double_sur,
                              temps_pression=round(max(POCHE["min"], t), 2), receveurs=etats)
+        if a:
+            from .playbook_expansion import deguisement
+            etat.paquet, etat.presente = a.get("paquet", ""), a.get("presente", "")
+            etat.deguisement = deguisement(a, famille)
+            etat.scramble = float(a.get("scramble", 1.0))
+        return etat
+
+
+def _effet_appel(a, lecture, famille):
+    """Séparation ajoutée par l'extension du playbook (paquet, front, motion, enchaînement) — sans tirage."""
+    d = 0.0
+    if lecture["classe"] == "court":
+        d += a.get("court", 0.0)
+    if lecture["classe"] == "profond":
+        d += a.get("profond", 0.0)
+    d += (a.get("vide") or {}).get(lecture["role"], 0.0)
+    if a.get("motion_role") == lecture["role"]:
+        d += (a.get("motion_sep") or {}).get(famille, 0.0)
+    if a.get("suite") and lecture["niveau"] == "primaire":
+        d += a.get("suite_sep", 0.0)
+    return d

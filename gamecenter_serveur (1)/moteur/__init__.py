@@ -26,6 +26,11 @@ Bloc D — adaptation en match et plan de jeu :
                         mémoire de tendances, AdaptiveGameplanEngine (quick game contre le blitz, protection,
                         bascule hors du double ; bracket, rotation du bracket, pression déguisée) ; plan d'une passe
 
+Extension du playbook V0.1 (programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md) :
+    playbook_expansion  catalogue (formations, personnel, concepts de course / passe / option / RPO, routes, motions,
+                        shifts, protections, paquets défensifs, fronts, jeux de rush, enchaînements, alias) ;
+                        lectures RPO / option, effets ; brancher() l'inscrit dans les autres modules
+
 Bloc E — progression des joueurs :
     developpement       notes de base / actuelle / forme, potentiel, rythme de développement, âge (une année = 4
                         semaines), expérience (bonus d'intelligence des blocs B et C) ; évolution par attribut ;
@@ -35,7 +40,7 @@ from .aleatoire import flux
 from .progressions import progression
 from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
-from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu, developpement
+from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu, developpement, playbook_expansion
 from .intelligence_qb import attributs_qb
 from .intelligence_joueurs import attributs_joueur
 from .plan_de_jeu import plan_de_jeu as plan_de_jeu_adverse, AdaptiveGameplanEngine, MemoireTendances
@@ -50,7 +55,7 @@ _QB = QBDecisionEngine()
 
 
 def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, qb, niveau_pression,
-                  graine_match, numero_action, plan=None):
+                  graine_match, numero_action, plan=None, appel=None):
     """Toute la chaîne d'une passe, dans le flux dédié de cette action.
 
     qb avec "iq" (moteur.intelligence_qb.attributs_qb) -> décision du bloc B ; sans -> bloc A à l'identique.
@@ -58,6 +63,8 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
     l'intelligence des joueurs (flux à part : « joueurs-passe »), puis réception et yards après la réception.
     plan (moteur.plan_de_jeu.plan_passe) -> bloc D : progression ajustée (protection, receveur doublé évité, cible
     favorite ; flux à part « plan-de-jeu »), bracket et protection dans l'état post-snap ; None -> bloc C à l'identique.
+    appel (moteur.playbook_expansion.appel_passe) -> extension du playbook : paquet défensif, jeu de rush, front,
+    protection (rôles qui restent bloquer), motion, shift, enchaînement ; None -> bloc D à l'identique.
     Renvoie (lectures, etat_post_snap, decision) ; avec un plan, decision.plan note ce qui a joué.
     """
     rng = flux(FLUX_DECISION, graine_match, numero_action)
@@ -67,9 +74,11 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
     notes = {}
     if plan:
         lectures, notes = plan_de_jeu.appliquer_progression(lectures, plan, flux(FLUX_PLAN, graine_match, numero_action))
+    if appel:
+        lectures = playbook_expansion.ajuster_lectures(lectures, appel)
     etat = _REACTION.react(concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng,
                            **({"bruit": intelligence_joueurs.BRUIT_C, "echelle": intelligence_joueurs.ECHELLE_C} if bloc_c else {}),
-                           **plan_de_jeu.options_reaction(plan))
+                           **plan_de_jeu.options_reaction(plan), **({"appel": appel} if appel else {}))
     qui = None
     if bloc_c:
         qui = intelligence_joueurs.ajuster_post_snap(etat, lectures, receveurs, defenseurs, concept,

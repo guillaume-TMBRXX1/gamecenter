@@ -354,6 +354,46 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
 - Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : 12 GameFeeds du moteur V26 (notes et staffs de
   la dernière semaine) dans un artefact, à charger sur le site (« Load GameFeed »).
 
+### 21. Extension du playbook V0.1 (notebook V27, 06/10/2026, allumée)
+
+- **Source** : `programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md` (base de connaissances football de
+  Guillaume). Tout ce qu'elle apporte et que le moteur n'avait pas est branché (cellule **12.2 decies**, module
+  `moteur/playbook_expansion.py`, voir `moteur/README.md`) ; **aucun doublon** : ce que le moteur avait déjà, même sous un
+  autre nom, est rangé en alias (131) ; sans définition sûre, en réserve (SALEM, SPILL_PROTECTION ; personnel 10 bloqué
+  par la compatibilité avec des rosters à 3 WR ; équipes spéciales, hors playbook).
+- **Attaque** : 22 formations (avec leur personnel 11 / 12 / 21 / 22 et leurs modificateurs : tight, Y-off, wing, stack,
+  quads, trips open / tight, flex, bunch, deuce, wing pair, nasty, strong / weak, full house, wildcat…), 144 plays,
+  23 concepts de course (wham, power toss, pin & pull, buck sweep, counter sweep, jet action, end around, reverses,
+  QB draw / sweep, 6 options, 6 RPO), 18 concepts de passe (hitch, choice, écrans WR, mesh wheel, pivot, spot, levels,
+  Y-cross, dart, double dig, flood, deep cross, double post, divide, switch verticals, PA slide / flood), 9 routes,
+  motions (jet, orbit, across, return, trade) et shifts, protections (5 / 6 / 7, slides, man, chip, scat),
+  enchaînements entre concepts. Méthode « Roman 2014 » : chaque nouveau concept prend une part du budget d'un concept
+  existant (identités et mélange course / passe conservés) ; MNL garde ses courses à ses RB, VEC n'a ni option ni
+  wildcat.
+- **Défense** : 33 paquets joués à l'intérieur de l'appel du coordinateur (press / off man, robber, Cover 2 man, banjo,
+  Tampa 2, Cover 2 sink, Cover 3 sky / buzz / match, match quarters, palms, Cover 6 / 8 ; pression **présentée** sans
+  être jouée : sim pressure, creeper, mug drop, exchange ; vraie pression : fire zone, Cover 2 fire, 7 rushers, mug,
+  overload, A / B gap, edge, corner, safety, nickel, cross dog), jeux de rush à 4, 11 fronts (4-3 over / under / even,
+  bear, tite, hybrid, mint, stack, short yardage, nascar, empty) et mouvements de front.
+- **Interaction** : RPO lu après l'appel défensif (boîte chargée -> le QB lance, et le jeu devient une passe décidée) ;
+  option lue sur le bord (le QB garde plus quand il ferme) ; le QB se trompe plus contre une coquille déguisée, moins
+  après une motion qui révèle l'homme ; un blitzeur laisse son receveur ; front, motion, shift et mouvement pèsent sur
+  les courses. Chaque système tire dans son flux (`xp-…|graine|n° d'action`).
+- **Mesures** (1 008 matchs, `rapport_calibration.py --reference` V26) : toutes dans les tolérances — complétion 65,4 ->
+  64,1 %, sacks 8,3 -> 8,7 %, YPA 7,62 -> 7,46, yards / course 5,70 -> 5,78, points 52,7 -> 51,7, pertes de balle
+  3,66 -> 3,58, passes 58,6 -> 59,7 % ; victoires CTX 54,7 · VEC 48,0 · AEG 50,7 · MNL 46,6 %. Temps : 230 ms par match
+  contre 175 sans l'extension (feuille d'appel mise en cache). Semaine du 12/10 produite avec le notebook complet
+  (12.3, 13.x passés) : `audit_moteur.py` 0 anomalie, 0 alerte (39 matchs, 5 415 actions) ; 49 min sur la machine de la
+  session, chargée en même temps par l'exhibition (budget du job : 75 min — à surveiller au prochain samedi).
+- **GameFeed** (additif) : `play.call.{personnel, motion, shift_from, protection, rpo, option, sequence}`,
+  `play.call.defense.{package, presented, front, rush, movement}`. **Site** : les 22 formations dessinées (wildcat :
+  snap direct au RB, QB écarté), nouvelles routes et concepts, courses du QB / receveur / TE, rôles (H-back, wing,
+  fullback…), personnel et paquet réel dans la ligne de l'action, « jet motion », « RPO, pulled and thrown », « QB keeps »,
+  « Fire Zone (showed mug) » dans le play-by-play (même code dans la cellule 427).
+- Interrupteur `EXPANSION_ENABLED` (allumé ; `GC_EXPANSION=0` : moteur V26 à l'identique, contrôlé dans la cellule).
+  Rapport : `--expansion off`. Exhibition V27 : CTX @ MNL (`exh-v27-ctx-mnl`, remplace `exh-v25-ctx-vec`) ;
+  `simuler_exhibition.py --sans-expansion`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

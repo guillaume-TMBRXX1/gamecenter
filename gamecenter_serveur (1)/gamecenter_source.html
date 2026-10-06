@@ -1965,7 +1965,31 @@ const OFF_FORM={
   /* V20 (playbook Roman 2014): bunch (3 receivers stacked), heavy (tackle-over: WR1 slot = 6th OL, WR3 = fullback), pony (2 halfbacks) */
   BUNCH:     {TE:[1.2,8.5], QB:[5,0],   RB:[5.2,-1.9], WR1:[1,-20], WR2:[2.6,10.5], WR3:[2.6,6.8]},
   HEAVY:     {TE:[1.0,-5.6],QB:[1.1,0], RB:[7.4,0],    WR1:[0.9,5.7], WR2:[1,20],  WR3:[4.6,0]},
-  PONY:      {TE:[1.0,5.6], QB:[5,0],   RB:[5.2,-2.1], WR1:[1,-20], WR2:[1,21],   WR3:[5.2,2.1]}
+  PONY:      {TE:[1.0,5.6], QB:[5,0],   RB:[5.2,-2.1], WR1:[1,-20], WR2:[1,21],   WR3:[5.2,2.1]},
+  /* playbook expansion V0.1 (engine 12.2 decies): formation families and structural modifiers of the football
+     knowledge base — personnel and aliases in moteur/playbook_expansion.py */
+  GUN_TIGHT:{TE:[1.0,5.6], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-9.5], WR2:[1,10.5], WR3:[1.3,-6.5]},
+  GUN_Y_OFF:{TE:[1.9,3.6], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,21], WR3:[1.3,-13]},
+  GUN_WING:{TE:[1.7,6.6], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,21], WR3:[1.3,-13]},
+  GUN_STACK:{TE:[1.0,5.6], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,17], WR3:[3.4,17.6]},
+  GUN_QUADS:{TE:[1.2,6.5], QB:[5,0], RB:[5.2,-1.9], WR1:[1,22], WR2:[1.3,16.5], WR3:[1.3,11.5]},
+  GUN_TRIPS_OPEN:{TE:[1.0,5.6], QB:[5,0], RB:[5.2,1.9], WR1:[1,-21], WR2:[1.3,-9], WR3:[1.3,-14.5]},
+  GUN_TRIPS_TIGHT:{TE:[1.0,5.6], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,13], WR3:[1.4,9.4]},
+  GUN_FLEX:{TE:[1.3,9.5], QB:[5,0], RB:[5.2,-1.9], WR1:[1,-20], WR2:[1,21], WR3:[1.3,-13]},
+  SINGLEBACK_BUNCH:{TE:[1.2,8.5], QB:[1.1,0], RB:[7,0], WR1:[1,-20], WR2:[2.6,10.5], WR3:[2.6,6.8]},
+  SINGLEBACK_WING:{TE:[1.0,5.6], QB:[1.1,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[1.7,7.6]},
+  SINGLEBACK_TIGHT:{TE:[1.0,5.6], QB:[1.1,0], RB:[7,0], WR1:[1,-9.5], WR2:[1,10.5], WR3:[1.0,-5.6]},
+  SINGLEBACK_DEUCE:{TE:[1.0,5.6], QB:[1.1,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[1.0,7.6]},
+  SINGLEBACK_WING_PAIR:{TE:[1.7,6.8], QB:[1.1,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[1.7,-6.8]},
+  SINGLEBACK_NASTY:{TE:[1.0,5.6], QB:[1.1,0], RB:[7,0], WR1:[1,-20], WR2:[1,9.6], WR3:[1.3,-13]},
+  PISTOL_STRONG:{TE:[1.0,5.6], QB:[4,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[4.6,2.3]},
+  PISTOL_WING:{TE:[1.0,5.6], QB:[4,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[1.7,7.6]},
+  PISTOL_FULL_HOUSE:{TE:[4.6,-2.3], QB:[4,0], RB:[7,0], WR1:[1,-20], WR2:[1,21], WR3:[4.6,2.3]},
+  I_FORM_SLOT:{TE:[4.4,0], QB:[1.1,0], RB:[7.4,0], WR1:[1,-20], WR2:[1,19.5], WR3:[1.3,-13]},
+  I_FORM_WING:{TE:[1.7,7.0], QB:[1.1,0], RB:[7.4,0], WR1:[1,-20], WR2:[1,19.5], WR3:[4.4,0]},
+  STRONG:{TE:[1.0,5.6], QB:[1.1,0], RB:[7.4,0], WR1:[1,-20], WR2:[1,19.5], WR3:[4.4,2.3]},
+  WEAK:{TE:[1.0,5.6], QB:[1.1,0], RB:[7.4,0], WR1:[1,-20], WR2:[1,19.5], WR3:[4.4,-2.3]},
+  WILDCAT:{TE:[1.0,5.6], QB:[1,-20], RB:[5,0], WR1:[1.3,-13], WR2:[1,21], WR3:[5.2,2.0]}
 };
 /* dl: down linemen (+ edge rushers), lb: linebackers, nb: nickel/dime backs; CB are 6 and 7, safeties 9 and 10 */
 const DEF_FORM={
@@ -1998,7 +2022,17 @@ const ROUTE_LIB={
   CURL:{depth:12,break_depth:11,break_angle:30,break_run:2,direction:'INSIDE'},
   DIG:{depth:16,break_depth:15,break_angle:90,break_run:10,direction:'INSIDE'},
   FLAG:{depth:14,break_depth:9,break_angle:45,break_run:8,direction:'OUTSIDE'},
-  SEAM:{depth:14,break_depth:null,break_angle:0,break_run:null,direction:'VERTICAL'}
+  SEAM:{depth:14,break_depth:null,break_angle:0,break_run:null,direction:'VERTICAL'},
+  /* playbook expansion V0.1 */
+  HITCH:{depth:5.0,break_depth:5.0,break_angle:160,break_run:1.0,direction:"INSIDE"},
+  ARROW:{depth:3.0,break_depth:1.0,break_angle:60,break_run:8.0,direction:"OUTSIDE"},
+  ANGLE:{depth:5.0,break_depth:3.0,break_angle:120,break_run:6.0,direction:"INSIDE"},
+  PIVOT:{depth:5.0,break_depth:5.0,break_angle:90,break_run:6.0,direction:"OUTSIDE"},
+  CHOICE:{depth:6.0,break_depth:6.0,break_angle:90,break_run:5.0,direction:"INSIDE"},
+  COMEBACK:{depth:15.0,break_depth:14.0,break_angle:135,break_run:3.0,direction:"OUTSIDE"},
+  DEEP_CROSS:{depth:18.0,break_depth:6.0,break_angle:70,break_run:22.0,direction:"HORIZONTAL"},
+  FADE:{depth:28.0,break_depth:null,break_angle:0,break_run:null,direction:"VERTICAL"},
+  WHEEL:{depth:24.0,break_depth:4.0,break_angle:80,break_run:9.0,direction:"OUTSIDE"}
 };
 const CONCEPT_ROUTE={QUICK_SLANT:'QUICK_SLANT',SHORT_OUT:'OUT',CROSS:'CROSS',FOUR_VERTS:'GO',DEEP_POST:'POST',PLAY_ACTION:'POST',CORNER:'CORNER',IN:'IN',DRAG:'DRAG',
   STICK:'STICK',CURL:'CURL',CHAMP:'CORNER',DAGGER:'DIG',SAIL:'FLAG',MESH:'DRAG',BOOT:'FLAG',POP:'SEAM'};
@@ -2011,6 +2045,13 @@ const RT={
   BUBBLE:[[0,0],[-1,-1.5],[0.5,-4],[3,-5]], FAKE:[[0,0],[0.3,2.2],[1.8,4.5]],
   STICK:[[0,0],[6,0],[5.6,1.6]], HITCH:[[0,0],[5,0],[4.5,0.4]], FLAG:[[0,0],[9,0],[15,-6]]
 };
+/* playbook expansion V0.1 (engine 12.2 decies): new routes, concepts and their drawing — generated from
+   moteur/playbook_expansion.py (DESSIN_PASSE, ROUTES, CONCEPTS) */
+Object.assign(RT,{"ARROW":[[0,0],[1,-2],[3,-9]],"ANGLE":[[0,0],[3,-2.5],[5.5,4]],"PIVOT":[[0,0],[5,2],[5,-6]],"CHOICE":[[0,0],[6,0],[6.3,5]],"COMEBACK":[[0,0],[14,0],[12,-3]],"DEEP_CROSS":[[0,0],[6,0],[18,20]],"FADE":[[0,0],[2,-1.5],[28,-4]],"WHEEL":[[0,0],[1,-5],[4,-9],[24,-10]],"SCREEN_WR":[[0,0],[-1.2,1],[-0.5,2.5]],"TUNNEL":[[0,0],[0.5,2.5],[-0.5,6],[2,8]],"IN":[[0,0],[10,0],[10.5,9]]});
+Object.assign(CONCEPT_ROUTE,{"HITCH":"HITCH","CHOICE":"CHOICE","MESH_WHEEL":"DRAG","PIVOT":"PIVOT","SPOT_SNAG":"CORNER","LEVELS":"IN","Y_CROSS":"DEEP_CROSS","DART_QUICK_DIG":"IN","DOUBLE_DIG":"DIG","FLOOD":"OUT","DEEP_CROSS":"DEEP_CROSS","DOUBLE_POST":"POST","DIVIDE":"SEAM","SWITCH_VERTICALS":"GO","PA_SLIDE":"DEEP_CROSS","PA_FLOOD":"OUT","RPO_INSIDE_ZONE_THROW":"SLANT","RPO_READ_THROW":"STICK","RPO_ALERT_THROW":"GO","RPO_PEEK_THROW":"SLANT","RPO_POWER_THROW":"SEAM","RPO_OUTSIDE_ZONE_THROW":"HITCH"});
+const RUN_SHAPE={"WHAM":"TRAP","POWER_TOSS":"OUTSIDE_RUN","PIN_PULL":"OUTSIDE_RUN","BUCK_SWEEP":"OUTSIDE_RUN","COUNTER_SWEEP":"COUNTER","JET_ACTION":"INSIDE_RUN","END_AROUND":"JET_SWEEP","REVERSE":"JET_SWEEP","DOUBLE_REVERSE":"JET_SWEEP","QB_DRAW":"DRAW","QB_SWEEP":"OUTSIDE_RUN","POWER_READ":"POWER","INVERTED_VEER":"POWER","SPEED_OPTION":"OUTSIDE_RUN","MIDLINE_OPTION":"INSIDE_RUN","TRIPLE_OPTION":"READ_OPTION","SHOVEL_OPTION":"COUNTER","RPO_INSIDE_ZONE":"INSIDE_RUN","RPO_READ":"INSIDE_RUN","RPO_ALERT":"INSIDE_RUN","RPO_PEEK":"INSIDE_RUN","RPO_POWER":"POWER","RPO_OUTSIDE_ZONE":"OUTSIDE_RUN"};
+const XP_PA=new Set(["PA_FLOOD","PA_SLIDE","RPO_ALERT_THROW","RPO_INSIDE_ZONE_THROW","RPO_OUTSIDE_ZONE_THROW","RPO_PEEK_THROW","RPO_POWER_THROW","RPO_READ_THROW"]), FB_FORMS=new Set(["I_FORM_WING","PISTOL_FULL_HOUSE","PISTOL_STRONG","STRONG","WEAK"]);
+const FORM_ROLES={"GUN_Y_OFF":{"5":"H-back"},"GUN_WING":{"5":"Wing"},"GUN_FLEX":{"5":"Flex TE"},"SINGLEBACK_WING":{"10":"Wing"},"SINGLEBACK_TIGHT":{"10":"Y (2nd TE)"},"SINGLEBACK_DEUCE":{"10":"Y (2nd TE)"},"SINGLEBACK_WING_PAIR":{"5":"Wing","10":"Wing"},"PISTOL_STRONG":{"10":"Fullback"},"PISTOL_WING":{"10":"Wing"},"PISTOL_FULL_HOUSE":{"5":"H-back","10":"Fullback"},"I_FORM_SLOT":{"5":"Fullback (H)"},"I_FORM_WING":{"5":"Wing","10":"Fullback"},"STRONG":{"10":"Fullback"},"WEAK":{"10":"Fullback"},"WILDCAT":{"6":"QB (wide)","7":"Wildcat (direct snap)","10":"Jet / sweep"}};
 const PASS_ASSIGN={
   FOUR_VERTS:{8:'GO',9:'GO',10:'SEAM',5:'SEAM',7:'CHECK'},
   DEEP_POST:{8:'GO',9:'DIG',10:'CURL',5:'BLOCK',7:'BLOCK'},
@@ -2033,8 +2074,10 @@ const PASS_ASSIGN={
   BOOT:{8:'GO',9:'FLAG',10:'DRAG',5:'FLAT',7:'FAKE'},
   POP:{8:'GO',9:'GO',10:'BLOCK',5:'SEAM',7:'FAKE'}
 };
+Object.assign(PASS_ASSIGN,{"HITCH":{"8":"HITCH","9":"HITCH","10":"SEAM","5":"STICK","7":"FLAT"},"CHOICE":{"8":"GO","9":"HITCH","10":"CHOICE","5":"DRAG","7":"FLAT"},"FL_SE_SCREEN":{"8":"SCREEN_WR","9":"STALK","10":"STALK","5":"BLOCK","7":"FLAT"},"WR_TUNNEL_SCREEN":{"8":"STALK","9":"TUNNEL","10":"STALK","5":"BLOCK","7":"FLAT"},"MESH_WHEEL":{"8":"CORNER","9":"DRAG","10":"DRAG","5":"SEAM","7":"WHEEL"},"PIVOT":{"8":"GO","9":"OUT","10":"PIVOT","5":"STICK","7":"FLAT"},"SPOT_SNAG":{"8":"GO","9":"CORNER","10":"STICK","5":"FLAT","7":"DRAG"},"LEVELS":{"8":"POST","9":"IN","10":"DRAG","5":"SEAM","7":"FLAT"},"Y_CROSS":{"8":"POST","9":"CURL","10":"FLAT","5":"DEEP_CROSS","7":"FLAT"},"DART_QUICK_DIG":{"8":"SLANT","9":"GO","10":"IN","5":"DRAG","7":"FLAT"},"DOUBLE_DIG":{"8":"DIG","9":"DIG","10":"SEAM","5":"SEAM","7":"FLAT"},"FLOOD":{"8":"POST","9":"GO","10":"OUT","5":"FLAT","7":"DRAG"},"DEEP_CROSS":{"8":"POST","9":"DEEP_CROSS","10":"DRAG","5":"FLAT","7":"DRAG"},"DOUBLE_POST":{"8":"POST","9":"DIG","10":"POST","5":"DRAG","7":"FLAT"},"DIVIDE":{"8":"GO","9":"GO","10":"SEAM","5":"SEAM","7":"FLAT"},"SWITCH_VERTICALS":{"8":"SEAM","9":"GO","10":"WHEEL","5":"BLOCK","7":"FLAT"},"PA_SLIDE":{"8":"POST","9":"DEEP_CROSS","10":"DIG","5":"FLAT","7":"FAKE"},"PA_FLOOD":{"8":"GO","9":"GO","10":"OUT","5":"FLAT","7":"FAKE"},"RPO_INSIDE_ZONE_THROW":{"8":"HITCH","9":"HITCH","10":"SLANT","5":"STICK","7":"FAKE"},"RPO_READ_THROW":{"8":"HITCH","9":"GO","10":"STICK","5":"FLAT","7":"FAKE"},"RPO_ALERT_THROW":{"8":"GO","9":"STALK","10":"BUBBLE","5":"STICK","7":"FAKE"},"RPO_PEEK_THROW":{"8":"SLANT","9":"HITCH","10":"STALK","5":"STICK","7":"FAKE"},"RPO_POWER_THROW":{"8":"SLANT","9":"GO","10":"HITCH","5":"SEAM","7":"FAKE"},"RPO_OUTSIDE_ZONE_THROW":{"8":"HITCH","9":"GO","10":"ARROW","5":"FLAT","7":"FAKE"}});
 const TARGET_DEFAULT={FOUR_VERTS:'GO',DEEP_POST:'POST',CORNER:'CORNER',CROSS:'CROSS',IN:'DIG',DRAG:'DRAG',SHORT_OUT:'OUT',QUICK_SLANT:'SLANT',PLAY_ACTION:'POST',CURL:'CURL',COMEBACK:'CURL',
   STICK:'STICK',CHAMP:'CORNER',DAGGER:'DIG',SAIL:'FLAG',MESH:'DRAG',BOOT:'FLAG',POP:'SEAM'};
+Object.assign(TARGET_DEFAULT,{"HITCH":"HITCH","CHOICE":"CHOICE","FL_SE_SCREEN":"SCREEN_WR","WR_TUNNEL_SCREEN":"TUNNEL","MESH_WHEEL":"DRAG","PIVOT":"PIVOT","SPOT_SNAG":"CORNER","LEVELS":"IN","Y_CROSS":"DEEP_CROSS","DART_QUICK_DIG":"IN","DOUBLE_DIG":"DIG","FLOOD":"OUT","DEEP_CROSS":"DEEP_CROSS","DOUBLE_POST":"POST","DIVIDE":"SEAM","SWITCH_VERTICALS":"GO","PA_SLIDE":"DEEP_CROSS","PA_FLOOD":"OUT","RPO_INSIDE_ZONE_THROW":"SLANT","RPO_READ_THROW":"STICK","RPO_ALERT_THROW":"GO","RPO_PEEK_THROW":"SLANT","RPO_POWER_THROW":"SEAM","RPO_OUTSIDE_ZONE_THROW":"HITCH"});
 const SPEED={ol:3.2,dl:4.2,lb:6.2,db:7.4,wr:7.6,rb:7.2,qb:5};
 
 /* The call drawn on the field: from the feed (replay / engine) or a demo call (live demo boards) */
@@ -2055,7 +2098,7 @@ function offAlign(g,call){
   const d=dirOf(g), L=g.los, by=g.bally, F=OFF_FORM[call.formation]||OFF_FORM.SHOTGUN, s=call.flip?-1:1;
   const P=(a)=>({x:L-d*a[0], y:clamp(by+s*a[1]+rand(-.15,.15),1.6,51.7)});
   const off=OL_ALIGN.map(a=>({x:L-d*a[0], y:by+s*a[1]}));
-  off[5]=P(F.TE); off[6]={x:L-d*F.QB[0],y:by}; off[7]=P(F.RB); off[8]=P(F.WR1); off[9]=P(F.WR2); off[10]=P(F.WR3);
+  off[5]=P(F.TE); off[6]={x:L-d*F.QB[0],y:clamp(by+s*(F.QB[1]||0),1.6,51.7)}; off[7]=P(F.RB); off[8]=P(F.WR1); off[9]=P(F.WR2); off[10]=P(F.WR3);
   return off;
 }
 /* Defensive shell: formation from the engine, depths from the coverage concept, corners over the receivers */
@@ -2228,7 +2271,7 @@ function planScrimmage(g,call,imp){
     const concept=call.concept||'CROSS', asg=PASS_ASSIGN[concept]||PASS_ASSIGN.CROSS;
     const tIdx=imp.target!=null?imp.target:(concept==='SCREEN'?7:pick([8,9,10,5],[.4,.25,.2,.15]));
     const underCenter=(O[6].x-L)*-d<2;
-    const pa=concept==='PLAY_ACTION'||concept==='BOOT'||concept==='POP', boot=concept==='BOOT';
+    const pa=concept==='PLAY_ACTION'||concept==='BOOT'||concept==='POP'||XP_PA.has(concept), boot=concept==='BOOT';
     /* BOOT / NAKED: run fake one way, the QB rolls out toward the targeted side */
     const qb=O[6], drop=boot ? {x:L-d*5.5, y:clamp(by+((O[tIdx]||O[8]).y>by?1:-1)*6.5,4,49.3)}
                             : {x:L-d*(concept==='QUICK_SLANT'||concept==='SCREEN'||concept==='STICK'?6:7.5), y:by+(pa?(call.flip?-1:1)*-1.2:0)};
@@ -2386,7 +2429,7 @@ function planScrimmage(g,call,imp){
   }
 
   /* ---------------- runs ---------------- */
-  const concept=call.concept||'INSIDE_RUN', te=O[5].y>=by?1:-1;
+  const concept=RUN_SHAPE[call.concept]||call.concept||'INSIDE_RUN', te=O[5].y>=by?1:-1;
   const side = imp.side===1||imp.side===-1 ? imp.side : concept==='POWER' ? te : concept==='COUNTER' ? te : (RNG()<.5?-1:1);
   const holeY = by+side*(concept==='INSIDE_RUN'||concept==='DRAW'||concept==='TRAP'||concept==='READ_OPTION'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):concept==='JET_SWEEP'?rand(9,13):rand(3,4.6));
   const qb=O[6], rb=O[7], shot=(qb.x-L)*-d>2.5;
@@ -2405,7 +2448,7 @@ function planScrimmage(g,call,imp){
     ? [[0,rb.x,rb.y],[0.1,rb.x-d*0.3,rb.y-side*1.4],[hU,mesh.x,mesh.y],[0.42,holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]]
     : [[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[Math.min(0.46,hU+0.2),holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
   off[7]=rbPath;
-  if(call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY'){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
+  if(call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY'||FB_FORMS.has(call.formation)){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
   for(const i of [8,9,10]){ if(off[i]) continue; const s=O[i], cb=i===8?D[6]:i===9?D[7]:(D[8]||D[6]); off[i]=[[0,s.x,s.y],[0.45,lerp(s.x,cb.x,.7),lerp(s.y,cb.y,.7)],[1,lerp(s.x,cb.x,.85)+d*1,lerp(s.y,cb.y,.85)]]; }
   { const s=O[5]; off[5]=[[0,s.x,s.y],[0.3,s.x+d*1.2,s.y-side*0.4],[1,s.x+d*2.2,s.y-side*0.6]]; }
   /* defense: front holds the line, linebackers fill the hole, safeties come down, corners set the edge */
@@ -2422,10 +2465,14 @@ function planScrimmage(g,call,imp){
     off[6]=[[0,qb.x,qb.y],[hU,mesh.x-d*0.2,mesh.y],[Math.min(0.46,hU+0.2),holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
     off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[0.5,L+d*0.8,by-side*2.5],[1,L+d*1.5,by-side*3.5]];
     P.carrier=[[0.08,1,'off',6]];
-  } else if(imp.target===8||imp.target===9||imp.target===10){   /* jet / Z sweep: the receiver takes it in motion */
+  } else if(imp.target===8||imp.target===9||imp.target===10||imp.target===5){   /* jet / Z sweep: the receiver takes it in motion */
     const w=O[imp.target]; off[imp.target]=[[0,w.x,w.y],[hU,mesh.x,mesh.y+side*0.4],[Math.min(0.5,hU+0.24),L-d*0.6,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
     off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y-side],[1,L+d*1.5,by-side*3]];
     P.carrier=[[0.08,hU,'off',6],[hU,1,'off',imp.target]];
+  }
+  if(call.formation==='WILDCAT'){   /* wildcat: direct snap to the back; the quarterback, split wide, blocks his man */
+    const q=O[6]; off[6]=[[0,q.x,q.y],[0.4,q.x+d*2.6,q.y],[1,q.x+d*3.8,q.y]];
+    P.carrier=P.carrier.map(c=>c[3]===6?[c[0],c[1],c[2],7]:c);
   }
   P.wDef=[.35,.35,.35,.35,.8,.8,.6,.6,.8,.75,.75]; P.wOff=new Array(11).fill(0);
   P.spot={x:Fx,y:Fy}; P.gain=total; P.hole=holeY;
@@ -2826,7 +2873,16 @@ function rpReadNote(P){ const d=P.decision; if(!d||d.action!=='LANCER'||!P.call|
   if(pl.bracketed&&tr&&tr===pl.bracket) s+=' · into the bracket';
   else if(pl.focus&&tr===pl.focus&&num(d.read,1)===1) s+=' · game-plan read';
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P),kind:rpKind(P)}; }
+/* playbook expansion V0.1 (engine 12.2 decies, play.call): shift / motion, the RPO and option reads, and the real
+   package when the defense showed something else (mug, rotating shell) */
+function rpXpNote(P){ const c=P.call||{}, de=c.defense||{}; let s='';
+  if(c.shift_from) s+=' · shift from '+pretty(c.shift_from);
+  if(c.motion) s+=' · '+esc(String(c.motion).toLowerCase())+' motion';
+  if(c.rpo) s+=c.rpo.read==='throw'?' · RPO, pulled and thrown':' · RPO, handed off';
+  if(c.option) s+=c.option==='QB'?' · QB keeps':' · option to the '+(c.option==='RB'?'back':pretty(c.option));
+  if(c.type==='pass'&&de.package&&de.presented&&/mug|rotating/.test(de.presented)) s+=' · '+pretty(de.package)+' (showed '+esc(de.presented)+')';
+  return s; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
@@ -2975,7 +3031,7 @@ function rpCallText(g){
   if(g.phase==='presnap'||!g.snapped) return `<b>${T} ball</b> · ${dd} · lining up`;
   let c;
   if(t==='punt') c='<span class="c">PUNT</span>'; else if(t==='field_goal') c='<span class="c">FIELD GOAL TRY</span>';
-  else { const off=[pretty(P.call.formation),pretty(P.call.concept)].filter(Boolean).join(' · '), de=P.call.defense||{}, dv=[pretty(de.concept),pretty(de.formation)].filter(Boolean).join(' · '); c=`<span class="c">${off||t.toUpperCase()}</span>${dv?' vs '+dv:''}`; }
+  else { const off=[P.call.personnel?esc(P.call.personnel)+' pers.':'',pretty(P.call.formation),pretty(P.call.concept)].filter(Boolean).join(' · '), de=P.call.defense||{}, dv=[pretty(de.package||de.concept),pretty(de.front||de.formation)].filter(Boolean).join(' · '); c=`<span class="c">${off||t.toUpperCase()}</span>${dv?' vs '+dv:''}`; }
   let s=`<b>${T}</b> · ${dd} · ${c}`;
   if(g.phase!=='play'){
     const who=P.players||{}, df=who.defender||{}, cr=who.carrier||{};
@@ -3726,6 +3782,7 @@ function slotMap(g){
   if(call.formation==='HEAVY'){ roles.off[8]='Extra tackle'; roles.off[10]='Fullback'; }
   if(call.formation==='PONY') roles.off[10]='Halfback (2)';
   if(call.formation==='EMPTY') roles.off[7]='Slot (running back)';
+  { const XR=FORM_ROLES[call.formation]; if(XR) for(const k in XR) roles.off[+k]=XR[k]; }
   if(g.special==='punt') roles.off[6]='Punter';
   if(g.special==='field_goal'){ roles.off[6]='Holder'; roles.off[7]='Kicker'; }
   if(g.special==='kickoff') roles.def[5]='Kicker';
