@@ -394,6 +394,35 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   Rapport : `--expansion off`. Exhibition V27 : CTX @ MNL (`exh-v27-ctx-mnl`, remplace `exh-v25-ctx-vec`) ;
   `simuler_exhibition.py --sans-expansion`.
 
+### 22. Fin de période : field goal ou continuer (notebook V28, 06/10/2026, allumée)
+
+- **Constat** (Guillaume, puis mesuré sur 240 matchs V27) : dans les dernières secondes du Q2 et du Q4, une équipe à
+  portée de field goal jouait presque toujours une course ou une passe (dernière action du quart-temps : 4 field goals
+  sur 166), même menée de 2 ou 3 points. **Cause** : `simulate_drive_franchise` (12.2) ne regardait le field goal qu'au
+  4e essai, jamais l'horloge ; une action arrêtée quand l'horloge tombe à zéro ne rapporte rien.
+- **Correction** (cellule **12.2 undecies**, module `moteur/fin_de_periode.py`) : dans les 45 dernières secondes du Q2 et
+  du Q4, à chaque snap, le moteur **compare** « field goal maintenant » et « continuer » avec un modèle du reste de la
+  période — temps d'une action (mesuré), essai et distance, touchdown / perte de balle / arrêt / gain par zone (mesurés,
+  × écart des unités attaque - défense), probabilité du kicker (distance + équipes spéciales, barème du moteur),
+  possibilité de tirer plus tard — et prend la meilleure valeur : **points attendus** au Q2, **probabilité de victoire**
+  au Q4. Pas de règle fixe : à 40 s à la ligne des 30, on joue ; à 3 s, on tire ; mené de 2 ou 3, les 3 points
+  (égalité ou victoire) ; mené de 4 et plus, il faut un touchdown ; près de la ligne de but, le touchdown peut valoir plus
+  (le moteur marque plus de la moitié des actions à moins de 5 yards). Au 4e essai dans la fenêtre, la même comparaison
+  remplace « go for it / field goal ». Temps morts : le moteur n'écoule pas l'horloge entre deux actions, ils ne
+  changeraient rien aujourd'hui (paramètre prévu pour un futur modèle d'horloge). Déterministe.
+- **Corrigé au passage** : un drive qui commençait par un field goal (possible désormais au 1er essai) plantait
+  (`termination_cause` non défini).
+- **Mesures** : 240 matchs — dernière action à portée : field goal 39 fois sur 145 (V27 : 4 sur 166) ; les autres :
+  équipe qui a déjà gagné (68), menée de 4 et plus (13), touchdown plus rentable près de la ligne de but (25) ; 149
+  field goals avant le 4e essai (135 réussis). Rapport de calibration (1 008 matchs, référence V27) : tout dans les
+  tolérances — points 51,7 -> 53,2 (les 3 points ramassés), victoires CTX 50,0 · VEC 49,0 · AEG 53,0 · MNL 48,0 %,
+  temps × 1,08.
+- **GameFeed** (additif) : `play.clock_decision = {choice, fg, play, p_fg, distance, objective, reason, down}`.
+  **Site** : « takes the points on 2nd down », « needs a touchdown » dans le play-by-play (même code dans la cellule 427).
+- Interrupteur `FIN_PERIODE_ENABLED` (allumé ; `GC_FIN_PERIODE=0` : moteur V27 à l'identique). Rapport :
+  `--fin-periode off`. Hors sujet, noté pour plus tard : une équipe qui mène dans les dernières secondes ne pose pas
+  encore le genou (elle joue l'appel du coordinateur).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

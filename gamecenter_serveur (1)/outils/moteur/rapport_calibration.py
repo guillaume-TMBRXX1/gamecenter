@@ -15,6 +15,7 @@ allumées, ajoute les stats des décisions (cible réelle, première lecture, pr
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off                   # blocs A + B + C (V24)
     python3 outils/moteur/rapport_calibration.py --decisions on --bloc-e off                   # blocs A-D (V25)
     python3 outils/moteur/rapport_calibration.py --decisions on --expansion off                # V26 (sans l'extension)
+    python3 outils/moteur/rapport_calibration.py --decisions on --fin-periode off              # V27 (sans la fin de période)
     python3 outils/moteur/rapport_calibration.py --decisions on --semaines 12                  # bloc E : rosters après
                                                                                                # 12 semaines de progression
 
@@ -26,7 +27,7 @@ import __future__
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVEUR = os.path.abspath(os.path.join(HERE, "..", ".."))
 NOTEBOOK = os.path.join(SERVEUR, "NFL_Sim_GameCenter.ipynb")
-JUSQUA = "12.2 decies"            # extension du playbook V0.1 (V26 : « 12.2 nonies », V25 : « 12.2 octies »…)
+JUSQUA = "12.2 undecies"          # fin de période (V27 : « 12.2 decies », V26 : « 12.2 nonies »…)
 
 # tolérances proposées (bloc A, 04/10/2026) : écart absolu toléré par rapport à la référence V21
 TOLERANCES = {
@@ -47,7 +48,7 @@ EQUILIBRE = (0.40, 0.60)          # % de victoires de chaque franchise (test 12.
 
 
 def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc_c=True, bloc_d=True, bloc_e=True,
-            expansion=True):
+            expansion=True, fin_periode=True):
     """Exécute les cellules de code du notebook jusqu'à celle dont l'en-tête contient `jusqua` (incluse)."""
     os.environ["GC_DECISIONS"] = "1" if decisions else "0"
     os.environ["GC_BLOC_B"] = "1" if bloc_b else "0"
@@ -55,6 +56,7 @@ def charger(notebook=NOTEBOOK, jusqua=JUSQUA, decisions=False, bloc_b=True, bloc
     os.environ["GC_BLOC_D"] = "1" if bloc_d else "0"
     os.environ["GC_BLOC_E"] = "1" if bloc_e else "0"
     os.environ["GC_EXPANSION"] = "1" if expansion else "0"
+    os.environ["GC_FIN_PERIODE"] = "1" if fin_periode else "0"
     os.environ.setdefault("GC_MOTEUR_DIR", SERVEUR)
     nb = json.load(open(notebook, encoding="utf-8"))
     mod = types.ModuleType("__nb__")
@@ -199,6 +201,7 @@ def main():
     ap.add_argument("--bloc-d", choices=("off", "on"), default="on", help="adaptation en match et plan de jeu (bloc D, V25)")
     ap.add_argument("--bloc-e", choices=("off", "on"), default="on", help="progression des joueurs (bloc E, V26)")
     ap.add_argument("--expansion", choices=("off", "on"), default="on", help="extension du playbook V0.1 (12.2 decies)")
+    ap.add_argument("--fin-periode", choices=("off", "on"), default="on", help="field goal ou continuer en fin de Q2 / Q4 (12.2 undecies)")
     ap.add_argument("--semaines", type=int, default=0,
                     help="bloc E : semaines de progression jouées (36 matchs chacune) avant le test d'équilibre")
     ap.add_argument("--graine-trajectoire", type=int, default=990_000, help="bloc E : graines des semaines d'essai")
@@ -211,7 +214,7 @@ def main():
 
     ns, t_charge = charger(a.notebook, a.jusqua, decisions=a.decisions == "on", bloc_b=a.bloc_b == "on",
                           bloc_c=a.bloc_c == "on", bloc_d=a.bloc_d == "on", bloc_e=a.bloc_e == "on",
-                          expansion=a.expansion == "on")
+                          expansion=a.expansion == "on", fin_periode=a.fin_periode == "on")
     assert ns.get("DECISIONS_ENABLED", False) == (a.decisions == "on")
     trajectoire = None
     if a.semaines:
@@ -236,6 +239,7 @@ def main():
     rep["load_seconds"] = t_charge
     rep["bloc_e"] = bool(ns.get("PROGRESSION_ENABLED", False))
     rep["expansion"] = bool(ns.get("EXPANSION_ENABLED", False))
+    rep["fin_periode"] = bool(ns.get("FIN_PERIODE_ENABLED", False))
     if trajectoire:
         rep["progression"] = {"semaines": a.semaines, "graine": a.graine_trajectoire,
                               "ecart_equipe_max": ns["DEV"].ECART_EQUIPE_MAX,
