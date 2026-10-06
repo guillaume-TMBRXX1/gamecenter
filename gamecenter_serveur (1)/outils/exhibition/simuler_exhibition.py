@@ -74,7 +74,11 @@ for _k in range(_P["candidates"]):
             "rpo_throws": sum(1 for p in _pl if ((p.get("call") or {}).get("rpo") or {}).get("read") == "throw"),
             "options": sum(1 for p in _pl if (p.get("call") or {}).get("option")),
             "disguised": sum(1 for p in _pl if (p.get("call") or {}).get("type") == "pass"
-                             and any(k in str(((p.get("call") or {}).get("defense") or {}).get("presented") or "") for k in ("mug", "rotating")))}
+                             and any(k in str(((p.get("call") or {}).get("defense") or {}).get("presented") or "") for k in ("mug", "rotating"))),
+            # V29 : le défenseur qui arrête l'action (cercle rouge sur le terrain) — sacks, passes défendues, interceptions
+            "sacks": sum(1 for p in _pl if p.get("result") == "sack"),
+            "passes_defended": sum(1 for p in _pl if ((p.get("players") or {}).get("defender") or {}).get("credit") == "PASS_DEFENDED"),
+            "interceptions": sum(1 for p in _pl if p.get("result") == "interception")}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -82,7 +86,8 @@ for _k in range(_P["candidates"]):
               + 4 * min(_dec["gameplan_adjust"], 8) + 12 * _dec["gameplan_kinds"] + 6 * min(_dec["counters"], 4)
               + 2 * min(_dec["bracket_throws"], 4)
               + 3 * min(_dec["xp_formations"], 12) + min(_dec["motions"], 12) + 4 * min(_dec["rpo"], 4)
-              + 6 * min(_dec["rpo_throws"], 2) + 4 * min(_dec["options"], 4) + 2 * min(_dec["disguised"], 6))
+              + 6 * min(_dec["rpo_throws"], 2) + 4 * min(_dec["options"], 4) + 2 * min(_dec["disguised"], 6)
+              + 5 * min(_dec["sacks"], 5) + 5 * min(_dec["passes_defended"], 5) + 8 * min(_dec["interceptions"], 2))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
@@ -107,7 +112,7 @@ def main():
     ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V27 · playbook expansion · new formations, RPO & options, disguised defenses")
+    ap.add_argument("--titre", default="Notebook V29 · 8 franchises · red ring on the defender who stops the play")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")
