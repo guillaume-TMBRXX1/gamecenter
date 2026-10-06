@@ -198,6 +198,28 @@ sorties de poche × `scramble`), `decider_passe(..., appel=None)` (`ajuster_lect
 à l'identique (mêmes tirages, mêmes valeurs — test). Interrupteur du notebook : `EXPANSION_ENABLED` (cellule 12.2 decies ;
 `GC_EXPANSION=0` : moteur V26).
 
+## Fin de période : field goal ou continuer (notebook 12.2 undecies, allumée)
+
+Constat (V27, 240 matchs) : la dernière action d'un Q2 ou d'un Q4 à portée de field goal était presque toujours une
+course ou une passe (4 field goals sur 166) — le moteur ne regardait le field goal qu'au 4e essai, jamais l'horloge.
+`fin_de_periode.decider(quart, secondes, essai, a_gagner, en_but, ecart, special_teams_rating, ecart_unites, temps_morts)`
+compare, dans les `FENETRE` (45) dernières secondes du Q2 et du Q4, « field goal maintenant » et « continuer » :
+
+```
+FG      p(distance, équipes spéciales) × 3 points          (même barème que calculate_field_goal_probability)
+JOUER   touchdown · perte de balle · arrêt · gain (par zone de 5 yards, course / passe, × écart des unités)
+        × durée de l'action (distribution mesurée) -> même décision au snap suivant, ou fin de la période,
+        ou ballon rendu (4e essai manqué)
+valeur  Q2 : points attendus · Q4 : probabilité de victoire (écart final : 1 / 0,5 / 0)
+```
+
+Pas de règle « s'il reste X secondes » : à 40 s de la fin à la ligne des 30, on joue ; à 3 s on tire ; mené de 4 et
+plus, 3 points ne servent à rien ; près de la ligne de but, le touchdown peut valoir plus que 3 points (le moteur marque
+55-63 % des actions à moins de 5 yards). Paramètres mesurés sur 160 matchs (`TEMPS`, `ZONES`, `ARRET`) ; modèle validé
+contre le moteur (points réellement marqués depuis les mêmes situations). Temps morts : sans effet tant que le moteur
+n'écoule pas l'horloge entre deux actions (`TEMPS_ENTRE_ACTIONS = 0`). Déterministe. Interrupteur du notebook :
+`FIN_PERIODE_ENABLED` (`GC_FIN_PERIODE=0` : moteur V27). Tests : `test_fin_de_periode.py`.
+
 ## Tests (quelques secondes)
 
 ```bash
@@ -264,9 +286,10 @@ python3 outils/moteur/rapport_calibration.py --decisions on --bloc-d off        
 python3 outils/moteur/rapport_calibration.py --decisions on --bloc-e off                       # V25 (blocs A-D)
 python3 outils/moteur/rapport_calibration.py --decisions on --semaines 16                      # bloc E : après 16 semaines
 python3 outils/moteur/rapport_calibration.py --decisions on --expansion off                    # V26 (sans l'extension)
+python3 outils/moteur/rapport_calibration.py --decisions on --fin-periode off                  # V27 (sans la fin de période)
 ```
 
-Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 decies) et joue le test d'équilibre de 12.3
+Le rapport charge le notebook sans Jupyter (cellules jusqu'à 12.2 undecies) et joue le test d'équilibre de 12.3
 (1 008 matchs, mêmes graines). Bloc E : `--semaines N` joue d'abord N semaines d'essai (36 matchs chacune) en faisant
 progresser les joueurs, puis mesure avec les rosters atteints (`--graine-trajectoire` : autre trajectoire). Tolérances : `TOLERANCES` dans `rapport_calibration.py`.
 

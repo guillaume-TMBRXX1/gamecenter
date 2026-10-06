@@ -2882,7 +2882,13 @@ function rpXpNote(P){ const c=P.call||{}, de=c.defense||{}; let s='';
   if(c.option) s+=c.option==='QB'?' · QB keeps':' · option to the '+(c.option==='RB'?'back':pretty(c.option));
   if(c.type==='pass'&&de.package&&de.presented&&/mug|rotating/.test(de.presented)) s+=' · '+pretty(de.package)+' (showed '+esc(de.presented)+')';
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P),kind:rpKind(P)}; }
+/* end of the half / of the game (engine 12.2 undecies, play.clock_decision): the kick taken before 4th down, or the
+   touchdown a team needs because 3 points would not do */
+function rpClockNote(P){ const c=P.clock_decision; if(!c) return '';
+  if(c.choice==='field_goal'&&num(P.down,4)<4) return ' · takes the points on '+(['1st','2nd','3rd'][num(P.down,1)-1]||'')+' down';
+  if(c.choice==='play'&&c.fg===0&&(P.call||{}).type!=='field_goal') return ' · needs a touchdown';
+  return ''; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P)+rpClockNote(P),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
