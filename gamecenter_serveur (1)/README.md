@@ -423,6 +423,48 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   `--fin-periode off`. Hors sujet, noté pour plus tard : une équipe qui mène dans les dernières secondes ne pose pas
   encore le genou (elle joue l'appel du coordinateur).
 
+### 23. Étape 6, palier 1 : 8 franchises, retraites et recrues (notebook V29, 06/10/2026)
+
+**Décisions de Guillaume (06/10)** : par paliers (franchises 05-08 de la bible des identités d'abord) ; noms, codes et
+couleurs **proposés par Claude, à valider** ; moins de matchs par équipe ; **retraite + recrue générée**.
+
+| Code | Franchise (proposée) | Bible | Couleur | Coordinateurs (att. · déf.) | Ce qui se mesure (12.3) |
+|---|---|---|---|---|---|
+| AXM | Axiom Falcons | 05 Precision / West Coast — *Execute* | vert `#2E8A5E` | Lena Strand · Owen Achterberg | meilleure complétion de la ligue (≈ 70 %), jeu court de timing, peu d'INT |
+| GLT | Glitch Hornets | 06 Blitz / Chaos — *Disrupt* | violet `#6B4FA8` | Rhys Calloway · Vera Kovac | blitz le plus fréquent (≈ 40 % des snaps), le plus de sacks, presse |
+| CPH | Cipher Lynx | 07 Mobile / Option — *Deceive* | orange `#C4672B` | Mateo Quill · Selene Arkwright | le QB court (≈ 40 yds / match : read option, RPO, QB draw / sweep) |
+| NVA | Nova Raptors | 08 Vertical / Big Play — *Explode* | magenta `#B03A78` | Jasper Holt · Ines Marchetti | 2e attaque la plus explosive (yards / réception, passes de 20+), défense à 2 safeties |
+
+- **Aucun système parallèle** : chaque franchise est décrite dans les tables qui décrivent déjà les 4 de départ —
+  12.1 `FRANCHISE_SPECS` (roster de 25 joueurs, bases d'unité, bonus d'attributs, coordinateurs et leurs plages), 12.2 bis
+  `FRANCHISE_PLAYBOOK_STYLE`, 12.2 ter `ROMAN_SHARES` / `ROMAN_EXCLUDE`, 12.2 quater profils d'adaptation, et dans
+  `moteur/` les `PROFILS` du QB, des joueurs et du plan de jeu, les tables de l'extension du playbook. Les faiblesses de la
+  bible se voient dans le face-à-face : GLT punit VEC (qui ne protège pas), AXM et CPH punissent GLT (jeu rapide, QB
+  mobile), MNL bat GLT et VEC.
+- **Calibrage** : à notes égales, les schémas des nouvelles franchises (option, West Coast…) rapportent plus ; leurs
+  notes ont été réglées sur 3 024 matchs (tolérances du programme ENGINE INTELLIGENCE, équilibre 40-60 %), forces un peu
+  sous celles des 4 de départ. La défense d'AXM est « dominable physiquement » et celle de NVA « accepte les gains
+  courts », comme le dit la bible (sinon MNL tombait sous 40 %).
+- **Ligue de 8** : `LEAGUE_TEAMS`, `league_rounds` (12.1) ; semaine **aller-retour** : 56 matchs en **14 créneaux de 4**
+  (lundi → jeudi 13 h · 18 h · 22 h, vendredi 18 h · 22 h), 14 matchs par équipe, playoffs inchangés (les 4 premiers).
+  **`GC_FRANCHISES=4`** : la ligue de départ, **V28 à l'identique** (vérifié : toutes les mesures égales au notebook V28).
+- **Cotes** : 150 simulations par affiche en saison régulière (56 affiches), 300 en playoffs ; calculées **en parallèle**
+  (`engine_pregame_odds_many`, `GC_PROCS`, mêmes graines : cotes identiques au calcul en série). 13.2 : le contrôle Brier
+  tolère le bruit des simulations et 2 écarts-types (18 matchs par affiche).
+- **Feuille d'appel accélérée** (fin de 12.2 undecies) : poids des plays candidats calculés d'un coup par snap ; ≈ × 1,5
+  par match, **matchs identiques** (contrôlé dans la cellule ; `GC_PB_RAPIDE=0` : les couches d'origine).
+- **Retraites et recrues** (bloc E, `moteur/developpement.py`, `tests/test_retraites.py`) : voir `moteur/README.md`.
+  `progression.retirements` dans week.json, `roster[].progression.rookie` (fiche joueur : « Rookie · replaced X »).
+- **Site** (et cellule 427) : couleurs des 4 franchises (clair et sombre), styles, « N slots », 4 matchs en direct sur
+  l'accueil (2 sur mobile, fluidité), tableau des futures transposé au-delà de 4 équipes. Serveur et audit : nombre de
+  créneaux et d'affiches lus dans la semaine (4 ou 8 équipes).
+- **Mesures** — rapport de calibration (1 008 matchs, graines de 12.3 ; `outils/moteur/rapport_v29_etape6.json`) : tout
+  dans les tolérances contre V21 — complétion 64,2 %, sacks 8,8 %, INT 2,4 %, YPA 7,50, yards / course 5,81 (+0,17 pour
+  ± 0,2), points 53,7 (+1,95 pour ± 2), actions 129,7 ; victoires CTX 50,0 · VEC 44,8 · AEG 59,7 · MNL 48,0 · AXM 46,2 ·
+  GLT 50,0 · CPH 51,6 · NVA 49,6 % (sur 3 024 matchs : 43,1 à 54,4 %) ; temps × 1,11. **Semaine du 12/10 produite**
+  (`generer_semaine.py`, notebook complet, 2 processus) en 35,5 min : `audit_moteur.py` **0 anomalie, 0 alerte** (59 matchs,
+  8 279 actions) ; site rejoué dans Chromium (bureau et 390 px), aucune erreur.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

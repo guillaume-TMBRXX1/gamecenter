@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 06/10/2026, validation complète de l'étape 5, extension du playbook branchée)
+# Feuille de route — GridironSim (mise à jour le 06/10/2026 : étape 6, palier 1 — 8 franchises)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -21,10 +21,10 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 3 | Playbooks plus variés (V19) · 3 bis recherche · 3 ter « Roman 2014 » (V20) | ✅ en ligne le 03/10 | notebook + site |
 | 4 | IA adaptatives en direct (notebook V21) | ✅ poussé le 03/10 (`9c610ab`), semaines à partir du 12/10 | notebook + site |
 | — | Hors feuille de route, 03-04/10 : fluidité mobile / iPad, Audio System V0.1 → V0.4 (commentaire, foule, effets ElevenLabs hors ligne ; musique originale CC0), accueil économe et sans spoiler (aperçus, teasers), Exhibition (match V21 hors calendrier) | ✅ en ligne (PR #1 → #10) | site + serveur |
-| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | **en cours** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; **prochain : étape 6** | notebook (+ modules Python) + site + serveur |
+| **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | ✅ **terminé** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; étape 6 lancée | notebook (+ modules Python) + site + serveur |
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
-| 6 | Plus de franchises / divisions | après l'étape 5 | notebook + site + serveur |
+| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms à valider) ; prochain : palier 2 (09-12) | notebook (+ modules) + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
 ---
@@ -699,10 +699,8 @@ GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier da
 1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-22 du README du serveur.
 2. **À décider (Guillaume)** : yards par course après quelques semaines de progression (fin de programme, options a / b / c)
    — si (b) : recentrage pondéré par le temps de jeu, rapport V26.1, `validation_complete.py` relancé.
-3. **Étape 6 : plus de franchises / divisions**, avec les systèmes de l'étape 5 (aucune logique codée pour les 4 équipes de
-   test) ; décider en même temps des **retraites et recrues** (bloc E : avec une année = 4 semaines, les plus âgés passent
-   35 ans en quelques mois). Relancer `validation_complete.py` à la fin (les tolérances, l'équilibre 40-60 % et le temps
-   par match restent les garde-fous).
+3. **Étape 6** : ✅ palier 1 (8 franchises, retraites et recrues) ; valider les noms proposés ; puis palier 2 (09-12).
+   `validation_complete.py --franchises 8` pour la ligue de 8 (`--franchises 4` : non-régression contre les rapports publiés).
 4. Générer le commentaire enregistré des 7 cues du bloc D et de `SAFETY` (workflow « Commentaire audio », mode `generer`).
 
 
@@ -735,6 +733,46 @@ de tirer (4 field goals sur 166 dernières actions à portée). Cause : field go
 plus rentable près de la ligne de but). Calibration dans les tolérances (+1,5 point par match). Détail : README section 22.
 **À surveiller / plus tard** : poser le genou quand on mène ; temps morts et horloge entre les actions (le moteur n'en a
 pas : à décider avec l'étape 6 si on veut une gestion de l'horloge plus réaliste).
+
+## Étape 6, palier 1 — ✅ 8 franchises (06/10/2026, notebook V29)
+
+Bible : `GridironSim_Franchise_Identity_Bible_V1_1.md` (fournie par Guillaume ; 20 franchises conçues, 24 visées en
+2 conférences × 2 divisions × 6). **Décisions de Guillaume (06/10)** : par paliers (05-08 d'abord) ; Claude propose noms,
+codes et couleurs, Guillaume valide ; moins de matchs par équipe ; retraite + recrue générée. Détail : README du serveur,
+section 23, et `moteur/README.md` (« Étape 6 », « Retraites et recrues »).
+
+- **Franchises proposées** (à valider : tout est dans `FRANCHISE_SPECS` et `FRANCHISE_COLORS`, 12.1, et les tables de
+  profils ; renommer = changer le nom et les mentions du site) : **AXM Axiom Falcons** (05 Precision, vert), **GLT Glitch
+  Hornets** (06 Blitz, violet), **CPH Cipher Lynx** (07 Option, orange), **NVA Nova Raptors** (08 Vertical, magenta) ;
+  coordinateurs Lena Strand / Owen Achterberg, Rhys Calloway / Vera Kovac, Mateo Quill / Selene Arkwright, Jasper Holt /
+  Ines Marchetti.
+- **Mêmes systèmes**, aucune logique propre à une équipe : rosters, coordinateurs, playbooks, adaptation V21 et profils
+  des blocs B-D / de l'extension dans les tables existantes. Identités mesurées au 12.3 (contrôles automatiques).
+- **Semaine** : aller-retour, 56 matchs en 14 créneaux de 4, playoffs inchangés ; cotes à 150 simulations par affiche,
+  en parallèle ; feuille d'appel accélérée (× 1,5, matchs identiques). `GC_FRANCHISES=4` = V28 à l'identique (vérifié).
+- **Retraites et recrues** (bloc E) : retraite à 35 ans (QB 38, K / P 40) ou déclin marqué après 32 ans ; recrue de
+  22 ans à la même place, base du poste gardée, notes en dessous, grand potentiel.
+- **Mesures** : rapport de calibration dans les tolérances (points 53,7 : +1,95 pour ± 2 ; yards / course 5,81 : +0,17
+  pour ± 0,2) ; victoires 44,8-59,7 % (1 008 matchs), 43,1-54,4 % (3 024) ; semaine du 12/10 produite en 35,5 min
+  (2 processus ; ≈ 50 min estimées sur GitHub, limite 75) : 0 anomalie, 0 alerte ; site vérifié dans Chromium.
+
+**À décider / valider (Guillaume)** :
+1. **Noms, codes, couleurs et coordinateurs** des 4 franchises (proposition ci-dessus).
+2. **Mise en ligne** : la fusion fait passer la semaine du samedi à 8 équipes (la semaine du 12/10 en cours reste à 4).
+   Les paris et classements multi-semaines des joueurs ne dépendent pas du nombre d'équipes.
+3. Toujours ouvert (étape 5) : yards par course après quelques semaines de progression (options a / b / c).
+
+**À surveiller (palier 1)** :
+- **AEG** 59,7 % au test officiel de 12.3 (54,4 % sur 3 024 matchs : échantillon haut) et **MNL / VEC** autour de
+  43-48 % : MNL souffre face aux attaques de passe (sa couverture est la plus faible de la ligue).
+- **Points** +1,95 et **yards / course** +0,17 : près des bornes (l'option de CPH et les boîtes allégées de NVA font
+  monter la course) — à recalibrer si un palier les fait sortir.
+- **Temps du samedi** : ≈ 50 min estimées sur GitHub. Palier 2 (12 équipes, 132 affiches) : il faudra réduire encore
+  (moins de simulations par affiche, 12.3 et 13.4 en parallèle, ou cotes partielles).
+- Pas de cue enregistrée pour les nouveaux noms (le commentaire écrit et la voix de l'appareil les lisent).
+
+**Prochain** : palier 2 (franchises 09-12 : No-Huddle, Ball Hawk, Trench Warfare, Field Position), puis 13-16, 17-20 ;
+divisions et conférences quand les 24 seront conçues (bible, section 14).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

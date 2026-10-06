@@ -70,6 +70,7 @@ class Week:
         self.open = self.monday     # recalculé par _assign_opens : paris ouverts dès la publication de la semaine
         self.reset = int((mon + timedelta(days=7)).timestamp() * 1000)
         self.reg = [g for g in self.sched if g["phase"] == "regular"]
+        self.nslots = max(g["slot"] for g in self.reg)          # 18 créneaux à 4 équipes, 14 à 8 (étape 6)
         self.semis = [g for g in self.sched if g["phase"] == "semifinal"]
         self.final = next(g for g in self.sched if g["phase"] == "ai_bowl")
 
@@ -92,7 +93,7 @@ class Week:
 
     def completed_slots(self, t):
         s = 0
-        for k in range(1, 19):
+        for k in range(1, self.nslots + 1):
             if all(self.status(g, t) == "final" for g in self.reg if g["slot"] == k):
                 s = k
             else:
@@ -132,7 +133,7 @@ class Week:
                "standings_by_slot": d["standings_by_slot"][:cs],
                "futures": [f for f in d["futures"] if f["after_slot"] <= cs],
                "standings": None, "seeds": None, "champion": None, "runner_up": None}
-        if cs == 18:
+        if cs == self.nslots:
             out["standings"], out["seeds"] = d["standings"], d["seeds"]
         if self.status(self.final, t) == "final":
             out["champion"], out["runner_up"] = d["champion"], d["runner_up"]
@@ -148,7 +149,7 @@ class Week:
             cs = self.completed_slots(t)
             snap = next((f for f in reversed(self.doc["futures"]) if f["after_slot"] <= cs), self.doc["futures"][0])
             v = snap["markets"][m].get(a) or {}
-            close = {"regular_season": max(g["ko"] for g in self.reg if g["slot"] == 18),
+            close = {"regular_season": max(g["ko"] for g in self.reg if g["slot"] == self.nslots),
                      "reach_final": min(g["ko"] for g in self.semis), "ai_bowl": self.final["ko"]}[m]
             q = {"price_dec": v.get("decimal"), "line": None, "locked": None}
             if t < self.open: q["locked"] = "opens"

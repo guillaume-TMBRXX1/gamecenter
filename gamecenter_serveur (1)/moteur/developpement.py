@@ -76,6 +76,20 @@ BRUIT_NOTE = 0.30                     # bruit hebdomadaire par note (écart-type
 DEV = (("slow", 0.6, 0.25), ("normal", 1.0, 0.50), ("fast", 1.4, 0.20), ("star", 1.8, 0.05))  # rythme, ×, part
 DEV_MULT = {n: m for n, m, _ in DEV}
 
+# ---- retraites et recrues (étape 6, décision de Guillaume du 06/10/2026 : « retraite + recrue générée ») ----
+#   un joueur part quand il atteint l'âge de la retraite de son poste, ou dès AGE_DECLIN ans si son OVR est tombé de
+#   DECLIN_RETRAITE points sous sa base ; une RECRUE prend sa place au roster (même id : la place, pas la personne).
+#   Elle garde la base du poste (la référence de l'anti-inflation et du garde-fou d'équipe : le niveau voulu de la
+#   franchise), part EN DESSOUS (RECRUE_ECART points selon la catégorie de la note) avec un grand potentiel : la
+#   croissance des jeunes la ramène vers la base en quelques « années » ; le garde-fou d'équipe tient la force.
+AGE_RETRAITE = {"QB": 38.0, "K": 40.0, "P": 40.0}
+AGE_RETRAITE_DEFAUT = 35.0
+AGE_DECLIN, DECLIN_RETRAITE = 32.0, 10
+RECRUE_AGE = (21.5, 23.5)
+RECRUE_ECART = {"physique": (2.0, 5.0), "technique": (4.0, 8.0), "mental": (6.0, 10.0)}
+RECRUE_POTENTIEL = (9.0, 13.0)
+RECRUE_DEV = (("slow", 0.15), ("normal", 0.45), ("fast", 0.30), ("star", 0.10))
+
 # ---- forme ----
 FORME_INERTIE = 0.35                  # part de la forme de la semaine précédente gardée
 FORME_PERF = 1.6                      # points de forme pour un écart-type de performance
@@ -228,7 +242,8 @@ def resume_joueur(etat, pid):
             "form": round(j.get("forme", 0.0), 1), "dev": j["dev"], "experience": round(j["carriere"], 1),
             "iq_bonus": round(j.get("bonus_iq", 0.0), 1),
             "base": dict(b), "delta": {k: n[k] - b[k] for k in n},
-            "history": [{"week": p["week"], "ovr": p["ovr"], "form": p["form"]} for p in j.get("historique", [])]}
+            "history": [{"week": p["week"], "ovr": p["ovr"], "form": p["form"]} for p in j.get("historique", [])],
+            **({"rookie": {"week": j["recrue"]["semaine"], "replaces": j["recrue"]["remplace"]}} if j.get("recrue") else {})}
 
 
 # ------------------------------------------------------------------------------------------------------------------
@@ -527,13 +542,63 @@ def _garde_equipe(etat, unites, ecart_max=None, force_max=None):
     return fait
 
 
+def doit_partir(j, semaines):
+    """Retraite : âge du poste atteint, ou déclin marqué (OVR à DECLIN_RETRAITE points sous sa base) après AGE_DECLIN."""
+    a = age(j, semaines)
+    if a >= AGE_RETRAITE.get(j["pos"], AGE_RETRAITE_DEFAUT):
+        return True
+    return a >= AGE_DECLIN and ovr(j["base"]) - ovr(notes_effectives(j)) >= DECLIN_RETRAITE
+
+
+def recrue(j, pid, semaines, cle, noms, pris=()):
+    """Recrue qui remplace `j` à la même place (id) : nom, âge, rythme et potentiel tirés dans le flux
+    « recrue|<semaine>|<id> » ; base du poste gardée, notes actuelles en dessous (RECRUE_ECART)."""
+    rng = _rng("recrue", cle, pid)
+    prenoms, familles = noms
+    nom = None
+    for _ in range(200):
+        nom = f"{rng.choice(prenoms)} {rng.choice(familles)}"
+        if nom not in pris:
+            break
+    a = rng.uniform(*RECRUE_AGE)
+    u, acc, dev = rng.random(), 0.0, "normal"
+    for nm, part in RECRUE_DEV:
+        acc += part
+        if u < acc:
+            dev = nm
+            break
+    actuelle = {k: max(float(NOTE_MIN), round(v - rng.uniform(*RECRUE_ECART[categorie(k)]), 3))
+                for k, v in sorted(j["base"].items())}
+    return dict(age0=round(a - semaines / SEMAINES_PAR_AN, 2), dev=dev,
+                potentiel=round(rng.uniform(*RECRUE_POTENTIEL), 1), carriere=0.0, name=nom, pos=j["pos"],
+                team=j["team"], base=dict(j["base"]), actuelle=actuelle, forme=0.0, apprentissage=0.0, bonus_iq=0.0,
+                historique=[], recrue={"semaine": cle, "remplace": j["name"]})
+
+
+def retraites(etat, cle, noms):
+    """Remplace (en place) les joueurs qui partent par une recrue ; renvoie les mouvements (week.json)."""
+    mouv = []
+    for pid in sorted(etat["joueurs"]):
+        j = etat["joueurs"][pid]
+        if not doit_partir(j, etat["semaines"]):
+            continue
+        pris = {x["name"] for x in etat["joueurs"].values() if x["team"] == j["team"]}
+        r = recrue(j, pid, etat["semaines"], cle, noms, pris)
+        mouv.append({"id": pid, "team": j["team"], "pos": j["pos"], "retired": j["name"],
+                     "age": int(age(j, etat["semaines"])), "ovr": ovr(notes_effectives(j)), "rookie": r["name"],
+                     "rookie_age": int(age(r, etat["semaines"])), "rookie_ovr": ovr(notes_effectives(r))})
+        etat["joueurs"][pid] = r
+    return mouv
+
+
 def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, index=None, bilans=None,
-                     lundi_suivant=None):
+                     lundi_suivant=None, recrues=None):
     """État au début de la semaine suivante, d'après la semaine jouée. Ne modifie pas `etat`.
 
     stats_joueurs : {pid: ligne de season_stats} · stats_equipes : {équipe: ligne d'équipe} · bilans : {équipe: % de
     victoires} · unites(équipe, {pid: notes}) -> notes d'unité (garde-fou d'équipe ; None : pas de garde) ·
-    index : n° de la semaine jouée (clé du flux aléatoire). Renvoie (nouvel_etat, rapport)."""
+    index : n° de la semaine jouée (clé du flux aléatoire) · recrues : (prénoms, noms) pour nommer les recrues
+    (étape 6 ; None : pas de retraites, comportement du bloc E). Renvoie (nouvel_etat, rapport)."""
     import copy
     E = copy.deepcopy(etat)
     cle = index if index is not None else E["semaines"] + 1
@@ -553,6 +618,7 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
         _borner_actuelle(j)
     E["semaines"] += 1
     E["derniere"] = cle
+    mouvements = retraites(E, cle, recrues) if recrues else []
     derive = _renormaliser(E)
     _recentrer_forme(E)
     # expérience -> intelligence : relative au groupe (somme nulle)
@@ -580,6 +646,8 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
         garde = _garde_equipe(E, unites) or garde
     rapport = rapport_semaine(E, avant, unites, garde, derive)
     rapport["semaine_jouee"] = cle
+    if recrues:
+        rapport["retirements"] = mouvements
     if lundi_suivant:
         rapport["pour_la_semaine"] = lundi_suivant
     return E, rapport
@@ -600,7 +668,7 @@ def rapport_semaine(etat, avant=None, unites=None, garde=None, derive=None):
     if avant:
         for pid, j in J.items():
             o = ovr(notes_effectives(j))
-            if avant.get(pid) is not None and o is not None:
+            if avant.get(pid) is not None and o is not None and (j.get("recrue") or {}).get("semaine") != etat.get("derniere"):
                 mouv.append((o - avant[pid], pid))
     mouv.sort(key=lambda x: (-x[0], x[1]))
     fmt = lambda d, pid: {"id": pid, "name": J[pid]["name"], "team": J[pid]["team"], "pos": J[pid]["pos"],

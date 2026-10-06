@@ -156,6 +156,19 @@ par année jouée (plafond base + potentiel + 3), pic 34 ans. Croissance : 4 poi
 Interrupteur du notebook : `PROGRESSION_ENABLED` (cellule 12.2 nonies ; `GC_BLOC_E=0` : rosters de base chaque
 semaine, moteur V25). Au départ (aucune semaine jouée), les notes sont celles du roster : le moteur joue comme V25.
 
+**Retraites et recrues** (étape 6, décision de Guillaume du 06/10/2026 : « retraite + recrue générée ») — dans
+`semaine_suivante(..., recrues=(prénoms, noms))`, après le vieillissement et avant l'anti-inflation :
+`doit_partir` — âge de la retraite du poste (`AGE_RETRAITE` : QB 38, K / P 40, les autres 35) ou, dès 32 ans, OVR
+tombé de 10 points sous sa base ; `recrue` — un joueur de 21,5-23,5 ans prend **la même place** (même id : la place au
+roster, pas la personne ; nom tiré des listes de 12.1, unique dans l'équipe), garde la **base du poste** (référence de
+l'anti-inflation et du garde-fou d'équipe : le niveau voulu de la franchise) et part **en dessous** (physique − 2 à 5,
+technique − 4 à 8, mental − 6 à 10) avec un grand potentiel (9-13) et un rythme plus souvent rapide ; la croissance des
+jeunes (≈ 1 point par semaine à 22 ans) le ramène vers la base en quelques semaines, le garde-fou d'équipe tient la
+force pendant ce temps. Flux « recrue|<semaine>|<id> » (déterministe). Rapport : `progression.retirements` (week.json) ;
+fiche : `roster[].progression.rookie = {week, replaces}` ; les recrues ne comptent pas dans les hausses / baisses de
+la semaine. Sans `recrues` : bloc E à l'identique. Notebook : `RETRAITES_ENABLED` (`GC_RETRAITES`, allumé avec la
+ligue de 8 ; la ligue de départ `GC_FRANCHISES=4` reste V28 à l'identique). Tests : `tests/test_retraites.py`.
+
 ## Extension du playbook V0.1 (notebook 12.2 decies, allumée)
 
 Source : `programme/GRIDIRON_SIM_PLAYBOOK_EXPANSION_DATABASE_V0.1.md`. `playbook_expansion.py` est le **catalogue** de
@@ -219,6 +232,15 @@ plus, 3 points ne servent à rien ; près de la ligne de but, le touchdown peut 
 contre le moteur (points réellement marqués depuis les mêmes situations). Temps morts : sans effet tant que le moteur
 n'écoule pas l'horloge entre deux actions (`TEMPS_ENTRE_ACTIONS = 0`). Déterministe. Interrupteur du notebook :
 `FIN_PERIODE_ENABLED` (`GC_FIN_PERIODE=0` : moteur V27). Tests : `test_fin_de_periode.py`.
+
+## Étape 6 — plus de franchises (palier 1 : 8 équipes)
+
+Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
+Raptors ; noms proposés, à valider) sont décrites dans les tables EXISTANTES de chaque module — aucune logique propre à
+une équipe : `intelligence_qb.PROFILS`, `intelligence_joueurs.PROFILS`, `plan_de_jeu.PROFILS`,
+`playbook_expansion` (`FRANCHISES`, `PARTS`, `FORMATIONS_STYLE`, `EXCLUS_*`, `PAQUETS_STYLE`, `RUSH_STYLE`,
+`FRONTS_STYLE`, `MOUVEMENTS_STYLE`). Le reste (rosters, coordinateurs, playbooks, adaptation V21) est dans le
+notebook (12.1 à 12.2 quater). Détail et mesures : README du serveur, section 23.
 
 ## Tests (quelques secondes)
 

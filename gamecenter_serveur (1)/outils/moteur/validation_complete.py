@@ -367,7 +367,11 @@ def _egal(a, b, tol=1e-12):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--graines", type=int, default=84, help="matchs par affiche et par terrain (84 -> 1 008 matchs)")
+    ap.add_argument("--graines", type=int, default=None,
+                    help="matchs par affiche et par terrain (défaut : 1 008 matchs — 84 à 4 équipes, 18 à 8)")
+    ap.add_argument("--franchises", choices=("4", "8"), default="4",
+                    help="taille de la ligue (GC_FRANCHISES). 4 : ligue de départ, non-régression exacte contre les "
+                         "rapports publiés (V23 → V26) ; 8 : ligue de l'étape 6 (tolérances contre V21, équilibre)")
     ap.add_argument("--semaines", default="8,16,32,52", help="bloc E : semaines de progression enchaînées (trajectoire neuve)")
     ap.add_argument("--rapide", action="store_true", help="8 graines, 2 et 4 semaines (≈ 6 min) : vérifie l'outil")
     ap.add_argument("--jobs", type=int, default=max(1, min(3, (os.cpu_count() or 2) - 1)))
@@ -384,11 +388,16 @@ def main():
         travailleur(a.travailleur, a.graines, a.n_semaines, a.graine_trajectoire, a.traj_det, a.sortie_travailleur,
                     controles=not a.sans_controles)
         return
+    os.environ["GC_FRANCHISES"] = a.franchises          # hérité par les travailleurs
+    n_aff = int(a.franchises) * (int(a.franchises) - 1)  # affiches (12 à 4 équipes, 56 à 8)
+    defaut = 84 if a.franchises == "4" else 18
     if a.rapide:
-        a.graines, a.semaines = 8, "2,4"
-    complet = a.graines == 84
+        a.graines, a.semaines = (8 if a.franchises == "4" else 2), "2,4"
+    a.graines = a.graines or defaut
+    complet = a.graines == defaut
+    publies = complet and a.franchises == "4"           # rapports publiés : ligue de départ seulement
     bloquants, rapport = [], {"programme": "ENGINE INTELLIGENCE — validation complète (fin de programme)",
-                              "date": time.strftime("%Y-%m-%d"), "graines": a.graines}
+                              "date": time.strftime("%Y-%m-%d"), "graines": a.graines, "franchises": int(a.franchises)}
     t0 = time.time()
 
     # 1. tests unitaires
@@ -414,14 +423,14 @@ def main():
     taches = [(e, [e, "--graines", str(a.graines)], {}) for e in etages]
     taches.append(("ABCDE_hash", ["ABCDE", "--graines", str(min(a.graines, 8)), "--sans-controles"],
                    {"PYTHONHASHSEED": "12345"}))
-    if "ABCDE" in etages and complet:
+    if "ABCDE" in etages and publies:
         for cle, (n, g) in trajectoires_v26().items():
             taches.append((f"v26_{cle}", ["ABCDE", "--graines", str(a.graines), "--n-semaines", str(n), "--sans-controles",
                                          "--graine-trajectoire", str(g)], {}))
     for k, n in enumerate(semaines):
         taches.append((f"E{n}", ["ABCDE", "--graines", str(a.graines), "--n-semaines", str(n),
                                  "--graine-trajectoire", str(GRAINE_TRAJECTOIRE_NEUVE)] + (["--traj-det"] if k == 0 else []), {}))
-    print(f"2. {len(taches)} simulations ({a.graines * 12} matchs chacune, {a.jobs} en parallèle)", flush=True)
+    print(f"2. {len(taches)} simulations ({a.graines * n_aff} matchs chacune, {a.jobs} en parallèle)", flush=True)
     with tempfile.TemporaryDirectory() as tmp:
         R = _lancer(taches, a.jobs, tmp)
     for nom, r in R.items():
@@ -479,8 +488,8 @@ def main():
         print(f"   {'✅' if all(tr) else '❌'} trajectoire de progression (2 semaines) rejouée : état identique")
     h0, h1 = R.get("ABCDE"), R.get("ABCDE_hash")
     if h0 and h1 and "erreur" not in h0 and "erreur" not in h1:
-        k = len(h1["signatures"]) // 12
-        idx = [i * a.graines + s for i in range(12) for s in range(k)]
+        k = len(h1["signatures"]) // n_aff
+        idx = [i * a.graines + s for i in range(n_aff) for s in range(k)]
         same = all(h0["signatures"][j] == h1["signatures"][n] for n, j in enumerate(idx))
         det["inter_processus"] = {"matchs": len(idx), "identiques": same}
         print(f"   {'✅' if same else '❌'} autre processus (PYTHONHASHSEED différent) : {len(idx)} matchs identiques")
@@ -493,7 +502,7 @@ def main():
     nonreg = {}
     for nom in etages:
         r, h = R.get(nom), ETAGES[nom].get("historique")
-        if not r or "erreur" in r or not h or not complet:
+        if not r or "erreur" in r or not h or not publies:
             continue
         doc = json.load(open(os.path.join(HERE, h[0]), encoding="utf-8"))
         doc = doc["rapports"][h[1]] if h[1] else doc
@@ -505,7 +514,7 @@ def main():
         if diff:
             bloquants.append(f"non-régression {nom} : {diff}")
     docs = json.load(open(os.path.join(HERE, "rapport_v26_bloc_e.json"), encoding="utf-8"))["rapports"]
-    for cle, (n, g) in (trajectoires_v26().items() if complet else ()):
+    for cle, (n, g) in (trajectoires_v26().items() if publies else ()):
         r = R.get(f"v26_{cle}")
         if not r or "erreur" in r:
             continue

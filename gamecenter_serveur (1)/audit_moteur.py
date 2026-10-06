@@ -223,9 +223,11 @@ def check_week(A, folder):
     for g in reg:
         per[g["home"]] += 1; per[g["away"]] += 1
         pairs[tuple(sorted((g["home"], g["away"])))] += 1
-    if len(reg) != 36 or any(per[t] != 18 for t in teams):
+    # 4 équipes : 36 matchs, 18 par équipe, chaque affiche 6 fois ; étape 6, 8 équipes : 56, 14, 2 (aller-retour)
+    nslots = max((g["slot"] for g in reg), default=0)
+    if len(reg) != len(teams) // 2 * nslots or any(per[t] != nslots for t in teams):
         A.add(BLOQUANT, name, None, None, f"calendrier : {len(reg)} matchs, par équipe {dict(per)}")
-    if any(v != 6 for v in pairs.values()) or len(pairs) != 6:
+    if len(pairs) != len(teams) * (len(teams) - 1) // 2 or len(set(pairs.values())) != 1:
         A.add(BLOQUANT, name, None, None, f"affiches : {dict(pairs)}")
     # classement recalculé à partir des résultats
     wins = Counter(); ties = Counter()

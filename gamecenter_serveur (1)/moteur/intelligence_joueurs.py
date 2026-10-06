@@ -108,6 +108,15 @@ PROFILS = {
             "zone_iq": 4, "discipline": 6, "awareness": 2},
     "MNL": {"contested_catch": 6, "catch_in_traffic": 4, "release": 2,                  # physique, force
             "pursuit": 5, "man_iq": 4, "reaction": 2, "discipline": 2, "play_recognition": 2},
+    # étape 6 (franchises 05-08 de la bible des identités)
+    "AXM": {"route_iq": 4, "coverage_recognition": 2, "catch_in_traffic": 2,               # précision, timing
+            "zone_iq": 2, "discipline": 3, "awareness": 1},
+    "GLT": {"release": 1,                                                               # chaos : presse et parie
+            "man_iq": 4, "reaction": 3, "pursuit": 2, "discipline": -5},
+    "CPH": {"separation": 2, "release": 1,                                              # espace, athlétisme
+            "pursuit": 3, "reaction": 2, "play_recognition": 1},
+    "NVA": {"separation": 2, "contested_catch": 3, "route_iq": -1,                       # verticale ; défense profonde
+            "zone_iq": 3, "awareness": 3, "discipline": 2},
 }
 
 # ---- poids des attributs (en « pas » de séparation, pour 10 points d'écart EFFECTIF) ----
