@@ -48,6 +48,11 @@ PROFILS = {
     "GLT": {"pressure_response": 2, "aggressiveness": 8},                                        # opportuniste
     "CPH": {"awareness": 2, "pressure_response": 3, "pocket_awareness": -2, "aggressiveness": 4},  # mobile, improvise
     "NVA": {"coverage_reading": 2, "anticipation": -2, "pocket_awareness": 2, "aggressiveness": 22},  # bras, coups profonds
+    # palier 2 (franchises 09-12)
+    "PLS": {"processing": 5, "anticipation": 2, "pressure_response": 2, "aggressiveness": -4},  # vite, sans forcer
+    "ONX": {"coverage_reading": 2, "pocket_awareness": 2, "aggressiveness": -14},                # protège le ballon
+    "FRG": {"pocket_awareness": 4, "pressure_response": 3, "aggressiveness": -6},               # poche tenue
+    "MRD": {"coverage_reading": 3, "pocket_awareness": 3, "aggressiveness": -20},               # territoire, prudence
 }
 
 _CLES = {"dm": "decision_making", "acc": "throw_accuracy", "pow": "throw_power", "mob": "mobility"}

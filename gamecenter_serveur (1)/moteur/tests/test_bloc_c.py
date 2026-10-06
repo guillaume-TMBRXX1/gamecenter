@@ -93,7 +93,8 @@ class TestAttributs(unittest.TestCase):
                            attributs_defenseur(self.CB, "CB", "VEC")["discipline"] + 8)
         self.assertGreater(attributs_defenseur(self.CB, "CB", "VEC")["reaction"],
                            attributs_defenseur(self.CB, "CB", "MNL")["reaction"])
-        self.assertEqual(set(PROFILS), {"CTX", "VEC", "AEG", "MNL", "AXM", "GLT", "CPH", "NVA"})   # étape 6 : 8 franchises
+        self.assertEqual(set(PROFILS), {"CTX", "VEC", "AEG", "MNL", "AXM", "GLT", "CPH", "NVA",
+                                         "PLS", "ONX", "FRG", "MRD"})   # étape 6 : 12 franchises (palier 2)
 
     def test_note_presente_prise_telle_quelle(self):
         self.assertEqual(attributs_receveur(joueur("X", route_running=80, route_iq=61))["route_iq"], 61)

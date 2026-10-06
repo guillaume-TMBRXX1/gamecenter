@@ -233,7 +233,7 @@ contre le moteur (points réellement marqués depuis les mêmes situations). Tem
 n'écoule pas l'horloge entre deux actions (`TEMPS_ENTRE_ACTIONS = 0`). Déterministe. Interrupteur du notebook :
 `FIN_PERIODE_ENABLED` (`GC_FIN_PERIODE=0` : moteur V27). Tests : `test_fin_de_periode.py`.
 
-## Étape 6 — plus de franchises (palier 1 : 8 équipes)
+## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
 Raptors ; noms proposés, à valider) sont décrites dans les tables EXISTANTES de chaque module — aucune logique propre à
@@ -241,6 +241,9 @@ une équipe : `intelligence_qb.PROFILS`, `intelligence_joueurs.PROFILS`, `plan_d
 `playbook_expansion` (`FRANCHISES`, `PARTS`, `FORMATIONS_STYLE`, `EXCLUS_*`, `PAQUETS_STYLE`, `RUSH_STYLE`,
 `FRONTS_STYLE`, `MOUVEMENTS_STYLE`). Le reste (rosters, coordinateurs, playbooks, adaptation V21) est dans le
 notebook (12.1 à 12.2 quater). Détail et mesures : README du serveur, section 23.
+
+**Palier 2 (12 équipes, 07/10/2026)** : franchises 09-12 (PLS Pulse Jackals, ONX Onyx Hawks, FRG Forge Bison, MRD
+Meridian Owls ; à valider) ajoutées aux mêmes tables. Détail : README du serveur, section 25.
 
 ## Tests (quelques secondes)
 
