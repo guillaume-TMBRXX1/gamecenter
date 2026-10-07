@@ -526,6 +526,23 @@ coordinateurs **proposés par Claude, à valider par Guillaume** :
   35 — décision de Guillaume : rester sous 75 min, quitte à réduire les simulations par affiche).
 - **Contrôles** : comme au palier 2 (signalés sans bloquer, repris à 24 franchises).
 
+### 27. Étape 6, palier 4 : 20 franchises (notebook V32, 07/10/2026)
+
+Franchises 17-20 de la bible (les dernières qu'elle décrit), dans les mêmes tables. Noms, codes, couleurs et
+coordinateurs **proposés par Claude, à valider par Guillaume** :
+
+| Code | Franchise | Bible | Couleur | Coordinateurs (att. · déf.) | Identité dans le moteur |
+|---|---|---|---|---|---|
+| GRZ | Granite Grizzlies | 17 Run Defense | `#7D838F` | Silas Brennan · Hanna Kowalczyk | DL / LB qui plaquent et poursuivent, défense « contre la course » (run_focus 0,40), boîtes chargées ; attaque play action derrière les LB |
+| MRG | Mirage Cobras | 18 Play-Action / Misdirection | `#E2667A` | Lionel Duquesne · Ingrid Halloran | play action, Boot, Counter, reverse, end around, jet ; QB qui lit les réactions ; défense de discipline des yeux |
+| GMB | Gambit Stallions | 19 Fourth Down / Risk | `#0FA3A3` | Rocco Valente · Delphine Ashworth | 4e essais jusqu'à 5 yards dès sa ligne de 30, field goals plus courts, hurry-up tôt ; pressions choisies et presse |
+| PRM | Prism Chameleons | 20 Positionless / Matchup | `#7DB82E` | Matthias Ekwueme · Sabine Rourke | formations très variées, motions, ajustements rapides en match (adaptive 0,14) ; défense hybride à toutes les couvertures |
+
+- **Calendrier** : à 20, aller simple : 19 rondes, 190 matchs (19 par équipe), 19 créneaux de 10 : lundi-jeudi à
+  11:00, 14:30, 18:00, 21:30 ; vendredi 13:00, 17:30, 22:00 ; verrou vendredi 23:30, playoffs inchangés.
+- **Cotes** : budget de 8 400 tenu : **22 simulations par affiche** (380 affiches ; plancher 22 à 20 équipes).
+- **Contrôles** : comme aux paliers 2 et 3. La bible décrit 20 franchises : les 21-24 restent à concevoir.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
