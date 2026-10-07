@@ -27,7 +27,8 @@ VERSION = "expansion-0.1"
 FRANCHISES = ("CTX", "VEC", "AEG", "MNL", "AXM", "GLT", "CPH", "NVA",     # étape 6 : + franchises 05-08
               "PLS", "ONX", "FRG", "MRD",                               # palier 2 : + 09-12
               "APX", "LTC", "ZPH", "BST",                               # palier 3 : + 13-16
-              "GRZ", "MRG", "GMB", "PRM")                               # palier 4 : + 17-20
+              "GRZ", "MRG", "GMB", "PRM",                               # palier 4 : + 17-20
+              "SPK", "CTD", "TDL", "CMT")                               # franchises 21-24
 
 # flux aléatoires dédiés (garde-fou 2) : un par système
 FLUX = {"motion": "xp-motion", "shift": "xp-shift", "rpo": "xp-rpo", "option": "xp-option", "paquet": "xp-paquet",
@@ -644,6 +645,27 @@ PARTS = {
             "DEEP_CROSS": .15, "DOUBLE_POST": .10, "DIVIDE": .10, "SWITCH_VERTICALS": .05, "PA_SLIDE": .20, "PA_FLOOD": .15,
             "WHAM": .08, "JET_ACTION": .15, "RPO_READ": .10, "RPO_INSIDE_ZONE": .10, "POWER_TOSS": .08, "POWER_READ": .05,
             "PIN_PULL": .08, "END_AROUND": .05, "REVERSE": .03, "COUNTER_SWEEP": .10, "QB_DRAW": .05},
+    # franchises 21-24 — SPK : écrans, verticales, jet, RPO ; CTD : jeu court et intermédiaire de lecture ; TDL : zone
+    # large (sweeps, toss), play action en mouvement, crossers ; CMT : écrans, jet, end around, vitesse
+    "SPK": {"HITCH": .10, "SPOT_SNAG": .10, "CHOICE": .10, "PIVOT": .05, "FL_SE_SCREEN": .20, "WR_TUNNEL_SCREEN": .20,
+            "MESH_WHEEL": .20, "LEVELS": .10, "Y_CROSS": .10, "FLOOD": .15, "DART_QUICK_DIG": .10, "DOUBLE_DIG": .10,
+            "DEEP_CROSS": .15, "DOUBLE_POST": .20, "DIVIDE": .15, "SWITCH_VERTICALS": .15, "PA_SLIDE": .15,
+            "PA_FLOOD": .15, "JET_ACTION": .15, "RPO_READ": .10, "RPO_INSIDE_ZONE": .12, "RPO_ALERT": .08,
+            "POWER_READ": .08, "END_AROUND": .05, "REVERSE": .03, "COUNTER_SWEEP": .10, "QB_DRAW": .05},
+    "CTD": {"HITCH": .20, "SPOT_SNAG": .20, "CHOICE": .20, "PIVOT": .15, "FL_SE_SCREEN": .10, "WR_TUNNEL_SCREEN": .08,
+            "MESH_WHEEL": .10, "LEVELS": .20, "Y_CROSS": .20, "FLOOD": .15, "DART_QUICK_DIG": .20, "DOUBLE_DIG": .15,
+            "DEEP_CROSS": .10, "DOUBLE_POST": .05, "DIVIDE": .05, "PA_SLIDE": .15, "PA_FLOOD": .10,
+            "WHAM": .10, "POWER_TOSS": .08, "PIN_PULL": .12, "BUCK_SWEEP": .08, "COUNTER_SWEEP": .08, "JET_ACTION": .05},
+    "TDL": {"HITCH": .08, "SPOT_SNAG": .10, "CHOICE": .08, "PIVOT": .05, "FL_SE_SCREEN": .12, "WR_TUNNEL_SCREEN": .10,
+            "MESH_WHEEL": .10, "LEVELS": .10, "Y_CROSS": .20, "FLOOD": .20, "DART_QUICK_DIG": .10, "DOUBLE_DIG": .10,
+            "DEEP_CROSS": .25, "DOUBLE_POST": .10, "DIVIDE": .05, "PA_SLIDE": .35, "PA_FLOOD": .25,
+            "WHAM": .08, "JET_ACTION": .20, "RPO_OUTSIDE_ZONE": .15, "POWER_TOSS": .15, "PIN_PULL": .15,
+            "BUCK_SWEEP": .10, "COUNTER_SWEEP": .10, "END_AROUND": .05},
+    "CMT": {"HITCH": .12, "SPOT_SNAG": .12, "CHOICE": .12, "PIVOT": .08, "FL_SE_SCREEN": .25, "WR_TUNNEL_SCREEN": .20,
+            "MESH_WHEEL": .20, "LEVELS": .10, "Y_CROSS": .10, "FLOOD": .12, "DART_QUICK_DIG": .12, "DOUBLE_DIG": .08,
+            "DEEP_CROSS": .12, "DOUBLE_POST": .12, "DIVIDE": .10, "SWITCH_VERTICALS": .10, "PA_SLIDE": .15,
+            "PA_FLOOD": .12, "JET_ACTION": .20, "RPO_READ": .08, "RPO_OUTSIDE_ZONE": .10, "POWER_TOSS": .10,
+            "END_AROUND": .10, "REVERSE": .06, "COUNTER_SWEEP": .12, "QB_DRAW": .04},
 }
 PART_MAX_ANCRE = 0.6
 
@@ -748,6 +770,26 @@ FORMATIONS_STYLE = {
             "SINGLEBACK_DEUCE": .9, "SINGLEBACK_WING_PAIR": .9, "SINGLEBACK_NASTY": .8, "PISTOL_STRONG": 1.0,
             "PISTOL_WING": 1.0, "PISTOL_FULL_HOUSE": .7, "I_FORM_SLOT": 1.0, "I_FORM_WING": .8, "STRONG": .8,
             "WEAK": .8, "WILDCAT": .4},
+    "SPK": {"GUN_TIGHT": 1.0, "GUN_Y_OFF": 1.0, "GUN_WING": 1.0, "GUN_STACK": 1.2, "GUN_QUADS": 1.1, "GUN_TRIPS_OPEN": 1.3,
+            "GUN_TRIPS_TIGHT": 1.1, "GUN_FLEX": 1.2, "SINGLEBACK_BUNCH": .7, "SINGLEBACK_WING": .7, "SINGLEBACK_TIGHT": .5,
+            "SINGLEBACK_DEUCE": .5, "SINGLEBACK_WING_PAIR": .5, "SINGLEBACK_NASTY": .5, "PISTOL_STRONG": .9,
+            "PISTOL_WING": .9, "PISTOL_FULL_HOUSE": 0.0, "I_FORM_SLOT": .4, "I_FORM_WING": .4, "STRONG": .4, "WEAK": .4,
+            "WILDCAT": .3},
+    "CTD": {"GUN_TIGHT": 1.1, "GUN_Y_OFF": 1.0, "GUN_WING": .8, "GUN_STACK": .9, "GUN_QUADS": .6, "GUN_TRIPS_OPEN": .8,
+            "GUN_TRIPS_TIGHT": 1.0, "GUN_FLEX": 1.1, "SINGLEBACK_BUNCH": 1.2, "SINGLEBACK_WING": 1.1, "SINGLEBACK_TIGHT": 1.0,
+            "SINGLEBACK_DEUCE": .8, "SINGLEBACK_WING_PAIR": .7, "SINGLEBACK_NASTY": 1.0, "PISTOL_STRONG": .8,
+            "PISTOL_WING": .8, "PISTOL_FULL_HOUSE": .4, "I_FORM_SLOT": .8, "I_FORM_WING": .8, "STRONG": .8, "WEAK": .7,
+            "WILDCAT": 0.0},
+    "TDL": {"GUN_TIGHT": .8, "GUN_Y_OFF": .9, "GUN_WING": 1.1, "GUN_STACK": .7, "GUN_QUADS": .3, "GUN_TRIPS_OPEN": .6,
+            "GUN_TRIPS_TIGHT": .8, "GUN_FLEX": .9, "SINGLEBACK_BUNCH": .9, "SINGLEBACK_WING": 1.5, "SINGLEBACK_TIGHT": 1.2,
+            "SINGLEBACK_DEUCE": 1.1, "SINGLEBACK_WING_PAIR": 1.3, "SINGLEBACK_NASTY": 1.1, "PISTOL_STRONG": 1.3,
+            "PISTOL_WING": 1.4, "PISTOL_FULL_HOUSE": .8, "I_FORM_SLOT": 1.0, "I_FORM_WING": 1.3, "STRONG": 1.1,
+            "WEAK": 1.0, "WILDCAT": .3},
+    "CMT": {"GUN_TIGHT": 1.0, "GUN_Y_OFF": 1.0, "GUN_WING": 1.1, "GUN_STACK": 1.1, "GUN_QUADS": .9, "GUN_TRIPS_OPEN": 1.2,
+            "GUN_TRIPS_TIGHT": 1.1, "GUN_FLEX": 1.1, "SINGLEBACK_BUNCH": .8, "SINGLEBACK_WING": .9, "SINGLEBACK_TIGHT": .6,
+            "SINGLEBACK_DEUCE": .6, "SINGLEBACK_WING_PAIR": .6, "SINGLEBACK_NASTY": .6, "PISTOL_STRONG": 1.0,
+            "PISTOL_WING": 1.0, "PISTOL_FULL_HOUSE": .4, "I_FORM_SLOT": .6, "I_FORM_WING": .6, "STRONG": .6, "WEAK": .6,
+            "WILDCAT": .5},
 }
 # concepts qu'une franchise ne joue pas (identité) — en plus des parts nulles
 #   MNL : courses toujours confiées à ses RB (rotation RB1 / RB2 du coordinateur) : ni QB, ni receveur, ni option, ni RPO
@@ -779,12 +821,18 @@ EXCLUS_CONCEPTS = {
     "MRG": set(),
     "GMB": {"TRIPLE_OPTION"},
     "PRM": {"TRIPLE_OPTION"},
+    #   franchises 21-24 — CTD : QB vétéran de poche (ni option, ni course du QB) ; SPK, TDL, CMT : option légère
+    "SPK": {"TRIPLE_OPTION", "MIDLINE_OPTION"},
+    "CTD": {c for c, d in CONCEPTS.items() if d.get("option")} | {"QB_SWEEP", "QB_DRAW"},
+    "TDL": {"TRIPLE_OPTION", "MIDLINE_OPTION"},
+    "CMT": {"TRIPLE_OPTION", "MIDLINE_OPTION"},
 }
 EXCLUS_FORMATIONS = {"VEC": {"WILDCAT", "PISTOL_FULL_HOUSE"}, "MNL": {"GUN_QUADS"}, "AEG": set(), "CTX": set(),
                      "AXM": {"WILDCAT"}, "GLT": set(), "CPH": set(), "NVA": {"WILDCAT"},
                      "PLS": {"WILDCAT", "PISTOL_FULL_HOUSE"}, "ONX": set(), "FRG": {"GUN_QUADS"}, "MRD": set(),
                      "APX": set(), "LTC": {"PISTOL_FULL_HOUSE"}, "ZPH": {"WILDCAT", "PISTOL_FULL_HOUSE"}, "BST": set(),
-                     "GRZ": set(), "MRG": set(), "GMB": set(), "PRM": set()}
+                     "GRZ": set(), "MRG": set(), "GMB": set(), "PRM": set(),
+                     "SPK": {"PISTOL_FULL_HOUSE"}, "CTD": {"WILDCAT"}, "TDL": set(), "CMT": set()}
 
 
 def exclu(abbr, play_id):
@@ -1247,6 +1295,38 @@ PAQUETS_STYLE = {
             "BLITZ": {"FIRE_ZONE": .20, "COVER_2_FIRE": .10, "MUG_BLITZ": .08, "NICKEL_BLITZ": .08, "SAFETY_BLITZ": .05,
                       "CORNER_BLITZ": .05},
             "BOX_STACK": {"BOX_SKY": .25, "BOX_ROBBER": .20}},
+    # franchises 21-24 — SPK : presse et pression, jeune et risquée ; CTD : zones disciplinées, Quarters, Cover 6 ;
+    # TDL : équilibrée ; CMT : vitesse, homme et Cover 3
+    "SPK": {"MAN": {"PRESS_MAN": .35, "OFF_MAN": .05, "COVER_1_ROBBER": .20, "COVER_2_MAN": .10, "GREEN_DOG": .10},
+            "ZONE": {"SIM_PRESSURE": .15, "CREEPER": .10, "MUG_DROP": .10, "COVER_3_SKY": .15},
+            "COVER_2": {"TAMPA_2": .10, "COVER_2_SINK": .05},
+            "COVER_3": {"COVER_3_SKY": .15, "COVER_3_BUZZ": .05, "SIM_PRESSURE": .15, "CREEPER": .10},
+            "COVER_4": {"MATCH_QUARTERS": .10, "COVER_6": .05},
+            "BLITZ": {"FIRE_ZONE": .12, "MUG_BLITZ": .10, "OVERLOAD_BLITZ": .08, "A_GAP_BLITZ": .10, "EDGE_BLITZ": .10,
+                      "CORNER_BLITZ": .06, "SAFETY_BLITZ": .06, "NICKEL_BLITZ": .06},
+            "BOX_STACK": {"BOX_ROBBER": .25, "BOX_SKY": .15}},
+    "CTD": {"MAN": {"PRESS_MAN": .05, "OFF_MAN": .25, "COVER_1_ROBBER": .10, "COVER_2_MAN": .20},
+            "ZONE": {"SIM_PRESSURE": .10, "CREEPER": .05, "MUG_DROP": .05, "COVER_3_SKY": .15, "COVER_3_BUZZ": .15,
+                     "COVER_3_MATCH": .25},
+            "COVER_2": {"TAMPA_2": .30, "COVER_2_SINK": .20},
+            "COVER_3": {"COVER_3_SKY": .15, "COVER_3_BUZZ": .15, "COVER_3_MATCH": .25, "SIM_PRESSURE": .10},
+            "COVER_4": {"MATCH_QUARTERS": .35, "PALMS": .20, "COVER_6": .20, "COVER_8": .10},
+            "BLITZ": {"FIRE_ZONE": .30, "COVER_2_FIRE": .20, "EDGE_BLITZ": .03, "NICKEL_BLITZ": .03},
+            "BOX_STACK": {"BOX_SKY": .25, "BOX_ROBBER": .10}},
+    "TDL": {"MAN": {"PRESS_MAN": .10, "OFF_MAN": .20, "COVER_1_ROBBER": .15, "COVER_2_MAN": .15},
+            "ZONE": {"SIM_PRESSURE": .10, "CREEPER": .05, "COVER_3_SKY": .20, "COVER_3_BUZZ": .15, "COVER_3_MATCH": .15},
+            "COVER_2": {"TAMPA_2": .20, "COVER_2_SINK": .10},
+            "COVER_3": {"COVER_3_SKY": .20, "COVER_3_BUZZ": .15, "COVER_3_MATCH": .15, "SIM_PRESSURE": .10},
+            "COVER_4": {"MATCH_QUARTERS": .25, "PALMS": .15, "COVER_6": .15},
+            "BLITZ": {"FIRE_ZONE": .25, "COVER_2_FIRE": .10, "A_GAP_BLITZ": .05, "EDGE_BLITZ": .05, "NICKEL_BLITZ": .05},
+            "BOX_STACK": {"BOX_SKY": .25, "BOX_ROBBER": .15}},
+    "CMT": {"MAN": {"PRESS_MAN": .25, "OFF_MAN": .15, "COVER_1_ROBBER": .20, "COVER_2_MAN": .10},
+            "ZONE": {"SIM_PRESSURE": .10, "CREEPER": .05, "COVER_3_SKY": .20, "COVER_3_BUZZ": .15, "COVER_3_MATCH": .10},
+            "COVER_2": {"TAMPA_2": .15, "COVER_2_SINK": .10},
+            "COVER_3": {"COVER_3_SKY": .20, "COVER_3_BUZZ": .15, "COVER_3_MATCH": .10, "SIM_PRESSURE": .10},
+            "COVER_4": {"MATCH_QUARTERS": .20, "PALMS": .10, "COVER_6": .10},
+            "BLITZ": {"FIRE_ZONE": .20, "COVER_2_FIRE": .08, "CORNER_BLITZ": .08, "NICKEL_BLITZ": .08, "EDGE_BLITZ": .08},
+            "BOX_STACK": {"BOX_SKY": .25, "BOX_ROBBER": .15}},
 }
 P_BANJO = 0.5          # contre une formation à receveurs groupés / empilés, l'homme passe en banjo une fois sur deux
 FORMATIONS_GROUPEES = {"BUNCH", "SINGLEBACK_BUNCH", "GUN_STACK", "GUN_TRIPS_TIGHT"}
@@ -1296,6 +1376,14 @@ RUSH_STYLE = {
             "INTERIOR_COLLAPSE": .05, "EDGE_RUSH": .06},
     "PRM": {"ET_STUNT": .07, "TEX_STUNT": .07, "INTERIOR_STUNT": .04, "LONG_STUNT": .04, "CONTAIN_RUSH": .05,
             "INTERIOR_COLLAPSE": .03, "EDGE_RUSH": .04},
+    "SPK": {"ET_STUNT": .08, "TEX_STUNT": .08, "INTERIOR_STUNT": .05, "LONG_STUNT": .05, "CONTAIN_RUSH": .02,
+            "INTERIOR_COLLAPSE": .04, "EDGE_RUSH": .07},
+    "CTD": {"ET_STUNT": .05, "TEX_STUNT": .05, "INTERIOR_STUNT": .02, "LONG_STUNT": .02, "CONTAIN_RUSH": .10,
+            "INTERIOR_COLLAPSE": .03, "EDGE_RUSH": .02},
+    "TDL": {"ET_STUNT": .05, "TEX_STUNT": .05, "INTERIOR_STUNT": .03, "LONG_STUNT": .02, "CONTAIN_RUSH": .07,
+            "INTERIOR_COLLAPSE": .03, "EDGE_RUSH": .04},
+    "CMT": {"ET_STUNT": .06, "TEX_STUNT": .06, "INTERIOR_STUNT": .03, "LONG_STUNT": .03, "CONTAIN_RUSH": .05,
+            "INTERIOR_COLLAPSE": .03, "EDGE_RUSH": .06},
 }
 
 # fronts (§12.3) : variantes d'alignement à l'intérieur d'une formation défensive existante ; effet en yards sur les
@@ -1359,6 +1447,14 @@ FRONTS_STYLE = {
             "STACK": .25, "SHORT_YARDAGE": .45, "NASCAR": .50, "EMPTY_SPECIFIC": .40},
     "PRM": {"4_3_OVER": .20, "4_3_UNDER": .20, "4_3_EVEN": .15, "BEAR": .10, "TITE": .15, "HYBRID": .35, "MINT": .20,
             "STACK": .15, "SHORT_YARDAGE": .35, "NASCAR": .35, "EMPTY_SPECIFIC": .50},
+    "SPK": {"4_3_OVER": .15, "4_3_UNDER": .20, "4_3_EVEN": .15, "BEAR": .15, "TITE": .15, "HYBRID": .30, "MINT": .10,
+            "STACK": .25, "SHORT_YARDAGE": .35, "NASCAR": .45, "EMPTY_SPECIFIC": .40},
+    "CTD": {"4_3_OVER": .35, "4_3_UNDER": .20, "4_3_EVEN": .05, "BEAR": .05, "TITE": .25, "HYBRID": .10, "MINT": .30,
+            "STACK": .05, "SHORT_YARDAGE": .35, "NASCAR": .30, "EMPTY_SPECIFIC": .60},
+    "TDL": {"4_3_OVER": .25, "4_3_UNDER": .20, "4_3_EVEN": .10, "BEAR": .10, "TITE": .20, "HYBRID": .15, "MINT": .20,
+            "STACK": .10, "SHORT_YARDAGE": .35, "NASCAR": .30, "EMPTY_SPECIFIC": .50},
+    "CMT": {"4_3_OVER": .20, "4_3_UNDER": .20, "4_3_EVEN": .15, "BEAR": .10, "TITE": .15, "HYBRID": .25, "MINT": .20,
+            "STACK": .15, "SHORT_YARDAGE": .35, "NASCAR": .35, "EMPTY_SPECIFIC": .50},
 }
 FORMATIONS_VIDES = {"EMPTY", "GUN_QUADS"}         # l'attaque n'a personne dans le champ arrière
 
@@ -1367,7 +1463,7 @@ FORMATIONS_VIDES = {"EMPTY", "GUN_QUADS"}         # l'attaque n'a personne dans 
 MOUVEMENTS = {"STEM": 0.6, "SHIFT": 0.5, "SLANT": 1.2, "ANGLE": 1.0, "SPIN": 0.8, "LOOP": 1.2, "CRASH": 1.5}
 MOUVEMENTS_STYLE = {"CTX": .20, "VEC": .30, "AEG": .12, "MNL": .25, "AXM": .15, "GLT": .40, "CPH": .22, "NVA": .12,
                     "PLS": .10, "ONX": .18, "FRG": .30, "MRD": .12, "APX": .25, "LTC": .20, "ZPH": .15, "BST": .15,
-                    "GRZ": .30, "MRG": .18, "GMB": .30, "PRM": .22}
+                    "GRZ": .30, "MRG": .18, "GMB": .30, "PRM": .22, "SPK": .35, "CTD": .10, "TDL": .18, "CMT": .22}
 
 # classe de course des concepts existants (pour les fronts et la motion)
 CLASSE_COURSE = {"INSIDE_RUN": "inside", "TRAP": "inside", "DRAW": "inside", "QB_SNEAK": "inside",

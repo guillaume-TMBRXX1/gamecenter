@@ -144,6 +144,15 @@ PROFILS = {
             "man_iq": 3, "reaction": 2, "discipline": -2},
     "PRM": {"route_iq": 2, "separation": 2, "catch_in_traffic": 1,                       # polyvalence
             "zone_iq": 2, "man_iq": 2, "awareness": 2},
+    # franchises 21-24
+    "SPK": {"separation": 3, "release": 2, "route_iq": -2,                              # jeunes : physique > lecture
+            "pursuit": 3, "reaction": 2, "discipline": -4, "play_recognition": -2},
+    "CTD": {"route_iq": 4, "coverage_recognition": 3, "separation": -2,                 # vétérans : lecture
+            "zone_iq": 4, "awareness": 4, "discipline": 4, "pursuit": -2},
+    "TDL": {"separation": 2, "route_iq": 2, "release": 1,                                # routes en mouvement
+            "pursuit": 2, "discipline": 2, "zone_iq": 1},
+    "CMT": {"separation": 3, "release": 1,                                              # vitesse
+            "pursuit": 4, "reaction": 2, "discipline": 0},
 }
 
 # ---- poids des attributs (en « pas » de séparation, pour 10 points d'écart EFFECTIF) ----

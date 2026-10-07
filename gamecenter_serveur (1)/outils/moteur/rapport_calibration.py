@@ -196,7 +196,7 @@ def main():
     ap.add_argument("--decisions", choices=("off", "on"), default="off")
     ap.add_argument("--graines", type=int, default=None,
                     help="matchs par affiche et par terrain (défaut : ≈ 1 008 matchs — 84 à 4 équipes, 18 à 8)")
-    ap.add_argument("--franchises", choices=("4", "8", "12", "16", "20"), default=None,
+    ap.add_argument("--franchises", choices=("4", "8", "12", "16", "20", "24"), default=None,
                     help="taille de la ligue (GC_FRANCHISES ; défaut : celle du notebook, 8 depuis l'étape 6)")
     ap.add_argument("--notebook", default=NOTEBOOK)
     ap.add_argument("--jusqua", default=JUSQUA, help="dernière cellule chargée (V21 : « 12.2 quater »)")

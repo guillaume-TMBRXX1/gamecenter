@@ -95,7 +95,7 @@ class TestAttributs(unittest.TestCase):
                            attributs_defenseur(self.CB, "CB", "MNL")["reaction"])
         self.assertEqual(set(PROFILS), {"CTX", "VEC", "AEG", "MNL", "AXM", "GLT", "CPH", "NVA",
                                          "PLS", "ONX", "FRG", "MRD", "APX", "LTC", "ZPH", "BST",
-                                         "GRZ", "MRG", "GMB", "PRM"})   # palier 4 : 20
+                                         "GRZ", "MRG", "GMB", "PRM", "SPK", "CTD", "TDL", "CMT"})   # 24
 
     def test_note_presente_prise_telle_quelle(self):
         self.assertEqual(attributs_receveur(joueur("X", route_running=80, route_iq=61))["route_iq"], 61)

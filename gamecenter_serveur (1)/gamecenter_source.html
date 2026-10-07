@@ -989,6 +989,7 @@
     --t-pls:#1C8FC0; --t-onx:#3E4A59; --t-frg:#7A4E2D; --t-mrd:#6E7F2A;
     --t-apx:#D63A3A; --t-ltc:#4049A8; --t-zph:#C9A21B; --t-bst:#5B2C6F;
     --t-grz:#7D838F; --t-mrg:#E2667A; --t-gmb:#0FA3A3; --t-prm:#7DB82E;
+    --t-spk:#FF8A3D; --t-ctd:#264653; --t-tdl:#9B5DE5; --t-cmt:#F15BB5;
     --tc:var(--ink-3);
   }
   [data-tm="CTX"],[data-team="CTX"]{--tc:var(--t-ctx)}
@@ -1011,6 +1012,10 @@
   [data-tm="MRG"],[data-team="MRG"]{--tc:var(--t-mrg)}
   [data-tm="GMB"],[data-team="GMB"]{--tc:var(--t-gmb)}
   [data-tm="PRM"],[data-team="PRM"]{--tc:var(--t-prm)}
+  [data-tm="SPK"],[data-team="SPK"]{--tc:var(--t-spk)}
+  [data-tm="CTD"],[data-team="CTD"]{--tc:var(--t-ctd)}
+  [data-tm="TDL"],[data-team="TDL"]{--tc:var(--t-tdl)}
+  [data-tm="CMT"],[data-team="CMT"]{--tc:var(--t-cmt)}
 
   body{background:var(--bg);color:var(--ink);font:400 14px/1.5 var(--f-ui);font-variant-numeric:tabular-nums;padding-inline:24px}
   body::before{display:none}
@@ -1382,6 +1387,10 @@
   .power:has(.pw-side.fav .abbr[data-tm="MRG"]) .pw-track{background:var(--t-mrg)}
   .power:has(.pw-side.fav .abbr[data-tm="GMB"]) .pw-track{background:var(--t-gmb)}
   .power:has(.pw-side.fav .abbr[data-tm="PRM"]) .pw-track{background:var(--t-prm)}
+  .power:has(.pw-side.fav .abbr[data-tm="SPK"]) .pw-track{background:var(--t-spk)}
+  .power:has(.pw-side.fav .abbr[data-tm="CTD"]) .pw-track{background:var(--t-ctd)}
+  .power:has(.pw-side.fav .abbr[data-tm="TDL"]) .pw-track{background:var(--t-tdl)}
+  .power:has(.pw-side.fav .abbr[data-tm="CMT"]) .pw-track{background:var(--t-cmt)}
   .pw-track{transition:background-color .6s ease}
   /* Fiche joueur : l'attaquant prend la couleur de sa franchise (la défense ne change pas) */
   .pcard[data-tm] .pc-mark.o{background:var(--l1);color:var(--tc);box-shadow:0 0 0 1.5px var(--tc)}
@@ -1678,6 +1687,7 @@
     --t-pls:#4DB8E8; --t-onx:#93A3B8; --t-frg:#C58C5F; --t-mrd:#A9BC5A;
     --t-apx:#F07070; --t-ltc:#8D95E8; --t-zph:#E6C64F; --t-bst:#B07FC8;
     --t-grz:#B4BAC6; --t-mrg:#F49AA8; --t-gmb:#4FD1D1; --t-prm:#A8DC5E;
+    --t-spk:#FFAD75; --t-ctd:#7FA6B5; --t-tdl:#C3A0F2; --t-cmt:#F78FCD;
     --glass:rgba(22,30,43,.52); --glass-2:rgba(24,32,46,.72); --glass-in:rgba(255,255,255,.05);
     --glass-line:rgba(255,255,255,.1);
     --glass-edge:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px rgba(255,255,255,.03);
@@ -1949,7 +1959,7 @@ const FIELD = {
 
 /* Teams are identified by name and abbreviation only — no per-team colour */
 /* DESIGN OFFICIEL : couleur de franchise de l'équipe en attaque */
-const DA_TEAM={CTX:tok('--t-ctx','#B38332'),VEC:tok('--t-vec','#16858A'),AEG:tok('--t-aeg','#315A87'),MNL:tok('--t-mnl','#9E3B3F'),AXM:tok('--t-axm','#2E8A5E'),GLT:tok('--t-glt','#6B4FA8'),CPH:tok('--t-cph','#C4672B'),NVA:tok('--t-nva','#B03A78'),PLS:tok('--t-pls','#1C8FC0'),ONX:tok('--t-onx','#3E4A59'),FRG:tok('--t-frg','#7A4E2D'),MRD:tok('--t-mrd','#6E7F2A'),APX:tok('--t-apx','#D63A3A'),LTC:tok('--t-ltc','#4049A8'),ZPH:tok('--t-zph','#C9A21B'),BST:tok('--t-bst','#5B2C6F'),GRZ:tok('--t-grz','#7D838F'),MRG:tok('--t-mrg','#E2667A'),GMB:tok('--t-gmb','#0FA3A3'),PRM:tok('--t-prm','#7DB82E')};
+const DA_TEAM={CTX:tok('--t-ctx','#B38332'),VEC:tok('--t-vec','#16858A'),AEG:tok('--t-aeg','#315A87'),MNL:tok('--t-mnl','#9E3B3F'),AXM:tok('--t-axm','#2E8A5E'),GLT:tok('--t-glt','#6B4FA8'),CPH:tok('--t-cph','#C4672B'),NVA:tok('--t-nva','#B03A78'),PLS:tok('--t-pls','#1C8FC0'),ONX:tok('--t-onx','#3E4A59'),FRG:tok('--t-frg','#7A4E2D'),MRD:tok('--t-mrd','#6E7F2A'),APX:tok('--t-apx','#D63A3A'),LTC:tok('--t-ltc','#4049A8'),ZPH:tok('--t-zph','#C9A21B'),BST:tok('--t-bst','#5B2C6F'),GRZ:tok('--t-grz','#7D838F'),MRG:tok('--t-mrg','#E2667A'),GMB:tok('--t-gmb','#0FA3A3'),PRM:tok('--t-prm','#7DB82E'),SPK:tok('--t-spk','#FF8A3D'),CTD:tok('--t-ctd','#264653'),TDL:tok('--t-tdl','#9B5DE5'),CMT:tok('--t-cmt','#F15BB5')};
 const daOff=g=>DA_TEAM[offTeam(g)]||FIELD.cyan;
 /* DESIGN OFFICIEL : thème clair/sombre — relit les jetons CSS à chaud (le terrain est redessiné à chaque image) */
 const DA_FX={tag:'rgba(255,255,255,.96)',vig:'236,238,230'};
@@ -4494,7 +4504,7 @@ const fmtD=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,weekday:'short',day:'num
 const fmtDay=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,weekday:'long',day:'numeric',month:'long'});
 const tStr=ms=>fmtT.format(new Date(ms)), dStr=ms=>fmtD.format(new Date(ms));
 const wRange=()=>{ const f=o=>new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:TZ},o)); const a=f({day:'numeric'}).format(new Date(W_FIRST)), b=f({day:'numeric',month:'short'}).format(new Date(W_END)); return a+'–'+b; };
-const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays'],PLS:['Tempo, no-huddle, relentless rhythm','speed, rhythm, wearing the defense down'],ONX:['Opportunistic ball-hawk defense','instinct, reading the QB, takeaways'],FRG:['Physical, dominant in the trenches','line play, power, pocket control'],MRD:['Strategic, territorial, patient','field position, special teams, discipline'],APX:['Clinical red-zone finishers','finishing, compressed space, situational calls'],LTC:['Modern spread and RPO','spacing, numbers, make every defender choose'],ZPH:['Air raid, passing volume','vision, distribution, insistence'],BST:['Lockdown coverage defense','secondary, discipline, deny the first option'],GRZ:['Run-erasing defense, balanced offense','gap discipline, tackling, pursuit'],MRG:['Play-action and misdirection','fakes, motion, manipulating the defense'],GMB:['Bold fourth-down decision makers','calculated risk, situations, momentum'],PRM:['Positionless, matchup hunters','versatility, motion, pre-snap reads']};
+const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays'],PLS:['Tempo, no-huddle, relentless rhythm','speed, rhythm, wearing the defense down'],ONX:['Opportunistic ball-hawk defense','instinct, reading the QB, takeaways'],FRG:['Physical, dominant in the trenches','line play, power, pocket control'],MRD:['Strategic, territorial, patient','field position, special teams, discipline'],APX:['Clinical red-zone finishers','finishing, compressed space, situational calls'],LTC:['Modern spread and RPO','spacing, numbers, make every defender choose'],ZPH:['Air raid, passing volume','vision, distribution, insistence'],BST:['Lockdown coverage defense','secondary, discipline, deny the first option'],GRZ:['Run-erasing defense, balanced offense','gap discipline, tackling, pursuit'],MRG:['Play-action and misdirection','fakes, motion, manipulating the defense'],GMB:['Bold fourth-down decision makers','calculated risk, situations, momentum'],PRM:['Positionless, matchup hunters','versatility, motion, pre-snap reads'],SPK:['Young, fast and rising','potential, speed, daring'],CTD:['Veteran, poised, mistake-free','experience, reading, composure'],TDL:['Wide zone and bootleg','outside zone, movement play-action, rhythm'],CMT:['Special teams and speed','returns, coverage, long field goals']};
 const tStyle=T=>(STYLE_EN[T.abbr]||[T.style])[0], tIdent=T=>(STYLE_EN[T.abbr]||[0,T.identity])[1];
 const PHASE={regular:'Regular season',semifinal:'Semi-final',ai_bowl:'AI Bowl'};
 function gStatus(g,t){ return t<g.ko?'upcoming':t<g.end?'live':'final'; }
@@ -6260,7 +6270,7 @@ requestAnimationFrame(frame);
 <script id="da-editorial-teams">
 /* DESIGN OFFICIEL — couleurs de franchise : lit l'abréviation déjà affichée et pose data-tm. Aucun effet sur la logique. */
 (function(){
-  var C={CTX:1,VEC:1,AEG:1,MNL:1,AXM:1,GLT:1,CPH:1,NVA:1,PLS:1,ONX:1,FRG:1,MRD:1,APX:1,LTC:1,ZPH:1,BST:1,GRZ:1,MRG:1,GMB:1,PRM:1}, t=0;
+  var C={CTX:1,VEC:1,AEG:1,MNL:1,AXM:1,GLT:1,CPH:1,NVA:1,PLS:1,ONX:1,FRG:1,MRD:1,APX:1,LTC:1,ZPH:1,BST:1,GRZ:1,MRG:1,GMB:1,PRM:1,SPK:1,CTD:1,TDL:1,CMT:1}, t=0;
   function run(){ t=0;
     var els=document.querySelectorAll('.abbr,.badge,.team-page,.bug .bt,.pcard');
     for(var i=0;i<els.length;i++){ var e=els[i], v=null;

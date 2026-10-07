@@ -109,6 +109,16 @@ PROFILS = {
                 cible_ok=0.50, tenue=6, protege=True, quick=1.30, bracket=0.40, rotation=4, deguise=3, deguise_k=0.70),
     "PRM": dict(fenetre=6, blitz3=2, blitz_part=0.40, pression=3, doubles=3, cible_part=0.42, cible_min=4,
                 cible_ok=0.50, tenue=8, protege=True, quick=1.45, bracket=0.50, rotation=2, deguise=2, deguise_k=0.60),
+    # franchises 21-24 : SPK réagit vite, parfois trop ; CTD lit et attend ; TDL répond par la course en mouvement ;
+    # CMT équilibrée
+    "SPK": dict(fenetre=6, blitz3=2, blitz_part=0.45, pression=3, doubles=3, cible_part=0.42, cible_min=4,
+                cible_ok=0.50, tenue=6, protege=True, quick=1.35, bracket=0.40, rotation=4, deguise=3, deguise_k=0.70),
+    "CTD": dict(fenetre=10, blitz3=4, blitz_part=0.55, pression=2, doubles=4, cible_part=0.45, cible_min=6,
+                cible_ok=0.50, tenue=14, protege=True, quick=1.45, bracket=0.60, rotation=2, deguise=2, deguise_k=0.45),
+    "TDL": dict(fenetre=8, blitz3=3, blitz_part=0.45, pression=3, doubles=3, cible_part=0.45, cible_min=5,
+                cible_ok=0.50, tenue=10, protege=True, quick=1.30, bracket=0.50, rotation=3, deguise=2, deguise_k=0.55),
+    "CMT": dict(fenetre=8, blitz3=3, blitz_part=0.45, pression=3, doubles=3, cible_part=0.45, cible_min=5,
+                cible_ok=0.50, tenue=8, protege=True, quick=1.35, bracket=0.50, rotation=3, deguise=2, deguise_k=0.55),
 }
 PROFIL_DEFAUT = PROFILS["CTX"]
 PROTECTION = {"poche": 0.20, "rusher5": 0.10}     # s gagnées par la protection ; un 5e rusher ramassé en partie
