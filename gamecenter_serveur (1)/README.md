@@ -543,6 +543,26 @@ coordinateurs **proposés par Claude, à valider par Guillaume** :
 - **Cotes** : budget de 8 400 tenu : **22 simulations par affiche** (380 affiches ; plancher 22 à 20 équipes).
 - **Contrôles** : comme aux paliers 2 et 3. La bible décrit 20 franchises : les 21-24 restent à concevoir.
 
+### 28. Étape 6 : franchises 21-24, ligue de 24 (notebook V33, 07/10/2026)
+
+La bible décrit 20 franchises : les 21-24 sont **proposées par Claude** pour compléter les identités existantes (à
+valider par Guillaume — noms, codes, couleurs, coordinateurs **et identités**). Deux d'entre elles s'appuient sur le
+bloc E (progression) : `developpement.AGE_EQUIPE` décale l'âge tiré des joueurs d'une franchise (0 pour les autres :
+leurs tirages ne changent pas).
+
+| Code | Franchise | Identité | Couleur | Coordinateurs (att. · déf.) | Dans le moteur |
+|---|---|---|---|---|---|
+| SPK | Spark Kestrels | 21 Youth — « Grow » | `#FF8A3D` | Tessa Lindqvist · Oscar Bellweather | joueurs ≈ 3,5 ans plus jeunes (potentiel élevé : progresse au fil des semaines), notes de départ plus basses, vitesse ; audacieuse, presse et blitz |
+| CTD | Citadel Rams | 22 Veterans — « Endure » | `#264653` | Bernard Okonkwo · Margot Delacourt | joueurs ≈ 3,5 ans plus âgés (notes hautes, déclin et retraites plus tôt), QB vétéran de poche, lecture ; zones disciplinées |
+| TDL | Tidal Herons | 23 Wide Zone / Bootleg — « Flow » | `#9B5DE5` | Callum Fairweather · Petra Lindahl | zone extérieure (65 % des courses), toss, sweeps, play action en mouvement, crossers |
+| CMT | Comet Stingrays | 24 Special Teams — « Ignite » | `#F15BB5` | Nadia Petrov-Lane · Gareth Mwangi | K / P à 93, field goals jusqu'à 60 yards, vitesse (retours, écrans, jet, end around) |
+
+- **Calendrier** : à 24, aller simple : 23 rondes, 276 matchs (23 par équipe), 23 créneaux de 12 : lundi-jeudi à
+  10:00, 13:00, 16:00, 19:00, 22:00 ; vendredi 13:00, 17:30, 22:00 ; verrou vendredi 23:30, playoffs inchangés.
+- **Cotes** : budget de 8 400 tenu : 15 simulations par affiche (552 affiches).
+- **Prochain** (décision de Guillaume, 07/10) : divisions / conférences (bible, section 14), calibrage des forces,
+  contrôles d'identité, rapport de calibration, audit et tests — maintenant que les 24 franchises existent.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

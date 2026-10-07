@@ -63,6 +63,11 @@ PROFILS = {
     "MRG": {"anticipation": 3, "coverage_reading": 3, "awareness": 2, "aggressiveness": 4},     # lit les réactions
     "GMB": {"pressure_response": 3, "processing": 2, "aggressiveness": 18},                     # risque calculé
     "PRM": {"processing": 4, "coverage_reading": 3, "anticipation": 2, "aggressiveness": 2},    # duels avant le snap
+    # franchises 21-24
+    "SPK": {"processing": -3, "pressure_response": -2, "aggressiveness": 16},                   # jeune, audacieux
+    "CTD": {"processing": 5, "coverage_reading": 5, "pocket_awareness": 4, "aggressiveness": -10},  # vétéran
+    "TDL": {"anticipation": 3, "awareness": 2, "aggressiveness": 0},                            # bootleg, timing
+    "CMT": {"processing": 2, "aggressiveness": 6},
 }
 
 _CLES = {"dm": "decision_making", "acc": "throw_accuracy", "pow": "throw_power", "mob": "mobility"}

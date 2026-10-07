@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 07/10/2026 : étape 6, palier 4 — 20 franchises)
+# Feuille de route — GridironSim (mise à jour le 07/10/2026 : étape 6 — 24 franchises)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -24,7 +24,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | ✅ **terminé** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; étape 6 lancée | notebook (+ modules Python) + site + serveur |
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
-| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32, noms à valider) ; prochain : franchises 21-24 (à concevoir) | notebook (+ modules) + site + serveur |
+| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32) · ✅ franchises 21-24 (hors bible, notebook V33, à valider) ; prochain : divisions, calibrage, audit, tests | notebook (+ modules) + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
 ---
@@ -816,8 +816,17 @@ rapport de calibration, audit, tests ; divisions et conférences (bible, section
 - **Semaine à 20** : aller simple (190 matchs, 19 par équipe, 19 créneaux de 10, lundi-vendredi) ; cotes à 22
   simulations par affiche (budget de 8 400 tenu).
 
-**Prochain** : franchises 21-24 — la bible n'en décrit que 20 : identités à proposer par Claude et à valider par
-Guillaume ; puis divisions / conférences (bible, section 14), calibrage, audit et tests à 24.
+## Étape 6 — ✅ franchises 21-24, ligue de 24 (07/10/2026, notebook V33)
+
+- La bible en décrit 20 : **identités proposées par Claude** (à valider) : **SPK Spark Kestrels** (jeunesse, « Grow »,
+  orange), **CTD Citadel Rams** (vétérans, « Endure », bleu pétrole), **TDL Tidal Herons** (zone large / bootleg,
+  « Flow », violet), **CMT Comet Stingrays** (équipes spéciales, « Ignite », rose). SPK et CTD utilisent le bloc E
+  (`developpement.AGE_EQUIPE`). Détail : README du serveur, section 28.
+- **Semaine à 24** : aller simple (276 matchs, 23 par équipe, 23 créneaux de 12) ; cotes à 15 simulations par affiche.
+
+**Prochain** (décision de Guillaume : contrôles à 24) : divisions et conférences (bible, section 14), calibrage des
+forces (équilibre 40-60 %), contrôles d'identité de 12.3, rapport de calibration, audit, tests — et le temps du samedi,
+proche de la limite (voir la PR).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à

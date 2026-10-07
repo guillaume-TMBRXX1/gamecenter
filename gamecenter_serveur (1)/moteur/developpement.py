@@ -122,6 +122,11 @@ def _rng(*parts):
     return random.Random("|".join(str(p) for p in parts))
 
 
+# étape 6, franchises 21-24 : identité d'âge d'une franchise (années ajoutées à l'âge tiré ; 0 pour les autres, dont les
+# tirages restent identiques). SPK : effectif jeune, grand potentiel ; CTD : vétérans, notes hautes, déclin et retraites.
+AGE_EQUIPE = {"SPK": -3.5, "CTD": 3.5}
+
+
 def profil_initial(pid, poste, profondeur=1):
     """Âge, rythme de développement, potentiel et expérience de départ (déterministes, hash de l'id)."""
     rng = _rng("progression-profil", pid)
@@ -133,6 +138,9 @@ def profil_initial(pid, poste, profondeur=1):
         age = rng.uniform(21.5, 27.5)
     else:
         age = rng.uniform(22.0, 31.5)
+    decal = AGE_EQUIPE.get(decoder_id(pid)[0], 0.0)
+    if decal:
+        age = min(max(21.0, age + decal), AGE_RETRAITE.get(poste, AGE_RETRAITE_DEFAUT) - 1.0)
     jeune = max(0.0, min(1.0, (29.0 - age) / 7.0))           # 1 à 22 ans, 0 à 29 ans et plus
     u, acc, dev = rng.random(), 0.0, "normal"
     for nom, _, part in DEV:

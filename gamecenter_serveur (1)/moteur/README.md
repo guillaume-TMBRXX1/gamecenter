@@ -233,7 +233,7 @@ contre le moteur (points réellement marqués depuis les mêmes situations). Tem
 n'écoule pas l'horloge entre deux actions (`TEMPS_ENTRE_ACTIONS = 0`). Déterministe. Interrupteur du notebook :
 `FIN_PERIODE_ENABLED` (`GC_FIN_PERIODE=0` : moteur V27). Tests : `test_fin_de_periode.py`.
 
-## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20)
+## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
 Raptors ; noms proposés, à valider) sont décrites dans les tables EXISTANTES de chaque module — aucune logique propre à
@@ -250,6 +250,10 @@ BST Bastion Panthers ; à valider). Détail : README du serveur, section 26.
 
 **Palier 4 (20 équipes, 07/10/2026)** : franchises 17-20 (GRZ Granite Grizzlies, MRG Mirage Cobras, GMB Gambit
 Stallions, PRM Prism Chameleons ; à valider). Détail : README du serveur, section 27.
+
+**Franchises 21-24 (24 équipes, 07/10/2026)** : SPK Spark Kestrels, CTD Citadel Rams, TDL Tidal Herons, CMT Comet
+Stingrays (hors bible, à valider). Nouveau : `developpement.AGE_EQUIPE` (âge d'une franchise : SPK jeune, CTD
+vétérane ; 0 ailleurs, tirages inchangés). Détail : README du serveur, section 28.
 
 ## Tests (quelques secondes)
 
