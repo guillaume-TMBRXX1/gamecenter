@@ -126,6 +126,15 @@ PROFILS = {
             "pursuit": 2, "play_recognition": 2, "discipline": 2},
     "MRD": {"route_iq": 2, "catch_in_traffic": 1,                                       # discipline, zone
             "zone_iq": 4, "discipline": 5, "awareness": 2},
+    # palier 3 (franchises 13-16)
+    "APX": {"contested_catch": 3, "catch_in_traffic": 3, "route_iq": 1,                 # espaces réduits
+            "man_iq": 2, "play_recognition": 2, "discipline": 1},
+    "LTC": {"separation": 2, "release": 2, "route_iq": 2,                                # espacement, YAC
+            "zone_iq": 2, "reaction": 2, "discipline": 2},
+    "ZPH": {"route_iq": 3, "separation": 2, "catch_in_traffic": 2,                       # volume, distribution
+            "zone_iq": 2, "awareness": 1},
+    "BST": {"release": 1,                                                               # couverture verrouillée
+            "man_iq": 6, "zone_iq": 4, "awareness": 4, "reaction": 3, "discipline": 4},
 }
 
 # ---- poids des attributs (en « pas » de séparation, pour 10 points d'écart EFFECTIF) ----

@@ -53,6 +53,11 @@ PROFILS = {
     "ONX": {"coverage_reading": 2, "pocket_awareness": 2, "aggressiveness": -14},                # protège le ballon
     "FRG": {"pocket_awareness": 4, "pressure_response": 3, "aggressiveness": -6},               # poche tenue
     "MRD": {"coverage_reading": 3, "pocket_awareness": 3, "aggressiveness": -20},               # territoire, prudence
+    # palier 3 (franchises 13-16)
+    "APX": {"anticipation": 3, "processing": 2, "pressure_response": 2, "aggressiveness": 0},     # finition
+    "LTC": {"processing": 5, "coverage_reading": 2, "anticipation": 2, "aggressiveness": 2},      # lecture du nombre
+    "ZPH": {"processing": 4, "anticipation": 4, "coverage_reading": 3, "aggressiveness": 12},     # distribution
+    "BST": {"pocket_awareness": 2, "coverage_reading": 2, "aggressiveness": -14},                # prudente
 }
 
 _CLES = {"dm": "decision_making", "acc": "throw_accuracy", "pow": "throw_power", "mob": "mobility"}

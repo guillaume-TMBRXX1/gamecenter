@@ -61,7 +61,7 @@ class TestAttributs(unittest.TestCase):
         self.assertGreater(vec["aggressiveness"], aeg["aggressiveness"] + 30)
         self.assertGreater(aeg["pocket_awareness"], vec["pocket_awareness"])
         self.assertEqual(set(PROFILS), {"CTX", "VEC", "AEG", "MNL", "AXM", "GLT", "CPH", "NVA",
-                                         "PLS", "ONX", "FRG", "MRD"})   # étape 6 : 12 franchises (palier 2)
+                                         "PLS", "ONX", "FRG", "MRD", "APX", "LTC", "ZPH", "BST"})   # palier 3 : 16
 
     def test_note_presente_prise_telle_quelle(self):
         q = joueur("X", decision_making=80, processing=61)
