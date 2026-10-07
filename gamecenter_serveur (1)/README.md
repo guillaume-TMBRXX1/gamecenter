@@ -508,6 +508,24 @@ Franchises 09-12 de la bible des identités, dans les **mêmes tables** que le p
   `8` gardent les ligues précédentes et leurs contrôles.
 - Site : couleurs `--t-pls`, `--t-onx`, `--t-frg`, `--t-mrd` (thèmes clair / sombre), styles en anglais (Teams).
 
+### 26. Étape 6, palier 3 : 16 franchises (notebook V31, 07/10/2026)
+
+Franchises 13-16 de la bible, dans les mêmes tables (aucune logique propre à une équipe). Noms, codes, couleurs et
+coordinateurs **proposés par Claude, à valider par Guillaume** :
+
+| Code | Franchise | Bible | Couleur | Coordinateurs (att. · déf.) | Identité dans le moteur |
+|---|---|---|---|---|---|
+| APX | Apex Vipers | 13 Red Zone Specialist | `#D63A3A` | Dario Vance · Noor Halvorsen | feuille d'appel situationnelle renforcée, Bunch / Stack, Power / Counter, Boot / Pop, défense homme et paquets de ligne de but |
+| LTC | Lattice Wolves | 14 RPO / Spread | `#4049A8` | Ilya Brandt · Freya Lund | RPO (zone intérieure / extérieure), écrans, Stick / Mesh, shotgun 3x1 / 2x2, QB qui lit vite ; défense à rotations tardives |
+| ZPH | Zephyr Condors | 15 Air Raid | `#C9A21B` | Bo Kittredge · Celia Moreau | attaque la plus portée sur la passe (≈ +0,20), Empty / 4-5 WR, Mesh, Y-Cross, verticales ; QB distributeur ; couvertures multiples |
+| BST | Bastion Panthers | 16 Lockdown Coverage | `#5B2C6F` | Gideon Pryce · Annika Strauss | secondaire à 90, presse et couvertures « match », brackets / doubles (plan de jeu), pression à quatre ; attaque prudente |
+
+- **Calendrier** : à 16, aller simple : 15 rondes, 120 matchs (15 par équipe), 15 créneaux de 8 du lundi au vendredi
+  (13:00, 18:00, 22:00) ; verrou vendredi 23:30, playoffs inchangés.
+- **Cotes** : budget tenu à 8 400 simulations : **35 par affiche** à 16 équipes (240 affiches ; plancher abaissé de 60 à
+  35 — décision de Guillaume : rester sous 75 min, quitte à réduire les simulations par affiche).
+- **Contrôles** : comme au palier 2 (signalés sans bloquer, repris à 24 franchises).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

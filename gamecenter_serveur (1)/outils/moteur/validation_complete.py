@@ -369,7 +369,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--graines", type=int, default=None,
                     help="matchs par affiche et par terrain (défaut : 1 008 matchs — 84 à 4 équipes, 18 à 8)")
-    ap.add_argument("--franchises", choices=("4", "8", "12"), default="4",
+    ap.add_argument("--franchises", choices=("4", "8", "12", "16"), default="4",
                     help="taille de la ligue (GC_FRANCHISES). 4 : ligue de départ, non-régression exacte contre les "
                          "rapports publiés (V23 → V26) ; 8 : ligue de l'étape 6 (tolérances contre V21, équilibre)")
     ap.add_argument("--semaines", default="8,16,32,52", help="bloc E : semaines de progression enchaînées (trajectoire neuve)")
