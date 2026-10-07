@@ -135,6 +135,15 @@ PROFILS = {
             "zone_iq": 2, "awareness": 1},
     "BST": {"release": 1,                                                               # couverture verrouillée
             "man_iq": 6, "zone_iq": 4, "awareness": 4, "reaction": 3, "discipline": 4},
+    # palier 4 (franchises 17-20)
+    "GRZ": {"catch_in_traffic": 2, "contested_catch": 2,                                # LB rapides, discipline
+            "pursuit": 6, "play_recognition": 4, "discipline": 4, "reaction": 2},
+    "MRG": {"route_iq": 2, "separation": 2, "release": 1,                                # routes retardées, feintes
+            "zone_iq": 2, "discipline": 3, "awareness": 2},
+    "GMB": {"contested_catch": 2, "release": 2,                                         # duels, pression choisie
+            "man_iq": 3, "reaction": 2, "discipline": -2},
+    "PRM": {"route_iq": 2, "separation": 2, "catch_in_traffic": 1,                       # polyvalence
+            "zone_iq": 2, "man_iq": 2, "awareness": 2},
 }
 
 # ---- poids des attributs (en « pas » de séparation, pour 10 points d'écart EFFECTIF) ----

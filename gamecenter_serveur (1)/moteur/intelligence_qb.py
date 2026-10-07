@@ -58,6 +58,11 @@ PROFILS = {
     "LTC": {"processing": 5, "coverage_reading": 2, "anticipation": 2, "aggressiveness": 2},      # lecture du nombre
     "ZPH": {"processing": 4, "anticipation": 4, "coverage_reading": 3, "aggressiveness": 12},     # distribution
     "BST": {"pocket_awareness": 2, "coverage_reading": 2, "aggressiveness": -14},                # prudente
+    # palier 4 (franchises 17-20)
+    "GRZ": {"coverage_reading": 2, "anticipation": 2, "aggressiveness": -4},                    # play action mesurée
+    "MRG": {"anticipation": 3, "coverage_reading": 3, "awareness": 2, "aggressiveness": 4},     # lit les réactions
+    "GMB": {"pressure_response": 3, "processing": 2, "aggressiveness": 18},                     # risque calculé
+    "PRM": {"processing": 4, "coverage_reading": 3, "anticipation": 2, "aggressiveness": 2},    # duels avant le snap
 }
 
 _CLES = {"dm": "decision_making", "acc": "throw_accuracy", "pow": "throw_power", "mob": "mobility"}
