@@ -25,6 +25,7 @@ Un seul outil pour tout ce que la feuille de route demande avant l'étape 6 :
     python3 outils/moteur/validation_complete.py --rapide                          # 8 graines, 2 et 4 semaines
     python3 outils/moteur/validation_complete.py --sortie outils/moteur/rapport_validation_complete.json
     python3 outils/moteur/validation_complete.py --travailleur ABCDE --graines 4   # un seul étage (débogage)
+    python3 outils/moteur/validation_complete.py --regenerer-references            # réécrit les références (moteur actuel)
 
 Code de sortie 1 si un contrôle BLOQUANT échoue (tests, intégration, déterminisme, non-régression, tolérances).
 La simulation d'une vraie semaine (notebook complet, cotes comprises) reste `generer_semaine.py` + `audit_moteur.py`.
@@ -365,6 +366,45 @@ def _egal(a, b, tol=1e-12):
     return a == b
 
 
+def regenerer_references(R):
+    """Réécrit les références avec les mesures de cette validation (moteur actuel) : reference_v21.json (étage V21),
+    rapports publiés de chaque étage et trajectoires du bloc E. Les champs absents des mesures restent tels quels."""
+    regen = {"date": time.strftime("%Y-%m-%d"), "outil": "validation_complete.py --regenerer-references",
+             "note": "mesures du moteur actuel (ligue de 4) ; chiffres d'origine dans l'historique git"}
+
+    def ecrire(fichier, maj):
+        chemin = os.path.join(HERE, fichier)
+        doc = json.load(open(chemin, encoding="utf-8"))
+        maj(doc)
+        doc["regenere"] = regen
+        with open(chemin, "w", encoding="utf-8") as fh:
+            json.dump(doc, fh, ensure_ascii=False, indent=1)
+            fh.write("\n")
+
+    def fusion(doc, r):
+        doc.update(r["mesures"])
+        if r.get("progression"):
+            doc["progression"] = {**doc.get("progression", {}), **{k: v for k, v in r["progression"].items()
+                                                                   if k not in ("secondes", "controler", "ovr_ecart")}}
+    manque = [n for n in ["V21"] + [e for e in ETAGES if ETAGES[e].get("historique")] + [f"v26_{c}" for c in trajectoires_v26()]
+              if not R.get(n) or "erreur" in R[n]]
+    if manque:
+        raise SystemExit(f"--regenerer-references : simulations manquantes ou en échec : {manque}")
+    ecrire("reference_v21.json", lambda d: fusion(d, R["V21"]))
+    for nom, e in ETAGES.items():
+        h = e.get("historique")
+        if h and not h[1]:
+            ecrire(h[0], lambda d, nom=nom: fusion(d, R[nom]))
+    def v26(d):
+        fusion(d["rapports"]["depart"], R["ABCDE"])
+        for cle in d["rapports"]:
+            if f"v26_{cle}" in R:
+                fusion(d["rapports"][cle], R[f"v26_{cle}"])
+    ecrire("rapport_v26_bloc_e.json", v26)
+    print("   références réécrites : reference_v21.json, " + ", ".join(sorted({e["historique"][0] for e in ETAGES.values()
+                                                                             if e.get("historique")})), flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--graines", type=int, default=None,
@@ -377,6 +417,9 @@ def main():
     ap.add_argument("--jobs", type=int, default=max(1, min(3, (os.cpu_count() or 2) - 1)))
     ap.add_argument("--etages", default=",".join(ETAGES))
     ap.add_argument("--sortie", help="rapport JSON (sans les empreintes des matchs)")
+    ap.add_argument("--regenerer-references", action="store_true",
+                    help="réécrit reference_v21.json et les rapports publiés (V23 → V26) avec les mesures du moteur actuel "
+                         "(validation complète à 4 équipes seulement), puis les compare")
     ap.add_argument("--travailleur", help=argparse.SUPPRESS)
     ap.add_argument("--graine-trajectoire", type=int, default=GRAINE_TRAJECTOIRE_V26, help=argparse.SUPPRESS)
     ap.add_argument("--traj-det", action="store_true", help=argparse.SUPPRESS)
@@ -436,6 +479,10 @@ def main():
     for nom, r in R.items():
         if "erreur" in r:
             bloquants.append(f"{nom} : le travailleur a échoué\n{r['erreur']}")
+    if a.regenerer_references:
+        if not publies:
+            raise SystemExit("--regenerer-references : validation complète à 4 équipes seulement (sans --graines ni --rapide)")
+        regenerer_references(R)
     ref_v21 = json.load(open(os.path.join(HERE, "reference_v21.json"), encoding="utf-8"))
 
     # 2. intégration
