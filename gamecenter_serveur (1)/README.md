@@ -607,6 +607,14 @@ over 50,9 %, marge −3,5 % ; 13.4 : extrêmes ±0,023, écart moyen 0,021, outs
 (279 GameFeed). Audit d'une semaine à 24 (`audit_moteur.py`) : 0 anomalie bloquante, 2 alertes (un score très élevé, un
 match très long). Mémoire : 12.3 ne garde que équipes et scores après ses contrôles (2 208 matchs complets ≈ 7 Go).
 
+**Ligue de 4 (`validation_complete.py`, 08/10)** : le jeu à 4 équipes est **identique** avant l'étape 6 (b56f600) et
+maintenant (étage ABCDE, 2 graines : toutes les mesures égales, seul le temps change — 0,12 s par match contre 0,18).
+Les 12 contrôles bloquants qu'affiche l'outil **existaient déjà avant l'étape 6** (mêmes chiffres) : (1) étage AB
+(blocs C-E coupés) : le contrôle de 12.2 decies attend 0 course de MNL hors RB, il en trouve 1 sur 2 978 actions ;
+(2) non-régression contre les rapports publiés V23 → V26, antérieurs aux changements de moteur de V27 (extension du
+playbook) et V28 (fin de période) — références à régénérer ; (3) E8 / E16 : points et yards / course (décision du 06/10)
+hors tolérance à 4 équipes. À traiter à part (hors étape 6).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
