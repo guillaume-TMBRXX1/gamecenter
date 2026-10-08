@@ -137,6 +137,7 @@ def main():
         os.environ.pop(k, None)               # surtout pas de semaine produite
     os.environ["GC_EXH"] = json.dumps(params)
     os.environ.setdefault("GC_MOTEUR_DIR", ROOT)        # modules moteur/ (V22)
+    os.environ.setdefault("GC_LEGER", "1")              # pas de contrôles lourds (CONTROLES, 12.1)
     os.environ["GC_DECISIONS"] = "0" if a.sans_decisions else "1"
     os.environ["GC_BLOC_B"] = "0" if a.sans_bloc_b else "1"
     os.environ["GC_BLOC_C"] = "0" if a.sans_bloc_c else "1"

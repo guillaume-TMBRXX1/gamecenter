@@ -255,6 +255,9 @@ Stallions, PRM Prism Chameleons ; à valider). Détail : README du serveur, sect
 Stingrays (hors bible, à valider). Nouveau : `developpement.AGE_EQUIPE` (âge d'une franchise : SPK jeune, CTD
 vétérane ; 0 ailleurs, tirages inchangés). Détail : README du serveur, section 28.
 
+**Divisions, calibrage, contrôles (08/10/2026)** : forces recalibrées dans `FRANCHISE_SPECS` (12.1, notebook) — les
+modules du moteur ne changent pas. Détail : README du serveur, section 29.
+
 ## Tests (quelques secondes)
 
 ```bash

@@ -563,6 +563,58 @@ leurs tirages ne changent pas).
 - **Prochain** (décision de Guillaume, 07/10) : divisions / conférences (bible, section 14), calibrage des forces,
   contrôles d'identité, rapport de calibration, audit et tests — maintenant que les 24 franchises existent.
 
+### 29. Étape 6 : divisions, calibrage, contrôles à 24 franchises (notebook V34, 08/10/2026)
+
+Décision de Guillaume (07/10) : audits et tests repris une fois les 24 franchises créées.
+
+**Divisions et conférences** (bible, section 14 ; répartition proposée par Claude, à valider) — `LEAGUE_STRUCTURE`
+(12.1), une des 4 franchises de départ par division, un mélange d'identités dans chacune :
+
+| Conférence | Division | Franchises |
+|---|---|---|
+| Nexus | Circuit | CTX, PRM, BST, FRG, CMT, PLS |
+| Nexus | Grid | AEG, NVA, GLT, TDL, GMB, SPK |
+| Frontier | Horizon | MNL, ZPH, ONX, MRG, CTD, AXM |
+| Frontier | Summit | VEC, CPH, LTC, GRZ, MRD, APX |
+
+- Calendrier inchangé (aller simple : chaque équipe rencontre les 23 autres). Playoffs : les **4 champions de division** ;
+  demi-finales = **finales de conférence** ; AI Bowl entre les champions de conférence (`playoff_order`, 14.1 : seeds[0]
+  = meilleur bilan, seeds[3] = l'autre champion de sa conférence). Futures alignés (« AI Bowl berth » = champion de
+  conférence). Export : `week.league` et `conference` / `division` par équipe (le serveur les transmet tels quels).
+- Site : classement par conférence et division (# = rang de la ligue) puis tableau de la ligue ; « Conference final ».
+- Audit (`audit_moteur.py`) : les finales de conférence opposent les champions de division.
+
+**Calcul du samedi** (mesuré cellule par cellule à 24 : 44 min avant, dont ≈ 15 min de contrôles et de démonstrations) :
+`CONTROLES` (12.1) — avec `GC_WEEK_START` (calcul hebdomadaire) ou `GC_LEGER=1` (exhibition), le test d'équilibre
+(12.3), la calibration (13.2), le match 13.3, la vérification 13.4 et la semaine d'exemple (14.2) sont sautés ; seules
+les 276 affiches de la semaine sont simulées, à **50 simulations par affiche** (au lieu de 15). Mesuré : **32 min** en
+local (≈ 45 min estimées sur GitHub, limite 75). Les contrôles tournent dans une exécution complète du notebook (sans
+`GC_WEEK_START`), dans `outils/moteur/validation_complete.py`, ou avec `GC_CONTROLES=1`.
+
+**Calibrage** (banc de réglage, 4 416 matchs, 8 par affiche et par terrain) : forces et tempos des 20 nouvelles
+franchises (les 4 de départ inchangées : `GC_FRANCHISES=4` reste identique à V28). Défenses renforcées, tempos extrêmes
+ramenés (PLS −1 ; LTC, ZPH, SPK, GMB 0), passe un peu moins dominante (ZPH 0,14), FRG / CPH / APX / CTD un peu moins
+forts, MRD / PRM / SPK / GMB / CMT relevées. Résultat : **43,3 à 57,9 % de victoires** ; mesures de la ligue dans les
+tolérances de la référence V21 sauf **points +2,5** (± 2 : composition de la ligue — VEC, ZPH, PLS, MRG marquent
+beaucoup par identité) et **yards / course +0,2** (décision de Guillaume du 06/10 : on laisse).
+
+**Contrôles stricts à 24** (exécution complète) : 12.3 — équilibre 40-60 % élargi d'un écart-type du bruit (184 matchs
+par franchise) et identités nettes (passe ZPH / VEC, MNL min ; blitz GLT / VEC ; sacks GLT ; 4e essais GMB ; gros gains
+VEC / ZPH ; course MNL ; course du QB CPH ; complétion AXM dans les 3 premiers ; défense AEG ou BST) ; 13.2, 13.4 et
+14.2 bloquants comme à 4 et 8 équipes. **Exécution complète du 08/10 (43 min) : tout passe** — 12.3 : 40,2-59,5 % sur
+2 208 matchs, identités nettes ; 13.2 : Brier 0,2495 (formule de notes 0,2605), z² 0,96, biais +1,2 %, spread 51,6 %,
+over 50,9 %, marge −3,5 % ; 13.4 : extrêmes ±0,023, écart moyen 0,021, outsiders +4,9 % ; 14.2 : semaine validée
+(279 GameFeed). Audit d'une semaine à 24 (`audit_moteur.py`) : 0 anomalie bloquante, 2 alertes (un score très élevé, un
+match très long). Mémoire : 12.3 ne garde que équipes et scores après ses contrôles (2 208 matchs complets ≈ 7 Go).
+
+**Ligue de 4 (`validation_complete.py`, 08/10)** : le jeu à 4 équipes est **identique** avant l'étape 6 (b56f600) et
+maintenant (étage ABCDE, 2 graines : toutes les mesures égales, seul le temps change — 0,12 s par match contre 0,18).
+Les 12 contrôles bloquants qu'affiche l'outil **existaient déjà avant l'étape 6** (mêmes chiffres) : (1) étage AB
+(blocs C-E coupés) : le contrôle de 12.2 decies attend 0 course de MNL hors RB, il en trouve 1 sur 2 978 actions ;
+(2) non-régression contre les rapports publiés V23 → V26, antérieurs aux changements de moteur de V27 (extension du
+playbook) et V28 (fin de période) — références à régénérer ; (3) E8 / E16 : points et yards / course (décision du 06/10)
+hors tolérance à 4 équipes. À traiter à part (hors étape 6).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

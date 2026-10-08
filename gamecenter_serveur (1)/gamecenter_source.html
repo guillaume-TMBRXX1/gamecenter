@@ -367,6 +367,8 @@
   /* ---------- Lower bento ---------- */
   .lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
   .exh{margin-top:20px}
+  .st-conf{margin-bottom:16px}
+  .st-div{margin:14px 0 6px;font:700 13px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
   .rail-btn[hidden]{display:none}
   .exh.exh-flash .exh-card{animation:exhFlash 1.4s ease-out}
   @keyframes exhFlash{0%,40%{box-shadow:0 0 0 3px var(--accent,#2b7cff)}100%{box-shadow:0 0 0 0 transparent}}
@@ -4506,7 +4508,7 @@ const tStr=ms=>fmtT.format(new Date(ms)), dStr=ms=>fmtD.format(new Date(ms));
 const wRange=()=>{ const f=o=>new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:TZ},o)); const a=f({day:'numeric'}).format(new Date(W_FIRST)), b=f({day:'numeric',month:'short'}).format(new Date(W_END)); return a+'–'+b; };
 const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays'],PLS:['Tempo, no-huddle, relentless rhythm','speed, rhythm, wearing the defense down'],ONX:['Opportunistic ball-hawk defense','instinct, reading the QB, takeaways'],FRG:['Physical, dominant in the trenches','line play, power, pocket control'],MRD:['Strategic, territorial, patient','field position, special teams, discipline'],APX:['Clinical red-zone finishers','finishing, compressed space, situational calls'],LTC:['Modern spread and RPO','spacing, numbers, make every defender choose'],ZPH:['Air raid, passing volume','vision, distribution, insistence'],BST:['Lockdown coverage defense','secondary, discipline, deny the first option'],GRZ:['Run-erasing defense, balanced offense','gap discipline, tackling, pursuit'],MRG:['Play-action and misdirection','fakes, motion, manipulating the defense'],GMB:['Bold fourth-down decision makers','calculated risk, situations, momentum'],PRM:['Positionless, matchup hunters','versatility, motion, pre-snap reads'],SPK:['Young, fast and rising','potential, speed, daring'],CTD:['Veteran, poised, mistake-free','experience, reading, composure'],TDL:['Wide zone and bootleg','outside zone, movement play-action, rhythm'],CMT:['Special teams and speed','returns, coverage, long field goals']};
 const tStyle=T=>(STYLE_EN[T.abbr]||[T.style])[0], tIdent=T=>(STYLE_EN[T.abbr]||[0,T.identity])[1];
-const PHASE={regular:'Regular season',semifinal:'Semi-final',ai_bowl:'AI Bowl'};
+const PHASE={regular:'Regular season',semifinal:(SW&&SW.week&&SW.week.league)?'Conference final':'Semi-final',ai_bowl:'AI Bowl'};
 function gStatus(g,t){ return t<g.ko?'upcoming':t<g.end?'live':'final'; }
 function revealed(g,t){
   if(g.phase==='regular') return true;
@@ -4521,7 +4523,9 @@ function scoreAt(g,t){
   if(s==='final') return f.plays[f.plays.length-1].after.score;
   const k=playIndexAt(g,t); return k>0?f.plays[k-1].after.score:{home:0,away:0};
 }
-function seedLabel(g){ if(g.phase==='semifinal') return g.id.endsWith('sf1')?['#4 seed','#1 seed']:['#3 seed','#2 seed']; return ['Semi-final winner','Semi-final winner']; }
+function seedLabel(g){ const LG=SW.week&&SW.week.league;
+  if(g.phase==='semifinal') return LG?(g.id.endsWith('sf1')?['Division champion','Best record']:['Division champion','Conference leader']):(g.id.endsWith('sf1')?['#4 seed','#1 seed']:['#3 seed','#2 seed']);
+  return LG?['Conference champion','Conference champion']:['Semi-final winner','Semi-final winner']; }
 function teamLabel(g,side,t){ if(revealed(g,t)) return TEAMS[g[side]].name; const s=seedLabel(g); return side==='away'?s[0]:s[1]; }
 function dec(a){ return decOf(a).toFixed(2); }
 function schName(g,side,t){ const n=teamLabel(g,side,t); return revealed(g,t)?`<b><span class="fn">${esc(n)}</span><span class="ab">${TEAMS[g[side]].abbr}</span></b>`:`<b>${esc(n)}</b>`; }
@@ -4787,9 +4791,14 @@ function renderStandings(t){
   const el=document.getElementById('viewStandings'), S=standingsAt(t), F=futuresAt(t), locked=t>=LOCK;
   const key='st|'+S.slot+'|'+F.after_slot+'|'+SCHED.filter(g=>g.phase!=='regular').map(g=>gStatus(g,t)[0]).join('')+'|'+locked+'|'+anyLive(t)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN);
   if(el._k===key) return; el._k=key;
-  const tb=S.table.map(r=>{ const T=TEAMS[r.team]; return `<tr><td class="rk${r.rank===1&&r.gp?' top':''}">${r.rank}</td><th scope="row"><span class="badge">${T.abbr}</span> ${esc(T.name)}</th>
+  const LG=SW.week&&SW.week.league;   /* étape 6, 24 équipes : conférences et divisions (bible, section 14) */
+  const row=r=>{ const T=TEAMS[r.team]; return `<tr><td class="rk${r.rank===1&&r.gp?' top':''}">${r.rank}</td><th scope="row"><span class="badge">${T.abbr}</span> ${esc(T.name)}</th>
     <td>${r.w}</td><td>${r.l}</td><td>${r.t}</td><td>${r.pct.toFixed(3)}</td><td>${r.pf}</td><td>${r.pa}</td><td class="${r.diff>=0?'pos-d':'neg-d'}">${r.diff>=0?'+':MINUS}${Math.abs(r.diff)}</td>
-    <td>${r.home}</td><td>${r.away}</td><td>${r.streak||'—'}</td><td>${formDots(r.last5)}</td><td class="tbk">${r.tiebreak?({h2h:'head-to-head',diff:'point diff',pf:'points for',tirage:'draw'}[r.tiebreak]||r.tiebreak):''}</td></tr>`; }).join('');
+    <td>${r.home}</td><td>${r.away}</td><td>${r.streak||'—'}</td><td>${formDots(r.last5)}</td><td class="tbk">${r.tiebreak?({h2h:'head-to-head',diff:'point diff',pf:'points for',tirage:'draw'}[r.tiebreak]||r.tiebreak):''}</td></tr>`; };
+  const tb=S.table.map(row).join('');
+  const thead=`<thead><tr><th>#</th><th scope="col">Team</th><th>W</th><th>L</th><th>T</th><th>Pct</th><th>PF</th><th>PA</th><th>Diff</th><th>Home</th><th>Away</th><th>Strk</th><th>Last 5</th><th>Tiebreak</th></tr></thead>`;
+  const divTables=LG?Object.entries(LG).map(([c,ds])=>`<div class="card st-conf"><div class="card-h"><h2>${esc(c)} Conference</h2><span class="label">Division winners reach the conference final</span></div>
+    ${Object.entries(ds).map(([d,ts])=>`<h3 class="st-div">${esc(d)} Division</h3><div class="st-scroll"><table class="tst stand">${thead}<tbody>${S.table.filter(r=>ts.includes(r.team)).map(row).join('')}</tbody></table></div>`).join('')}</div>`).join(''):'';
   const po=SCHED.filter(g=>g.phase!=='regular');
   const bx=g=>{ const st=gStatus(g,t), sc=scoreAt(g,t), rv=revealed(g,t);
     const line=side=>`<div class="bk-t ${st==='final'&&sc&&(side==='home'?sc.home>sc.away:sc.away>sc.home)?'win':''}"><span>${esc(teamLabel(g,side,t))}</span><b>${sc?sc[side]:''}</b></div>`;
@@ -4797,7 +4806,7 @@ function renderStandings(t){
       ${st!=='upcoming'?`<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch live →':'Replay →'}</button>`:''}</div>`; };
   const mk=(m,lab)=>`<tr><th scope="row">${lab}</th>${Object.keys(SW.teams).map(a=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`;
   el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} slots · locks Friday 23:30`}</p></div>
-    <div class="card"><div class="st-scroll"><table class="tst stand"><thead><tr><th>#</th><th scope="col">Team</th><th>W</th><th>L</th><th>T</th><th>Pct</th><th>PF</th><th>PA</th><th>Diff</th><th>Home</th><th>Away</th><th>Strk</th><th>Last 5</th><th>Tiebreak</th></tr></thead><tbody>${tb}</tbody></table></div>
+    ${divTables}<div class="card">${LG?'<div class="card-h"><h2>League</h2><span class="label"># = league rank</span></div>':''}<div class="st-scroll"><table class="tst stand">${thead}<tbody>${tb}</tbody></table></div>
     <p class="np-note">Tiebreakers: win percentage (ties count half) → head-to-head among tied teams → point differential → points scored → draw.</p></div>
     <div class="st-two"><div class="card"><div class="card-h"><h2>Playoffs</h2><span class="label">${locked?'Seeds set':'Seeds after the lock'}</span></div><div class="bracket">${bx(po[0])}${bx(po[1])}${bx(po[2])}</div></div>
     <div class="card"><div class="card-h"><h2>Futures</h2><span class="label">Engine odds · ${F.after_slot?`after slot ${F.after_slot}`:'before the week'}</span></div>
