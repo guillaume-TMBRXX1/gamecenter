@@ -615,6 +615,13 @@ Les 12 contrôles bloquants qu'affiche l'outil **existaient déjà avant l'étap
 playbook) et V28 (fin de période) — références à régénérer ; (3) E8 / E16 : points et yards / course (décision du 06/10)
 hors tolérance à 4 équipes. À traiter à part (hors étape 6).
 
+### 30. Validations de Guillaume et bilan dans le tableau de score (08/10/2026)
+
+- **Validés par Guillaume (08/10)** : noms, codes, identités et couleurs des franchises 05-24.
+- **Tableau de score des matchs** (tuiles de l'accueil, fenêtre du match, plein écran) : sous le code de chaque équipe,
+  en petit, son **bilan et son rang dans la ligue au coup d'envoi** (« 6-8-2 · #14 » ; bilan seul avant le premier
+  créneau). Calculé dans le site depuis `standings_by_slot` (`recRank`) — rien à ajouter côté serveur ni notebook.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
