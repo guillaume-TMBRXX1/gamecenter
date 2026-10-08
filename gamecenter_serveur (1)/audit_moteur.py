@@ -252,6 +252,15 @@ def check_week(A, folder):
         winners = {g["home"] if g["result"]["home"] > g["result"]["away"] else g["away"] for g in semis}
         if {final["home"], final["away"]} != winners:
             A.add(BLOQUANT, name, None, None, f"AI Bowl {final['home']}–{final['away']} ≠ vainqueurs des demi-finales {winners}")
+    # étape 6, 24 équipes : les demi-finales sont les finales de conférence entre champions de division
+    league = (w.get("week") or {}).get("league")
+    order = [r["team"] for r in w.get("standings") or []]
+    if league and semis and order:
+        pos = {a: i for i, a in enumerate(order)}
+        for conf, divs in league.items():
+            champs = {min(ts, key=lambda a: pos.get(a, 99)) for ts in divs.values()}
+            if not any({g["home"], g["away"]} == champs for g in semis):
+                A.add(BLOQUANT, name, None, None, f"finale de conférence {conf} : {sorted(champs)} attendus")
     return stats
 
 
