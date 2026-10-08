@@ -601,7 +601,11 @@ beaucoup par identité) et **yards / course +0,2** (décision de Guillaume du 06
 **Contrôles stricts à 24** (exécution complète) : 12.3 — équilibre 40-60 % élargi d'un écart-type du bruit (184 matchs
 par franchise) et identités nettes (passe ZPH / VEC, MNL min ; blitz GLT / VEC ; sacks GLT ; 4e essais GMB ; gros gains
 VEC / ZPH ; course MNL ; course du QB CPH ; complétion AXM dans les 3 premiers ; défense AEG ou BST) ; 13.2, 13.4 et
-14.2 bloquants comme à 4 et 8 équipes. Résultats : voir la PR.
+14.2 bloquants comme à 4 et 8 équipes. **Exécution complète du 08/10 (43 min) : tout passe** — 12.3 : 40,2-59,5 % sur
+2 208 matchs, identités nettes ; 13.2 : Brier 0,2495 (formule de notes 0,2605), z² 0,96, biais +1,2 %, spread 51,6 %,
+over 50,9 %, marge −3,5 % ; 13.4 : extrêmes ±0,023, écart moyen 0,021, outsiders +4,9 % ; 14.2 : semaine validée
+(279 GameFeed). Audit d'une semaine à 24 (`audit_moteur.py`) : 0 anomalie bloquante, 2 alertes (un score très élevé, un
+match très long). Mémoire : 12.3 ne garde que équipes et scores après ses contrôles (2 208 matchs complets ≈ 7 Go).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
