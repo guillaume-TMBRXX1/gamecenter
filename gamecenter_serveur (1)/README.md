@@ -567,7 +567,7 @@ leurs tirages ne changent pas).
 
 Décision de Guillaume (07/10) : audits et tests repris une fois les 24 franchises créées.
 
-**Divisions et conférences** (bible, section 14 ; répartition proposée par Claude, à valider) — `LEAGUE_STRUCTURE`
+**Divisions et conférences** (bible, section 14 ; répartition proposée par Claude, validée par Guillaume le 08/10) — `LEAGUE_STRUCTURE`
 (12.1), une des 4 franchises de départ par division, un mélange d'identités dans chacune :
 
 | Conférence | Division | Franchises |
@@ -617,7 +617,8 @@ hors tolérance à 4 équipes. À traiter à part (hors étape 6).
 
 ### 30. Validations de Guillaume et bilan dans le tableau de score (08/10/2026)
 
-- **Validés par Guillaume (08/10)** : noms, codes, identités et couleurs des franchises 05-24.
+- **Validés par Guillaume (08/10)** : noms, codes, identités et couleurs des franchises 05-24, et la répartition en
+  conférences et divisions (section 29).
 - **Tableau de score des matchs** (tuiles de l'accueil, fenêtre du match, plein écran) : sous le code de chaque équipe,
   en petit, son **bilan et son rang dans la ligue au coup d'envoi** (« 6-8-2 · #14 » ; bilan seul avant le premier
   créneau). Calculé dans le site depuis `standings_by_slot` (`recRank`) — rien à ajouter côté serveur ni notebook.

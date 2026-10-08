@@ -24,7 +24,7 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | **5** | **ENGINE INTELLIGENCE** — un vrai système décisionnel (programme ci-dessous, blocs A → E) | ✅ **terminé** — ✅ bloc A allumé (notebook V22.1, PR #12 + #13) ; ✅ safety + bloc B allumés (notebook V23) ; ✅ bloc C allumé (notebook V24) ; ✅ bloc D allumé (notebook V25) ; ✅ bloc E allumé (notebook V26) ; ✅ **validation complète** (06/10, un point à décider : yards / course après plusieurs semaines) ; étape 6 lancée | notebook (+ modules Python) + site + serveur |
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
-| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32) · ✅ franchises 21-24 (hors bible, notebook V33) · ✅ divisions, calibrage, contrôles à 24 (notebook V34) ; noms, identités et divisions à valider | notebook (+ modules) + site + serveur |
+| **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32) · ✅ franchises 21-24 (hors bible, notebook V33) · ✅ divisions, calibrage, contrôles à 24 (notebook V34) · noms, identités, couleurs et divisions validés (08/10) | notebook (+ modules) + site + serveur |
 | 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
 
 ---
@@ -838,7 +838,10 @@ proche de la limite (voir la PR).
 - **Calibrage** : 43-58 % de victoires sur 4 416 matchs ; points +2,5 (composition de la ligue), yards / course +0,2
   (décision du 06/10). Détail : README du serveur, section 29.
 
-**Prochain** : validation par Guillaume des noms, identités 21-24 et divisions ; ensuite, la suite du programme.
+**Validé par Guillaume (08/10)** : noms, codes, identités et couleurs des 24 franchises ; répartition en conférences et
+divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le tableau de score.
+
+**Étape 6 terminée.** Prochain : la suite du programme (à définir avec Guillaume).
 
 ## À surveiller (repris de l'étape 4)
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
