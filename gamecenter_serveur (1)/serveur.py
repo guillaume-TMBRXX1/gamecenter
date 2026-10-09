@@ -641,10 +641,54 @@ def _enc(o):
     return json.dumps(o, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
 
 
+# Page allégée (09/10, iPad : onglet tué faute de mémoire en plein replay). Les matchs terminés, sauf les plus récents
+# (ceux de l'accueil), n'emportent que ce que l'accueil, les classements, les stats de la saison et les moments forts
+# lisent ; le détail (appel complet, décision du QB, ajustements, cotes action par action) arrive avec /api/feed/{id}
+# quand on ouvre le replay. Les rosters (identiques pour toute la semaine) ne sont écrits qu'une fois par équipe.
+FULL_RECENT_FINALS = 12
+_LIGHT_DROP = ("decision", "clock_decision", "adjust", "tracks", "spot", "odds")
+
+
+def _light_play(p):
+    q = {k: v for k, v in p.items() if k not in _LIGHT_DROP}
+    if isinstance(p.get("call"), dict):
+        q["call"] = {"type": p["call"].get("type")}
+    return q
+
+
+def _page_bundle(w, t):
+    finals = sorted((g for g in w.sched if w.status(g, t) == "final"), key=lambda g: g["end"], reverse=True)
+    full = {g["id"] for g in finals[:FULL_RECENT_FINALS]}
+    feeds, rosters = {}, {}
+    for g in w.sched:
+        f = w.public_feed(g, t)
+        if w.status(g, t) == "final" and g["id"] not in full:
+            f = dict(f, plays=[_light_play(p) for p in f["plays"]], light=True)
+        game = f.get("game") or {}
+        for side in ("home", "away"):
+            tm = game.get(side)
+            if isinstance(tm, dict) and tm.get("abbr") and isinstance(tm.get("roster"), list):
+                ref = rosters.setdefault(tm["abbr"], tm["roster"])
+                if ref == tm["roster"]:
+                    game = dict(game, **{side: dict(tm, roster="@" + tm["abbr"])})
+        feeds[g["id"]] = dict(f, game=game) if game else f
+    return {"week": w.public_state(t), "feeds": feeds, "rosters": rosters}
+
+
+@app.get("/api/feed/{gid}")
+def api_feed(gid: str):
+    """Le GameFeed complet d'un match déjà joué (ou en cours, jusqu'à l'action révélée) : le replay d'un match allégé."""
+    w = _need_week(); t = now_ms()
+    g = w.by.get(gid)
+    if not g or w.status(g, t) == "upcoming" or not w.teams_known(g, t):
+        raise HTTPException(404)
+    return w.public_feed(g, t)
+
+
 @app.get("/", response_class=HTMLResponse)
 def page():
     w = _need_week(); t = now_ms()
-    bundle = {"week": w.public_state(t), "feeds": {g["id"]: w.public_feed(g, t) for g in w.sched}}
+    bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "week_start": w.start, "open_ms": w.open}
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)

@@ -3172,11 +3172,9 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
   /* mémoire (iPad : onglet tué puis rechargé en plein replay) : le texte de la semaine (≈ 50 Mo) est libéré une fois lu,
      et le roster d'une équipe, répété dans chacun de ses matchs, n'est gardé qu'une fois quand il est identique */
   el.textContent='';
-  if(w&&w.feeds){ const seen={};
-    for(const id in w.feeds){ const gm=w.feeds[id]&&w.feeds[id].game; if(!gm) continue;
-      for(const side of ['home','away']){ const t=gm[side]; if(!t||!Array.isArray(t.roster)) continue;
-        const k=(t.abbr||'')+'|'+JSON.stringify(t.roster), prev=seen[t.abbr];
-        if(prev&&prev[0]===k) t.roster=prev[1]; else seen[t.abbr]=[k,t.roster]; } } }
+  /* le serveur écrit le roster d'une équipe une seule fois (w.rosters) : chaque match le retrouve par « @ABR » */
+  if(w&&w.feeds&&w.rosters) for(const id in w.feeds){ const gm=w.feeds[id]&&w.feeds[id].game; if(!gm) continue;
+    for(const side of ['home','away']){ const t=gm[side]; if(t&&typeof t.roster==='string'&&t.roster[0]==='@') t.roster=w.rosters[t.roster.slice(1)]||[]; } }
   return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
 const games=SEASON?[]:[
   BOOT_FEED ? makeReplayGame(LIVE_ID,BOOT_FEED,{viewers:'4.8K',mode:'live'}) : makeGame('g1','VAN','SOV',{hs:21,as:17,q:3,clock:522,poss:'away',losOwn:34,down:2,toGo:6,edge:1.5,viewers:'4.8K'}),
@@ -4092,7 +4090,8 @@ class FieldView{
     const d=parseFloat(this.wrap.style.perspective)||1e6, r=this.wrap.getBoundingClientRect(), vx=this.wrap.clientWidth/2, vy=this.wrap.clientHeight/2, f=d/(d-pz);
     return {x:r.left+vx+(px-vx)*f, y:r.top+vy+(py-vy)*f};
   }
-  destroy(){ if(this.ro) this.ro.disconnect(); if(this.io) this.io.disconnect(); if(this.onR) window.removeEventListener('resize',this.onR); }
+  destroy(){ if(this.ro) this.ro.disconnect(); if(this.io) this.io.disconnect(); if(this.onR) window.removeEventListener('resize',this.onR);
+    if(this.canvas){ this.canvas.width=0; this.canvas.height=0; } }   /* Safari iOS ne rend la mémoire d'un canevas jeté que vidé */
   /* perf: everything the picture depends on, rounded below a quarter of a pixel. When it has not changed since
      the last frame (pause between plays, halftime, final, a server game waiting for its next play, a settled
      camera…) the canvas already shows it and drawing it again is skipped. */
@@ -4388,19 +4387,39 @@ function toggleTheater(){
 }
 /* Replay: the same engine match from kickoff, on the big screen only */
 let replayGame=null;
+/* match terminé allégé (« light » : sans le détail des actions) : le GameFeed complet est chargé à l'ouverture du replay */
+const FEED_LOADING={};
+function feedFull(f){
+  if(!f||!f.light) return Promise.resolve(f);
+  const id=f.game&&f.game.id; if(!id||!SERVER) return Promise.reject(new Error('no feed'));
+  return FEED_LOADING[id]||(FEED_LOADING[id]=fetch(SERVER.api+'/feed/'+encodeURIComponent(id),{cache:'no-store'})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(j=>{ if(!j||!Array.isArray(j.plays)||j.plays.length<f.plays.length) throw new Error('bad feed');
+      f.plays=j.plays; f.game=j.game||f.game; delete f.light; return f; })
+    .finally(()=>{ delete FEED_LOADING[id]; }));
+}
 function openReplayFeed(feed,viewers){
+  if(feed&&feed.light){ toast('Loading the replay…');
+    feedFull(feed).then(()=>openReplayFeed(feed,viewers)).catch(()=>toastErr('This replay could not be loaded. Try again in a moment.'));
+    return; }
   replayGame=makeReplayGame(REPLAY_VIEW_ID,feed,{mode:'replay',speed:1,viewers:viewers||''});
   byId[REPLAY_VIEW_ID]=replayGame;
   openModal(REPLAY_VIEW_ID);
+  /* un match de la semaine (calendrier, recherche, moments) est mémorisé pour l'onglet : rouvert après un rechargement */
+  if(SEASON) for(const k in SEASON.feeds) if(SEASON.feeds[k]===feed){ watchRemember('feed',k); break; }
 }
-function openReplay(id){ const src=byId[id]; if(src&&src.gf){ openReplayFeed(src.gf,src.viewers); watchRemember('replay',id); } }
+function openReplay(id){ const src=byId[id]; if(src&&src.gf) openReplayFeed(src.gf,src.viewers); }
 /* the match being watched survives a reload of the tab (phone that discards a heavy tab, new week) */
 const OPEN_KEY='gc-watching-v1';
 function watchRemember(kind,id){ try{ if(kind) sessionStorage.setItem(OPEN_KEY,JSON.stringify({kind,id})); else sessionStorage.removeItem(OPEN_KEY); }catch(e){} }
 function watchRestore(){ let w=null; try{ w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); }catch(e){}
-  if(!w||!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id);
-  const g=modalGame;   /* un replay reprend à l'action où il était (pas le direct : il suit l'horloge) */
-  if(g&&g.replay&&g.mode==='replay'&&w.idx>0&&w.idx<g.plays.length){ rpSeek(g,w.idx); rpAfterSeek(g); } }
+  if(!w) return;
+  const seek=()=>{ const g=modalGame;   /* un replay reprend à l'action où il était (pas le direct : il suit l'horloge) */
+    if(g&&g.replay&&g.mode==='replay'&&w.idx>0&&w.idx<g.plays.length){ rpSeek(g,w.idx); rpAfterSeek(g); } };
+  if(w.kind==='feed'){   /* replay ouvert depuis le calendrier : le détail du match est d'abord chargé s'il était allégé */
+    const f=SEASON&&SEASON.feeds[w.id]; if(!f||!f.plays.length) return;
+    feedFull(f).then(()=>{ if(!modalGame){ openReplayFeed(f); seek(); } }).catch(()=>{}); return; }
+  if(!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id); seek(); }
 /* position du replay regardé, notée à chaque action (pour watchRestore) */
 function watchPos(g){ if(g!==modalGame||!g.replay||g.mode!=='replay') return;
   try{ const w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); if(w&&w.idx!==g.idx){ w.idx=g.idx; sessionStorage.setItem(OPEN_KEY,JSON.stringify(w)); } }catch(e){} }
@@ -4679,6 +4698,10 @@ function watched(id){ return watchedSet().includes(id); }
 function markWatched(id){ if(!id||watched(id)) return; const ids=watchedSet(); ids.push(id); lsSet(WATCH_KEY,{week:SW.week.start,ids}); WATCH_DIRTY=true; }
 function makeBoardGame(s,mode,t){
   const f0=SEASON.feeds[s.id];
+  if(f0.light&&mode!=='upcoming'){   /* rare (l'accueil montre les matchs finis les plus récents, envoyés complets) */
+    feedFull(f0).then(()=>{ BOARD_SIG=''; seasonRefresh(true); }).catch(()=>{});
+    const g=makeReplayGame('s-'+s.id,Object.assign({},f0,{plays:[kickoffStub(f0)]}),{mode:'upcoming',loop:false,speed:1});
+    g.sched=s; g.paused=true; g.lastText='Loading…'; return g; }
   if(mode!=='upcoming'&&!f0.plays.length) mode='upcoming';
   const f=f0.plays.length?f0:Object.assign({},f0,{plays:[kickoffStub(f0)]});   /* server mode: nothing played yet */
   const g=makeReplayGame('s-'+s.id,f,{mode:mode==='upcoming'?'upcoming':mode,loop:mode==='replay',speed:1});

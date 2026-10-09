@@ -687,6 +687,22 @@ un replay). Le poids venait de la page (texte de la semaine ≈ 52 Mo : 32 000 a
 - Sons en mémoire : budget réduit sur iPad (48 Mo au lieu de 96).
 - Si l'onglet est quand même rechargé, le replay **reprend à l'action où il était** (position notée à chaque action).
 
+### 34. iPad : page allégée (matchs terminés sans le détail des actions) (09/10/2026)
+
+Après la section 33, l'onglet était toujours rechargé (14h50, ≈ 10 min de replay, 4 s après un touchdown) et le replay
+ouvert depuis le calendrier n'était pas rouvert. Mesures (Chromium) : sans fuite JavaScript ni audio (nœuds Web Audio
+créés = débranchés), la page reste lourde.
+- **Page allégée** : les matchs terminés, sauf les 12 plus récents (ceux de l'accueil), n'emportent plus que ce que
+  l'accueil, les classements, les stats de la saison et les moments forts lisent (résultat, yards, joueurs, texte, score,
+  type d'appel) ; le détail (appel complet, décision du QB, ajustements, cotes action par action) arrive avec
+  `/api/feed/{id}` à l'ouverture du replay (« Loading the replay… »). Rosters écrits une fois par équipe (`rosters`).
+  Page : 53 → 20 Mo (jeudi soir ; moins encore en fin de semaine) ; mémoire JavaScript 64 → 22 Mo ; stats de la saison
+  identiques (432 joueurs, 228 matchs comparés).
+- **Reprise après rechargement** pour tous les replays (accueil, calendrier, recherche, moments) : à la bonne action,
+  après le chargement du détail si besoin.
+- Sons générés (sifflet, corne, impacts) : nœuds débranchés à la fin de chaque effet ; canevas vidés quand un terrain
+  est fermé (Safari iOS ne rend leur mémoire qu'ainsi).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
