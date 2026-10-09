@@ -616,7 +616,7 @@ trajectoires 8 / 16 / 24 / 32 semaines) — champ `regenere` dans chaque fichier
 Le contrôle 12.2 decies (« MNL : courses toujours à ses RB ») ne compte plus les scrambles du QB sur une passe (étage AB).
 Résultat : non-régression et intégration de tous les étages ✅, déterminisme ✅, calibration ✅ sauf **2 contrôles
 bloquants restants, de jeu (pas des références)**, déjà présents avant l'étape 6 : E8 (trajectoire neuve de 8 semaines)
-VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5). À traiter avec la progression (bloc E).
+VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5) — corrigés le 09/10 (section 31).
 
 ### 30. Validations de Guillaume et bilan dans le tableau de score (08/10/2026)
 
@@ -638,6 +638,8 @@ VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5
   resserrées : **force ± 0,15** (0,2) et **unités ± 0,5** (0,75). Mesuré sur la trajectoire neuve : 46-56 % pour les 4
   franchises après 8, 16, 32 et 52 semaines (41-45 % pour VEC avec les anciennes bornes).
 - Trajectoires de référence du bloc E (`rapport_v26_bloc_e.json`) régénérées avec ces bornes.
+- **Validation complète (09/10, 33 min) : ✅ réussie, 0 contrôle bloquant** — E8 / E16 / E32 / E52 : 45,4-56,4 % de
+  victoires, dérive ≤ 0,19, force ≤ 0,15.
 
 **Interface des matchs (direct et replay)** — audit dans le navigateur (serveur local, horloge simulée) :
 - *Fenêtre du match figée ou faux replay pendant un TD / FG* : à chaque fin de match d'un créneau, le tableau de
