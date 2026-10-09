@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
@@ -522,6 +523,9 @@ def season_net(pid, t):
 
 # ------------------------------------------------------------------ l'application
 app = FastAPI(title="GameCenter live server", docs_url="/api/docs", openapi_url="/api/openapi.json")
+# compression : page ≈ 53 Mo -> ≈ 6 Mo, /api/delta (toutes les 3 s) ≈ 1 Mo -> quelques Ko ; un onglet trop lourd était
+# rechargé (ou tué) par le navigateur du téléphone, en plein match
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 _init_clock()
 
 
@@ -672,7 +676,9 @@ def api_delta(have: str = ""):
             plays[g["id"]] = {"from": h, "plays": w.feeds[g["id"]]["plays"][h:r]}
     st = w.public_state(t)
     st.pop("teams", None)
-    games = {g["id"]: w.public_feed(g, t, upto=0)["game"] for g in w.sched}
+    # le navigateur ne lit « games » que pour les affiches de playoffs dont les équipes étaient cachées : les rosters des
+    # 276 matchs de saison régulière (≈ 9 Mo) ne sont plus renvoyés toutes les 3 s
+    games = {g["id"]: w.public_feed(g, t, upto=0)["game"] for g in w.sched if g["phase"] != "regular"}
     return {"now": t, "week_start": w.start, "state": st, "games": games, "plays": plays}
 
 

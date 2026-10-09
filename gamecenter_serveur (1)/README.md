@@ -616,7 +616,7 @@ trajectoires 8 / 16 / 24 / 32 semaines) — champ `regenere` dans chaque fichier
 Le contrôle 12.2 decies (« MNL : courses toujours à ses RB ») ne compte plus les scrambles du QB sur une passe (étage AB).
 Résultat : non-régression et intégration de tous les étages ✅, déterminisme ✅, calibration ✅ sauf **2 contrôles
 bloquants restants, de jeu (pas des références)**, déjà présents avant l'étape 6 : E8 (trajectoire neuve de 8 semaines)
-VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5). À traiter avec la progression (bloc E).
+VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5) — corrigés le 09/10 (section 31).
 
 ### 30. Validations de Guillaume et bilan dans le tableau de score (08/10/2026)
 
@@ -625,6 +625,40 @@ VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5
 - **Tableau de score des matchs** (tuiles de l'accueil, fenêtre du match, plein écran) : sous le code de chaque équipe,
   en petit, son **bilan et son rang dans la ligue au coup d'envoi** (« 6-8-2 · #14 » ; bilan seul avant le premier
   créneau). Calculé dans le site depuis `standings_by_slot` (`recRank`) — rien à ajouter côté serveur ni notebook.
+
+### 31. Progression rééquilibrée et audit de l'interface des matchs (09/10/2026)
+
+**Progression des joueurs (bloc E)** — les deux contrôles bloquants restants de la validation complète :
+- *Dérive de la ligue (E52 : 0,56 pour un plafond de 0,5)* : elle venait de la **forme**, pas des notes. Recentrée une
+  seule fois puis bornée à ± 3, sa moyenne restait jusqu'à ± 0,5 dans un petit groupe (4 à 8 TE ou QB). Elle est
+  maintenant recentrée en plusieurs passes, et de nouveau après le garde-fou d'équipe (qui réduit aussi la forme).
+  Dérive maximale mesurée : 0,19 sur 52 semaines.
+- *VEC à 39,5 % après 8 semaines (plage 40-60 %)* : la moyenne des 4 unités prédit mal un match (VEC remis entièrement à
+  sa base gagnait encore 43,8 % : ses adversaires avaient progressé là où VEC est faible). Bornes du garde-fou
+  resserrées : **force ± 0,15** (0,2) et **unités ± 0,5** (0,75). Mesuré sur la trajectoire neuve : 46-56 % pour les 4
+  franchises après 8, 16, 32 et 52 semaines (41-45 % pour VEC avec les anciennes bornes).
+- Trajectoires de référence du bloc E (`rapport_v26_bloc_e.json`) régénérées avec ces bornes.
+- **Validation complète (09/10, 33 min) : ✅ réussie, 0 contrôle bloquant** — E8 / E16 / E32 / E52 : 45,4-56,4 % de
+  victoires, dérive ≤ 0,19, force ≤ 0,15.
+
+**Interface des matchs (direct et replay)** — audit dans le navigateur (serveur local, horloge simulée) :
+- *Fenêtre du match figée ou faux replay pendant un TD / FG* : à chaque fin de match d'un créneau, le tableau de
+  l'accueil était reconstruit, y compris sous un match ouvert. La fenêtre gardait une copie orpheline du match (terrain
+  figé) pendant que la nouvelle copie écrivait score, bannières et puces dedans ; si c'était le dernier match du
+  créneau, elle affichait « 0-0 REPLAY » et les bannières d'un replay. Le tableau attend maintenant la fermeture.
+- *Actions sautées en direct* : une action dure 6 à 7,5 s à l'écran, le serveur en révèle une toutes les 6,5 s ; à 2
+  actions de retard le site sautait (≈ 1 action sur 3 jamais montrée, bannière TD / FG coupée ou restée sur l'action
+  suivante). Il rattrape maintenant en accélérant un peu (jusqu'à × 2,5 selon le retard) et ne saute qu'au-delà de 8.
+- *Bannière TD / FG tronquée* (« TOUCHI ») : le dégradé du texte ne couvrait pas tout le mot (CSS `repeat-x`). Durée
+  de la bannière divisée par la vitesse du replay (2×, 4×) ; un saut (barre, précédent, suivant) coupe la bannière.
+- *Page qui se recharge pendant un match* : (1) au passage à la nouvelle semaine, le rechargement attend que la
+  fenêtre du match soit fermée ; (2) la page (53 Mo) et l'interrogation du serveur toutes les 3 s (9 Mo, dont 8,8 Mo de
+  rosters inutiles) poussaient les téléphones à tuer ou recharger l'onglet : réponses compressées (gzip : page ≈ 5,6
+  Mo) et rosters des 276 matchs de saison régulière retirés de `/api/delta` ; requête abandonnée après 15 s (une
+  requête bloquée figeait le direct) ; (3) le match regardé est mémorisé pour l'onglet et rouvert après un rechargement.
+- Aussi : classement, bilans du tableau de score et cotes des futures figés après le 18e créneau (23 à 24 équipes) ;
+  une sélection de texte glissée jusqu'au fond fermait le match ; Échap ferme d'abord la fiche joueur ; le cercle rouge
+  clignote aussi pendant la pause après l'action.
 
 ### Annexe — `.github/workflows/semaine.yml`
 

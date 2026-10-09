@@ -8,9 +8,9 @@ Décisions de Guillaume (05/10/2026, début du bloc E) :
     anti-inflation     (1) la moyenne de chaque note, par unité (QB, RB, WR, TE, OL, DL, LB, DB, ST) et sur la ligue,
                        est ramenée chaque semaine sur sa valeur de départ ; (2) chaque joueur est plafonné par son
                        potentiel et par 99 ; (3) garde-fou d'équipe (équilibre 40-60 %) : la FORCE d'une franchise
-                       (moyenne de ses 4 notes d'unité) reste à ± FORCE_EQUIPE_MAX = 0,2 point de sa base (décalage
+                       (moyenne de ses 4 notes d'unité) reste à ± FORCE_EQUIPE_MAX = 0,15 point de sa base (décalage
                        commun de ses notes : ses joueurs gardent leurs écarts entre eux) et chaque note d'unité à
-                       ± ECART_EQUIPE_MAX = 0,75 (le moteur est très sensible : ≈ 15 points de % de victoires par point
+                       ± ECART_EQUIPE_MAX = 0,5 (09/10 ; 0,2 et 0,75 au départ) (le moteur est très sensible : ≈ 15 points de % de victoires par point
                        de force — à ± 3 proposés au départ, VEC montait à 72 % et MNL tombait à 24 %) ;
     forme              figée pour toute la semaine : tout se met à jour ENTRE deux semaines (les cotes calculées
                        avant la semaine restent justes).
@@ -42,11 +42,14 @@ VERSION = 1
 SEMAINES_PAR_AN = 4
 NOTE_MIN, NOTE_MAX = 40, 99
 FORME_MAX = 3.0
-ECART_EQUIPE_MAX = 0.75             # écart maximal d'UNE note d'unité d'une franchise à sa base (points)
-FORCE_EQUIPE_MAX = 0.2              # écart maximal de sa FORCE (moyenne des 4 unités, décalage commun) ; None : sans
+ECART_EQUIPE_MAX = 0.5              # écart maximal d'UNE note d'unité d'une franchise à sa base (points)
+FORCE_EQUIPE_MAX = 0.15             # écart maximal de sa FORCE (moyenne des 4 unités, décalage commun) ; None : sans
 # Mesuré au test d'équilibre (1 008 matchs après 8 à 32 semaines de progression) : ≈ 15 points de % de victoires par
 # point de force. À ± 3 par unité (première proposition) : VEC 72 % / MNL 24 % après 8 semaines ; ± 1 : MNL 34-36 % ;
-# force ± 0,25 et unités ± 1 : MNL 40,1 % sur une trajectoire. Retenu : force ± 0,2, unités ± 0,75.
+# force ± 0,25 et unités ± 1 : MNL 40,1 % sur une trajectoire. Retenu (05/10) : force ± 0,2, unités ± 0,75.
+# 09/10 : à ± 0,2 / 0,75, VEC 39,5-44,7 % après 8 à 52 semaines (la moyenne des unités prédit mal un match : VEC remis à
+# sa base gagnait encore 43,8 %, ses adversaires ayant progressé là où VEC est faible). Force ± 0,15, unités ± 0,5 :
+# 46-56 % pour les 4 franchises après 8, 16, 32 et 52 semaines.
 UNITES_FORCE = ("pass_off", "run_off", "pass_def", "run_def")
 HISTORIQUE_MAX = 52                 # points de la courbe gardés par joueur (un par semaine)
 UNITES_GARDE = ("pass_off", "run_off", "pass_def", "run_def", "special_teams")
@@ -406,13 +409,18 @@ def _renormaliser(etat):
 
 
 def _recentrer_forme(etat):
+    """Forme de moyenne nulle par groupe de la ligue. Recentrer puis borner à ± FORME_MAX, en plusieurs passes : une
+    seule passe laissait la moyenne d'un petit groupe (4 à 8 TE ou QB) jusqu'à ± 0,5 point (dérive de la ligue)."""
     par_unite = {}
     for pid, j in etat["joueurs"].items():
         par_unite.setdefault(groupe_ligue(pid, j), []).append(j)
     for js in par_unite.values():
-        m = sum(j["forme"] for j in js) / len(js)
-        for j in js:
-            j["forme"] = max(-FORME_MAX, min(FORME_MAX, j["forme"] - m))
+        for _ in range(6):
+            m = sum(j["forme"] for j in js) / len(js)
+            if abs(m) < 1e-6:
+                break
+            for j in js:
+                j["forme"] = max(-FORME_MAX, min(FORME_MAX, j["forme"] - m))
 
 
 def ecarts_unites(etat, unites, effectives=True):
@@ -649,8 +657,10 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
             if not garde:
                 break
             derive = _renormaliser(E)
+            _recentrer_forme(E)                      # le garde-fou réduit aussi la forme (λ) : moyenne de la ligue à 0
             for j in E["joueurs"].values():
                 j["actuelle"] = {k: round(v, 3) for k, v in j["actuelle"].items()}
+                j["forme"] = round(j["forme"], 2)
         garde = _garde_equipe(E, unites) or garde
     rapport = rapport_semaine(E, avant, unites, garde, derive)
     rapport["semaine_jouee"] = cle

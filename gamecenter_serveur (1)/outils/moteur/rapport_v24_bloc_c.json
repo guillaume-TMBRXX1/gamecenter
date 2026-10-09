@@ -25,8 +25,8 @@
   "AEG": 0.5734126984126984,
   "MNL": 0.4583333333333333
  },
- "seconds_per_game": 0.16009273157341397,
- "seconds_per_game_p95": 0.17591080700003658,
+ "seconds_per_game": 0.13230476446627096,
+ "seconds_per_game_p95": 0.13843852899981357,
  "decisions": "on",
  "bloc_b": true,
  "bloc_c": true,
@@ -483,7 +483,7 @@
   "focus": 0
  },
  "regenere": {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "outil": "validation_complete.py --regenerer-references",
   "note": "mesures du moteur actuel (ligue de 4) ; chiffres d'origine dans l'historique git"
  }

@@ -1601,7 +1601,7 @@
   /* Annonces sur le terrain : texte seul, Unbounded, entrée floue → nette, reflet, sortie vers le haut */
   :root{--f-announce:'Unbounded','Arial Black',sans-serif}
   .td{font:800 clamp(20px,7.4cqw,62px)/1 var(--f-announce);letter-spacing:-.01em;text-transform:uppercase;overflow:visible;
-    color:transparent;background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 40%,#DCE5EC 48%,#FFFFFF 56%,#FFFFFF 100%) 0 0/260% 100% no-repeat;
+    color:transparent;background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 40%,#DCE5EC 48%,#FFFFFF 56%,#FFFFFF 100%) 0 0/260% 100% repeat-x;   /* repeat-x : sans lui, des lettres sortaient du dégradé (« TOUCHI ») */
     -webkit-background-clip:text;background-clip:text;text-shadow:none;
     filter:drop-shadow(0 0 1px #17324D) drop-shadow(0 2px 0 #17324D) drop-shadow(0 10px 22px rgba(23,50,77,.45))}
   .td.to{filter:drop-shadow(0 0 1px #8E2C23) drop-shadow(0 2px 0 #8E2C23) drop-shadow(0 10px 22px rgba(178,58,47,.5));text-shadow:none}
@@ -3517,7 +3517,8 @@ function renderReplayUI(g){
 }
 /* Touchdown (cyan) and turnover (pink) wipes across the field */
 function flashField(g,scope){
-  const fire=(f,txt)=>scope.querySelectorAll(`[data-g="${g.id}"][data-f="${f}"]`).forEach(el=>{ if(txt) el.textContent=txt; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); });
+  const fire=(f,txt)=>scope.querySelectorAll(`[data-g="${g.id}"][data-f="${f}"]`).forEach(el=>{ if(txt) el.textContent=txt; el.classList.remove('on'); void el.offsetWidth;
+    el.style.animationDuration=(2.6/Math.max(1,g.speed||1))+'s'; el.classList.add('on'); });   /* 2× / 4× : la bannière ne déborde pas sur les actions suivantes */
   if(g.tdFlash){ const t=typeof g.tdFlash==='string'?g.tdFlash:'Touchdown'; g.tdFlash=false; fire('td',t); }
   if(g.toFlash){ const t=g.toFlash; g.toFlash=null; fire('to',t); }
   if(g.shake){ const c='shake-'+g.shake; g.shake=null;
@@ -4088,7 +4089,8 @@ class FieldView{
     const b=g.ball, tl=g.trail.length?g.trail[g.trail.length-1]:null, c=g.carrier, se=g.sel, hv=this.hover;
     return [W,H,Math.round(x0*s*4),Math.round(y0*s*4),Math.round(s*400),h,Math.round(b.x*40),Math.round(b.y*40),Math.round(b.h*40),
       g.trail.length,tl&&Math.round(tl.x*40),tl&&Math.round(tl.y*40),g.tracks,g.plan,g.phase,g.status,g.los,g.toGo,g.special,g.poss,g.home,g.away,
-      c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g)];
+      c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g),
+      g.stopT0!=null&&performance.now()-g.stopT0<1700?Math.floor((performance.now()-g.stopT0)/200):-1];   /* clignotement du cercle rouge */
   }
   endZone(xs,team,X,x0,x1){
     if(xs+10<x0||xs>x1) return;
@@ -4320,7 +4322,7 @@ function openModal(id){
   const g=byId[id]; if(!g||!g.home||g===pregame) return;
   if(modalGame) closeModal(true);
   if(!modal.contains(document.activeElement)) lastFocus=document.activeElement;
-  modalGame=g;
+  modalGame=g; if(id!==REPLAY_VIEW_ID) watchRemember('board',id);
   const A=TEAMS[g.away], H=TEAMS[g.home], rv=g.mode==='replay';
   const note = rv ? 'Replay: every price is the one the engine published at that play. Betting is closed on replays.'
              : g.replay ? (g.gf&&g.gf.game.pregame_odds ? 'Moneyline, spread and total straight from the engine at every play. Next play opens once the engine prices it.' : 'Moneyline straight from the engine at every play. Spread, total and next play open once the engine prices them.')
@@ -4375,14 +4377,21 @@ function openReplayFeed(feed,viewers){
   byId[REPLAY_VIEW_ID]=replayGame;
   openModal(REPLAY_VIEW_ID);
 }
-function openReplay(id){ const src=byId[id]; if(src&&src.gf) openReplayFeed(src.gf,src.viewers); }
+function openReplay(id){ const src=byId[id]; if(src&&src.gf){ openReplayFeed(src.gf,src.viewers); watchRemember('replay',id); } }
+/* the match being watched survives a reload of the tab (phone that discards a heavy tab, new week) */
+const OPEN_KEY='gc-watching-v1';
+function watchRemember(kind,id){ try{ if(kind) sessionStorage.setItem(OPEN_KEY,JSON.stringify({kind,id})); else sessionStorage.removeItem(OPEN_KEY); }catch(e){} }
+function watchRestore(){ let w=null; try{ w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); }catch(e){}
+  if(!w||!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id); }
 function closeModal(keepFocus){
   if(!modalGame) return;
-  const refresh=WATCH_DIRTY&&SEASON; WATCH_DIRTY=false;
+  const refresh=(WATCH_DIRTY||BOARD_PENDING)&&SEASON; WATCH_DIRTY=false; BOARD_PENDING=false;
   closePlayerCard();
   if(modalGame===replayGame) replayGame=null;
   modalView.destroy(); views.splice(views.indexOf(modalView),1);
   modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow='';
+  watchRemember(null);
+  if(NEW_WEEK){ location.reload(); return; }              /* the new week waited for the big screen to close */
   if(refresh) setTimeout(()=>seasonRefresh(true),0);      /* the game just watched now shows its result */
   if(!keepFocus&&lastFocus&&lastFocus.focus) lastFocus.focus();
 }
@@ -4398,7 +4407,7 @@ modal.addEventListener('pointerleave',()=>{ modal.querySelectorAll('.wp-x,.wp-ti
 
 /* ---------------- replay controls & GameFeed loading ---------------- */
 /*@ui-start*/
-function rpAfterSeek(g){ hideChip(g); onCommit(g); }
+function rpAfterSeek(g){ hideChip(g); document.querySelectorAll(`.td[data-g="${g.id}"]`).forEach(e=>e.classList.remove('on')); onCommit(g); }   /* un saut coupe la bannière en cours */
 function rpAction(g,act,el){
   if(!g||!g.replay) return;
   if(act==='toggle'){ if(g.status==='final'&&g.paused){ rpSeek(g,0); rpAfterSeek(g); } g.paused=!g.paused; }
@@ -4469,7 +4478,7 @@ document.addEventListener('click',e=>{
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
   const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled) togglePick(odd.dataset.key); return; }
   if(t.closest('[data-theater]')){ toggleTheater(); return; }
-  if(t.closest('[data-close]') || t===modal){ closeModal(); return; }
+  if(t.closest('[data-close]') || (t===modal && MODAL_DOWN_BG)){ closeModal(); return; }   /* une sélection glissée jusqu'au fond ne ferme plus le match */
   if(t.closest('[data-drawer]')){ openDrawer(); return; }
   if(t.closest('[data-drawer-close]') || t===scrim){ closeDrawer(); return; }
   const tab=t.closest('.slip-tabs [data-tab]'); if(tab){ slip.tab=tab.dataset.tab; renderSlip(); return; }
@@ -4494,7 +4503,8 @@ document.addEventListener('click',e=>{
     if(rb.contains(railBadge)){ unseen=0; railBadge.hidden=true; }
   }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(modalGame) closeModal(); else closeDrawer(); } });
+let MODAL_DOWN_BG=false; modal.addEventListener('pointerdown',e=>{ MODAL_DOWN_BG=e.target===modal; });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(pcard) closePlayerCard(); else if(modalGame) closeModal(); else closeDrawer(); } });
 
 /* ================= SEASON MODE (site only) =================
    The page plays a whole week exported by the notebook (section 14, schema season-week/1):
@@ -4542,7 +4552,8 @@ function dec(a){ return decOf(a).toFixed(2); }
 function schName(g,side,t){ const n=teamLabel(g,side,t); return revealed(g,t)?`<b><span class="fn">${esc(n)}</span><span class="ab">${TEAMS[g[side]].abbr}</span></b>`:`<b>${esc(n)}</b>`; }
 
 /* ---------- standings, futures, season stats at time t ---------- */
-function completedSlots(t){ let s=0; for(let k=1;k<=18;k++){ if(SCHED.filter(g=>g.slot===k).every(g=>gStatus(g,t)==='final')) s=k; else break; } return s; }
+function completedSlots(t){ let s=0; const n=Math.min(NSLOTS,SW.standings_by_slot.length);   /* tous les créneaux (23 à 24 équipes), jamais au-delà des classements reçus */
+  for(let k=1;k<=n;k++){ if(SCHED.filter(g=>g.slot===k).every(g=>gStatus(g,t)==='final')) s=k; else break; } return s; }
 function standingsAt(t){
   const s=completedSlots(t);
   if(s>0) return {table:SW.standings_by_slot[s-1].table,slot:s};
@@ -4582,7 +4593,7 @@ function seasonRankFor(pl){
 function recordOf(a,t){ const r=standingsAt(t).table.find(x=>x.team===a); return r?`${r.w}-${r.l}${r.t?'-'+r.t:''}`:''; }
 
 /* ---------- the board: live games, recent replays, what is next ---------- */
-let BOARD_SIG='', NEXT_GAMES=[], BOARD_AT=0;
+let BOARD_SIG='', NEXT_GAMES=[], BOARD_AT=0, BOARD_PENDING=false;
 function boardPlan(t){
   const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
   const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end);
@@ -4693,7 +4704,8 @@ function buildBoard(force){
   const t=nowMs(), {plan,next}=boardPlan(t);
   const sig=plan.map(([s,m])=>s.id+':'+m).join('|')+'#'+next.map(s=>s.id).join(',');
   if(!force && sig===BOARD_SIG) return false;
-  if(modalGame && games.includes(modalGame) && !force) return false;       /* wait until the big screen closes */
+  if(modalGame && games.includes(modalGame)){ BOARD_PENDING=true; return false; }   /* never rebuild under an open match: the big screen
+     would keep an orphan copy (frozen field) while the new board copy writes into it — rebuilt when it closes */
   BOARD_SIG=sig; NEXT_GAMES=next;
   for(let i=views.length-1;i>=0;i--){ if(views[i]!==modalView){ views[i].destroy(); views.splice(i,1); } }
   for(const g of games) if(byId[g.id]===g) delete byId[g.id];
@@ -4958,8 +4970,12 @@ function seasonRefresh(force){
   const changed=buildBoard(force);
   if(changed||force){ seasonMoments(t); renderSeasonCards(t); }
   /* keep live boards in step with the clock */
-  for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t);
-    if(gStatus(g.sched,t)==='live' && (g.idx<k-1||g.idx>k+1)){ rpSeek(g,k); g.paused=false; rpAfterSeek(g); } }
+  /* a play lasts ≈ 6-7.5 s on screen, the server reveals one every 6.5 s: catch up by playing a little faster (every play,
+     score banner and chip still shown) and jump only on a real gap (tab in the background, clock changed) */
+  for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t), lag=k-g.idx;
+    if(gStatus(g.sched,t)!=='live'){ g.speed=1; continue; }
+    if(lag>8||lag<-2){ rpSeek(g,k); g.paused=false; rpAfterSeek(g); g.speed=1; }
+    else g.speed = lag>=1 ? Math.min(2.5,1+0.3*lag) : 1; }   /* appareil lent (images à < 10 / s) : rattrape plus fort */
   const live=SCHED.filter(g=>gStatus(g,t)==='live').length, upc=SCHED.filter(g=>gStatus(g,t)==='upcoming').length, fin=SCHED.filter(g=>gStatus(g,t)==='final').length;
   const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ setTxt(cnt[0],String(live)); setTxt(cnt[1],String(upc)); setTxt(cnt[2],String(fin)); }
   setHTML(document.getElementById('eyebrow'),`<b>Week ${SW.week.index}</b> · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))} · ${live?`${live} game${live>1?'s':''} live`:'no game live right now'} · every game played by the engine`);
@@ -5018,6 +5034,7 @@ function seasonBoot(){
   headlines.length=0;
   loadWallet(); applySettings(); lastStake=SET.stake; slip.open=[];
   seasonRefresh(true);
+  watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); }
 }
@@ -5759,7 +5776,7 @@ function say(text,prio,g){
   alog('say',text,{prio,game:g&&g.id});
   if(!soundOn()||SET.talk==='off') return;
   if(SET.talk==='big'&&prio<2) return;
-  if(g&&g.speed>1&&prio<3) return;                               /* fast replays: big moments only */
+  if(g&&g.speed>=2&&prio<3) return;                               /* fast replays: big moments only */
   caption(text);
   if(!TTS) return;
   if(TTS.speaking||TTS.pending){
@@ -5906,16 +5923,17 @@ const AUDIO_API={sweep:audioSweep,log:ALOG,playLine,snapLine,adjLine,introLine,f
    embedded in the page then holds ONLY what has already happened: the server adds new plays, results,
    standings, futures and playoff pairings every few seconds (/api/delta). Bets are placed on the server,
    which checks the price, the market and the balance; a shared leaderboard ranks the players. */
-let POLL_BUSY=false, POLL_FAIL=0;
+let POLL_BUSY=false, POLL_FAIL=0, NEW_WEEK=false;
 async function serverPoll(){
   if(POLL_BUSY||!SERVER) return; POLL_BUSY=true;
   try{
     const have=SCHED.map(g=>g.id+':'+SEASON.feeds[g.id].plays.length).join(',');
-    const r=await fetch(SERVER.api+'/delta?have='+encodeURIComponent(have),{cache:'no-store'});
+    const ac=window.AbortController?new AbortController():null, to=ac?setTimeout(()=>ac.abort(),15000):0;   /* une requête bloquée ne fige plus le direct */
+    let r; try{ r=await fetch(SERVER.api+'/delta?have='+encodeURIComponent(have),{cache:'no-store',signal:ac?ac.signal:undefined}); } finally{ clearTimeout(to); }
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); POLL_FAIL=0; document.body.classList.remove('srv-off');
     const off=d.now-Date.now(); if(Math.abs(off-SRV_OFF)>1500) SRV_OFF=off;
-    if(d.week_start!==SW.week.start){ location.reload(); return; }
+    if(d.week_start!==SW.week.start){ if(modalGame){ NEW_WEEK=true; return; } location.reload(); return; }   /* nouvelle semaine : jamais pendant un match regardé */
     let changed=false;
     for(const gid in (d.games||{})){ const gm=d.games[gid], f=SEASON.feeds[gid]; if(f&&gm&&gm.home&&!(f.game&&f.game.home)){ f.game=gm; changed=true; } }
     for(const gid in d.plays){ const p=d.plays[gid], f=SEASON.feeds[gid]; if(!f) continue;
