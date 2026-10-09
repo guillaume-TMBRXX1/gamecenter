@@ -9,7 +9,8 @@
 class AssetLoader{
   constructor(mixer,opts){
     this.mx=mixer; this.o=opts||{}; this.base=this.o.base||'/audio/';
-    const mem=navigator.deviceMemory||4, small=/iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent||'');
+    /* iPad (Safari s'annonce « Macintosh » avec un écran tactile) : budget réduit, l'onglet était tué faute de mémoire */
+    const mem=navigator.deviceMemory||4, small=/iPhone|iPod|iPad|Android/i.test(navigator.userAgent||'')||(/Macintosh/.test(navigator.userAgent||'')&&navigator.maxTouchPoints>1);
     this.budget=this.o.budget||((small||mem<=2)?48:96)*1024*1024;   /* bytes of decoded PCM (music loops ≈ 7 MB each) */
     this.cache=new Map(); this.bytes=0; this.pending=new Map(); this.manifest=null; this._mf=null;
   }
