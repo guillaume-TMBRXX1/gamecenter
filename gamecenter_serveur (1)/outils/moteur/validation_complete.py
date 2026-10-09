@@ -37,6 +37,7 @@ SERVEUR = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 sys.path.insert(0, SERVEUR)
 import rapport_calibration as rc            # noqa: E402  (charger, mesurer, _stats, comparer, TOLERANCES)
+from moteur import developpement as DEVM   # noqa: E402  (bornes du garde-fou d'équipe)
 
 # étages du moteur : interrupteurs (décisions, B, C, D, E) et rapport publié qu'ils doivent redonner à l'identique
 ETAGES = {
@@ -635,7 +636,7 @@ def main():
                      "semaines_garde_fou": pg["team_guard_weeks"], "controler": pg["controler"],
                      "ovr_ecart": pg.get("ovr_ecart"), "secondes_trajectoire": pg["secondes"]}
         ok = not pg["controler"] and pg["league_drift_max"] <= 0.5 and all(
-            abs(f) <= 0.2 + 0.005 for f in (pg["team_strength"] or {}).values())
+            abs(f) <= DEVM.FORCE_EQUIPE_MAX + 0.005 for f in (pg["team_strength"] or {}).values())
         chaine[n]["ok"] = ok
         print(f"   {'✅' if ok else '❌'} {n:3d} semaines : force " + " ".join(f"{ab} {f:+.2f}" for ab, f in pg["team_strength"].items())
               + f" · dérive max {pg['league_drift_max']:.2f} · garde-fou d'équipe {pg['team_guard_weeks']} sem."
