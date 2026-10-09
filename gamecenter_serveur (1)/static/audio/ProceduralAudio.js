@@ -34,16 +34,19 @@ class ProceduralAudio{
   setBed(level){ if(this.ready) this.bed.gain.setTargetAtTime(level,this.mx.ctx.currentTime,.4); }
 
   /* ---------- the effects ---------- */
+  /* 09/10 : chaque effet débranche ses nœuds quand sa source s'arrête. Sans ça, filtres et gains restaient branchés au
+     bus pour toujours (≈ 8 par action) : Safari ne les libère pas, l'iPad finissait par tuer l'onglet en plein replay. */
+  drop(src,nodes){ src.onended=()=>{ for(const n of nodes) try{ n.disconnect(); }catch(e){} }; }
   env(g,t,a,peak,hold,rel){ g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+a); g.gain.setValueAtTime(peak,t+a+hold); g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel); }
   noiseHit(t,type,freq,q,peak,a,hold,rel,dest){
     const AC=this.mx.ctx, s=AC.createBufferSource(); s.buffer=this.noise; s.loopStart=Math.random()*2;
     const f=AC.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q||.7;
     const g=AC.createGain(); this.env(g,t,a,peak,hold,rel); s.connect(f); f.connect(g); g.connect(dest||this.mx.input('sfx'));
-    s.start(t,Math.random()*2); s.stop(t+a+hold+rel+.05); return f;
+    s.start(t,Math.random()*2); s.stop(t+a+hold+rel+.05); this.drop(s,[s,f,g]); return f;
   }
   tone(t,type,f0,f1,peak,a,hold,rel,dest){
     const AC=this.mx.ctx, o=AC.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t); if(f1&&f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,t+a+hold+rel);
-    const g=AC.createGain(); this.env(g,t,a,peak,hold,rel); o.connect(g); g.connect(dest||this.mx.input('sfx')); o.start(t); o.stop(t+a+hold+rel+.05); return o;
+    const g=AC.createGain(); this.env(g,t,a,peak,hold,rel); o.connect(g); g.connect(dest||this.mx.input('sfx')); o.start(t); o.stop(t+a+hold+rel+.05); this.drop(o,[o,g]); return o;
   }
   /* plays one effect `delay` seconds from now; the caller has already checked that sound is on */
   play(name,delay,...args){ const fn=ProceduralAudio.LIB[name]; if(!fn||!this.ready) return; try{ fn.call(this,this.mx.ctx.currentTime+(delay||0)+.01,...args); }catch(e){} }
@@ -57,14 +60,16 @@ ProceduralAudio.LIB={
     const AC=this.mx.ctx, g=AC.createGain(); this.env(g,t,.015,.07*v,.26,.12); g.connect(this.mx.input('sfx'));
     const tr=AC.createOscillator(); tr.frequency.value=31; const tg=AC.createGain(); tg.gain.value=.5; tr.connect(tg);
     const vca=AC.createGain(); vca.gain.value=.5; tg.connect(vca.gain); vca.connect(g);
-    for(const f of [2860,3010]){ const o=AC.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(vca); o.start(t); o.stop(t+.5); }
-    tr.start(t); tr.stop(t+.5); },
+    const os=[]; for(const f of [2860,3010]){ const o=AC.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(vca); o.start(t); o.stop(t+.5); os.push(o); }
+    tr.start(t); tr.stop(t+.55); this.drop(tr,[...os,tr,tg,vca,g]); },
   snap(t){ this.noiseHit(t,'lowpass',260,.7,.18,.004,.02,.08); },
   hit(t,v=1){ this.noiseHit(t,'lowpass',380,.9,.5*v,.004,.03,.18); this.tone(t,'sine',95,42,.5*v,.004,.02,.16); },
   kick(t){ this.tone(t,'sine',170,55,.55,.002,.01,.14); this.noiseHit(t,'highpass',1800,.7,.12,.001,.004,.03); },
   horn(t){ const AC=this.mx.ctx, lp=AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600; lp.connect(this.mx.input('sfx'));
+    const ns=[lp]; let last=null;
     for(const [f,dt] of [[220,0],[277.2,.004],[329.6,.008],[440,.002]]){ const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.detune.value=(Math.random()-.5)*8;
-      const g=AC.createGain(); this.env(g,t+dt,.05,.07,1.05,.35); o.connect(g); g.connect(lp); o.start(t); o.stop(t+1.6); } },
+      const g=AC.createGain(); this.env(g,t+dt,.05,.07,1.05,.35); o.connect(g); g.connect(lp); o.start(t); o.stop(t+1.6); ns.push(o,g); last=o; }
+    this.drop(last,ns); },
   ooh(t,v=1){ const f=this.noiseHit(t,'bandpass',720,2.2,.55*v,.12,.35,.8,this.mx.input('crowd')); f.frequency.setValueAtTime(720,t); f.frequency.exponentialRampToValueAtTime(330,t+1.2); },
   groan(t){ const f=this.noiseHit(t,'bandpass',520,2,.22,.1,.2,.6,this.mx.input('crowd')); f.frequency.exponentialRampToValueAtTime(260,t+.9); },
   roar(t,v=1,dur=1.6){ const p=this.roarG.gain; p.cancelScheduledValues(t); p.setValueAtTime(p.value,t); p.linearRampToValueAtTime(.55*v,t+.18); p.setValueAtTime(.55*v,t+dur*.45); p.exponentialRampToValueAtTime(.0001,t+dur); }
