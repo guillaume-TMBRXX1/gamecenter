@@ -675,6 +675,18 @@ direct continue d'interroger le serveur) mais qu'aucun commentaire n'est plus jo
   1,5 s / 4 s après), taille de la fenêtre et du terrain, zoom, plein écran, état du son, baisse de qualité d'affichage,
   erreurs JavaScript. Rien de personnel ni stocké ; 60 envois par page au plus.
 
+### 33. iPad : onglet rechargé en plein replay (09/10/2026)
+
+Journal de diagnostic (section 32) de Guillaume sur iPad, Safari, Bigger field : le replay avance normalement (bannières
+TD / FG correctes), puis après ≈ 9 minutes la page est rechargée sans événement de fermeture et le match repart de la
+1re action — iOS tue l'onglet faute de mémoire et le recharge (pas de fuite mesurée : mémoire JavaScript stable sur tout
+un replay). Le poids venait de la page (texte de la semaine ≈ 52 Mo : 32 000 actions, rosters répétés dans chaque match).
+- Le texte de la semaine est libéré dès qu'il est lu ; le roster d'une équipe n'est gardé qu'une fois (558 → 24).
+- En Bigger field, le site derrière le match n'est plus dessiné (`body.gc-match`) : mémoire graphique des terrains de
+  l'accueil libérée.
+- Sons en mémoire : budget réduit sur iPad (48 Mo au lieu de 96).
+- Si l'onglet est quand même rechargé, le replay **reprend à l'action où il était** (position notée à chaque action).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

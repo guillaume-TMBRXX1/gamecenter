@@ -531,6 +531,7 @@
 
   /* ---------- Big screen, theater mode ---------- */
   .modal.theater{padding:0}
+  body.gc-match>.app{visibility:hidden}   /* Bigger field couvre tout l'écran : le site derrière n'est plus dessiné (mémoire graphique libérée) */
   .modal.theater .m-panel,:root .modal.theater .m-panel{width:100%;height:100%;max-height:100%;border-radius:0;background:var(--bg)}
   .m-head .m-theater{margin-left:auto}
   .m-head .m-theater+.icon-btn{margin-left:0}
@@ -3167,7 +3168,16 @@ const BOOT_FEED=bootFeed();
 /* Season mode: a whole week (notebook section 14) embedded in #gf-week; otherwise the demo boards below */
 const SERVER=(()=>{ try{ const x=JSON.parse(document.getElementById('gf-server').textContent); return x&&x.api?x:null; }catch(e){ return null; } })();
 let SRV_OFF=SERVER?SERVER.now-Date.now():0;
-const SEASON=(()=>{ try{ const w=JSON.parse(document.getElementById('gf-week').textContent); return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
+const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.parse(el.textContent);
+  /* mémoire (iPad : onglet tué puis rechargé en plein replay) : le texte de la semaine (≈ 50 Mo) est libéré une fois lu,
+     et le roster d'une équipe, répété dans chacun de ses matchs, n'est gardé qu'une fois quand il est identique */
+  el.textContent='';
+  if(w&&w.feeds){ const seen={};
+    for(const id in w.feeds){ const gm=w.feeds[id]&&w.feeds[id].game; if(!gm) continue;
+      for(const side of ['home','away']){ const t=gm[side]; if(!t||!Array.isArray(t.roster)) continue;
+        const k=(t.abbr||'')+'|'+JSON.stringify(t.roster), prev=seen[t.abbr];
+        if(prev&&prev[0]===k) t.roster=prev[1]; else seen[t.abbr]=[k,t.roster]; } } }
+  return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
 const games=SEASON?[]:[
   BOOT_FEED ? makeReplayGame(LIVE_ID,BOOT_FEED,{viewers:'4.8K',mode:'live'}) : makeGame('g1','VAN','SOV',{hs:21,as:17,q:3,clock:522,poss:'away',losOwn:34,down:2,toGo:6,edge:1.5,viewers:'4.8K'}),
   makeGame('g2','ICO','DRF',{hs:10,as:9,q:2,clock:675,poss:'home',losOwn:45,down:1,toGo:10,edge:-1,viewers:'2.1K'}),
@@ -3669,6 +3679,7 @@ function onResolve(g){
 function onCommit(g){
   if(g.spoiler){ spoilerMask(g); teaserNext(g); }
   if(SEASON&&g===replayGame&&g.status==='final'&&g.gf) markWatched(g.gf.game.id);   /* seen to the final whistle */
+  watchPos(g);
   flashField(g,document); refreshOddsUI(g); flashMoves(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); renderFeed(g); renderStats(g); }
 
 /*@ui-start*/
@@ -4353,6 +4364,7 @@ function openModal(id){
     <div class="m-lower">${statsHTML(g)}</div>
   </div>`;
   modal.classList.toggle('theater',theaterOn());
+  document.body.classList.toggle('gc-match',theaterOn());
   modal.hidden=false; document.body.style.overflow='hidden';
   modalView=new FieldView(modal.querySelector('.field'),g,70,1.4); views.push(modalView); bindPlayerPick(modalView);
   refreshOddsUI(g); syncPressed(); updateGameUI(g); renderFeed(g); renderWP(g); renderPower(g); renderStats(g);
@@ -4368,7 +4380,7 @@ let THEATER=null;
 function theaterOn(){ if(THEATER===null){ try{ THEATER=localStorage.getItem('gc-theater-v1')==='1'; }catch(e){ THEATER=false; } } return THEATER; }
 function toggleTheater(){
   THEATER=!theaterOn(); try{ localStorage.setItem('gc-theater-v1',THEATER?'1':'0'); }catch(e){}
-  modal.classList.toggle('theater',THEATER);
+  modal.classList.toggle('theater',THEATER); document.body.classList.toggle('gc-match',THEATER&&!!modalGame);
   const b=modal.querySelector('[data-theater]'); if(b){ b.setAttribute('aria-pressed',String(THEATER)); b.innerHTML=THEATER?THEATER_OUT:THEATER_IN;
     b.title=THEATER?'Standard view':'Bigger field'; b.setAttribute('aria-label',THEATER?'Back to the standard view':'Bigger field: score, play calls and commentary on top, stats below'); }
   if(modalView) modalView.resize();
@@ -4386,7 +4398,12 @@ function openReplay(id){ const src=byId[id]; if(src&&src.gf){ openReplayFeed(src
 const OPEN_KEY='gc-watching-v1';
 function watchRemember(kind,id){ try{ if(kind) sessionStorage.setItem(OPEN_KEY,JSON.stringify({kind,id})); else sessionStorage.removeItem(OPEN_KEY); }catch(e){} }
 function watchRestore(){ let w=null; try{ w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); }catch(e){}
-  if(!w||!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id); }
+  if(!w||!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id);
+  const g=modalGame;   /* un replay reprend à l'action où il était (pas le direct : il suit l'horloge) */
+  if(g&&g.replay&&g.mode==='replay'&&w.idx>0&&w.idx<g.plays.length){ rpSeek(g,w.idx); rpAfterSeek(g); } }
+/* position du replay regardé, notée à chaque action (pour watchRestore) */
+function watchPos(g){ if(g!==modalGame||!g.replay||g.mode!=='replay') return;
+  try{ const w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); if(w&&w.idx!==g.idx){ w.idx=g.idx; sessionStorage.setItem(OPEN_KEY,JSON.stringify(w)); } }catch(e){} }
 function closeModal(keepFocus){
   if(!modalGame) return;
   if(window.GC_DIAG) window.GC_DIAG('close',{keep:!!keepFocus});
@@ -4394,7 +4411,7 @@ function closeModal(keepFocus){
   closePlayerCard();
   if(modalGame===replayGame) replayGame=null;
   modalView.destroy(); views.splice(views.indexOf(modalView),1);
-  modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow='';
+  modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow=''; document.body.classList.remove('gc-match');
   watchRemember(null);
   if(NEW_WEEK){ location.reload(); return; }              /* the new week waited for the big screen to close */
   if(refresh) setTimeout(()=>seasonRefresh(true),0);      /* the game just watched now shows its result */
