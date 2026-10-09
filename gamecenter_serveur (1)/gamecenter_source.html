@@ -1600,20 +1600,20 @@
 
   /* Annonces sur le terrain : texte seul, Unbounded, entrée floue → nette, reflet, sortie vers le haut */
   :root{--f-announce:'Unbounded','Arial Black',sans-serif}
+  /* 09/10 : léger pour Safari — texte blanc et text-shadow (plus de background-clip:text ni de 3 filtres drop-shadow sur
+     tout le terrain), animation sur transform et opacity seulement (plus d'espacement des lettres animé : un nouveau
+     calcul de mise en page à chaque image). Safari redessinait la bannière plein terrain à chaque image. */
   .td{font:800 clamp(20px,7.4cqw,62px)/1 var(--f-announce);letter-spacing:-.01em;text-transform:uppercase;overflow:visible;
-    color:transparent;background:linear-gradient(100deg,#FFFFFF 0%,#FFFFFF 40%,#DCE5EC 48%,#FFFFFF 56%,#FFFFFF 100%) 0 0/260% 100% repeat-x;   /* repeat-x : sans lui, des lettres sortaient du dégradé (« TOUCHI ») */
-    -webkit-background-clip:text;background-clip:text;text-shadow:none;
-    filter:drop-shadow(0 0 1px #17324D) drop-shadow(0 2px 0 #17324D) drop-shadow(0 10px 22px rgba(23,50,77,.45))}
-  .td.to{filter:drop-shadow(0 0 1px #8E2C23) drop-shadow(0 2px 0 #8E2C23) drop-shadow(0 10px 22px rgba(178,58,47,.5));text-shadow:none}
+    color:#FFFFFF;background:none;filter:none;will-change:transform,opacity;
+    text-shadow:0 0 1px #17324D,0 2px 0 #17324D,0 10px 22px rgba(23,50,77,.45)}
+  .td.to{filter:none;text-shadow:0 0 1px #8E2C23,0 2px 0 #8E2C23,0 10px 22px rgba(178,58,47,.5)}
   .td::before,.td::after,.td.to::before{display:none;animation:none}
   .td.on{animation:anIn 2.6s cubic-bezier(.2,.8,.2,1) forwards}
   @keyframes anIn{
-    0%{opacity:0;transform:scale(1.35);letter-spacing:.18em;background-position:130% 0;-webkit-text-stroke:0 transparent}
-    12%{opacity:1;transform:scale(1);letter-spacing:-.01em}
+    0%{opacity:0;transform:scale(1.35)}
+    12%{opacity:1;transform:scale(1)}
     16%{transform:scale(1.04)}
     22%{transform:scale(1)}
-    30%{background-position:130% 0}
-    55%{background-position:-30% 0}
     80%{opacity:1;transform:none}
     100%{opacity:0;transform:translateY(-14%) scale(.96)}}
   .td.on{place-items:center}
@@ -3518,7 +3518,8 @@ function renderReplayUI(g){
 /* Touchdown (cyan) and turnover (pink) wipes across the field */
 function flashField(g,scope){
   const fire=(f,txt)=>scope.querySelectorAll(`[data-g="${g.id}"][data-f="${f}"]`).forEach(el=>{ if(txt) el.textContent=txt; el.classList.remove('on'); void el.offsetWidth;
-    el.style.animationDuration=(2.6/Math.max(1,g.speed||1))+'s'; el.classList.add('on'); });   /* 2× / 4× : la bannière ne déborde pas sur les actions suivantes */
+    el.style.animationDuration=(2.6/Math.max(1,g.speed||1))+'s'; el.classList.add('on');
+    if(window.GC_DIAG&&g===modalGame&&el.closest('#modal')){ window.GC_DIAG('banner',{txt:el.textContent}); setTimeout(()=>window.GC_DIAG('banner+1.5s'),1500); setTimeout(()=>window.GC_DIAG('banner+4s'),4000); } });   /* 2× / 4× : la bannière ne déborde pas sur les actions suivantes */
   if(g.tdFlash){ const t=typeof g.tdFlash==='string'?g.tdFlash:'Touchdown'; g.tdFlash=false; fire('td',t); }
   if(g.toFlash){ const t=g.toFlash; g.toFlash=null; fire('to',t); }
   if(g.shake){ const c='shake-'+g.shake; g.shake=null;
@@ -4054,6 +4055,7 @@ class FieldView{
     this.wrap.style.perspective=Math.round(w*1.35)+'px';
     this.calib();
     this._sig=null; this._vg=null;   /* the canvas was cleared: draw the next frame whatever happens */
+    try{ if(this===modalView&&window.GC_DIAG) window.GC_DIAG('field-resize',{w,h:Math.round(h),wh}); }catch(e){}
   }
   /* Which part of the canvas is really on screen once tilted: the frame clips the near (bottom) edge and the
      sides of the near rows, and the 3rd-down banner / score bug cover the top and bottom. Stored as fractions
@@ -4356,6 +4358,7 @@ function openModal(id){
   refreshOddsUI(g); syncPressed(); updateGameUI(g); renderFeed(g); renderWP(g); renderPower(g); renderStats(g);
   if(g.chip && g.phase!=='play') showChip(g);
   modal.querySelector('[data-close]').focus();
+  if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
 }
 /* Big screen, "theater": a bigger field with the score, the play calls and the commentary on top; win probability,
    prices and stats move below. Remembered on this device. */
@@ -4369,6 +4372,7 @@ function toggleTheater(){
   const b=modal.querySelector('[data-theater]'); if(b){ b.setAttribute('aria-pressed',String(THEATER)); b.innerHTML=THEATER?THEATER_OUT:THEATER_IN;
     b.title=THEATER?'Standard view':'Bigger field'; b.setAttribute('aria-label',THEATER?'Back to the standard view':'Bigger field: score, play calls and commentary on top, stats below'); }
   if(modalView) modalView.resize();
+  if(window.GC_DIAG) window.GC_DIAG('theater');
 }
 /* Replay: the same engine match from kickoff, on the big screen only */
 let replayGame=null;
@@ -4385,6 +4389,7 @@ function watchRestore(){ let w=null; try{ w=JSON.parse(sessionStorage.getItem(OP
   if(!w||!byId[w.id]) return; if(w.kind==='replay') openReplay(w.id); else openModal(w.id); }
 function closeModal(keepFocus){
   if(!modalGame) return;
+  if(window.GC_DIAG) window.GC_DIAG('close',{keep:!!keepFocus});
   const refresh=(WATCH_DIRTY||BOARD_PENDING)&&SEASON; WATCH_DIRTY=false; BOARD_PENDING=false;
   closePlayerCard();
   if(modalGame===replayGame) replayGame=null;
@@ -5952,6 +5957,37 @@ async function serverPoll(){
   finally{ POLL_BUSY=false; }
 }
 
+/* ---------- diagnostic de l'écran du match (09/10) ----------
+   Un bug vu seulement dans Safari (bannière TD / FG en plein écran : son coupé, écran qui rétrécit) : pendant un match
+   ouvert, le site note ce qui se passe (bannières, taille de la fenêtre et du terrain, état du son, erreurs) et l'envoie
+   au serveur toutes les 4 s (/api/diag, une ligne « DIAG » dans ses journaux). Rien de personnel, 60 envois au plus. */
+const DIAG={q:[],sent:0};
+function diagSnap(){
+  const m=document.getElementById('modal'), f=m&&m.querySelector('.field'), r=f?f.getBoundingClientRect():null, cv=f&&f.querySelector('canvas'), vv=window.visualViewport;
+  let ac=null; try{ ac=(AM&&AM.mixer&&AM.mixer.ctx)||AC||null; }catch(e){}
+  return {vw:innerWidth,vh:innerHeight,dpr:devicePixelRatio,vvs:vv?Math.round(vv.scale*100)/100:null,fs:!!(document.fullscreenElement||document.webkitFullscreenElement),
+    th:!!(m&&m.classList.contains('theater')),g:modalGame?modalGame.id:null,idx:modalGame?modalGame.idx:null,sp:modalGame?modalGame.speed:null,
+    fld:r?Math.round(r.width)+'x'+Math.round(r.height):null,cv:cv?cv.style.width+' '+cv.style.height+' '+cv.width:null,snd:soundOn(),ac:ac?ac.state:null,
+    fx:FX_DPR+(FX_GLOW?'g':''),vis:document.visibilityState};
+}
+window.GC_DIAG=function(k,o){ if(!SERVER) return; if(!modalGame&&k!=='error'&&k!=='close') return;
+  try{ DIAG.q.push(Object.assign({k,t:Math.round(performance.now())},o||{},diagSnap())); if(DIAG.q.length>40) DIAG.q.shift(); }catch(e){} };
+function diagFlush(){
+  if(!SERVER||!DIAG.q.length||DIAG.sent>=60) return; const e=DIAG.q.splice(0,12); DIAG.sent++;   /* ≤ 12 événements par envoi (< 8 Ko) */
+  try{ const body=JSON.stringify({v:1,e}).slice(0,8000), url=SERVER.api+'/diag';
+    if(navigator.sendBeacon) navigator.sendBeacon(url,new Blob([body],{type:'application/json'}));
+    else fetch(url,{method:'POST',body,headers:{'Content-Type':'application/json'},keepalive:true}).catch(()=>{}); }catch(e){}
+}
+if(SERVER){
+  setInterval(diagFlush,4000);
+  window.addEventListener('error',e=>{ window.GC_DIAG('error',{msg:String(e.message||'').slice(0,200),src:String(e.filename||'').slice(-40)+':'+e.lineno}); diagFlush(); });
+  window.addEventListener('unhandledrejection',e=>{ window.GC_DIAG('error',{msg:'promise: '+String(e.reason&&e.reason.message||e.reason).slice(0,200)}); });
+  let rzT=0; window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>window.GC_DIAG('resize'),300); });
+  document.addEventListener('visibilitychange',()=>window.GC_DIAG('visibility'));
+  for(const ev of ['fullscreenchange','webkitfullscreenchange']) document.addEventListener(ev,()=>window.GC_DIAG('fullscreen'));
+  window.addEventListener('pagehide',()=>{ window.GC_DIAG('pagehide'); diagFlush(); });
+}
+
 /* ---------- the player and the server wallet ---------- */
 const PLAYER_KEY='gc-player-v1';
 let PLAYER=SERVER?(lsGet(PLAYER_KEY)||null):null;
@@ -6283,7 +6319,7 @@ function perfWatch(ms,drew,now){
   PERF.n++; PERF.sum+=Math.min(ms,250);
   if(PERF.n<20||now-PERF.ws<2500) return;            /* judge on 2.5 s and at least 20 drawn frames */
   const avg=PERF.sum/PERF.n; PERF.n=0; PERF.sum=0;
-  if(avg>25){ if(FX_GLOW) FX_GLOW=false; else FX_DPR=FX_DPR>1.5?1.5:1; for(const v of views) v.resize(); PERF.t0=now+3000; }
+  if(avg>25){ if(FX_GLOW) FX_GLOW=false; else FX_DPR=FX_DPR>1.5?1.5:1; if(window.GC_DIAG) window.GC_DIAG('perf',{avg:Math.round(avg)}); for(const v of views) v.resize(); PERF.t0=now+3000; }
 }
 function frame(now){
   const ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
