@@ -660,6 +660,21 @@ VEC 39,5 % de victoires (plage 40-60 %) ; E52 dérive de ligue 0,56 (plafond 0,5
   une sélection de texte glissée jusqu'au fond fermait le match ; Échap ferme d'abord la fiche joueur ; le cercle rouge
   clignote aussi pendant la pause après l'action.
 
+### 32. Bannière TD / FG en plein écran sous Safari (09/10/2026)
+
+Signalé par Guillaume (Safari 18, Mac) : en replay, plein écran, à chaque touchdown ou field goal le son se coupe et
+l'écran rétrécit. Non reproduit dans Chromium (taille du terrain, mémoire et son stables pendant la bannière, aussi avec
+un écran Retina et un processeur ralenti ×6) ; les journaux du serveur montrent que la page n'est pas rechargée (le
+direct continue d'interroger le serveur) mais qu'aucun commentaire n'est plus joué après le field goal.
+- **Bannière allégée** : texte blanc et `text-shadow` au lieu de `background-clip:text` + 3 filtres `drop-shadow` sur tout
+  le terrain, animation sur `transform` / `opacity` seulement (plus d'espacement des lettres ni de reflet animés) — Safari
+  redessinait toute la bannière filtrée à chaque image.
+- **Son** : si Safari met le contexte audio en pause (« interrupted » / « suspended »), il est relancé aussitôt, sinon au
+  prochain clic ou à la prochaine touche.
+- **Journal de diagnostic** (`/api/diag`, lignes « DIAG » des journaux Railway) : pendant un match ouvert, bannières (et
+  1,5 s / 4 s après), taille de la fenêtre et du terrain, zoom, plein écran, état du son, baisse de qualité d'affichage,
+  erreurs JavaScript. Rien de personnel ni stocké ; 60 envois par page au plus.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

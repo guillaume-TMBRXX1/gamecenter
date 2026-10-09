@@ -682,6 +682,34 @@ def api_delta(have: str = ""):
     return {"now": t, "week_start": w.start, "state": st, "games": games, "plays": plays}
 
 
+_DIAG = {}                                          # ip -> [début de la minute, lots reçus]
+
+
+@app.post("/api/diag")
+async def api_diag(req: Request):
+    """Journal de diagnostic de l'écran du match (bannières, taille de la fenêtre, état du son, erreurs) : une ligne
+    « DIAG » dans les journaux du serveur, pour comprendre un bug vu dans un navigateur qu'on ne peut pas tester ici.
+    Rien n'est stocké ; 20 lots par minute et par adresse au plus, 8 Ko par lot."""
+    ip = req.client.host if req.client else "?"
+    now = time.time()
+    m = _DIAG.get(ip)
+    if not m or now - m[0] > 60:
+        m = _DIAG[ip] = [now, 0]
+    m[1] += 1
+    if m[1] > 20:
+        return {"ok": False}
+    raw = (await req.body())[:8192]
+    try:
+        body = json.loads(raw)
+    except Exception:
+        return {"ok": False}
+    if len(_DIAG) > 5000:
+        _DIAG.clear()
+    print("DIAG", json.dumps({"ua": str(req.headers.get("user-agent", ""))[:160], "d": body}, ensure_ascii=False)[:9000],
+          flush=True)
+    return {"ok": True}
+
+
 @app.post("/api/players")
 async def api_new_player(req: Request):
     body = await _json(req)

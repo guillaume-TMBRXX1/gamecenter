@@ -27,6 +27,12 @@ class AudioMixer{
     this.duckNode=g(1); this.duckNode.connect(this.buses.crowd);
     this.musicDuck=g(1); this.musicDuck.connect(this.buses.music);
     this.uiNode=this.master;              /* interface tones (bet placed, won…) go straight to MASTER, as before */
+    /* Safari met parfois le contexte en pause (« interrupted » / « suspended ») en plein match : on le relance tout de
+       suite, et sinon au prochain geste (clic, touche) — le son ne reste plus coupé jusqu'au rechargement */
+    try{ ac.addEventListener('statechange',()=>{ if(window.GC_DIAG) window.GC_DIAG('audio',{state:ac.state});
+      if(ac.state==='interrupted'||ac.state==='suspended'){ this.resume();
+        if(!this._wake){ this._wake=()=>{ this._wake=null; this.resume(); };
+          for(const t of ['pointerdown','keydown','touchend']) document.addEventListener(t,this._wake,{once:true,capture:true}); } } }); }catch(e){}
     this.apply();
     return ac;
   }
