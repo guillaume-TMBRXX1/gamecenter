@@ -44,6 +44,7 @@ NOTE_MIN, NOTE_MAX = 40, 99
 FORME_MAX = 3.0
 ECART_EQUIPE_MAX = 0.5              # écart maximal d'UNE note d'unité d'une franchise à sa base (points)
 FORCE_EQUIPE_MAX = 0.15             # écart maximal de sa FORCE (moyenne des 4 unités, décalage commun) ; None : sans
+BORNES_AVANT_0910 = {"unit": 0.75, "force": 0.2}   # bornes des semaines produites avant le 09/10 (sans guard_bounds)
 # Mesuré au test d'équilibre (1 008 matchs après 8 à 32 semaines de progression) : ≈ 15 points de % de victoires par
 # point de force. À ± 3 par unité (première proposition) : VEC 72 % / MNL 24 % après 8 semaines ; ± 1 : MNL 34-36 % ;
 # force ± 0,25 et unités ± 1 : MNL 40,1 % sur une trajectoire. Retenu (05/10) : force ± 0,2, unités ± 0,75.
@@ -698,6 +699,7 @@ def rapport_semaine(etat, avant=None, unites=None, garde=None, derive=None):
             "team_units": ecarts_unites(etat, unites) if unites else None,
             "team_strength": {t: round(force(u), 2) for t, u in ecarts_unites(etat, unites).items()} if unites else None,
             "team_guard": garde or {},
+            "guard_bounds": {"unit": ECART_EQUIPE_MAX, "force": FORCE_EQUIPE_MAX} if unites else None,
             "risers": [fmt(d, p) for d, p in mouv[:5] if d > 0],
             "fallers": [fmt(d, p) for d, p in reversed(mouv[-5:]) if d < 0]}
 

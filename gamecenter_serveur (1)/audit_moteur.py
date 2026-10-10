@@ -278,8 +278,10 @@ def check_progression(A, name, w):
             A.add(BLOQUANT, name, None, None, f"players_next_week : {pb}")
     if etat.get("semaines", 0) < 1:
         A.add(BLOQUANT, name, None, None, "players_next_week : aucune semaine de progression comptée")
-    e_max = _dev.ECART_EQUIPE_MAX if _dev is not None else 3.0
-    f_max = _dev.FORCE_EQUIPE_MAX if _dev is not None else None
+    # bornes du garde-fou EN VIGUEUR quand la semaine a été produite (guard_bounds), pas celles d'aujourd'hui :
+    # une semaine déjà publiée n'est pas refusée parce que les bornes ont été resserrées depuis (09/10)
+    bornes = (rap or {}).get("guard_bounds") or (_dev.BORNES_AVANT_0910 if _dev is not None else {"unit": 3.0})
+    e_max, f_max = bornes.get("unit", 3.0), bornes.get("force")
     for t, us in ((rap or {}).get("team_units") or {}).items():
         for u, d in us.items():
             if abs(d) > e_max + 1e-6:
