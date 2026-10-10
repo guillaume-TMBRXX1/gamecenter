@@ -168,7 +168,7 @@ async function page(b,port){
       ok(L.pause>14&&L.pause<=14+PLAY+1, `remaining ${L.pause} s (break end + one play: the server sends the next play then)`);
       ok(L.newPlays===0, 'no play revealed by the server during the break');
       ok(M&&M.open&&M.cards>0&&!M.resume, `tile clicked during the break: big screen with the halftime screen (${M&&M.cards} cards, no “Resume now” live)`);
-      ok(L.resumed&&L.resumed.idx===h+1&&L.resumed.q===3&&L.resumed.status==='live'&&Math.abs(L.resumed.after-L.left)<=1.5, `resumed on play ${L.resumed&&L.resumed.idx} (Q${L.resumed&&L.resumed.q}) after ${L.resumed&&L.resumed.after} s (${L.left&&L.left.toFixed(1)} s announced)`);
+      ok(L.resumed&&L.resumed.idx===h+1&&L.resumed.q===3&&L.resumed.status==='live'&&L.resumed.after>=L.left-1.5&&L.resumed.after<=L.left+3.5,   /* + the page's /api/delta poll (every 3 s), as for any live play */ `resumed on play ${L.resumed&&L.resumed.idx} (Q${L.resumed&&L.resumed.q}) after ${L.resumed&&L.resumed.after} s (${L.left&&L.left.toFixed(1)} s announced)`);
       ok(L.maxSpeed<=1.31, `no fast catch-up after the break (max speed ${L.maxSpeed})`);
     }
     ok(!errs.length, 'no page error'+(errs.length?': '+errs.slice(0,2).join(' | '):''));
