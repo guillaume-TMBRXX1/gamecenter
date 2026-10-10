@@ -246,12 +246,12 @@ def check_week(A, folder):
     if final and final.get("result"):
         r = final["result"]; champ = final["home"] if r["home"] > r["away"] else final["away"]
         if w.get("champion") != champ:
-            A.add(BLOQUANT, name, None, None, f"champion {w.get('champion')} ≠ vainqueur de l'AI Bowl {champ}")
+            A.add(BLOQUANT, name, None, None, f"champion {w.get('champion')} ≠ vainqueur de la Grand Final {champ}")
     semis = [g for g in sched if g["phase"] == "semifinal"]
     if final and semis and all(g.get("result") for g in semis):
         winners = {g["home"] if g["result"]["home"] > g["result"]["away"] else g["away"] for g in semis}
         if {final["home"], final["away"]} != winners:
-            A.add(BLOQUANT, name, None, None, f"AI Bowl {final['home']}–{final['away']} ≠ vainqueurs des demi-finales {winners}")
+            A.add(BLOQUANT, name, None, None, f"Grand Final {final['home']}–{final['away']} ≠ vainqueurs des demi-finales {winners}")
     # étape 6, 24 équipes : les demi-finales sont les finales de conférence entre champions de division
     league = (w.get("week") or {}).get("league")
     order = [r["team"] for r in w.get("standings") or []]

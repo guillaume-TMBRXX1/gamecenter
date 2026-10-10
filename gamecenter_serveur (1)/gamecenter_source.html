@@ -1786,6 +1786,83 @@
   @media (pointer:coarse) and (prefers-reduced-motion:reduce),(max-width:760px) and (prefers-reduced-motion:reduce){
     .field.third-on::before{animation:none}
   }
+
+  /* ===== Pauses de retransmission (10/10/2026) : fin de Q1 / Q3, mi-temps, fin du match =====
+     Sur le terrain seulement (les panneaux de stats et de paris restent utilisables) ; habillage « régie » bleu nuit
+     des bannières TD, couleurs des franchises en filet. Petits terrains : score seul. */
+  .brk{position:absolute;inset:0;z-index:7;display:grid;place-items:center;overflow:hidden;color:#fff;
+    padding:clamp(8px,2.2cqw,22px);font-family:var(--f-ui);
+    background:radial-gradient(130% 110% at 50% -10%,rgba(31,68,104,.97) 0%,rgba(18,30,46,.975) 55%,rgba(11,16,23,.985) 100%)}
+  .brk[hidden]{display:none}
+  .field:not(.big) .brk{pointer-events:none}   /* tuiles : un clic ouvre toujours le match */
+  .brk::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--brand,linear-gradient(90deg,#9E3B3F,#315A87,#16858A))}
+  .brk.on{animation:brkIn .55s cubic-bezier(.2,.8,.2,1) both}
+  .brk.out{animation:brkOut .45s ease forwards;pointer-events:none}
+  .brk.end .brk-in{animation:brkLeave 1.2s ease forwards}
+  @keyframes brkIn{0%{opacity:0;clip-path:inset(48% 0 48% 0)}60%{opacity:1}100%{opacity:1;clip-path:inset(0 0 0 0)}}
+  @keyframes brkOut{0%{opacity:1}100%{opacity:0;transform:scale(1.02)}}
+  @keyframes brkLeave{0%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6%) scale(.97)}}
+  @media (prefers-reduced-motion:reduce){ .brk.on,.brk.out,.brk.end .brk-in{animation:none} }
+  .brk-in{width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4cqw,14px);overflow:auto;scrollbar-width:none}
+  .brk-in::-webkit-scrollbar{display:none}
+  .brk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .brk-k{font:700 clamp(10px,1.9cqw,15px)/1 var(--f-announce,var(--f-display));letter-spacing:.14em;text-transform:uppercase;
+    padding:6px 10px;border-radius:4px;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  .brk-cd{font:600 clamp(10px,1.6cqw,13px)/1 var(--f-ui);color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums}
+  .brk-main{width:100%;display:grid;grid-template-columns:1fr;justify-items:center;gap:clamp(8px,1.6cqw,18px)}
+  .brk-in.full .brk-main{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start}
+  .brk-score{display:grid;grid-template-columns:auto auto auto;align-items:center;justify-items:center;column-gap:clamp(10px,2.6cqw,28px);row-gap:6px}
+  .brk-tm{display:grid;justify-items:center;gap:4px;min-width:0}
+  .brk-tm .abbr{font:700 clamp(11px,2cqw,16px)/1 var(--f-display);letter-spacing:.1em;padding:4px 8px;border-radius:4px;background:var(--tc);color:#fff}
+  .brk-tn{font:600 clamp(9px,1.5cqw,12.5px)/1.2 var(--f-ui);color:rgba(255,255,255,.75);text-align:center;max-width:16ch}
+  .brk-tm b{font:800 clamp(34px,10cqw,96px)/1 var(--f-announce,var(--f-display));font-variant-numeric:tabular-nums;
+    text-shadow:0 2px 0 rgba(0,0,0,.25),0 10px 26px rgba(0,0,0,.35)}
+  .brk-in.final .brk-tm:not(.win) b{opacity:.55}
+  .brk-tm.win b{color:#fff;text-shadow:0 0 18px color-mix(in srgb,var(--tc) 70%,transparent),0 2px 0 rgba(0,0,0,.25)}
+  .brk-at{font:700 clamp(10px,1.7cqw,13px)/1 var(--f-display);letter-spacing:.14em;color:rgba(255,255,255,.6);align-self:center}
+  .brk-sub{grid-column:1/-1;margin:0;font:700 clamp(10px,1.8cqw,14px)/1.2 var(--f-ui);color:rgba(255,255,255,.88);text-align:center}
+  .brk-potg{grid-column:1/-1;display:grid;justify-items:center;gap:3px;margin-top:4px;padding:8px 14px;border-radius:8px;
+    background:rgba(255,255,255,.07);box-shadow:inset 3px 0 0 var(--tc),inset 0 0 0 1px rgba(255,255,255,.12)}
+  .brk-potg .label{font:700 9.5px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+  .brk-potg b{font:800 clamp(13px,2.2cqw,18px)/1.1 var(--f-ui)}
+  .brk-potg span:last-child{font:500 11px/1.3 var(--f-ui);color:rgba(255,255,255,.75);text-align:center}
+  .brk-side{min-width:0;width:100%}
+  .brk-side h3{margin:0 0 6px;display:flex;align-items:center;gap:6px;font:700 11px/1.2 var(--f-ui);color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brk-side h3 .abbr{color:#fff}
+  .brk-side.home h3{justify-content:flex-end}
+  .brk-cards{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .brk-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:4px;align-items:center;padding:7px 9px;border-radius:8px;
+    background:rgba(255,255,255,.07);box-shadow:inset 3px 0 0 var(--tc),inset 0 0 0 1px rgba(255,255,255,.1)}
+  .brk-rk{grid-row:1/span 3;align-self:start;font:800 14px/1 var(--f-display);color:rgba(255,255,255,.5)}
+  .brk-pl{min-width:0;display:grid}
+  .brk-pl b{font:700 12px/1.2 var(--f-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brk-pl span{font:500 10px/1.2 var(--f-ui);color:rgba(255,255,255,.62)}
+  .brk-card dl{margin:0;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .brk-card dl div{display:grid}
+  .brk-card dt{font:600 8.5px/1 var(--f-display);letter-spacing:.1em;color:rgba(255,255,255,.55)}
+  .brk-card dd{margin:0;font:700 13px/1.15 var(--f-ui);font-variant-numeric:tabular-nums}
+  .brk-more{grid-column:2;margin:0;font:500 10px/1.25 var(--f-ui);color:rgba(255,255,255,.66)}
+  .brk-none{margin:0;font:500 11px var(--f-ui);color:rgba(255,255,255,.6)}
+  .brk-note{margin:0;font:500 10px/1.2 var(--f-ui);color:rgba(255,255,255,.5)}
+  .brk-slot:empty{display:none}
+  .brk-acts{display:flex;gap:8px}
+  .brk-btn{font:700 11.5px/1 var(--f-ui);color:#fff;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.1);cursor:pointer}
+  .brk-btn:hover{background:rgba(255,255,255,.18)}
+  .brk-btn:focus-visible,.brk-tab:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .brk-tab{position:absolute;z-index:7;right:10px;top:10px;font:700 11px/1 var(--f-ui);padding:7px 10px;border-radius:6px;cursor:pointer;
+    color:#fff;border:1px solid rgba(255,255,255,.3);background:rgba(18,30,46,.86)}
+  .brk-tab[hidden]{display:none}
+  /* terrain moyen : cartes sous le score, deux colonnes */
+  @container (max-width:720px){
+    .brk-in.full .brk-main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .brk-in.full .brk-score{grid-column:1/-1;grid-row:1}
+    .brk-card dd{font-size:12px}
+  }
+  /* petit terrain (tuiles, téléphone) : score seul */
+  @container (max-width:420px){
+    .brk-in.full .brk-main{grid-template-columns:1fr}
+    .brk-side,.brk-note,.brk-potg{display:none}
+  }
 </style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
@@ -2892,6 +2969,18 @@ function makeGame(id,home,away,o){
 const RP_TYPES=['run','pass','punt','field_goal','kickoff'];
 const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff','safety'];
 const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
+/* ---------- broadcast breaks (10/10/2026) ----------
+   End of Q1 / Q3 (and of regulation before overtime): a short break; halftime: a dedicated screen; end of game: the
+   result screen. PRESENTATION time only: the engine's plays are neither replayed nor recomputed, nothing is added to
+   the feed. A break follows the play that ends the period — the feed says so on that play alone (after.status 'half';
+   game clock at 0 with the game still live), so a live board knows it before the next play exists. The server keeps
+   the same timeline (serveur.py BREAK_SEC, sent in #gf-server): live boards, live prices and bet settlement agree. */
+const BRK_SEC={q:10,half:40};
+function brkKind(P){ const A=P&&P.after; if(!A) return null;
+  if(A.status==='half') return 'half';
+  return A.status==='live'&&P.clock_end!=null&&num(P.clock_end,1)<=0 ? 'q' : null; }
+/* breaks are for the match itself: never in a teaser, a spoiler-free preview or a still tile */
+function brkOn(g){ return !g.spoiler&&!g.preview&&!(g.teaser&&g.teaser.running); }
 const RP_SLOT={WR1:8,WR2:9,WR3:10,TE1:5,TE2:5,RB1:7,RB2:7,FB1:7,QB1:6};
 
 /* First problem found in a feed, or null when it can be replayed */
@@ -3057,7 +3146,7 @@ function rpSeek(g,k){
   let p=num(first.win_prob_home,0.5); const hist=[];
   for(let j=0;j<k;j++){ p=num(g.plays[j].win_prob_home,p); hist.push(p); }
   g.hist=hist.length?hist:[p]; g.p=p; g.odds=rpOdds((prev||first).odds);
-  g.status='live'; g.pause=0; g.chip=null; g.trail=[]; g.carrier=null; g.tdFlash=false; g.toFlash=null; g.shake=null;
+  g.status='live'; g.pause=0; g.brk=null; g.brkEnter=false; g.brkHide=false; g.chip=null; g.trail=[]; g.carrier=null; g.tdFlash=false; g.toFlash=null; g.shake=null;
   g.lastText=prev?String(prev.text||''):'Opening kickoff';
   rpEnter(g,k,true);
 }
@@ -3090,20 +3179,35 @@ function rpCommit(g){
   g.p=num(P.win_prob_home,g.p); g.odds=rpOdds(P.odds);
   if(g.idx===0) g.hist=[g.p]; else g.hist.push(g.p);
   g.hs=A.score.home; g.as=A.score.away;
-  if(A.status==='final' || g.idx>=g.plays.length-1){
+  if(A.status==='final' || (g.idx>=g.plays.length-1 && !(g.growing&&brkKind(P)))){
     g.status='final'; g.pause=RP_FINAL; g.phase='done'; g.carrier=null;
+    g.brk=brkOn(g)?{kind:'final',q:num(P.quarter,4)}:null; g.brkHide=false;
     return;
+  }
+  const b=brkOn(g)?brkKind(P):null;
+  if(b){   /* the break: the field stays on the play that ended the period, the next play is entered when it is over */
+    if(b==='half') g.status='half';
+    g.brk={kind:b,q:num(P.quarter,1),dur:BRK_SEC[b]}; g.brkHide=false;
+    g.pause=typeof liveBreakLeft==='function'?liveBreakLeft(g,BRK_SEC[b]):BRK_SEC[b];
+    g.brkEnter=true; return;
   }
   if(A.status==='half'){ g.status='half'; g.pause=RP_HALF; }
   rpEnter(g,g.idx+1);
 }
+/* end of a break: back to the field with the next play (a live board waits for it if the server has not sent it yet) */
+function brkResume(g){
+  if(!g.plays[g.idx+1]) return false;
+  g.brkEnter=false; g.brk=null; if(g.status==='half') g.status='live';
+  rpEnter(g,g.idx+1); return true;
+}
 function stepReplay(g,dt){
   if(g.paused) return;
   dt*=g.speed;
-  if(g.pause>0){
+  if(g.pause>0||g.brkEnter){
     g.pause-=dt;
     if(g.pause<=0){
-      if(g.status==='half'){ g.status='live'; onCommit(g); }
+      if(g.brkEnter){ if(brkResume(g)) onCommit(g); else g.pause=0; }
+      else if(g.status==='half'){ g.status='live'; onCommit(g); }
       else if(g.status==='final'){ if(g.loop){ rpSeek(g,0); onCommit(g); } else g.paused=true; }
     }
     return;
@@ -3119,7 +3223,7 @@ function stepReplay(g,dt){
     if(!REDUCED && g.t-g.tt>0.04){ g.trail.push({x:g.ball.x,y:g.ball.y}); recordTracks(g); g.tt=g.t; if(g.trail.length>160) g.trail.shift(); }
     if(u>=1){ g.phase='post'; g.t=0; g.dur=RP_POST; rpResolve(g); onResolve(g); }
   } else if(g.phase==='post'){
-    if(g.t>=g.dur){ if(g.growing&&g.idx>=g.plays.length-1&&!(g.cur&&g.cur.after&&g.cur.after.status==='final')) return; rpCommit(g); onCommit(g); }
+    if(g.t>=g.dur){ if(g.growing&&g.idx>=g.plays.length-1&&!(g.cur&&g.cur.after&&g.cur.after.status==='final')&&!(brkOn(g)&&brkKind(g.cur))) return; rpCommit(g); onCommit(g); }
   }
 }
 function makeReplayGame(id,feed,o){
@@ -3168,6 +3272,7 @@ const BOOT_FEED=bootFeed();
 /* Season mode: a whole week (notebook section 14) embedded in #gf-week; otherwise the demo boards below */
 const SERVER=(()=>{ try{ const x=JSON.parse(document.getElementById('gf-server').textContent); return x&&x.api?x:null; }catch(e){ return null; } })();
 let SRV_OFF=SERVER?SERVER.now-Date.now():0;
+if(SERVER&&SERVER.breaks) Object.assign(BRK_SEC,SERVER.breaks);   /* same broadcast breaks as the server */
 const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.parse(el.textContent);
   /* mémoire (iPad : onglet tué puis rechargé en plein replay) : le texte de la semaine (≈ 50 Mo) est libéré une fois lu,
      et le roster d'une équipe, répété dans chacun de ses matchs, n'est gardé qu'une fois quand il est identique */
@@ -3297,6 +3402,8 @@ function fieldHTML(g,cls,hit){
     <span class="chip-play" data-g="${g.id}" data-f="chip" hidden></span>
     <div class="td" data-g="${g.id}" data-f="td" aria-hidden="true">Touchdown</div>
     <div class="td to" data-g="${g.id}" data-f="to" aria-hidden="true">Interception</div>
+    <div class="brk" data-g="${g.id}" data-f="brk" role="region" aria-live="polite" hidden></div>
+    ${cls==='big'?`<button type="button" class="brk-tab" data-g="${g.id}" data-f="brktab" data-brk="show" hidden>Final screen</button>`:''}
     ${true?`<div class="third" data-g="${g.id}" data-f="third" hidden role="status"><b></b><span></span></div>`:''}
     ${bugHTML(g)}
   </div>`;
@@ -3482,7 +3589,7 @@ function toast(msg){ const t=document.getElementById('toast'); t.classList.remov
 
 /* ---------------- game UI ---------------- */
 /*@ui-start*/
-function qLabel(g){ return g.status==='final'?'FINAL':g.status==='half'?'HALF':qName(g.q); }
+function qLabel(g){ return g.status==='final'?'FINAL':g.status==='half'?'HALF':g.brk&&g.brk.kind==='q'?'END '+qName(g.brk.q):qName(g.q); }
 function clkDisp(g){ if(g.status!=='live') return ''; let c=g.clock; if(g.phase==='play'&&g.plan) c-=g.plan.elapsed*clamp(g.t/g.dur,0,1); return clockStr(c); }
 /* perf: write to the DOM only when the value really changes — the HUD is refreshed 4x a second and every
    write (even of the same text) costs a style pass and wakes the team-colour observer */
@@ -3495,6 +3602,7 @@ function updateGameUI(g){
       case 'as': if(g.spoiler) setTxt(el,MINUS); else setScore(el,g.as); break;
       case 'hs': if(g.spoiler) setTxt(el,MINUS); else setScore(el,g.hs); break;
       case 'q': setTxt(el,qLabel(g)); break;
+      case 'brk': renderBrk(g,el); break;
       case 'clk': setTxt(el,clkDisp(g)); break;
       case 'dd': setTxt(el,g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g))); break;
       case 'third': renderThird(g,el); break;
@@ -3699,7 +3807,7 @@ function computeStatsNow(g,n){
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
     const r=(id&&roster[side][id])||byName[side][name]||{}, k=r.id||id||('n:'+name);
-    return pl[side][k]||(pl[side][k]={id:r.id||id||null,name:name||r.name||'—',pos:r.pos||'',pass:null,rush:null,rec:null,def:null});
+    return pl[side][k]||(pl[side][k]={id:r.id||id||null,name:name||r.name||'—',pos:r.pos||'',number:r.number!=null?r.number:null,pass:null,rush:null,rec:null,def:null,kick:null});
   };
   const drives=[]; let cur=null;
   for(let j=0;j<n;j++){
@@ -3717,7 +3825,8 @@ function computeStatsNow(g,n){
       if(P.down===4){ S.d4++; if(fdn||r==='touchdown') S.c4++; }
     }
     if(t==='pass'){
-      const q=who(o,pas&&pas.id,pas?pas.name:'QB'); q.pass=q.pass||{c:0,a:0,y:0,td:0,i:0,sk:0,sky:0,lng:0};
+      const q=who(o,pas&&pas.id,pas?pas.name:'QB'); q.pass=q.pass||{c:0,a:0,y:0,td:0,i:0,sk:0,sky:0,lng:0,tt:0,tn:0};
+      if(dc&&dc.action==='LANCER'&&num(dc.throw_time,null)!==null){ q.pass.tt+=dc.throw_time; q.pass.tn++; }
       if(r==='sack'){ S.sacks++; S.sackYds+=-gain; q.pass.sk++; q.pass.sky+=-gain; }
       else {
         const caught=r==='complete'||r==='touchdown'||r==='fumble_lost';
@@ -3731,6 +3840,9 @@ function computeStatsNow(g,n){
     } else if(t==='run'){
       S.rushAtt++; S.rushYds+=gain; if(r==='touchdown') S.rushTd++;
       if(car.id||car.name){ const b=who(o,car.id,car.name); b.rush=b.rush||{c:0,y:0,td:0,lng:0}; b.rush.c++; b.rush.y+=gain; b.rush.lng=Math.max(b.rush.lng,gain); if(r==='touchdown') b.rush.td++; }
+    } else if(t==='field_goal'&&(car.id||car.name)){   /* the kicker is the feed's carrier on a field goal try */
+      const k=who(o,car.id,car.name); k.kick=k.kick||{m:0,a:0,lng:0}; k.kick.a++;
+      const d=/(\d+)\s*yds/i.exec(P.text||''); if(r==='field_goal_good'){ k.kick.m++; if(d) k.kick.lng=Math.max(k.kick.lng,+d[1]); }
     }
     if(r==='fumble_lost') S.fum++;
     if(df.name&&df.credit){
@@ -3816,7 +3928,8 @@ function renderStats(g){
         const rush=list.filter(p=>p.rush).sort((a,b)=>b.rush.y-a.rush.y).map(p=>`<tr>${nm(p)}<td>${p.rush.c}</td><td>${p.rush.y}</td><td>${(p.rush.y/p.rush.c).toFixed(1)}</td><td>${p.rush.lng}</td><td>${p.rush.td}</td></tr>`);
         const rec=list.filter(p=>p.rec).sort((a,b)=>b.rec.y-a.rec.y).map(p=>`<tr>${nm(p)}<td>${p.rec.r}</td><td>${p.rec.t}</td><td>${p.rec.y}</td><td>${p.rec.lng}</td><td>${p.rec.td}</td></tr>`);
         const dfn=list.filter(p=>p.def).sort((a,b)=>(b.def.tk+2*b.def.sk+3*b.def.i+b.def.pd)-(a.def.tk+2*a.def.sk+3*a.def.i+a.def.pd)).map(p=>`<tr>${nm(p)}<td>${p.def.tk}</td><td>${p.def.sk}</td><td>${p.def.i}</td><td>${p.def.pd}</td></tr>`);
-        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn);
+        const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${3*p.kick.m}</td></tr>`);
+        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','FG PTS'],kick);
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -3831,6 +3944,128 @@ function renderStats(g){
         : '<p class="st-none">No drives yet</p>';
     }
   });
+}
+/*@ui-end*/
+
+/*@ui-start*/
+/* ---------------- broadcast breaks: end of Q1 / Q3, halftime, final (10/10/2026) ----------------
+   Drawn over the field only (the side panels — match centre, prices, bet slip — stay usable). Everything comes from
+   computeStats (the match centre's stats, play by play, up to the play on screen): nothing is computed apart, nothing
+   is guessed. Cards show the stats of the player's position; a player without a stat in this game has no card. */
+const BRK_TITLE={q:q=>q>=4?'End of regulation':`End of the ${['','1st','2nd','3rd','4th'][q]||qName(q)} quarter`,half:()=>'Halftime',final:q=>q>4?'Final · overtime':'Final'};
+/* Extra content for a break screen, by kind ('q', 'half', 'final'): (game) -> HTML, or nothing. Empty for now — the
+   halftime advertising slot will plug in here (BRK_SLOT.half=g=>…) without touching the screen itself. */
+const BRK_SLOT={};
+/* ranking of the performers (order only, never displayed): fantasy-style weights on the match centre's stats */
+function perfScore(p){
+  let v=0; const a=p.pass, r=p.rush, c=p.rec, d=p.def, k=p.kick;
+  if(a) v+=a.y/25+4*a.td-2*a.i;
+  if(r) v+=r.y/10+6*r.td;
+  if(c) v+=c.y/10+6*c.td+0.5*c.r;
+  if(d) v+=d.tk+2*d.sk+3*d.i+d.pd+2*d.ff;
+  if(k) v+=3*k.m;
+  return v;
+}
+/* the stat group shown for a player: his position first, else what he did most in this game */
+const POS_ROLE={QB:'pass',RB:'rush',FB:'rush',HB:'rush',WR:'rec',TE:'rec',K:'kick',PK:'kick'};
+function perfRole(p){
+  const r=POS_ROLE[String(p.pos||'').toUpperCase()]; if(r&&p[r]) return r;
+  if(['DT','DE','EDGE','NT','LB','ILB','OLB','MLB','CB','S','FS','SS','DB'].includes(String(p.pos||'').toUpperCase())&&p.def) return 'def';
+  return ['pass','rush','rec','def','kick'].filter(x=>p[x]).sort((x,y)=>perfScore({[y]:p[y]})-perfScore({[x]:p[x]}))[0]||null;
+}
+function topPerformers(st,side,n){
+  return Object.values(st.pl[side]).map(p=>({p,v:perfScore(p),role:perfRole(p)})).filter(x=>x.role&&x.v>0)
+    .sort((a,b)=>b.v-a.v||String(a.p.name).localeCompare(String(b.p.name))).slice(0,n||3);
+}
+/* [label, value] of a card: the position's stats (QB C/ATT YDS TD INT · RB CAR YDS TD · WR/TE REC YDS TD ·
+   defense TKL SCK INT PD · K FG PTS), then one line for anything else the player did */
+function perfStats(p,role){
+  const a=p.pass, r=p.rush, c=p.rec, d=p.def, k=p.kick;
+  const main= role==='pass'?[['C/ATT',`${a.c}/${a.a}`],['YDS',a.y],['TD',a.td],['INT',a.i]]
+    : role==='rush'?[['CAR',r.c],['YDS',r.y],['TD',r.td]]
+    : role==='rec'?[['REC',c.r],['YDS',c.y],['TD',c.td]]
+    : role==='def'?[['TKL',d.tk],['SCK',d.sk],['INT',d.i],['PD',d.pd]]
+    : [['FG',`${k.m}/${k.a}`],['FG PTS',3*k.m]];
+  const more=[];
+  if(role==='pass'&&a.tn) more.push(`${(a.tt/a.tn).toFixed(2)} s avg. time to throw`);   /* engine decisions (Next Gen Stats style) */
+  if(role!=='rush'&&r&&r.c) more.push(`${r.c} rush, ${r.y} yds${r.td?`, ${r.td} TD`:''}`);
+  if(role!=='rec'&&c&&c.r) more.push(`${c.r} rec, ${c.y} yds${c.td?`, ${c.td} TD`:''}`);
+  if(role!=='def'&&d&&(d.tk||d.sk||d.i)) more.push(`${d.tk} tkl`);
+  return {main,more:more.join(' · ')};
+}
+function perfCardHTML(x,abbr,rank){
+  const p=x.p, s=perfStats(p,x.role);
+  return `<li class="brk-card" style="--tc:${DA_TEAM[abbr]||'var(--cyan)'}">
+    <span class="brk-rk">${rank}</span>
+    <div class="brk-pl"><b>${esc(p.name)}</b><span>${esc(p.pos||'')}${p.number!=null?' · #'+esc(String(p.number)):''} · ${abbr}</span></div>
+    <dl>${s.main.map(([l,v])=>`<div><dt>${l}</dt><dd>${v}</dd></div>`).join('')}</dl>
+    ${s.more?`<p class="brk-more">${esc(s.more)}</p>`:''}
+  </li>`;
+}
+function brkTeamHTML(g,side,st,big){
+  const abbr=side==='home'?g.home:g.away, T=TEAMS[abbr];
+  if(!big) return '';
+  const top=topPerformers(st,side,3);
+  return `<section class="brk-side ${side}" aria-label="${esc(T.name)} top performers">
+    <h3><span class="abbr">${abbr}</span>${esc(T.name)}</h3>
+    ${top.length?`<ol class="brk-cards">${top.map((x,i)=>perfCardHTML(x,abbr,i+1)).join('')}</ol>`:'<p class="brk-none">No individual stats yet</p>'}
+  </section>`;
+}
+function brkHTML(g,big){
+  const b=g.brk, A=TEAMS[g.away], H=TEAMS[g.home], st=computeStats(g,rpDone(g));
+  const full=big&&b.kind!=='q';
+  const lead=g.hs===g.as?null:g.hs>g.as?'home':'away';
+  const sc=side=>{ const T=side==='home'?H:A, abbr=side==='home'?g.home:g.away;
+    return `<div class="brk-tm ${side}${b.kind==='final'&&lead===side?' win':''}" style="--tc:${DA_TEAM[abbr]||'var(--cyan)'}"><span class="abbr">${abbr}</span><span class="brk-tn">${esc(T.name)}</span><b>${side==='home'?g.hs:g.as}</b></div>`; };
+  let sub='';
+  if(b.kind==='final') sub=lead?`${esc((lead==='home'?H:A).name)} win`:'Tie game';
+  else if(b.kind==='half') sub=lead?`${(lead==='home'?H:A).abbr} lead by ${Math.abs(g.hs-g.as)} at the half`:'Tied at the half';
+  else sub=b.q>=4?'Overtime next':`${['','1st','2nd','3rd','4th'][b.q+1]} quarter next`;
+  let potg='';
+  if(b.kind==='final'&&big){ const all=[...topPerformers(st,'away',1).map(x=>[x,g.away]),...topPerformers(st,'home',1).map(x=>[x,g.home])].sort((x,y)=>y[0].v-x[0].v);
+    if(all.length){ const [x,abbr]=all[0], s=perfStats(x.p,x.role);
+      potg=`<div class="brk-potg" style="--tc:${DA_TEAM[abbr]||'var(--cyan)'}"><span class="label">Player of the game</span><b>${esc(x.p.name)}</b><span>${esc(x.p.pos||'')} · ${abbr} · ${s.main.map(([l,v])=>`${v} ${l}`).join(' · ')}</span></div>`; } }
+  const slot=BRK_SLOT[b.kind]?BRK_SLOT[b.kind](g):'';
+  const live=g.mode==='live';
+  const acts=b.kind==='final'?`<button type="button" class="brk-btn" data-brk="hide" data-g="${g.id}">Show the field</button>`
+    : (!live&&big?`<button type="button" class="brk-btn" data-brk="resume" data-g="${g.id}">Resume now</button>`:'');
+  return `<div class="brk-in ${b.kind}${full?' full':''}">
+    <header class="brk-h"><span class="brk-k">${BRK_TITLE[b.kind](b.q)}</span>${b.kind!=='final'?`<span class="brk-cd" data-brk-cd></span>`:''}</header>
+    <div class="brk-main">
+      ${full?brkTeamHTML(g,'away',st,big):''}
+      <div class="brk-score">${sc('away')}<span class="brk-at">${b.kind==='final'?'Final':qName(b.q)}</span>${sc('home')}<p class="brk-sub">${sub}</p>${potg}</div>
+      ${full?brkTeamHTML(g,'home',st,big):''}
+    </div>
+    ${full?`<p class="brk-note">${b.kind==='final'?'Top performers · final':'Top performers · provisional'} · stats from the engine's plays</p>`:''}
+    ${slot?`<div class="brk-slot" data-slot="${b.kind}">${slot}</div>`:''}
+    ${acts?`<div class="brk-acts">${acts}</div>`:''}
+  </div>`;
+}
+/* called 4x a second by updateGameUI: rebuilt only when the break, the game or the plays change; the countdown alone
+   moves in between. Leaving a break plays the exit transition, then the field is back. */
+function renderBrk(g,el){
+  const big=!!el.closest('.field.big'), b=g.brk&&!g.brkHide?g.brk:null;
+  if(!b){ if(!el.hidden&&!el.classList.contains('out')){ el.classList.add('out'); el._k=null; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; el.classList.remove('out','on','end'); },450); }
+    renderBrkTab(g,el); return; }
+  const key=[b.kind,b.q,g.idx,g.plays.length,big,g.mode,g.hs,g.as].join('|');
+  if(el._k!==key){ el._k=key; clearTimeout(el._t); el.innerHTML=brkHTML(g,big); el.dataset.kind=b.kind; el.setAttribute('aria-label',BRK_TITLE[b.kind](b.q));
+    el.classList.remove('out'); if(el.hidden){ el.hidden=false; el.classList.remove('on'); void el.offsetWidth; } el.classList.add('on'); }
+  const cd=el.querySelector('[data-brk-cd]'); if(cd){ const left=g.pause/Math.max(1,g.speed||1);
+    setTxt(cd, g.pause>0?(b.kind==='half'?'Second half in ':'Back in ')+clockStr(left):'Back in a moment'); }
+  el.classList.toggle('end', b.kind!=='final'&&g.pause>0&&g.pause/Math.max(1,g.speed||1)<1.2);   /* exit transition before the restart */
+  renderBrkTab(g,el);
+}
+/* a hidden final screen leaves a tab to bring it back */
+function renderBrkTab(g,el){
+  const f=el.parentElement&&el.parentElement.querySelector(`[data-f="brktab"]`); if(!f) return;
+  const on=!!(g.brk&&g.brkHide&&el.closest('.field.big')); if(f.hidden===!on) return; f.hidden=!on;
+}
+function brkAction(g,act){
+  if(!g||!g.brk) { if(g&&act==='show') g.brkHide=false; return; }
+  if(act==='resume'&&g.brkEnter&&g.mode!=='live'){ if(brkResume(g)) onCommit(g); }
+  else if(act==='hide') g.brkHide=true;
+  else if(act==='show') g.brkHide=false;
+  updateGameUI(g);
 }
 /*@ui-end*/
 
@@ -4402,7 +4637,7 @@ function openReplayFeed(feed,viewers){
   if(feed&&feed.light){ toast('Loading the replay…');
     feedFull(feed).then(()=>openReplayFeed(feed,viewers)).catch(()=>toastErr('This replay could not be loaded. Try again in a moment.'));
     return; }
-  replayGame=makeReplayGame(REPLAY_VIEW_ID,feed,{mode:'replay',speed:1,viewers:viewers||''});
+  replayGame=makeReplayGame(REPLAY_VIEW_ID,feed,{mode:'replay',speed:1,viewers:viewers||'',loop:false});   /* stops on the final screen (10/10) */
   byId[REPLAY_VIEW_ID]=replayGame;
   openModal(REPLAY_VIEW_ID);
   /* un match de la semaine (calendrier, recherche, moments) est mémorisé pour l'onglet : rouvert après un rechargement */
@@ -4501,6 +4736,7 @@ document.addEventListener('click',e=>{
   const t=e.target;
   const rpo=t.closest('[data-replay]'); if(rpo){ openReplay(rpo.dataset.replay); return; }
   const stb=t.closest('[data-st]'); if(stb){ const gid=stTab(stb); if(gid&&byId[gid]) renderStats(byId[gid]); return; }
+  const bk=t.closest('[data-brk]'); if(bk){ const id=bk.dataset.g; brkAction(byId[id]||(replayGame&&replayGame.id===id?replayGame:null)||(modalGame&&modalGame.id===id?modalGame:null),bk.dataset.brk); return; }
   const rp=t.closest('[data-rp]'); if(rp){ if(rp.dataset.rp!=='seek'){ const host=rp.closest('[data-rpg]'); rpAction(byId[host&&host.dataset.rpg],rp.dataset.rp,rp); } return; }
   const open=t.closest('[data-open]'); if(open){ const id=open.dataset.open; if(SEASON&&id.startsWith('rp:')) openReplayFeed(SEASON.feeds[id.slice(3)]); else if(byId[id]&&byId[id].preview) openReplay(id); else openModal(id); return; }
   const sch=t.closest('[data-sched]'); if(sch&&SEASON){ const s=SCHED_BY[sch.dataset.sched], st=gStatus(s,nowMs());
@@ -4555,7 +4791,7 @@ const PLAY_SEC=6.5;
 const TZ='Europe/Brussels';
 const SW=SEASON?SEASON.week:null;
 const SCHED=SEASON?SW.schedule.map(g=>{ const f=SEASON.feeds[g.id]; const ko=Date.parse(g.kickoff);
-  const n=g.n!=null?g.n:f.plays.length, end=g.end_ms!=null?g.end_ms:(SERVER?Infinity:ko+n*PLAY_SEC*1000);
+  const n=g.n!=null?g.n:f.plays.length, end=g.end_ms!=null?g.end_ms:(SERVER?Infinity:ko+(n*PLAY_SEC+tlOf(f).total)*1000);
   return Object.assign({},g,{ko,n,end}); }):[];
 const SCHED_BY={}; SCHED.forEach(g=>SCHED_BY[g.id]=g);
 const NSLOTS=Math.max(0,...SCHED.filter(g=>g.phase==='regular').map(g=>g.slot)); /* 18 créneaux à 4 équipes, 14 à 8 (étape 6) */
@@ -4570,7 +4806,7 @@ const tStr=ms=>fmtT.format(new Date(ms)), dStr=ms=>fmtD.format(new Date(ms));
 const wRange=()=>{ const f=o=>new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:TZ},o)); const a=f({day:'numeric'}).format(new Date(W_FIRST)), b=f({day:'numeric',month:'short'}).format(new Date(W_END)); return a+'–'+b; };
 const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays'],PLS:['Tempo, no-huddle, relentless rhythm','speed, rhythm, wearing the defense down'],ONX:['Opportunistic ball-hawk defense','instinct, reading the QB, takeaways'],FRG:['Physical, dominant in the trenches','line play, power, pocket control'],MRD:['Strategic, territorial, patient','field position, special teams, discipline'],APX:['Clinical red-zone finishers','finishing, compressed space, situational calls'],LTC:['Modern spread and RPO','spacing, numbers, make every defender choose'],ZPH:['Air raid, passing volume','vision, distribution, insistence'],BST:['Lockdown coverage defense','secondary, discipline, deny the first option'],GRZ:['Run-erasing defense, balanced offense','gap discipline, tackling, pursuit'],MRG:['Play-action and misdirection','fakes, motion, manipulating the defense'],GMB:['Bold fourth-down decision makers','calculated risk, situations, momentum'],PRM:['Positionless, matchup hunters','versatility, motion, pre-snap reads'],SPK:['Young, fast and rising','potential, speed, daring'],CTD:['Veteran, poised, mistake-free','experience, reading, composure'],TDL:['Wide zone and bootleg','outside zone, movement play-action, rhythm'],CMT:['Special teams and speed','returns, coverage, long field goals']};
 const tStyle=T=>(STYLE_EN[T.abbr]||[T.style])[0], tIdent=T=>(STYLE_EN[T.abbr]||[0,T.identity])[1];
-const PHASE={regular:'Regular season',semifinal:(SW&&SW.week&&SW.week.league)?'Conference final':'Semi-final',ai_bowl:'AI Bowl'};
+const PHASE={regular:'Regular season',semifinal:(SW&&SW.week&&SW.week.league)?'Conference final':'Semi-final',ai_bowl:'Grand Final'};
 function gStatus(g,t){ return t<g.ko?'upcoming':t<g.end?'live':'final'; }
 function revealed(g,t){
   if(g.phase==='regular') return true;
@@ -4578,12 +4814,43 @@ function revealed(g,t){
   if(g.phase==='semifinal') return t>=LOCK;
   return SCHED.every(x=>x.phase!=='semifinal'||gStatus(x,t)==='final');
 }
-function playIndexAt(g,t){ return clamp(Math.floor((t-g.ko)/(PLAY_SEC*1000)),0,g.n-1); }
+/* Presentation timeline (broadcast breaks, see BRK_SEC): play k starts at ko + (k·PLAY_SEC + the breaks after plays
+   0..k-1) s — the same rule as serveur.py (revealed_plays). Kept per feed, rebuilt only when plays are added. */
+const _tl=new WeakMap();
+function tlOf(f){ const P=f.plays, m=_tl.get(f); if(m&&m.P===P&&m.n===P.length) return m;
+  const st=new Array(P.length), bk=new Array(P.length); let off=0;
+  for(let i=0;i<P.length;i++){ st[i]=i*PLAY_SEC+off; const b=brkKind(P[i]); bk[i]=b; if(b) off+=BRK_SEC[b]; }
+  const r={P,n:P.length,st,bk,total:off}; _tl.set(f,r); return r; }
+/* where the broadcast of game s is at t: done = plays already over; brk = the break running after play done-1 and
+   its end (ms), or null */
+function timelineAt(s,t){
+  const L=tlOf(SEASON.feeds[s.id]), e=(t-s.ko)/1000;
+  if(e<0||!L.n) return {done:0,brk:null,end:0};
+  let lo=0, hi=L.n-1; while(lo<hi){ const m=(lo+hi+1)>>1; if(L.st[m]<=e) lo=m; else hi=m-1; }
+  if(e<L.st[lo]+PLAY_SEC) return {done:lo,brk:null,end:0};
+  const b=L.bk[lo], end=b?s.ko+(L.st[lo]+PLAY_SEC+BRK_SEC[b])*1000:0;
+  return {done:lo+1,brk:b&&t<end?b:null,end:b&&t<end?end:0};
+}
+function playIndexAt(g,t){ return clamp(timelineAt(g,t).done,0,g.n-1); }
 function scoreAt(g,t){
   const f=SEASON.feeds[g.id], s=gStatus(g,t);
   if(s==='upcoming') return null;
   if(s==='final') return f.plays[f.plays.length-1].after.score;
-  const k=playIndexAt(g,t); return k>0?f.plays[k-1].after.score:{home:0,away:0};
+  const k=Math.min(timelineAt(g,t).done,f.plays.length); return k>0?f.plays[k-1].after.score:{home:0,away:0};
+}
+/* a live board reaching a break: it lasts until the broadcast resumes (the server sends the next play one PLAY_SEC
+   after it starts), so the board stays in step with the clock without playing faster afterwards */
+function liveBreakLeft(g,d){
+  const s=g.sched; if(!s||g.mode!=='live'||!SEASON) return d;
+  const L=tlOf(SEASON.feeds[s.id]), j=g.idx; if(j>=L.n||!L.bk[j]) return d;
+  const end=s.ko+(L.st[j]+PLAY_SEC+BRK_SEC[L.bk[j]]+(SERVER?PLAY_SEC:0))*1000;
+  return clamp((end-nowMs())/1000,0,d+PLAY_SEC);
+}
+/* put a live board where the broadcast is: on the play being shown, or in the break that is running */
+function liveSeek(g,t){
+  const tl=timelineAt(g.sched,t), n=g.plays.length;
+  if(tl.brk&&brkOn(g)&&tl.done-1<n){ rpSeek(g,tl.done-1); rpResolve(g); g.tdFlash=false; g.toFlash=null; g.shake=null; g.phase='post'; rpCommit(g); return; }
+  rpSeek(g,clamp(tl.done,0,n-1));
 }
 function seedLabel(g){ const LG=SW.week&&SW.week.league;
   if(g.phase==='semifinal') return LG?(g.id.endsWith('sf1')?['Division champion','Best record']:['Division champion','Conference leader']):(g.id.endsWith('sf1')?['#4 seed','#1 seed']:['#3 seed','#2 seed']);
@@ -4706,7 +4973,7 @@ function makeBoardGame(s,mode,t){
   const f=f0.plays.length?f0:Object.assign({},f0,{plays:[kickoffStub(f0)]});   /* server mode: nothing played yet */
   const g=makeReplayGame('s-'+s.id,f,{mode:mode==='upcoming'?'upcoming':mode,loop:mode==='replay',speed:1});
   g.sched=s; g.growing=!!SERVER&&!isFinite(s.end);
-  if(mode==='live'){ rpSeek(g,playIndexAt(s,t)); }
+  if(mode==='live'){ liveSeek(g,t); }
   if(mode==='upcoming'){
     g.paused=true; const o=f.game.pregame_odds;
     if(o){ g.odds=pgOdds(s); g.p=o.p_home; g.hist=[g.p]; }
@@ -4731,8 +4998,8 @@ function seasonTileMeta(g){
 function seasonNextTile(t){
   if(!NEXT_GAMES.length){
     const fin=SCHED.find(g=>g.phase==='ai_bowl'); const done=gStatus(fin,t)==='final';
-    return `<article class="tile next"><div class="next-top"><span class="label">${done?'AI Bowl champion':'Week complete'}</span><div class="countdown sm">${done?esc(TEAMS[SW.champion].name):'—'}</div><span class="next-sub">Week ${SW.week.index} · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))}</span></div>
-      <div class="next-body"><p class="np-note">The next week starts Monday at 13:00 with a fresh export from the engine.</p><button class="ghost" type="button" data-view-go="standings">Final standings</button></div></article>`;
+    return `<article class="tile next"><div class="next-top"><span class="label">${done?'Grand Final champion':'Week complete'}</span><div class="countdown sm">${done?esc(TEAMS[SW.champion].name):'—'}</div><span class="next-sub">Week ${SW.week.index} · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))}</span></div>
+      <div class="next-body"><p class="np-note">The next week starts Monday at 10:00 with a fresh export from the engine.</p><button class="ghost" type="button" data-view-go="standings">Final standings</button></div></article>`;
   }
   const s0=NEXT_GAMES[0];
   const rows=NEXT_GAMES.map(s=>{ if(!revealed(s,t)) return `<div class="nx-game"><div class="nt">${esc(teamLabel(s,'away',t))}</div><div class="nt">${esc(teamLabel(s,'home',t))}</div><p class="np-note">${s.phase==='ai_bowl'?'The pairing is known once both semi-finals are over.':'Seeds are set on Friday at 23:30.'}</p></div>`;
@@ -4767,7 +5034,7 @@ function buildBoard(force){
   });
   seasonTicker();
   games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); if(g.preview) showChip(g); });
-  NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* an AI Bowl still to be decided has no prices */
+  NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* a Grand Final still to be decided has no prices */
   syncPressed();
   return true;
 }
@@ -4802,7 +5069,7 @@ function renderSeasonCards(t){
       <div class="n r">${r.w}-${r.l}-${r.t}</div>
       <div class="n r c-diff ${r.diff>=0?'pos-d':'neg-d'}">${r.diff>=0?'+':MINUS}${Math.abs(r.diff)}</div>
       <div class="r">${formDots(r.last5)}</div>`; }).join('');
-  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of ${NSLOTS} slots · updated when all games of a slot are final` : 'The table fills in after the first slot (Monday 13:00)';
+  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of ${NSLOTS} rounds · updated when all games of a round are final` : 'The table fills in after the first round (Monday morning)';
   document.getElementById('agentsTitle').textContent='Season leaders';
   document.getElementById('agentsLabel').textContent='This week';
   const cats=[['QB','pass','y','pass yds'],['RB','rush','y','rush yds'],['WR','rec','y','rec yds'],['LB','def','tk','tackles'],['EDGE','def','sk','sacks']];
@@ -4851,7 +5118,7 @@ function renderSchedule(t){
         <span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>${statusCell(g,t)}${act}</div>`; }).join('')}</section>`).join('');
   const key='sch|'+SCH_FILTER+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN);
   if(el._k===key) return; el._k=key;
-  el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · ${Math.max(1,...SCHED.filter(g=>g.phase==='regular').map(g=>SCHED.filter(x=>x.phase==='regular'&&x.slot===g.slot).length))} games per slot, Monday to Friday · playoffs Saturday and Sunday</p>
+  el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · a kickoff every 30 min, 10:00–22:00, Monday to Friday · playoffs Saturday and Sunday</p>
     <div class="seg" role="tablist" aria-label="Schedule filter">${[['all','All games'],['upcoming','Upcoming'],['results','Results']].map(([k,l])=>`<button type="button" role="tab" data-schf="${k}" aria-selected="${SCH_FILTER===k}">${l}</button>`).join('')}</div></div>
     <div class="card sch">${rows||'<p class="st-none">Nothing here yet.</p>'}</div>`;
 }
@@ -4873,16 +5140,16 @@ function renderStandings(t){
     return `<div class="bk-g"><div class="bk-h"><span class="label">${esc(PHASE[g.phase])}</span><span class="bk-when">${esc(dStr(g.ko))} ${esc(tStr(g.ko))}</span></div>${line('away')}${line('home')}
       ${st!=='upcoming'?`<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch live →':'Replay →'}</button>`:''}</div>`; };
   const mk=(m,lab)=>`<tr><th scope="row">${lab}</th>${Object.keys(SW.teams).map(a=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`;
-  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} slots · locks Friday 23:30`}</p></div>
+  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} rounds · locks Friday 23:30`}</p></div>
     ${divTables}<div class="card">${LG?'<div class="card-h"><h2>League</h2><span class="label"># = league rank</span></div>':''}<div class="st-scroll"><table class="tst stand">${thead}<tbody>${tb}</tbody></table></div>
     <p class="np-note">Tiebreakers: win percentage (ties count half) → head-to-head among tied teams → point differential → points scored → draw.</p></div>
     <div class="st-two"><div class="card"><div class="card-h"><h2>Playoffs</h2><span class="label">${locked?'Seeds set':'Seeds after the lock'}</span></div><div class="bracket">${bx(po[0])}${bx(po[1])}${bx(po[2])}</div></div>
     <div class="card"><div class="card-h"><h2>Futures</h2><span class="label">Engine odds · ${F.after_slot?`after slot ${F.after_slot}`:'before the week'}</span></div>
       <div class="st-scroll">${Object.keys(SW.teams).length>4
-        ? `<table class="tst fut"><thead><tr><th scope="col">Team</th><th>Reg. season</th><th>AI Bowl berth</th><th>AI Bowl</th></tr></thead>
+        ? `<table class="tst fut"><thead><tr><th scope="col">Team</th><th>Reg. season</th><th>Grand Final berth</th><th>Grand Final</th></tr></thead>
            <tbody>${Object.keys(SW.teams).map(a=>`<tr><th scope="row"><span class="abbr">${TEAMS[a].abbr}</span></th>${['regular_season','reach_final','ai_bowl'].map(m=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
         : `<table class="tst fut"><thead><tr><th scope="col">Market</th>${Object.keys(SW.teams).map(a=>`<th><span class="abbr">${TEAMS[a].abbr}</span></th>`).join('')}</tr></thead>
-      <tbody>${mk('regular_season','Regular season winner')}${mk('reach_final','Reaches the AI Bowl')}${mk('ai_bowl','Wins the AI Bowl')}</tbody></table>`}</div>
+      <tbody>${mk('regular_season','Regular season winner')}${mk('reach_final','Reaches the Grand Final')}${mk('ai_bowl','Wins the Grand Final')}</tbody></table>`}</div>
       <p class="np-note">20 000 simulated ends of the week from the engine's game odds · 8% margin · tap a price to add it to your slip. ${anyLive(t)?'<b>Paused while games are live</b> — new prices after the slot.':'Futures pause while games are live and reopen with the prices after each slot.'}</p></div></div>`;
 }
 function unitBar(lab,v){ return `<div class="pc-attr"><span>${lab}</span><i class="pc-bar o"><b style="width:${clamp((v-60)/35*100,4,100)}%"></b></i><em>${Math.round(v)}</em></div>`; }
@@ -4942,14 +5209,14 @@ async function loadTeamHistory(){
   const h=document.querySelector('[data-mthist]'); if(h) h.innerHTML=teamHistoryHTML(h.dataset.mthist);
 }
 function teamHistoryHTML(abbr){
-  if(!SERVER) return '<span class="label">AI Bowl history</span><p class="st-none">Arrives with the GameCenter server.</p>';
-  if(TEAM_HIST===null){ loadTeamHistory(); return '<span class="label">AI Bowl history</span><p class="st-none">Loading…</p>'; }
+  if(!SERVER) return '<span class="label">Grand Final history</span><p class="st-none">Arrives with the GameCenter server.</p>';
+  if(TEAM_HIST===null){ loadTeamHistory(); return '<span class="label">Grand Final history</span><p class="st-none">Loading…</p>'; }
   const rows=TEAM_HIST.filter(w=>w.standings.some(r=>r.team===abbr)).slice().reverse();
   const titles=rows.filter(w=>w.champion===abbr).length, finals=rows.filter(w=>w.champion===abbr||w.runner_up===abbr).length;
   const body=rows.map(w=>{ const r=w.standings.find(x=>x.team===abbr), seed=(w.seeds||[]).indexOf(abbr)+1;
-    const res=w.champion===abbr?'<b class="w">AI Bowl champion</b>':w.runner_up===abbr?'AI Bowl finalist':seed&&seed<=4?'Semi-final':'Missed the playoffs';
+    const res=w.champion===abbr?'<b class="w">Grand Final champion</b>':w.runner_up===abbr?'Grand Final finalist':seed&&seed<=4?'Semi-final':'Missed the playoffs';
     return `<div class="tr-row"><span class="${w.champion===abbr?'w':'up'}">W${w.index}</span><span>${r.w}-${r.l}${r.t?'-'+r.t:''}</span><b>#${r.rank}</b><span class="mt-res">${res}</span></div>`; }).join('');
-  return `<span class="label">AI Bowl history · ${titles} title${titles===1?'':'s'} · ${finals} final${finals===1?'':'s'}</span>${body||'<p class="st-none">No finished week yet for this franchise.</p>'}`;
+  return `<span class="label">Grand Final history · ${titles} title${titles===1?'':'s'} · ${finals} final${finals===1?'':'s'}</span>${body||'<p class="st-none">No finished week yet for this franchise.</p>'}`;
 }
 let MT_PICK=false;
 function curPlayer(){ try{ return PLAYER; }catch(e){ return null; } }   /* PLAYER is declared further down */
@@ -4958,7 +5225,7 @@ function renderMyteam(t){
   const P0=curPlayer(), fav=P0&&P0.account?P0.fav_team:null, S=standingsAt(t), agg=seasonAgg(t);
   const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',');
   if(el._k===key) return; el._k=key;
-  const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, AI Bowl history and roster</p></div>`;
+  const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
   if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.</p><button type="button" class="chip-btn" data-view-go="settings">Create an account or sign in</button></div>`; return; }
   if(!fav||MT_PICK){
@@ -4980,8 +5247,8 @@ async function setFavTeam(team){
 function clockPresets(){
   const slot=n=>{ const g=SCHED.find(x=>x.phase==='regular'&&x.slot===n); return g?g.ko:null; };
   const sf=SCHED.find(g=>g.id.endsWith('sf1')), fin=SCHED.find(g=>g.phase==='ai_bowl');
-  return [['Monday 12:45 · before the first kickoff',slot(1)-15*60e3],['Monday 13:00 · week opens',slot(1)+2*60e3],['Midweek',slot(Math.ceil(NSLOTS/2))+5*60e3],['Friday · last slot',slot(NSLOTS)+5*60e3],
-    ['Saturday 16:00 · semi-final',sf.ko+5*60e3],['Sunday 22:00 · AI Bowl',fin.ko+5*60e3],['After the AI Bowl',W_END+60e3]];
+  return [[`Monday ${tStr(slot(1)-15*60e3)} · before the first kickoff`,slot(1)-15*60e3],[`Monday ${tStr(slot(1))} · week opens`,slot(1)+2*60e3],['Midweek',slot(Math.ceil(NSLOTS/2))+5*60e3],['Friday · last round',slot(NSLOTS)+5*60e3],
+    ['Saturday 16:00 · semi-final',sf.ko+5*60e3],['Sunday 22:00 · Grand Final',fin.ko+5*60e3],['After the Grand Final',W_END+60e3]];
 }
 const CLOCK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 function renderClock(){
@@ -5019,7 +5286,8 @@ function seasonRefresh(force){
      score banner and chip still shown) and jump only on a real gap (tab in the background, clock changed) */
   for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t), lag=k-g.idx;
     if(gStatus(g.sched,t)!=='live'){ g.speed=1; continue; }
-    if(lag>8||lag<-2){ rpSeek(g,k); g.paused=false; rpAfterSeek(g); g.speed=1; }
+    if(lag>8||lag<-2){ liveSeek(g,t); g.paused=false; rpAfterSeek(g); g.speed=1; }
+    else if(g.brkEnter){ g.speed=1; }   /* a break runs at clock speed: it ends when the broadcast resumes */
     else g.speed = lag>=1 ? Math.min(2.5,1+0.3*lag) : 1; }   /* appareil lent (images à < 10 / s) : rattrape plus fort */
   const live=SCHED.filter(g=>gStatus(g,t)==='live').length, upc=SCHED.filter(g=>gStatus(g,t)==='upcoming').length, fin=SCHED.filter(g=>gStatus(g,t)==='final').length;
   const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ setTxt(cnt[0],String(live)); setTxt(cnt[1],String(upc)); setTxt(cnt[2],String(fin)); }
@@ -5120,7 +5388,7 @@ const r2=v=>Math.round(v*100)/100;
 const amOf=d=>d>=2?(d-1)*100:-100/(d-1);           /* decimal → the page's internal price (decOf gives it back) */
 
 /* ---------- prices: what the board shows at time t ---------- */
-const FUT_M={regular_season:['Regular season winner','to win the regular season'],reach_final:['Reaches the AI Bowl','to reach the AI Bowl'],ai_bowl:['Wins the AI Bowl','to win the AI Bowl']};
+const FUT_M={regular_season:['Regular season winner','to win the regular season'],reach_final:['Reaches the Grand Final','to reach the Grand Final'],ai_bowl:['Wins the Grand Final','to win the Grand Final']};
 function anyLive(t){ return SCHED.some(g=>gStatus(g,t)==='live'); }
 function futClose(m){
   const ko=ph=>SCHED.filter(g=>g.phase===ph).map(g=>g.ko);
@@ -5157,7 +5425,7 @@ function quote(raw,t){
   if(t<WEEK_OPEN) lock('opens'); else if(st==='final') lock('final'); else if(!revealed(s,t)) lock('seeds'); else if(q.price==null) lock('na');
   return q;
 }
-function openText(){ return WEEK_OPEN<WEEK_MON?"Betting opens after last week's AI Bowl":'Betting opens Monday 00:00'; }
+function openText(){ return WEEK_OPEN<WEEK_MON?"Betting opens after last week's Grand Final":'Betting opens Monday 00:00'; }
 function lockText(w){ return {opens:openText(),final:'Game over · market closed',closed:'Market closed',seeds:'Opens when the seeds are set',live:'Futures pause while games are live',na:'Not priced by the engine'}[w]||'Market closed'; }
 
 /* ---------- the wallet: a ledger of bets; balance and results are worked out at time t ---------- */
@@ -5271,8 +5539,8 @@ function withFocus(fn){
 function betContext(r,t){
   if(r.st==='cashed'&&r.cash) return `Cashed out ${dStr(r.cash.at)} · ${tStr(r.cash.at)}`;
   if(r.key.startsWith('fut:')){ const m=r.key.split(':')[1];
-    if(r.st&&r.st!=='open') return m==='regular_season'?`Regular season won by ${TEAMS[SW.standings[0].team].name}`:m==='reach_final'?'AI Bowl: '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').away].abbr+' @ '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').home].abbr:`AI Bowl won by ${TEAMS[SW.champion].name}`;
-    return m==='regular_season'?'Settles after the last regular-season slot (Friday)':m==='reach_final'?'Settles after the semi-finals (Saturday)':'Settles after the AI Bowl (Sunday)'; }
+    if(r.st&&r.st!=='open') return m==='regular_season'?`Regular season won by ${TEAMS[SW.standings[0].team].name}`:m==='reach_final'?'Grand Final: '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').away].abbr+' @ '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').home].abbr:`Grand Final won by ${TEAMS[SW.champion].name}`;
+    return m==='regular_season'?'Settles after the last regular-season round (Friday)':m==='reach_final'?'Settles after the semi-finals (Saturday)':'Settles after the Grand Final (Sunday)'; }
   if(r.legs){ const rs=r.legs.map(l=>settleLeg(l.key,l.line,t).res), w=rs.filter(x=>x==='won').length, open=rs.filter(x=>x==null).length;
     return `${r.legs.length} legs · ${w} won${rs.includes('lost')?' · 1 lost':''}${open?` · ${open} to play`:''}`; }
   const s=SCHED_BY[r.key.split(':')[0]]; if(!s) return 'Game no longer on the schedule · stake returned';

@@ -18,7 +18,7 @@ Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecente
 Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/audio assemblés, versionnés) et /audio/*
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
-import hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, uuid, math
+import bisect, hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, uuid, math
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
@@ -26,7 +26,35 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
-OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
+# Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
+# prolongation), mi-temps. Temps de PRÉSENTATION seulement : les actions du moteur ne changent pas ; l'action qui suit
+# la pause est révélée plus tard. Même règle que le site (BRK_SEC, envoyé dans #gf-server).
+BREAK_SEC = {"q": 10, "half": 40}
+
+
+def break_kind(p):
+    """Pause après l'action p : « half » (mi-temps), « q » (fin d'un quart-temps, horloge à 0, match en cours), None."""
+    a = p.get("after") or {}
+    if a.get("status") == "half":
+        return "half"
+    if a.get("status") == "live" and p.get("clock_end") is not None and p["clock_end"] <= 0:
+        return "q"
+    return None
+
+
+def play_ends(plays):
+    """Fin (s après le coup d'envoi) de chaque action à l'écran : l'action i commence à i·PLAY_SEC + les pauses qui
+    suivent les actions 0..i-1 et dure PLAY_SEC. Croissant : révélées à l'instant t = bisect(ends, t)."""
+    ends, off = [], 0.0
+    for i, p in enumerate(plays):
+        ends.append(i * PLAY_SEC + off + PLAY_SEC)
+        b = break_kind(p)
+        if b:
+            off += BREAK_SEC[b]
+    return ends
+
+
+OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après la Grand Final de la précédente (au plus tard le lundi 00:00)
 BANKROLL, MIN_STAKE = 1000.0, 1.0
 CASH_FEE = 0.05                # cash-out : valeur juste − 5 % (étape 2)
 COMBO_MIN, COMBO_MAX = 2, 6    # combinés : 2 à 6 sélections, une par match, pas de futures
@@ -62,8 +90,8 @@ class Week:
                 f = json.load(fh)
             f["game"].pop("player_stats", None)
             self.feeds[g["id"]] = f
-            ko = iso_ms(g["kickoff"]); n = len(f["plays"])
-            self.sched.append(dict(g, ko=ko, n=n, end=ko + int(n * PLAY_SEC * 1000)))
+            ko = iso_ms(g["kickoff"]); n = len(f["plays"]); ends = play_ends(f["plays"])
+            self.sched.append(dict(g, ko=ko, n=n, ends=ends, end=ko + int((ends[-1] if ends else 0) * 1000)))
         self.by = {g["id"]: g for g in self.sched}
         self.lock = iso_ms(self.doc["week"]["standings_locked_at"])
         mon = datetime.fromisoformat(self.start).replace(tzinfo=TZ)
@@ -80,10 +108,11 @@ class Week:
         return "upcoming" if t < g["ko"] else "live" if t < g["end"] else "final"
 
     def revealed_plays(self, g, t):
-        """Action i visible à partir de ko + (i+1)·6,5 s (une action de décalage : personne ne la voit avant qu'elle soit jouée)."""
+        """Action i visible à la fin de son temps d'écran : ko + (i+1)·6,5 s + les pauses de retransmission avant elle
+        (une action de décalage : personne ne la voit avant qu'elle soit jouée)."""
         if t < g["ko"]:
             return 0
-        return min(g["n"], int((t - g["ko"]) // (PLAY_SEC * 1000)))
+        return min(g["n"], bisect.bisect_right(g["ends"], (t - g["ko"]) / 1000))
 
     def teams_known(self, g, t):
         if g["phase"] == "regular":
@@ -296,7 +325,7 @@ def load_weeks():
 
 def _assign_opens():
     """Ouverture des paris d'une semaine : la toute première semaine est ouverte dès qu'elle est sur le serveur ;
-    les suivantes, OPEN_AFTER_FINAL_MIN après la fin de l'AI Bowl de la semaine d'avant (sans dépasser le lundi 00:00).
+    les suivantes, OPEN_AFTER_FINAL_MIN après la fin de la Grand Final de la semaine d'avant (sans dépasser le lundi 00:00).
     La page bascule sur la nouvelle semaine à ce moment-là (current_week)."""
     ws = sorted(_WEEKS.values(), key=lambda w: w.monday)
     for i, w in enumerate(ws):
@@ -689,12 +718,13 @@ def api_feed(gid: str):
 def page():
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
-    srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "week_start": w.start, "open_ms": w.open}
+    srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API},audio:AUDIO_API,"
-                      "playerCardHTML,openPlayerCard};\n})();")
+                      "playerCardHTML,openPlayerCard,openReplayFeed,stepGame,updateGameUI,rpDone,replayGame:()=>replayGame,"
+                      "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft}};\n})();")
     return HTMLResponse(s, headers={"Cache-Control": "no-store"})
 
 
@@ -912,7 +942,7 @@ async def api_fav_team(req: Request):
 
 @app.get("/api/teams/history")
 def api_teams_history():
-    """Semaines TERMINÉES (AI Bowl joué) : champion, finaliste, têtes de série et classement final de chaque équipe —
+    """Semaines TERMINÉES (Grand Final jouée) : champion, finaliste, têtes de série et classement final de chaque équipe —
     rien d'une semaine en cours (pas de spoiler)."""
     t = now_ms()
     out = []

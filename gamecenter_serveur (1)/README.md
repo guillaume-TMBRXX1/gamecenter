@@ -472,7 +472,7 @@ Demandes de Guillaume (06/10, avant le palier 2 de l'étape 6) :
   (gardée sur le serveur : colonne `players.fav_team`, `POST /api/account/team {token, team}` — comptes seulement, équipe
   connue d'une semaine ; `fav_team` dans `/api/me` et les réponses de connexion). La page montre le bilan (W-L, rang,
   points marqués / encaissés, yards à la passe / à la course, sacks, interceptions, domicile / extérieur, série, 5
-  derniers), les matchs **joués** (replay) et **à jouer** (direct, cotes), l'**historique de l'AI Bowl** (titres,
+  derniers), les matchs **joués** (replay) et **à jouer** (direct, cotes), l'**historique de la Grand Final** (titres,
   finales, bilan et rang de chaque semaine terminée : `GET /api/teams/history`, jamais une semaine en cours — pas de
   spoiler), les coordinateurs, les unités et le roster. Sans compte : invitation à en créer un (Settings).
 - **Fiche joueur depuis un roster** (Teams et My team) : un clic (ou Entrée) sur un joueur ouvre la **même tuile**
@@ -559,6 +559,7 @@ leurs tirages ne changent pas).
 
 - **Calendrier** : à 24, aller simple : 23 rondes, 276 matchs (23 par équipe), 23 créneaux de 12 : lundi-jeudi à
   10:00, 13:00, 16:00, 19:00, 22:00 ; vendredi 13:00, 17:30, 22:00 ; verrou vendredi 23:30, playoffs inchangés.
+  (Depuis le 10/10 : matchs étalés de 10:00 à 22:00, un coup d'envoi toutes les 30 min — section 35.)
 - **Cotes** : budget de 8 400 tenu : 15 simulations par affiche (552 affiches).
 - **Prochain** (décision de Guillaume, 07/10) : divisions / conférences (bible, section 14), calibrage des forces,
   contrôles d'identité, rapport de calibration, audit et tests — maintenant que les 24 franchises existent.
@@ -578,8 +579,8 @@ Décision de Guillaume (07/10) : audits et tests repris une fois les 24 franchis
 | Frontier | Summit | VEC, CPH, LTC, GRZ, MRD, APX |
 
 - Calendrier inchangé (aller simple : chaque équipe rencontre les 23 autres). Playoffs : les **4 champions de division** ;
-  demi-finales = **finales de conférence** ; AI Bowl entre les champions de conférence (`playoff_order`, 14.1 : seeds[0]
-  = meilleur bilan, seeds[3] = l'autre champion de sa conférence). Futures alignés (« AI Bowl berth » = champion de
+  demi-finales = **finales de conférence** ; Grand Final entre les champions de conférence (`playoff_order`, 14.1 : seeds[0]
+  = meilleur bilan, seeds[3] = l'autre champion de sa conférence). Futures alignés (« Grand Final berth » = champion de
   conférence). Export : `week.league` et `conference` / `division` par équipe (le serveur les transmet tels quels).
 - Site : classement par conférence et division (# = rang de la ligue) puis tableau de la ligue ; « Conference final ».
 - Audit (`audit_moteur.py`) : les finales de conférence opposent les champions de division.
@@ -702,6 +703,56 @@ créés = débranchés), la page reste lourde.
   après le chargement du détail si besoin.
 - Sons générés (sifflet, corne, impacts) : nœuds débranchés à la fin de chaque effet ; canevas vidés quand un terrain
   est fermé (Safari iOS ne rend leur mémoire qu'ainsi).
+
+### 35. Calendrier : un coup d'envoi toutes les 30 min ; « AI Bowl » devient la « Grand Final » (10/10/2026)
+
+- **Calendrier** (notebook 14.1, `season_kickoffs`) : du lundi au vendredi, coups d'envoi de 10:00 à 22:00, toutes les
+  30 min (25 heures par jour, aucune vide). Volume de chaque jour inchangé : 60 matchs du lundi au jeudi (5 rondes,
+  2 ou 3 matchs par heure), 36 le vendredi (3 rondes, 1 ou 2 par heure). Une ronde (`slot` : chaque équipe joue une
+  fois) occupe un bloc d'heures consécutives — 10:00-12:00, 12:30-14:30, 15:00-17:00, 17:30-19:30, 20:00-22:00 ;
+  vendredi 10:00-13:30, 14:00-17:30, 18:00-22:00 — et se termine avant la suivante : classement et futures après
+  chaque ronde inchangés, aucun résultat connu avant la mise à jour des futures. Dans une ronde, les équipes qui ont
+  joué le plus tôt jouent les premières : ≈ 2 h 40 de repos en moyenne entre deux matchs d'un jour (2 h au moins).
+  Un match dure ≈ 15 min en direct (≈ 140 actions × 6,5 s) : deux heures voisines ne se chevauchent pas.
+  Inchangés : verrou vendredi 23:30, finales de conférence samedi 16:00 et 20:00, finale dimanche 22:00.
+- **Grand Final** : nouveau nom affiché de la finale (site, notebook, audit, GameFeeds des semaines 1 et 2). La clé
+  interne `ai_bowl` (phase du match, marché des futures, paris enregistrés) ne change pas.
+- Site : « a kickoff every 30 min, 10:00–22:00 », « rounds » au lieu de « slots », raccourcis d'horloge calculés
+  depuis le premier coup d'envoi.
+
+### 36. Pauses de retransmission : fin de Q1 / Q3, mi-temps, écran final (10/10/2026)
+
+- **Temps de présentation séparé du temps de simulation** : les actions du moteur ne changent pas (aucune action
+  ajoutée, rejouée ou recalculée). Une pause suit l'action qui termine la période, repérée sur cette action seule
+  (`after.status` = `half` ; horloge à 0, match en cours = fin de Q1 / Q3, ou du temps réglementaire avant une
+  prolongation). Durées : **10 s** (fin de quart-temps), **40 s** (mi-temps) — `BREAK_SEC` (serveur.py), `BRK_SEC`
+  (site, reçu du serveur dans `#gf-server`).
+- **Ligne de temps du direct** (serveur et site, même règle) : l'action k commence à `ko + k·6,5 s + les pauses après
+  les actions 0..k-1`. Le serveur révèle les actions, fixe les cotes en direct, la fin des matchs (`end`, +60 s par
+  match) et le règlement des paris sur cette ligne de temps ; pendant une pause, rien de nouveau n'est révélé et les
+  cotes restent celles de la fin de la période. Un tableau en direct entre dans la pause quand il y arrive et en sort à
+  l'heure (sans accélérer ensuite) ; une page ouverte pendant une pause l'affiche avec le temps restant.
+- **Écrans** (sur le terrain seulement : Match centre, cotes et coupon restent utilisables) :
+  - fin de Q1 / Q3 : score agrandi, équipes, « 2nd quarter next », compte à rebours, sortie animée avant la reprise ;
+  - mi-temps : score central, situation (« CTX lead by 3 at the half »), 3 cartes par équipe de part et d'autre
+    (classement provisoire), compte à rebours ;
+  - fin du match : vainqueur, score, joueur du match, 3 meilleures performances par équipe (classement définitif) ;
+    l'écran reste, « Show the field » le masque (onglet « Final screen » pour le rouvrir). Le replay s'arrête dessus
+    au lieu de reboucler.
+  - replay : « Resume now » passe la pause ; un saut (barre, précédent / suivant) l'annule. Petits terrains : score seul.
+- **Cartes** : stats du Match centre (`computeStats`, action par action, jusqu'à l'action à l'écran) selon le poste —
+  QB C/ATT, YDS, TD, INT (+ temps moyen avant la passe, décisions du moteur, quand le flux les a) ; RB CAR, YDS, TD ;
+  WR / TE REC, YDS, TD ; défense TKL, SCK, INT, PD ; K FG réussis / tentés, points des FG (le PAT n'est pas une action
+  du flux : il n'est pas compté). Une ligne résume le reste (« 2 rec, 21 yds »). Ordre : pondération type fantasy
+  (classement seulement, jamais affichée). `computeStats` compte maintenant les field goals par kicker (aussi dans
+  l'onglet Players : « Kicking ») et le temps avant la passe par passeur.
+- **Publicité (plus tard)** : `BRK_SLOT.half = g => html` ajoute un bloc à l'écran de mi-temps, sans toucher à l'écran.
+- **Tests** : `moteur/tests/test_pauses.py` (pauses repérées sur 318 matchs, durées, ligne de temps du serveur,
+  actions inchangées, même ligne de temps calculée par le site dans Node) ; `node outils/site/test_pauses.js`
+  (Playwright, serveur réel : replay complet pas à pas, durées, reprise, cartes = Match centre, défense = `player_stats`
+  du moteur, écran final, « Resume now », direct ouvert pendant la mi-temps).
+- Déploiement : un match **en cours** au moment du déploiement recule de quelques actions (sa fin est décalée de ses
+  pauses déjà passées) ; déployer hors des heures de match.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
