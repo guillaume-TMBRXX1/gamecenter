@@ -472,7 +472,7 @@ Demandes de Guillaume (06/10, avant le palier 2 de l'étape 6) :
   (gardée sur le serveur : colonne `players.fav_team`, `POST /api/account/team {token, team}` — comptes seulement, équipe
   connue d'une semaine ; `fav_team` dans `/api/me` et les réponses de connexion). La page montre le bilan (W-L, rang,
   points marqués / encaissés, yards à la passe / à la course, sacks, interceptions, domicile / extérieur, série, 5
-  derniers), les matchs **joués** (replay) et **à jouer** (direct, cotes), l'**historique de l'AI Bowl** (titres,
+  derniers), les matchs **joués** (replay) et **à jouer** (direct, cotes), l'**historique de la Grand Final** (titres,
   finales, bilan et rang de chaque semaine terminée : `GET /api/teams/history`, jamais une semaine en cours — pas de
   spoiler), les coordinateurs, les unités et le roster. Sans compte : invitation à en créer un (Settings).
 - **Fiche joueur depuis un roster** (Teams et My team) : un clic (ou Entrée) sur un joueur ouvre la **même tuile**
@@ -559,6 +559,7 @@ leurs tirages ne changent pas).
 
 - **Calendrier** : à 24, aller simple : 23 rondes, 276 matchs (23 par équipe), 23 créneaux de 12 : lundi-jeudi à
   10:00, 13:00, 16:00, 19:00, 22:00 ; vendredi 13:00, 17:30, 22:00 ; verrou vendredi 23:30, playoffs inchangés.
+  (Depuis le 10/10 : matchs étalés de 10:00 à 22:00, un coup d'envoi toutes les 30 min — section 35.)
 - **Cotes** : budget de 8 400 tenu : 15 simulations par affiche (552 affiches).
 - **Prochain** (décision de Guillaume, 07/10) : divisions / conférences (bible, section 14), calibrage des forces,
   contrôles d'identité, rapport de calibration, audit et tests — maintenant que les 24 franchises existent.
@@ -578,8 +579,8 @@ Décision de Guillaume (07/10) : audits et tests repris une fois les 24 franchis
 | Frontier | Summit | VEC, CPH, LTC, GRZ, MRD, APX |
 
 - Calendrier inchangé (aller simple : chaque équipe rencontre les 23 autres). Playoffs : les **4 champions de division** ;
-  demi-finales = **finales de conférence** ; AI Bowl entre les champions de conférence (`playoff_order`, 14.1 : seeds[0]
-  = meilleur bilan, seeds[3] = l'autre champion de sa conférence). Futures alignés (« AI Bowl berth » = champion de
+  demi-finales = **finales de conférence** ; Grand Final entre les champions de conférence (`playoff_order`, 14.1 : seeds[0]
+  = meilleur bilan, seeds[3] = l'autre champion de sa conférence). Futures alignés (« Grand Final berth » = champion de
   conférence). Export : `week.league` et `conference` / `division` par équipe (le serveur les transmet tels quels).
 - Site : classement par conférence et division (# = rang de la ligue) puis tableau de la ligue ; « Conference final ».
 - Audit (`audit_moteur.py`) : les finales de conférence opposent les champions de division.
@@ -702,6 +703,22 @@ créés = débranchés), la page reste lourde.
   après le chargement du détail si besoin.
 - Sons générés (sifflet, corne, impacts) : nœuds débranchés à la fin de chaque effet ; canevas vidés quand un terrain
   est fermé (Safari iOS ne rend leur mémoire qu'ainsi).
+
+### 35. Calendrier : un coup d'envoi toutes les 30 min ; « AI Bowl » devient la « Grand Final » (10/10/2026)
+
+- **Calendrier** (notebook 14.1, `season_kickoffs`) : du lundi au vendredi, coups d'envoi de 10:00 à 22:00, toutes les
+  30 min (25 heures par jour, aucune vide). Volume de chaque jour inchangé : 60 matchs du lundi au jeudi (5 rondes,
+  2 ou 3 matchs par heure), 36 le vendredi (3 rondes, 1 ou 2 par heure). Une ronde (`slot` : chaque équipe joue une
+  fois) occupe un bloc d'heures consécutives — 10:00-12:00, 12:30-14:30, 15:00-17:00, 17:30-19:30, 20:00-22:00 ;
+  vendredi 10:00-13:30, 14:00-17:30, 18:00-22:00 — et se termine avant la suivante : classement et futures après
+  chaque ronde inchangés, aucun résultat connu avant la mise à jour des futures. Dans une ronde, les équipes qui ont
+  joué le plus tôt jouent les premières : ≈ 2 h 40 de repos en moyenne entre deux matchs d'un jour (2 h au moins).
+  Un match dure ≈ 15 min en direct (≈ 140 actions × 6,5 s) : deux heures voisines ne se chevauchent pas.
+  Inchangés : verrou vendredi 23:30, finales de conférence samedi 16:00 et 20:00, finale dimanche 22:00.
+- **Grand Final** : nouveau nom affiché de la finale (site, notebook, audit, GameFeeds des semaines 1 et 2). La clé
+  interne `ai_bowl` (phase du match, marché des futures, paris enregistrés) ne change pas.
+- Site : « a kickoff every 30 min, 10:00–22:00 », « rounds » au lieu de « slots », raccourcis d'horloge calculés
+  depuis le premier coup d'envoi.
 
 ### Annexe — `.github/workflows/semaine.yml`
 

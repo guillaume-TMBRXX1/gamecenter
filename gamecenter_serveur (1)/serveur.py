@@ -26,7 +26,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
-OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après l'AI Bowl de la précédente (au plus tard le lundi 00:00)
+OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après la Grand Final de la précédente (au plus tard le lundi 00:00)
 BANKROLL, MIN_STAKE = 1000.0, 1.0
 CASH_FEE = 0.05                # cash-out : valeur juste − 5 % (étape 2)
 COMBO_MIN, COMBO_MAX = 2, 6    # combinés : 2 à 6 sélections, une par match, pas de futures
@@ -296,7 +296,7 @@ def load_weeks():
 
 def _assign_opens():
     """Ouverture des paris d'une semaine : la toute première semaine est ouverte dès qu'elle est sur le serveur ;
-    les suivantes, OPEN_AFTER_FINAL_MIN après la fin de l'AI Bowl de la semaine d'avant (sans dépasser le lundi 00:00).
+    les suivantes, OPEN_AFTER_FINAL_MIN après la fin de la Grand Final de la semaine d'avant (sans dépasser le lundi 00:00).
     La page bascule sur la nouvelle semaine à ce moment-là (current_week)."""
     ws = sorted(_WEEKS.values(), key=lambda w: w.monday)
     for i, w in enumerate(ws):
@@ -912,7 +912,7 @@ async def api_fav_team(req: Request):
 
 @app.get("/api/teams/history")
 def api_teams_history():
-    """Semaines TERMINÉES (AI Bowl joué) : champion, finaliste, têtes de série et classement final de chaque équipe —
+    """Semaines TERMINÉES (Grand Final jouée) : champion, finaliste, têtes de série et classement final de chaque équipe —
     rien d'une semaine en cours (pas de spoiler)."""
     t = now_ms()
     out = []

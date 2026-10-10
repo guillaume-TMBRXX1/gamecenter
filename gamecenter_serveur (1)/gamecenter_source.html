@@ -4570,7 +4570,7 @@ const tStr=ms=>fmtT.format(new Date(ms)), dStr=ms=>fmtD.format(new Date(ms));
 const wRange=()=>{ const f=o=>new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:TZ},o)); const a=f({day:'numeric'}).format(new Date(W_FIRST)), b=f({day:'numeric',month:'short'}).format(new Date(W_END)); return a+'–'+b; };
 const STYLE_EN={CTX:['Balanced, adaptive, versatile','intelligence, instinct, adaptation'],VEC:['Offensive, aggressive, pass-first','precision, calculation, risk-taking'],AEG:['Defensive, methodical, controlled','protection, anticipation, discipline'],MNL:['Physical, run-first, power','brute force, efficiency, dominance'],AXM:['Precise, efficient, technical (West Coast)','execution, timing, efficiency'],GLT:['Aggressive, disruptive, unpredictable (blitz)','pressure, chaos, takeaways'],CPH:['Dynamic, elusive, deceptive (option)','mobility, reads, deception'],NVA:['Explosive, vertical, high-risk (big play)','explosiveness, arm talent, shot plays'],PLS:['Tempo, no-huddle, relentless rhythm','speed, rhythm, wearing the defense down'],ONX:['Opportunistic ball-hawk defense','instinct, reading the QB, takeaways'],FRG:['Physical, dominant in the trenches','line play, power, pocket control'],MRD:['Strategic, territorial, patient','field position, special teams, discipline'],APX:['Clinical red-zone finishers','finishing, compressed space, situational calls'],LTC:['Modern spread and RPO','spacing, numbers, make every defender choose'],ZPH:['Air raid, passing volume','vision, distribution, insistence'],BST:['Lockdown coverage defense','secondary, discipline, deny the first option'],GRZ:['Run-erasing defense, balanced offense','gap discipline, tackling, pursuit'],MRG:['Play-action and misdirection','fakes, motion, manipulating the defense'],GMB:['Bold fourth-down decision makers','calculated risk, situations, momentum'],PRM:['Positionless, matchup hunters','versatility, motion, pre-snap reads'],SPK:['Young, fast and rising','potential, speed, daring'],CTD:['Veteran, poised, mistake-free','experience, reading, composure'],TDL:['Wide zone and bootleg','outside zone, movement play-action, rhythm'],CMT:['Special teams and speed','returns, coverage, long field goals']};
 const tStyle=T=>(STYLE_EN[T.abbr]||[T.style])[0], tIdent=T=>(STYLE_EN[T.abbr]||[0,T.identity])[1];
-const PHASE={regular:'Regular season',semifinal:(SW&&SW.week&&SW.week.league)?'Conference final':'Semi-final',ai_bowl:'AI Bowl'};
+const PHASE={regular:'Regular season',semifinal:(SW&&SW.week&&SW.week.league)?'Conference final':'Semi-final',ai_bowl:'Grand Final'};
 function gStatus(g,t){ return t<g.ko?'upcoming':t<g.end?'live':'final'; }
 function revealed(g,t){
   if(g.phase==='regular') return true;
@@ -4731,8 +4731,8 @@ function seasonTileMeta(g){
 function seasonNextTile(t){
   if(!NEXT_GAMES.length){
     const fin=SCHED.find(g=>g.phase==='ai_bowl'); const done=gStatus(fin,t)==='final';
-    return `<article class="tile next"><div class="next-top"><span class="label">${done?'AI Bowl champion':'Week complete'}</span><div class="countdown sm">${done?esc(TEAMS[SW.champion].name):'—'}</div><span class="next-sub">Week ${SW.week.index} · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))}</span></div>
-      <div class="next-body"><p class="np-note">The next week starts Monday at 13:00 with a fresh export from the engine.</p><button class="ghost" type="button" data-view-go="standings">Final standings</button></div></article>`;
+    return `<article class="tile next"><div class="next-top"><span class="label">${done?'Grand Final champion':'Week complete'}</span><div class="countdown sm">${done?esc(TEAMS[SW.champion].name):'—'}</div><span class="next-sub">Week ${SW.week.index} · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))}</span></div>
+      <div class="next-body"><p class="np-note">The next week starts Monday at 10:00 with a fresh export from the engine.</p><button class="ghost" type="button" data-view-go="standings">Final standings</button></div></article>`;
   }
   const s0=NEXT_GAMES[0];
   const rows=NEXT_GAMES.map(s=>{ if(!revealed(s,t)) return `<div class="nx-game"><div class="nt">${esc(teamLabel(s,'away',t))}</div><div class="nt">${esc(teamLabel(s,'home',t))}</div><p class="np-note">${s.phase==='ai_bowl'?'The pairing is known once both semi-finals are over.':'Seeds are set on Friday at 23:30.'}</p></div>`;
@@ -4767,7 +4767,7 @@ function buildBoard(force){
   });
   seasonTicker();
   games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); if(g.preview) showChip(g); });
-  NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* an AI Bowl still to be decided has no prices */
+  NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* a Grand Final still to be decided has no prices */
   syncPressed();
   return true;
 }
@@ -4802,7 +4802,7 @@ function renderSeasonCards(t){
       <div class="n r">${r.w}-${r.l}-${r.t}</div>
       <div class="n r c-diff ${r.diff>=0?'pos-d':'neg-d'}">${r.diff>=0?'+':MINUS}${Math.abs(r.diff)}</div>
       <div class="r">${formDots(r.last5)}</div>`; }).join('');
-  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of ${NSLOTS} slots · updated when all games of a slot are final` : 'The table fills in after the first slot (Monday 13:00)';
+  document.getElementById('rankNote').textContent = S.slot ? `After ${S.slot} of ${NSLOTS} rounds · updated when all games of a round are final` : 'The table fills in after the first round (Monday morning)';
   document.getElementById('agentsTitle').textContent='Season leaders';
   document.getElementById('agentsLabel').textContent='This week';
   const cats=[['QB','pass','y','pass yds'],['RB','rush','y','rush yds'],['WR','rec','y','rec yds'],['LB','def','tk','tackles'],['EDGE','def','sk','sacks']];
@@ -4851,7 +4851,7 @@ function renderSchedule(t){
         <span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>${statusCell(g,t)}${act}</div>`; }).join('')}</section>`).join('');
   const key='sch|'+SCH_FILTER+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN);
   if(el._k===key) return; el._k=key;
-  el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · ${Math.max(1,...SCHED.filter(g=>g.phase==='regular').map(g=>SCHED.filter(x=>x.phase==='regular'&&x.slot===g.slot).length))} games per slot, Monday to Friday · playoffs Saturday and Sunday</p>
+  el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · a kickoff every 30 min, 10:00–22:00, Monday to Friday · playoffs Saturday and Sunday</p>
     <div class="seg" role="tablist" aria-label="Schedule filter">${[['all','All games'],['upcoming','Upcoming'],['results','Results']].map(([k,l])=>`<button type="button" role="tab" data-schf="${k}" aria-selected="${SCH_FILTER===k}">${l}</button>`).join('')}</div></div>
     <div class="card sch">${rows||'<p class="st-none">Nothing here yet.</p>'}</div>`;
 }
@@ -4873,16 +4873,16 @@ function renderStandings(t){
     return `<div class="bk-g"><div class="bk-h"><span class="label">${esc(PHASE[g.phase])}</span><span class="bk-when">${esc(dStr(g.ko))} ${esc(tStr(g.ko))}</span></div>${line('away')}${line('home')}
       ${st!=='upcoming'?`<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch live →':'Replay →'}</button>`:''}</div>`; };
   const mk=(m,lab)=>`<tr><th scope="row">${lab}</th>${Object.keys(SW.teams).map(a=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`;
-  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} slots · locks Friday 23:30`}</p></div>
+  el.innerHTML=`<div class="view-head"><h2>Standings</h2><p class="eyebrow">${locked?'<b>Locked</b> · final regular-season table · seeds set for the playoffs':`After ${S.slot} of ${NSLOTS} rounds · locks Friday 23:30`}</p></div>
     ${divTables}<div class="card">${LG?'<div class="card-h"><h2>League</h2><span class="label"># = league rank</span></div>':''}<div class="st-scroll"><table class="tst stand">${thead}<tbody>${tb}</tbody></table></div>
     <p class="np-note">Tiebreakers: win percentage (ties count half) → head-to-head among tied teams → point differential → points scored → draw.</p></div>
     <div class="st-two"><div class="card"><div class="card-h"><h2>Playoffs</h2><span class="label">${locked?'Seeds set':'Seeds after the lock'}</span></div><div class="bracket">${bx(po[0])}${bx(po[1])}${bx(po[2])}</div></div>
     <div class="card"><div class="card-h"><h2>Futures</h2><span class="label">Engine odds · ${F.after_slot?`after slot ${F.after_slot}`:'before the week'}</span></div>
       <div class="st-scroll">${Object.keys(SW.teams).length>4
-        ? `<table class="tst fut"><thead><tr><th scope="col">Team</th><th>Reg. season</th><th>AI Bowl berth</th><th>AI Bowl</th></tr></thead>
+        ? `<table class="tst fut"><thead><tr><th scope="col">Team</th><th>Reg. season</th><th>Grand Final berth</th><th>Grand Final</th></tr></thead>
            <tbody>${Object.keys(SW.teams).map(a=>`<tr><th scope="row"><span class="abbr">${TEAMS[a].abbr}</span></th>${['regular_season','reach_final','ai_bowl'].map(m=>`<td>${futOdd(m,a,t)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
         : `<table class="tst fut"><thead><tr><th scope="col">Market</th>${Object.keys(SW.teams).map(a=>`<th><span class="abbr">${TEAMS[a].abbr}</span></th>`).join('')}</tr></thead>
-      <tbody>${mk('regular_season','Regular season winner')}${mk('reach_final','Reaches the AI Bowl')}${mk('ai_bowl','Wins the AI Bowl')}</tbody></table>`}</div>
+      <tbody>${mk('regular_season','Regular season winner')}${mk('reach_final','Reaches the Grand Final')}${mk('ai_bowl','Wins the Grand Final')}</tbody></table>`}</div>
       <p class="np-note">20 000 simulated ends of the week from the engine's game odds · 8% margin · tap a price to add it to your slip. ${anyLive(t)?'<b>Paused while games are live</b> — new prices after the slot.':'Futures pause while games are live and reopen with the prices after each slot.'}</p></div></div>`;
 }
 function unitBar(lab,v){ return `<div class="pc-attr"><span>${lab}</span><i class="pc-bar o"><b style="width:${clamp((v-60)/35*100,4,100)}%"></b></i><em>${Math.round(v)}</em></div>`; }
@@ -4942,14 +4942,14 @@ async function loadTeamHistory(){
   const h=document.querySelector('[data-mthist]'); if(h) h.innerHTML=teamHistoryHTML(h.dataset.mthist);
 }
 function teamHistoryHTML(abbr){
-  if(!SERVER) return '<span class="label">AI Bowl history</span><p class="st-none">Arrives with the GameCenter server.</p>';
-  if(TEAM_HIST===null){ loadTeamHistory(); return '<span class="label">AI Bowl history</span><p class="st-none">Loading…</p>'; }
+  if(!SERVER) return '<span class="label">Grand Final history</span><p class="st-none">Arrives with the GameCenter server.</p>';
+  if(TEAM_HIST===null){ loadTeamHistory(); return '<span class="label">Grand Final history</span><p class="st-none">Loading…</p>'; }
   const rows=TEAM_HIST.filter(w=>w.standings.some(r=>r.team===abbr)).slice().reverse();
   const titles=rows.filter(w=>w.champion===abbr).length, finals=rows.filter(w=>w.champion===abbr||w.runner_up===abbr).length;
   const body=rows.map(w=>{ const r=w.standings.find(x=>x.team===abbr), seed=(w.seeds||[]).indexOf(abbr)+1;
-    const res=w.champion===abbr?'<b class="w">AI Bowl champion</b>':w.runner_up===abbr?'AI Bowl finalist':seed&&seed<=4?'Semi-final':'Missed the playoffs';
+    const res=w.champion===abbr?'<b class="w">Grand Final champion</b>':w.runner_up===abbr?'Grand Final finalist':seed&&seed<=4?'Semi-final':'Missed the playoffs';
     return `<div class="tr-row"><span class="${w.champion===abbr?'w':'up'}">W${w.index}</span><span>${r.w}-${r.l}${r.t?'-'+r.t:''}</span><b>#${r.rank}</b><span class="mt-res">${res}</span></div>`; }).join('');
-  return `<span class="label">AI Bowl history · ${titles} title${titles===1?'':'s'} · ${finals} final${finals===1?'':'s'}</span>${body||'<p class="st-none">No finished week yet for this franchise.</p>'}`;
+  return `<span class="label">Grand Final history · ${titles} title${titles===1?'':'s'} · ${finals} final${finals===1?'':'s'}</span>${body||'<p class="st-none">No finished week yet for this franchise.</p>'}`;
 }
 let MT_PICK=false;
 function curPlayer(){ try{ return PLAYER; }catch(e){ return null; } }   /* PLAYER is declared further down */
@@ -4958,7 +4958,7 @@ function renderMyteam(t){
   const P0=curPlayer(), fav=P0&&P0.account?P0.fav_team:null, S=standingsAt(t), agg=seasonAgg(t);
   const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',');
   if(el._k===key) return; el._k=key;
-  const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, AI Bowl history and roster</p></div>`;
+  const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
   if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.</p><button type="button" class="chip-btn" data-view-go="settings">Create an account or sign in</button></div>`; return; }
   if(!fav||MT_PICK){
@@ -4980,8 +4980,8 @@ async function setFavTeam(team){
 function clockPresets(){
   const slot=n=>{ const g=SCHED.find(x=>x.phase==='regular'&&x.slot===n); return g?g.ko:null; };
   const sf=SCHED.find(g=>g.id.endsWith('sf1')), fin=SCHED.find(g=>g.phase==='ai_bowl');
-  return [['Monday 12:45 · before the first kickoff',slot(1)-15*60e3],['Monday 13:00 · week opens',slot(1)+2*60e3],['Midweek',slot(Math.ceil(NSLOTS/2))+5*60e3],['Friday · last slot',slot(NSLOTS)+5*60e3],
-    ['Saturday 16:00 · semi-final',sf.ko+5*60e3],['Sunday 22:00 · AI Bowl',fin.ko+5*60e3],['After the AI Bowl',W_END+60e3]];
+  return [[`Monday ${tStr(slot(1)-15*60e3)} · before the first kickoff`,slot(1)-15*60e3],[`Monday ${tStr(slot(1))} · week opens`,slot(1)+2*60e3],['Midweek',slot(Math.ceil(NSLOTS/2))+5*60e3],['Friday · last round',slot(NSLOTS)+5*60e3],
+    ['Saturday 16:00 · semi-final',sf.ko+5*60e3],['Sunday 22:00 · Grand Final',fin.ko+5*60e3],['After the Grand Final',W_END+60e3]];
 }
 const CLOCK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 function renderClock(){
@@ -5120,7 +5120,7 @@ const r2=v=>Math.round(v*100)/100;
 const amOf=d=>d>=2?(d-1)*100:-100/(d-1);           /* decimal → the page's internal price (decOf gives it back) */
 
 /* ---------- prices: what the board shows at time t ---------- */
-const FUT_M={regular_season:['Regular season winner','to win the regular season'],reach_final:['Reaches the AI Bowl','to reach the AI Bowl'],ai_bowl:['Wins the AI Bowl','to win the AI Bowl']};
+const FUT_M={regular_season:['Regular season winner','to win the regular season'],reach_final:['Reaches the Grand Final','to reach the Grand Final'],ai_bowl:['Wins the Grand Final','to win the Grand Final']};
 function anyLive(t){ return SCHED.some(g=>gStatus(g,t)==='live'); }
 function futClose(m){
   const ko=ph=>SCHED.filter(g=>g.phase===ph).map(g=>g.ko);
@@ -5157,7 +5157,7 @@ function quote(raw,t){
   if(t<WEEK_OPEN) lock('opens'); else if(st==='final') lock('final'); else if(!revealed(s,t)) lock('seeds'); else if(q.price==null) lock('na');
   return q;
 }
-function openText(){ return WEEK_OPEN<WEEK_MON?"Betting opens after last week's AI Bowl":'Betting opens Monday 00:00'; }
+function openText(){ return WEEK_OPEN<WEEK_MON?"Betting opens after last week's Grand Final":'Betting opens Monday 00:00'; }
 function lockText(w){ return {opens:openText(),final:'Game over · market closed',closed:'Market closed',seeds:'Opens when the seeds are set',live:'Futures pause while games are live',na:'Not priced by the engine'}[w]||'Market closed'; }
 
 /* ---------- the wallet: a ledger of bets; balance and results are worked out at time t ---------- */
@@ -5271,8 +5271,8 @@ function withFocus(fn){
 function betContext(r,t){
   if(r.st==='cashed'&&r.cash) return `Cashed out ${dStr(r.cash.at)} · ${tStr(r.cash.at)}`;
   if(r.key.startsWith('fut:')){ const m=r.key.split(':')[1];
-    if(r.st&&r.st!=='open') return m==='regular_season'?`Regular season won by ${TEAMS[SW.standings[0].team].name}`:m==='reach_final'?'AI Bowl: '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').away].abbr+' @ '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').home].abbr:`AI Bowl won by ${TEAMS[SW.champion].name}`;
-    return m==='regular_season'?'Settles after the last regular-season slot (Friday)':m==='reach_final'?'Settles after the semi-finals (Saturday)':'Settles after the AI Bowl (Sunday)'; }
+    if(r.st&&r.st!=='open') return m==='regular_season'?`Regular season won by ${TEAMS[SW.standings[0].team].name}`:m==='reach_final'?'Grand Final: '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').away].abbr+' @ '+TEAMS[SCHED.find(g=>g.phase==='ai_bowl').home].abbr:`Grand Final won by ${TEAMS[SW.champion].name}`;
+    return m==='regular_season'?'Settles after the last regular-season round (Friday)':m==='reach_final'?'Settles after the semi-finals (Saturday)':'Settles after the Grand Final (Sunday)'; }
   if(r.legs){ const rs=r.legs.map(l=>settleLeg(l.key,l.line,t).res), w=rs.filter(x=>x==='won').length, open=rs.filter(x=>x==null).length;
     return `${r.legs.length} legs · ${w} won${rs.includes('lost')?' · 1 lost':''}${open?` · ${open} to play`:''}`; }
   const s=SCHED_BY[r.key.split(':')[0]]; if(!s) return 'Game no longer on the schedule · stake returned';
