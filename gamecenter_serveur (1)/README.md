@@ -720,6 +720,40 @@ créés = débranchés), la page reste lourde.
 - Site : « a kickoff every 30 min, 10:00–22:00 », « rounds » au lieu de « slots », raccourcis d'horloge calculés
   depuis le premier coup d'envoi.
 
+### 36. Pauses de retransmission : fin de Q1 / Q3, mi-temps, écran final (10/10/2026)
+
+- **Temps de présentation séparé du temps de simulation** : les actions du moteur ne changent pas (aucune action
+  ajoutée, rejouée ou recalculée). Une pause suit l'action qui termine la période, repérée sur cette action seule
+  (`after.status` = `half` ; horloge à 0, match en cours = fin de Q1 / Q3, ou du temps réglementaire avant une
+  prolongation). Durées : **10 s** (fin de quart-temps), **40 s** (mi-temps) — `BREAK_SEC` (serveur.py), `BRK_SEC`
+  (site, reçu du serveur dans `#gf-server`).
+- **Ligne de temps du direct** (serveur et site, même règle) : l'action k commence à `ko + k·6,5 s + les pauses après
+  les actions 0..k-1`. Le serveur révèle les actions, fixe les cotes en direct, la fin des matchs (`end`, +60 s par
+  match) et le règlement des paris sur cette ligne de temps ; pendant une pause, rien de nouveau n'est révélé et les
+  cotes restent celles de la fin de la période. Un tableau en direct entre dans la pause quand il y arrive et en sort à
+  l'heure (sans accélérer ensuite) ; une page ouverte pendant une pause l'affiche avec le temps restant.
+- **Écrans** (sur le terrain seulement : Match centre, cotes et coupon restent utilisables) :
+  - fin de Q1 / Q3 : score agrandi, équipes, « 2nd quarter next », compte à rebours, sortie animée avant la reprise ;
+  - mi-temps : score central, situation (« CTX lead by 3 at the half »), 3 cartes par équipe de part et d'autre
+    (classement provisoire), compte à rebours ;
+  - fin du match : vainqueur, score, joueur du match, 3 meilleures performances par équipe (classement définitif) ;
+    l'écran reste, « Show the field » le masque (onglet « Final screen » pour le rouvrir). Le replay s'arrête dessus
+    au lieu de reboucler.
+  - replay : « Resume now » passe la pause ; un saut (barre, précédent / suivant) l'annule. Petits terrains : score seul.
+- **Cartes** : stats du Match centre (`computeStats`, action par action, jusqu'à l'action à l'écran) selon le poste —
+  QB C/ATT, YDS, TD, INT (+ temps moyen avant la passe, décisions du moteur, quand le flux les a) ; RB CAR, YDS, TD ;
+  WR / TE REC, YDS, TD ; défense TKL, SCK, INT, PD ; K FG réussis / tentés, points des FG (le PAT n'est pas une action
+  du flux : il n'est pas compté). Une ligne résume le reste (« 2 rec, 21 yds »). Ordre : pondération type fantasy
+  (classement seulement, jamais affichée). `computeStats` compte maintenant les field goals par kicker (aussi dans
+  l'onglet Players : « Kicking ») et le temps avant la passe par passeur.
+- **Publicité (plus tard)** : `BRK_SLOT.half = g => html` ajoute un bloc à l'écran de mi-temps, sans toucher à l'écran.
+- **Tests** : `moteur/tests/test_pauses.py` (pauses repérées sur 318 matchs, durées, ligne de temps du serveur,
+  actions inchangées, même ligne de temps calculée par le site dans Node) ; `node outils/site/test_pauses.js`
+  (Playwright, serveur réel : replay complet pas à pas, durées, reprise, cartes = Match centre, défense = `player_stats`
+  du moteur, écran final, « Resume now », direct ouvert pendant la mi-temps).
+- Déploiement : un match **en cours** au moment du déploiement recule de quelques actions (sa fin est décalée de ses
+  pauses déjà passées) ; déployer hors des heures de match.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
