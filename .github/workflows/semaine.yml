@@ -49,5 +49,7 @@ jobs:
             echo "Aucune nouvelle semaine."
           else
             git commit -m "Nouvelle semaine $(ls data/weeks | tail -1)"
-            git push origin HEAD
+            # main a pu avancer pendant le calcul (≈ 35 min) : on reprend ses commits avant de pousser
+            for i in 1 2 3; do git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0; sleep 5; done
+            echo "::error::Push refusé 3 fois"; exit 1
           fi
