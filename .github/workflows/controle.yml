@@ -1,0 +1,76 @@
+# Contrôle des PR (11/10/2026) : chaque PR vers main est testée avant fusion — tests Python (moteur, serveur), audit des
+# semaines, tests navigateur du site et de l'Audio System (outils/site/tests_navigateur.sh, README section 38).
+# Lecture seule : ne touche ni aux semaines ni au site. Sur une PR, le commentaire et la parité audio ne rejouent que la
+# dernière semaine ; lancement à la main (Actions → « Contrôle des PR » → Run workflow) : autant de semaines que voulu.
+name: Contrôle des PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "programme/**"
+  workflow_dispatch:
+    inputs:
+      semaines:
+        description: "Semaines rejouées par le commentaire et la parité audio (0 = toutes, ≈ 6 min par semaine)"
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controle-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (tests, audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer
+        run: pip install -r requirements-semaine.txt -r requirements.txt
+      - name: Tests Python (moteur et serveur)
+        run: python -m unittest discover -s moteur/tests -t .
+      - name: Audit des semaines
+        run: python audit_moteur.py data/weeks
+
+  navigateur:
+    name: Navigateur (${{ matrix.groupe }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        groupe: [site, parite]
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    env:
+      GROUPE: ${{ matrix.groupe }}
+      SEMAINES: ${{ github.event_name == 'workflow_dispatch' && inputs.semaines || '1' }}
+      NODE_PATH: ${{ github.workspace }}/../pw/node_modules
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Installer (serveur, Playwright + Chromium, ffmpeg)
+        run: |
+          pip install -r requirements.txt
+          npm install --no-audit --no-fund --prefix "$GITHUB_WORKSPACE/../pw" playwright@1.56.1
+          node "$GITHUB_WORKSPACE/../pw/node_modules/playwright/cli.js" install --with-deps chromium
+          if [ "$GROUPE" = site ] && ! command -v ffmpeg > /dev/null; then sudo apt-get install -y -qq ffmpeg > /dev/null; fi
+      - name: Tests navigateur
+        run: bash outils/site/tests_navigateur.sh --semaines "$SEMAINES" --groupe "$GROUPE"

@@ -137,7 +137,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   hors ligne (ElevenLabs) : **aucun appel ElevenLabs pendant un match, aucune clé sur Railway ni dans le navigateur**
   (clé seulement dans un `.env` local, ignoré par Git, ou un secret GitHub).
 - **Tests** : `node outils/audio/test_mapper_v01.js` (sans navigateur) ;
-  `GC_TEST_HOOK=1 uvicorn serveur:app --port 8103` puis `node outils/audio/test_parite_v01.js data/weeks 8103` (Playwright).
+  `GC_TEST_HOOK=1 GC_AUDIO_DIR=<dossier vide> uvicorn serveur:app --port 8103` puis
+  `node outils/audio/test_parite_v01.js data/weeks 8103` (Playwright). Sans sons enregistrés : avec les packs foule /
+  effets (V0.3), l'Audio System s'écarte de l'ancien code, comme prévu. Tous les tests navigateur : section 38.
 
 ### 12. Commentaire enregistré (Audio System V0.2)
 
@@ -222,7 +224,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   jeu et ses ajustements du bloc D (quick game et protection contre le blitz, bascule hors du double, brackets et leurs
   rotations), avec les duels receveur / défenseur et les décisions du QB ; `--remplace <id>` retire l'ancienne exhibition.
 - **Tests** : `python3 -m unittest discover -s moteur/tests -t .` (quelques secondes) — lancés par GitHub avant chaque
-  calcul du samedi et par le workflow « Tests moteur » à chaque push qui touche `moteur/`.
+  calcul du samedi et par le workflow « Contrôle des PR » sur chaque PR (section 38).
 
 ### 16. Safety et ENGINE INTELLIGENCE — bloc B (notebook V23, 04/10/2026, allumés)
 
@@ -776,6 +778,32 @@ créés = débranchés), la page reste lourde.
   semaine `week_test-alerte` est commitée sur la machine puis « repoussée » en `--dry-run` : rien n'arrive dans le dépôt.
 - Tests : `moteur/tests/test_alerte_semaine.py` (classement des étapes, relance unique, commandes contre une fausse API
   GitHub locale).
+
+### 38. Contrôle des PR (11/10/2026)
+
+- **Workflow « Contrôle des PR »** (`.github/workflows/controle.yml`) : sur chaque PR vers `main` (sauf celles qui ne
+  touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
+  - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
+    tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, musique, commentaire enregistré (dernière
+    semaine), foule et effets ;
+  - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
+  Un nouveau push annule le contrôle en cours de la même PR. À la main (*Actions → Contrôle des PR → Run workflow*) :
+  champ `semaines` (0 = toutes, ≈ 6 min de parité par semaine). Il remplace le workflow « Tests moteur ».
+- **En local, la même commande** (depuis `gamecenter_serveur (1)`, Python avec `requirements.txt`, Node + Playwright, ffmpeg) :
+  `bash outils/site/tests_navigateur.sh [--semaines N] [--groupe site|parite]`. Le script fabrique les sons de test,
+  lance les serveurs (crochet de test) sur des copies de `data/` (le dépôt n'est pas modifié), lance tous les tests même
+  après un échec et résume les résultats.
+- **Tests réparés** (ils plantaient : tout `data/weeks`, ≈ 130 Mo, envoyé d'un coup à la page) : `test_parite_v01.js`,
+  `test_commentaire_v02.js`, `test_stade_v03.js` envoient les matchs par lots (`outils/audio/commun.js`) et attendent le
+  crochet de test au lieu d'un délai fixe (la page met ≈ 4 s à démarrer) ; `--semaines N` pour les N dernières semaines.
+  Commentaire : « jamais deux fois de suite la même prise » ne vaut que pour les cues à plusieurs prises — les cues à
+  une seule prise (`ADJ_SHELVE_FORM`, `ADJ_D_NOBLITZ`, `ADJ_D_PRESS`, `ADJ_D_PREVENT`, `ADJ_D_HEAT`) se répètent
+  forcément et sont listées « à enrichir » (workflow « Commentaire audio » pour leur ajouter des prises) ; le test du
+  repli fait taire le match à l'antenne pendant la mesure (sa phrase passait aussi par la voix de l'appareil).
+- **Rendre le contrôle obligatoire** (facultatif) : GitHub → *Settings → Branches → Add branch ruleset* (ou *Add rule*)
+  sur `main` → *Require status checks to pass* → cocher « Python (tests, audit) », « Navigateur (site) » et
+  « Navigateur (parite) ».
 
 ### Annexe — `.github/workflows/semaine.yml`
 

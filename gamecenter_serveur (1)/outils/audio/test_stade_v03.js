@@ -1,13 +1,16 @@
 // Audio System V0.3 — tests de la foule et des effets enregistrés
 //   python3 outils/audio/generer_audio.py --placeholder --cat stade --audio-dir /tmp/gc-audio   (sons de test, sans ElevenLabs)
 //   GC_TEST_HOOK=1 GC_AUDIO_DIR=/tmp/gc-audio uvicorn serveur:app --port 8106
-//   node outils/audio/test_stade_v03.js data/weeks 8106
+//   node outils/audio/test_stade_v03.js data/weeks 8106 [--semaines N]
 // 1. règles de la foule (point de vue HOME), sans navigateur
 // 2. navigateur : packs chargés, fonds en boucle, effets et réactions joués sur toute une semaine rejouée en accéléré,
 //    jamais plus de 6 effets / 2 réactions à la fois, tout est libéré après (pas de fuite), son coupé → fonds arrêtés
+// Seuls les 6 matchs rejoués sont envoyés à la page ; attente du crochet de test (outils/audio/commun.js).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), vm=require('vm');
-const HERE=path.resolve(__dirname,'..','..'), DATA=process.argv[2]||path.join(HERE,'data/weeks'), PORT=process.argv[3]||8106;
+const {options,lireFeeds,ouvrir}=require('./commun');
+const {args,semaines}=options(process.argv);
+const HERE=path.resolve(__dirname,'..','..'), DATA=args[0]||path.join(HERE,'data/weeks'), PORT=args[1]||8106;
 let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c) fail++; };
 // ---------- 1 ----------
 const ctx={window:{}}; vm.createContext(ctx);
@@ -28,11 +31,11 @@ check(k(R(c({}),['TOUCHDOWN','GAME_END','VICTORY']))==='react_victory','victoire
 check(k(R(c({isCloseGame:false}),['GAME_END','DEFEAT']))==='boo','défaite large → huées');
 check(mood(c({}),['SNAP','THIRD_DOWN'])==='anticipation'&&mood(c({}),['SNAP'])==='idle','fond : anticipation sur 3e down, calme sinon');
 // ---------- 2 ----------
-const feeds=[]; for(const w of fs.readdirSync(DATA)) for(const f of fs.readdirSync(path.join(DATA,w,'games'))) feeds.push(JSON.parse(fs.readFileSync(path.join(DATA,w,'games',f))));
+const feeds=lireFeeds(DATA,semaines).slice(0,6);
 (async()=>{
   const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined,args:['--autoplay-policy=no-user-gesture-required']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-  await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(1200);
+  await ouvrir(p,`http://localhost:${PORT}/`);
   console.log('2. navigateur');
   const r=await p.evaluate(async({feeds})=>{
     const A=window.__gc.audio; A.setSound(true); const M=A.manager();
@@ -41,7 +44,7 @@ const feeds=[]; for(const w of fs.readdirSync(DATA)) for(const f of fs.readdirSy
     const ready={crowd:M.crowd.ready(),sfx:M.sfxRec.ready(),cache:M.assets.stats()};
     await new Promise(r=>setTimeout(r,600)); const beds=M.crowd.stats().beds;
     let maxSfx=0, maxLive=0, crowd={}, rec={}, proc=0;
-    for(const f of feeds.slice(0,6)){ const G=f.game, g={id:'t3-'+G.id,home:G.home.abbr,away:G.away.abbr,hs:0,as:0,hist:[],idx:0,mode:'live',speed:1,plays:f.plays,qs:G.quarter_seconds,cur:f.plays[0]};
+    for(const f of feeds){ const G=f.game, g={id:'t3-'+G.id,home:G.home.abbr,away:G.away.abbr,hs:0,as:0,hist:[],idx:0,mode:'live',speed:1,plays:f.plays,qs:G.quarter_seconds,cur:f.plays[0]};
       A.setFocus(g);
       for(let i=0;i<f.plays.length;i++){ const P=f.plays[i]; g.idx=i; g.cur=P; A.log.length=0;
         A.snap(g); g.hs=P.after.score.home; g.as=P.after.score.away; A.resolve(g); g.hist.push(P.win_prob_home);

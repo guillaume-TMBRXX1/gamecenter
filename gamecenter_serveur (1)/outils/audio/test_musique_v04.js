@@ -23,7 +23,7 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
 (async()=>{
   const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined,args:['--autoplay-policy=no-user-gesture-required']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-  await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(1200);
+  await require('./commun').ouvrir(p,`http://localhost:${PORT}/`);
   console.log('2. navigateur');
   const r=await p.evaluate(async()=>{
     const A=window.__gc.audio, M=A.manager(), wait=ms=>new Promise(r=>setTimeout(r,ms));

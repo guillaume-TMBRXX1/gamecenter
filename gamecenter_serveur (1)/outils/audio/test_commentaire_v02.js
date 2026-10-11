@@ -1,29 +1,35 @@
 // Audio System V0.2 — tests du commentaire enregistré (navigateur)
 //   python3 outils/audio/generer_audio.py --placeholder --audio-dir /tmp/gc-audio     (bips de test, sans ElevenLabs)
 //   GC_TEST_HOOK=1 GC_AUDIO_DIR=/tmp/gc-audio uvicorn serveur:app --port 8104
-//   node outils/audio/test_commentaire_v02.js data/weeks 8104
+//   node outils/audio/test_commentaire_v02.js data/weeks 8104 [--semaines N]
 // 1. couverture : chaque moment commenté par la page (ligne écrite) a une prise enregistrée
-// 2. variantes : pas deux fois de suite la même prise pour un même cue dans un match
+// 2. variantes : pas deux fois de suite la même prise pour un même cue dans un match (cues à 2 prises ou plus ; une cue
+//    à une seule prise se répète forcément : listée « à enrichir », sans échec)
 // 3. direct : 25 s de match à l'antenne → des prises jouées, pas d'erreur
 // 4. repli : fichiers inaccessibles → la voix de l'appareil prend le relais (log 'voice' fallback)
 // 5. priorité : une ligne de priorité 3 coupe la prise en cours
+// Matchs envoyés à la page par lots, attente du crochet de test (outils/audio/commun.js).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
-const fs=require('fs'), path=require('path');
-const DATA=process.argv[2], PORT=process.argv[3]||8104, EXE=process.env.CHROMIUM_PATH||undefined;
-const feeds=[]; for(const w of fs.readdirSync(DATA)) for(const f of fs.readdirSync(path.join(DATA,w,'games'))) feeds.push(JSON.parse(fs.readFileSync(path.join(DATA,w,'games',f))));
+const {LOT,options,lireFeeds,ouvrir}=require('./commun');
+const {args,semaines}=options(process.argv);
+const DATA=args[0], PORT=args[1]||8104, EXE=process.env.CHROMIUM_PATH||undefined;
+const feeds=lireFeeds(DATA,semaines);
 let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c) fail++; };
 (async()=>{
   const b=await chromium.launch({executablePath:EXE,args:['--autoplay-policy=no-user-gesture-required']});
   const open=async(block)=>{ const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
     if(block) await p.route('**/audio/commentary/**',r=>r.abort());
-    await p.goto(`http://localhost:${PORT}/`); await p.waitForTimeout(1200);
+    await ouvrir(p,`http://localhost:${PORT}/`);
     await p.evaluate(async()=>{ const A=window.__gc.audio; A.setSound(true); for(let i=0;i<60&&!(A.manager()&&A.manager().recordedPack());i++) await new Promise(r=>setTimeout(r,50)); });
     return {p,errs}; };
   // 1 + 2
   { const {p,errs}=await open(false);
-    const r=await p.evaluate(({feeds})=>{
-      const A=window.__gc.audio, M=A.manager(), Lb=A.lib, CC=Lb.CommentaryCues, map=Lb.AudioEventMapper, pk=new CC.CuePicker(); pk.index(M.assets.manifest.assets);
-      let moments=0, missing={}, repeats=0, picks=0; const used={};
+    await p.evaluate(()=>{ const A=window.__gc.audio, M=A.manager(), pk=new A.lib.CommentaryCues.CuePicker(); pk.index(M.assets.manifest.assets);
+      const takes={}; for(const a of M.assets.manifest.assets) if(a.cat==='commentary') takes[a.cue]=(takes[a.cue]||0)+1;
+      window.__ct={pk,takes,moments:0,missing:{},repeats:0,single:{},picks:0,used:{}}; });
+    for(let k=0;k<feeds.length;k+=LOT) await p.evaluate(({feeds})=>{
+      const A=window.__gc.audio, Lb=A.lib, CC=Lb.CommentaryCues, map=Lb.AudioEventMapper, T=window.__ct, pk=T.pk, missing=T.missing, used=T.used;
+      let {moments,repeats,picks}=T;
       for(const f of feeds){ const G=f.game, g={id:G.id,home:G.home.abbr,away:G.away.abbr,hs:0,as:0,hist:[],idx:0,mode:'live',speed:1,plays:f.plays,qs:G.quarter_seconds}; let prev={quarter:0,seq:-1}; const lastId={};
         f.plays.forEach((P,i)=>{ g.idx=i; g.cur=P;
           const s=map.mapSnap(g,P,prev), sl=A.snapLine(g,P), al=A.adjLine(g,P);
@@ -33,14 +39,19 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
           const r=map.mapResolve(g,P,g.hist.length?g.hist[g.hist.length-1]:null), pl=A.playLine(g,P);
           if(pl) reqs.push(...CC.resolveCues(r.ctx,P,g).map(c=>[c,r.ctx.importance]));
           for(const [c,imp] of reqs){ moments++; const a=pk.pick(g.id,P.seq,c,imp,true); if(!a){ const k=c.cue+'/'+(c.tags||[]).join(','); missing[k]=(missing[k]||0)+1; continue; }
-            picks++; used[a.id]=1; if(lastId[c.cue]===a.id) repeats++; lastId[c.cue]=a.id; }
+            picks++; used[a.id]=1; if(lastId[c.cue]===a.id){ if(T.takes[c.cue]>1) repeats++; else T.single[c.cue]=(T.single[c.cue]||0)+1; } lastId[c.cue]=a.id; }
           g.hist.push(P.win_prob_home); prev={quarter:s.ctx.quarter,seq:P.seq}; }); }
+      Object.assign(T,{moments,repeats,picks});
+    },{feeds:feeds.slice(k,k+LOT)});
+    const r=await p.evaluate(()=>{
+      const M=window.__gc.audio.manager(), {moments,picks,missing,repeats,single,used}=window.__ct;
       const unused=[...new Set(M.assets.manifest.assets.filter(a=>a.cat==='commentary'&&!used[a.id]).map(a=>a.cue))];
-      return {moments,picks,missing,repeats,distinct:Object.keys(used).length,total:M.assets.manifest.assets.filter(a=>a.cat==='commentary').length,unused};
-    },{feeds});
+      return {moments,picks,missing,repeats,single,distinct:Object.keys(used).length,total:M.assets.manifest.assets.filter(a=>a.cat==='commentary').length,unused};
+    });
     console.log('1-2. couverture et variantes', JSON.stringify(r));
     check(Object.keys(r.missing).length===0,`toutes les cues ont une prise (${r.picks}/${r.moments} moments)`);
-    check(r.repeats===0,'aucune prise répétée deux fois de suite pour un même cue');
+    check(r.repeats===0,'aucune prise répétée deux fois de suite pour un même cue (cues à plusieurs prises)');
+    if(Object.keys(r.single).length) console.log('   à enrichir (une seule prise, répétée) :',Object.entries(r.single).map(([c,n])=>c+' ×'+n).join(' · '));
     /* jamais entendues sur ces semaines : ajustements de coordinateurs (semaines V21, à partir du 12/10), intro / test (hors jeu), prolongation (1 seule) */
     const rare=new Set(['ADJ_HURRY','ADJ_CLOCK','ADJ_SHELVE','ADJ_SHELVE_FORM','ADJ_D_DEEP','ADJ_D_HEAT','ADJ_D_RUN','ADJ_D_PRESS','ADJ_D_NOBLITZ','ADJ_D_PREVENT','ADJ_D_ATTACK','INTRO_LIVE','INTRO_JOIN','INTRO_REPLAY','TEST','OVERTIME','SAFETY']);
     console.log('   prises jamais choisies, par cue :',r.unused.join(' '));
@@ -61,8 +72,12 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
     check(errs.length===0,'aucune erreur JS'); await p.close(); }
   // 4
   { const {p,errs}=await open(true);
-    const r=await p.evaluate(async()=>{ const M=window.__gc.audio.manager(), L=window.__gc.audio.log; L.length=0;
+    const r=await p.evaluate(async()=>{ const M=window.__gc.audio.manager(), L=window.__gc.audio.log;
+      /* le match à l'antenne continue de jouer sur la page : on le fait taire pendant la mesure (sa phrase passerait
+         aussi par la voix de l'appareil, les fichiers étant bloqués), comme dans test_stade_v03.js */
+      const sv=[M.snap,M.resolve]; M.snap=M.resolve=()=>{}; await new Promise(r=>setTimeout(r,1500)); L.length=0;
       M.say('Touchdown fallback test',3,null,{cues:[{cue:'TOUCHDOWN',tags:[]}],imp:.9,seq:3}); await new Promise(r=>setTimeout(r,900));
+      [M.snap,M.resolve]=sv;
       return {voice:L.filter(e=>e.kind==='voice').length,clips:L.filter(e=>e.kind==='clip').length}; });
     console.log('4. repli', JSON.stringify(r));
     check(r.voice===1&&r.clips===0,'fichier inaccessible → voix de l\'appareil');
