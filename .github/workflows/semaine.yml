@@ -2,13 +2,27 @@
 # Samedi 3 h (heure de Bruxelles, ≈ 1 h UTC) ; dimanche même heure en secours si samedi a échoué.
 # Le script ne fait rien si la semaine suivante existe déjà ou n'est pas encore à produire.
 # La nouvelle semaine est contrôlée (audit_moteur.py) puis ajoutée au dépôt → Railway remet le site à jour tout seul.
+# En cas d'échec, le job « suivi » ouvre (ou commente) l'issue « calcul-semaine » : étape fautive et fin du log ; il
+# repousse la semaine calculée si seul le push a échoué, relance une fois si la machine GitHub est en panne, et ferme
+# l'issue au prochain calcul réussi (outils/ci/alerte_semaine.py, README section 37).
 name: Semaine suivante
 
 on:
   schedule:
     - cron: "5 1 * * 6"
     - cron: "5 1 * * 0"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      relance:
+        description: "Mis à « oui » par la relance automatique (laisser « non »)"
+        type: choice
+        options: [non, oui]
+        default: non
+      test_echec:
+        description: "Essai de l'alerte : échec simulé à cette étape (aucun = calcul normal)"
+        type: choice
+        options: [aucun, machine, audit, push]
+        default: aucun
 
 permissions:
   contents: write
@@ -24,6 +38,8 @@ jobs:
     defaults:
       run:
         working-directory: "gamecenter_serveur (1)"   # dossier du serveur dans ce dépôt (le même que Railway)
+    env:
+      TEST_ECHEC: ${{ inputs.test_echec != 'aucun' && inputs.test_echec || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,25 +47,117 @@ jobs:
           python-version: "3.12"
       - name: Installer le moteur
         run: |
+          if [ "$TEST_ECHEC" = machine ]; then echo "::error::Panne de machine (essai simulé de l'alerte)"; exit 1; fi
           pip install -r requirements-semaine.txt
           python -m ipykernel install --user
       - name: Tester les modules du moteur (quelques secondes)
         run: python -m unittest discover -s moteur/tests -t .
-      - name: Calculer la semaine (≈ 15-20 min si elle est à produire)
+      - name: Calculer la semaine (≈ 45 min si elle est à produire)
         run: python generer_semaine.py --suivante --data data --notebook NFL_Sim_GameCenter.ipynb
       - name: Contrôler le moteur (audit de toutes les semaines)
         # bloque la publication si une anomalie grave est trouvée (score faux, horloge, semaine dupliquée…)
-        run: python audit_moteur.py data/weeks
+        run: |
+          if [ "$TEST_ECHEC" = audit ]; then echo "::error::Anomalie grave (essai simulé de l'alerte)"; exit 1; fi
+          python audit_moteur.py data/weeks
       - name: Ajouter la semaine au dépôt
+        id: publier
         run: |
           git config user.name "gamecenter-bot"
           git config user.email "gamecenter-bot@users.noreply.github.com"
+          if [ "$TEST_ECHEC" = push ]; then   # fausse semaine, jamais poussée (le job « suivi » fait un push --dry-run)
+            mkdir -p data/weeks/week_test-alerte && echo "essai de l'alerte" > data/weeks/week_test-alerte/LISEZMOI.txt
+          fi
           git add data/weeks
           if git diff --cached --quiet; then
             echo "Aucune nouvelle semaine."
           else
-            git commit -m "Nouvelle semaine $(ls data/weeks | tail -1)"
+            # copie de la semaine calculée : le job « suivi » la repousse si le push échoue (sans recalcul)
+            mkdir -p "$RUNNER_TEMP/semaine"
+            for d in $(git diff --cached --name-only --relative | sed -n 's#^data/weeks/\([^/]*\)/.*#\1#p' | sort -u); do
+              cp -r "data/weeks/$d" "$RUNNER_TEMP/semaine/"
+            done
+            git commit -q -m "Nouvelle semaine $(ls data/weeks | tail -1)"
+            if [ "$TEST_ECHEC" = push ]; then echo "::error::Push refusé (essai simulé de l'alerte)"; exit 1; fi
             # main a pu avancer pendant le calcul (≈ 35 min) : on reprend ses commits avant de pousser
             for i in 1 2 3; do git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0; sleep 5; done
             echo "::error::Push refusé 3 fois"; exit 1
           fi
+      - name: Garder la semaine calculée (le push a échoué)
+        if: failure() && steps.publier.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: semaine-calculee
+          path: ${{ runner.temp }}/semaine
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Alerte et relance (README section 37) : tourne après « produire », qu'il ait réussi ou non.
+  suivi:
+    needs: produire
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write      # repousser la semaine calculée
+      issues: write        # issue « calcul-semaine »
+      actions: write       # lire les étapes de « produire », relancer le workflow
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      RELANCE: ${{ inputs.relance }}
+      TEST_ECHEC: ${{ inputs.test_echec != 'aucun' && inputs.test_echec || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}   # main tel qu'il est maintenant (il a pu avancer pendant le calcul)
+      - name: Calcul réussi — fermer l'issue d'alerte
+        if: needs.produire.result == 'success'
+        run: python3 outils/ci/alerte_semaine.py cloturer
+      - name: Analyser l'échec
+        id: analyse
+        if: needs.produire.result != 'success'
+        run: python3 outils/ci/alerte_semaine.py analyser
+      - name: Récupérer la semaine calculée
+        if: steps.analyse.outputs.relancer == 'push'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: semaine-calculee
+          path: ${{ runner.temp }}/semaine
+      - name: Repousser la semaine (sans recalcul)
+        id: repousser
+        if: steps.analyse.outputs.relancer == 'push'
+        continue-on-error: true
+        run: |
+          if [ ! -d "$RUNNER_TEMP/semaine" ]; then echo "::error::Semaine calculée introuvable (artefact)"; exit 1; fi
+          git config user.name "gamecenter-bot"
+          git config user.email "gamecenter-bot@users.noreply.github.com"
+          for d in "$RUNNER_TEMP"/semaine/week_*; do
+            b=$(basename "$d")
+            if [ -e "data/weeks/$b" ]; then echo "$b est déjà dans le dépôt"; else cp -r "$d" data/weeks/; fi
+          done
+          git add data/weeks
+          if git diff --cached --quiet; then echo "Semaine déjà dans le dépôt : rien à repousser."; exit 0; fi
+          git commit -q -m "Nouvelle semaine $(ls data/weeks | tail -1)"
+          if [ -n "$TEST_ECHEC" ]; then git push --dry-run origin "HEAD:${GITHUB_REF_NAME}"; echo "Essai : rien n'est poussé."; exit 0; fi
+          for i in 1 2 3; do
+            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            git rebase --abort 2>/dev/null; sleep 10
+          done
+          echo "::error::Push refusé 3 fois"; exit 1
+      - name: Relancer le calcul (une seule fois)
+        id: relancer
+        if: steps.analyse.outputs.relancer == 'workflow'
+        continue-on-error: true
+        run: python3 outils/ci/alerte_semaine.py relancer
+      - name: Signaler (issue « calcul-semaine »)
+        if: steps.analyse.outcome == 'success'
+        env:
+          ISSUE_RELANCE: >-
+            ${{ steps.repousser.outcome == 'success' && 'push-ok'
+            || steps.repousser.outcome == 'failure' && 'push-echec'
+            || steps.relancer.outcome == 'success' && 'workflow-ok'
+            || steps.relancer.outcome == 'failure' && 'workflow-echec' || '' }}
+        run: python3 outils/ci/alerte_semaine.py signaler

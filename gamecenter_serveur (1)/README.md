@@ -53,11 +53,11 @@ Rien à faire si tu as `gamecenter_serveur.zip` : dézippe-le, c'est le dossier 
 
 ### 5. Les semaines suivantes (automatique)
 
-Chaque **samedi vers 3 h** (Bruxelles), GitHub exécute le notebook et produit la semaine suivante (~20 min),
+Chaque **samedi vers 3 h** (Bruxelles), GitHub exécute le notebook et produit la semaine suivante (≈ 45 min),
 en reprenant les staffs ajustés de la semaine jouée. Il l'ajoute au dépôt ; Railway voit la mise à jour et
 redémarre le site (≈ 1 min, en pleine nuit, aucun match en cours). Le dimanche à la même heure, un second
 passage rattrape un échec éventuel (sinon il ne fait rien). Le lundi 00 h, le site passe à la nouvelle semaine.
-GitHub envoie un e-mail si un calcul échoue.
+En cas d'échec, une issue « calcul-semaine » est ouverte dans le dépôt (section 37).
 
 Contrôle du samedi matin : `/api/health` liste deux semaines ; le dépôt a un commit « Nouvelle semaine … ».
 
@@ -753,6 +753,29 @@ créés = débranchés), la page reste lourde.
   du moteur, écran final, « Resume now », direct ouvert pendant la mi-temps).
 - Déploiement : un match **en cours** au moment du déploiement recule de quelques actions (sa fin est décalée de ses
   pauses déjà passées) ; déployer hors des heures de match.
+
+### 37. Alerte et relance du calcul du samedi (11/10/2026)
+
+- **Job « suivi »** de `semaine.yml`, après le job « produire », qu'il ait réussi ou non (`outils/ci/alerte_semaine.py`,
+  Python seul, jeton de l'exécution). En cas d'échec, il ouvre l'issue **« Semaine suivante : échec du calcul du
+  samedi »** (étiquette `calcul-semaine`) ou la commente si elle est déjà ouverte : exécution, étape fautive, fin du
+  log (60 lignes), relance tentée ou non, mention du propriétaire du dépôt (notification GitHub).
+- **Relance unique** selon l'étape fautive :
+
+  | Étape fautive | Relance |
+  |---|---|
+  | Ajouter la semaine au dépôt (push) | la semaine calculée (artefact `semaine-calculee`, 7 jours) est repoussée par « suivi » sur `main` à jour, **sans recalcul** ; l'issue est alors fermée aussitôt |
+  | machine GitHub : checkout, installation, aucune étape en échec (machine perdue) | nouvelle exécution du workflow (`relance=oui`), en file derrière l'exécution en cours |
+  | tests du moteur, calcul, audit ; job annulé (dépassement des 75 min, annulation à la main) | aucune : le même calcul redonnerait le même résultat |
+
+  Jamais de relance du workflow depuis une exécution déjà relancée ni depuis une 2e tentative (pas de boucle).
+- **Fermeture** : le prochain calcul réussi (relance, secours du dimanche, lancement à la main, même « Rien à faire »)
+  commente et ferme l'issue ouverte.
+- **Essai** (Actions → « Semaine suivante » → Run workflow, `test_echec` = `machine`, `audit` ou `push`) : échec simulé
+  à cette étape, ≈ 2 min si aucune semaine n'est à produire ; l'issue le signale comme essai. En `push`, une fausse
+  semaine `week_test-alerte` est commitée sur la machine puis « repoussée » en `--dry-run` : rien n'arrive dans le dépôt.
+- Tests : `moteur/tests/test_alerte_semaine.py` (classement des étapes, relance unique, commandes contre une fausse API
+  GitHub locale).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
