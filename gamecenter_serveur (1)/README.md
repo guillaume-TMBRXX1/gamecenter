@@ -818,6 +818,22 @@ créés = débranchés), la page reste lourde.
   son push (à exempter dans la *Bypass list*), et une PR ne touchant que des `.md` / `programme/` (aucun contrôle lancé)
   resterait bloquée. Recommandation du 11/10 : les laisser facultatifs.
 
+### 39. Domaine snapline.live et nom « Snapline » (bloc 2, étape 1 — 11/10/2026)
+- **Nom** : le site garde « GameCenter » ; « Snapline » remplace « NFL SIM » au-dessus du logo (titre de l'onglet
+  « Snapline GameCenter », description sans « NFL ») ; l'étiquette du bandeau devient « Live ». Les noms internes
+  (fichiers, notebook, projet Railway « NFL Sim », clés `gc-…` du navigateur) ne changent pas. Cellule 427 : même surtitre.
+- **Domaine** : `snapline.live` (acheté le 11/10) est le domaine personnalisé du service Railway « gamecenter »
+  (port 8080). L'offre Railway n'en permet qu'**un** par service : `www.snapline.live` est redirigé par Cloudflare
+  (règle de redirection), pas par Railway.
+- **DNS chez Cloudflare** : `CNAME @ → y2ud8d0o.up.railway.app` (nuage gris, « DNS only » : Railway délivre lui-même le
+  certificat HTTPS) et `TXT _railway-verify → railway-verify=…` (valeur donnée par Railway, *Settings → Networking*).
+  `www` : enregistrement proxifié (nuage orange) + *Rules → Redirect Rules* → `https://snapline.live${chemin}`, 301.
+- **Ancienne adresse** : avec la variable Railway `GC_DOMAINE=snapline.live`, `serveur.py` redirige toute requête vers
+  `*.up.railway.app` sur `https://snapline.live` (308 : chemin, paramètres et méthode gardés). Sans la variable (local,
+  tests) : aucune redirection. À ne poser qu'une fois `https://snapline.live` en service (certificat délivré), sinon
+  l'ancienne adresse renverrait vers une page morte. Les données du navigateur (`gc-…`) sont liées à l'adresse : un
+  invité de l'ancienne adresse repart de zéro sur la nouvelle (accepté le 11/10 : pas encore de visiteurs).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -928,7 +944,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0` (intelligence du QB coupée : bloc A) ·
 `GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23) · `GC_BLOC_D=0` (plan de jeu et adaptation
 en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueurs coupée : rosters de base chaque semaine,
-moteur V25).
+moteur V25) · `GC_DOMAINE` (domaine du site, ex. `snapline.live` : l'adresse `*.up.railway.app` y est redirigée,
+README section 39).
 
 ## Test
 

@@ -1,8 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>GameCenter — Live Board</title>
+<title>Snapline GameCenter — Live Board</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};})();</script>
-<meta name="description" content="NFL Sim GameCenter: prime-time live boards for simulated football, with real-time odds, power bars and a bet slip.">
+<meta name="description" content="Snapline GameCenter: prime-time live boards for simulated football, with real-time odds, power bars and a bet slip.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Sora:wght@300..700&family=Azeret+Mono:wght@400..700&display=swap">
@@ -1590,9 +1590,9 @@
   .mark svg{width:36px;height:36px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}
   @media (hover:hover){ .mark svg{transition:transform .35s cubic-bezier(.2,.8,.2,1)} .rail:hover .mark svg{transform:translateX(2px)} }
 
-  /* Wordmark : « NFL SIM » en surtitre, GameCenter en Unbounded, « Center » en dégradé ligue */
+  /* Wordmark : « SNAPLINE » en surtitre, GameCenter en Unbounded, « Center » en dégradé ligue */
   .wordmark{display:inline-block;font:700 21px/1 var(--f-announce);letter-spacing:-.02em;text-transform:none;margin-right:12px;white-space:nowrap}
-  .wordmark::before{content:"NFL SIM";display:block;margin-bottom:5px;font:800 9.5px/1 var(--f-ui);letter-spacing:.32em;color:var(--ink-2)}
+  .wordmark::before{content:"SNAPLINE";display:block;margin-bottom:5px;font:800 9.5px/1 var(--f-ui);letter-spacing:.32em;color:var(--ink-2)}
   .wordmark span{background:linear-gradient(90deg,#315A87,#16858A 60%,#B38332);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 
   /* « LIVE NOW » : une seule ligne, plus mesuré */
@@ -1866,7 +1866,7 @@
 </style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
-  <div class="tk-label"><i class="dot pulse"></i>GC<span class="long">&nbsp;Live</span></div>
+  <div class="tk-label"><i class="dot pulse"></i>Live</div>
   <div class="tk-viewport"><div class="tk-track" id="tkTrack"></div></div>
 </div>
 

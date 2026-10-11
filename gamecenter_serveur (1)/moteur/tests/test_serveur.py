@@ -18,6 +18,8 @@ directement (requête simulée), sans réseau ni httpx. Il faut fastapi (require
   Comptes       inscription, connexion (limite d'essais, paris d'invité repris), mot de passe, admin, équipe favorite
   Classement    semaine (soldes) et saison (comptes seulement)
   Ajustement    semaines enchaînées : numéro + 1, staffs de départ = staffs ajustés de la semaine d'avant
+  Domaine       GC_DOMAINE : l'ancienne adresse *.up.railway.app redirigée (308, chemin et paramètres gardés) ;
+                le domaine lui-même, localhost et un serveur sans GC_DOMAINE servent la page
 """
 import asyncio
 import glob
@@ -414,3 +416,28 @@ class Ajustement(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(serveur is not None, "serveur.py non importable (fastapi absent)")
+class Domaine(unittest.TestCase):
+    def passe(self, hote, domaine, chemin="/api/health", query=""):
+        req = types.SimpleNamespace(headers={"host": hote}, url=types.SimpleNamespace(path=chemin, query=query))
+        async def suite(r):
+            return "page"
+        avant, serveur.DOMAINE = serveur.DOMAINE, domaine
+        try:
+            return asyncio.run(serveur._vers_le_domaine(req, suite))
+        finally:
+            serveur.DOMAINE = avant
+
+    def test_ancienne_adresse_redirigee(self):
+        r = self.passe("gridironsim.up.railway.app", "snapline.live", "/api/bets", "token=abc&x=1")
+        self.assertEqual(r.status_code, 308)
+        self.assertEqual(r.headers["location"], "https://snapline.live/api/bets?token=abc&x=1")
+        r = self.passe("GridironSim.up.railway.app:443", "snapline.live", "/")
+        self.assertEqual(r.headers["location"], "https://snapline.live/")
+
+    def test_pas_de_redirection(self):
+        self.assertEqual(self.passe("snapline.live", "snapline.live"), "page")
+        self.assertEqual(self.passe("localhost:8108", "snapline.live"), "page")
+        self.assertEqual(self.passe("gridironsim.up.railway.app", ""), "page")
