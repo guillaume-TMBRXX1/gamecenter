@@ -785,7 +785,7 @@ créés = débranchés), la page reste lourde.
   touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
     et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
-  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, Game Center du notebook
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, Game Center du notebook
     (cellule 427), musique, commentaire enregistré (dernière
     semaine), foule et effets ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
@@ -833,6 +833,18 @@ créés = débranchés), la page reste lourde.
   tests) : aucune redirection. À ne poser qu'une fois `https://snapline.live` en service (certificat délivré), sinon
   l'ancienne adresse renverrait vers une page morte. Les données du navigateur (`gc-…`) sont liées à l'adresse : un
   invité de l'ancienne adresse repart de zéro sur la nouvelle (accepté le 11/10 : pas encore de visiteurs).
+
+### 40. Scores des matchs terminés, réglage « Hide scores » (bloc 2, étape 2 — 11/10/2026)
+- **Par défaut, les scores s'affichent** : bandeau du haut (8 derniers matchs terminés, score et « FINAL »), tuiles des
+  matchs terminés du tableau Live (image finale avec le score, puce « Final »), Big plays de tous les matchs terminés.
+- **Réglages → Display → « Hide scores »** (désactivé par défaut, gardé dans le navigateur, `gc-settings-v1.spoil`) :
+  la protection d'avant, partout — un match terminé non regardé ici n'a pas de score (« − ») dans le bandeau ni sur sa
+  tuile (teaser des grosses actions, cotes d'avant-match), et ses grosses actions ne sont pas dans les Big plays. Le
+  changement s'applique tout de suite (tableau, bandeau, Big plays redessinés). Une seule fonction décide : `seen(id)`.
+- Calendrier, classements et fiches d'équipe montraient déjà les scores : inchangés.
+- Test : `outils/site/test_bandeau.js` (groupe site de `tests_navigateur.sh`) — serveur sur une copie des données, horloge
+  2 h après le premier coup d'envoi de la dernière semaine ; scores du bandeau = scores du moteur ; réglage activé,
+  gardé au rechargement, désactivé.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
