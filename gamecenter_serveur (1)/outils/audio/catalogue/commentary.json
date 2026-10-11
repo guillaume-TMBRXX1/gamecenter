@@ -1069,6 +1069,20 @@
    "text": "They move out of that look."
   },
   {
+   "id": "adj_shelve_form_calm_02",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "text": "They go away from that formation."
+  },
+  {
+   "id": "adj_shelve_form_calm_03",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "text": "That look is off the menu for now."
+  },
+  {
    "id": "adj_d_deep_calm_01",
    "cue": "ADJ_D_DEEP",
    "tier": "calm",
@@ -1088,6 +1102,20 @@
    "tier": "calm",
    "tags": [],
    "text": "The defense answers with more pressure."
+  },
+  {
+   "id": "adj_d_heat_calm_02",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Here comes the extra rusher."
+  },
+  {
+   "id": "adj_d_heat_calm_03",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They turn up the heat on the quarterback."
   },
   {
    "id": "adj_d_run_calm_01",
@@ -1111,6 +1139,20 @@
    "text": "They press the short passing game."
   },
   {
+   "id": "adj_d_press_calm_02",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "text": "Tight coverage on the short throws now."
+  },
+  {
+   "id": "adj_d_press_calm_03",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "text": "The corners squat on those quick routes."
+  },
+  {
    "id": "adj_d_noblitz_calm_01",
    "cue": "ADJ_D_NOBLITZ",
    "tier": "calm",
@@ -1118,11 +1160,39 @@
    "text": "The defense backs off the blitz."
   },
   {
+   "id": "adj_d_noblitz_calm_02",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "text": "No more extra rushers for now."
+  },
+  {
+   "id": "adj_d_noblitz_calm_03",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "text": "They sit back and rush four."
+  },
+  {
    "id": "adj_d_prevent_calm_01",
    "cue": "ADJ_D_PREVENT",
    "tier": "calm",
    "tags": [],
    "text": "They drop into a prevent defense."
+  },
+  {
+   "id": "adj_d_prevent_calm_02",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "text": "Everybody deep now, keep it in front."
+  },
+  {
+   "id": "adj_d_prevent_calm_03",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "text": "They give up the short stuff to protect the end zone."
   },
   {
    "id": "adj_d_attack_calm_01",
