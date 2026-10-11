@@ -814,7 +814,9 @@ créés = débranchés), la page reste lourde.
   n'a pas la mécanique du site) — `BRK_SEC={q:0,half:RP_HALF}` y garde les pauses d'avant (mi-temps 4 s).
 - **Rendre le contrôle obligatoire** (facultatif) : GitHub → *Settings → Branches → Add branch ruleset* (ou *Add rule*)
   sur `main` → *Require status checks to pass* → cocher « Python (tests, audit) », « Navigateur (site) » et
-  « Navigateur (parite) ».
+  « Navigateur (parite) ». **Attention** : « Semaine suivante » pousse directement sur `main` ; cette règle refuserait
+  son push (à exempter dans la *Bypass list*), et une PR ne touchant que des `.md` / `programme/` (aucun contrôle lancé)
+  resterait bloquée. Recommandation du 11/10 : les laisser facultatifs.
 
 ### Annexe — `.github/workflows/semaine.yml`
 

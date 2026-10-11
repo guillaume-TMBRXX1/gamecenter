@@ -740,15 +740,19 @@ Une étape = une PR, testée en local, fusionnée par Guillaume.
    garde les pauses d'avant) ; `outils/site/test_cellule427.js`.
 5. Cette mise à jour de la feuille de route.
 
-**Reste du bloc 1, côté Guillaume** : vérifier le ruleset de `main` (*Settings → Rules → Rulesets* : **Active**, cible
-`main`, contrôles « Python (tests, audit) », « Navigateur (site) », « Navigateur (parite) » choisis dans la liste). Le
-11/10, la PR #53 restait fusionnable pendant que la parité tournait : le contrôle n'était pas obligatoire.
+**Ruleset de `main` : à décider par Guillaume.** Le 11/10, la PR #53 restait fusionnable pendant ses contrôles, et la
+PR #56 (`.md` seul, aucun contrôle) l'était aussi : les contrôles ne sont **pas obligatoires** aujourd'hui. Les rendre
+obligatoires a deux effets de bord : (1) « Semaine suivante » pousse **directement** sur `main` (sans PR, avec le jeton
+du workflow) — une règle « Require status checks to pass » sur `main` refuserait ce push et la semaine ne paraîtrait
+pas (l'alerte de l'étape 1 se déclencherait), sauf à exempter ce push (*Bypass list*) ; (2) une PR qui ne change que
+des `.md` ou `programme/` ne lance aucun contrôle (`paths-ignore`) et attendrait indéfiniment. Recommandation :
+**laisser les contrôles facultatifs** et ne fusionner qu'une PR aux trois coches vertes.
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-38 du README du serveur (et 15-22 pour le moteur).
 2. **Étape 7 — Publicités** (`Publicites_plan.md`) : l'emplacement de la mi-temps est prêt (`BRK_SLOT.half = g => html`
    dans le site, README section 36).
-3. Vérifier le ruleset de `main` (bloc 1, ci-dessus) ; une PR verte ne doit plus pouvoir être fusionnée avant ses contrôles.
+3. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
 4. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
    « calcul-semaine » n'est ouverte.
 5. ~~Yards par course~~ (décidé le 06/10) · ~~étape 6~~ (terminée le 08/10) · ~~commentaire des cues du bloc D~~ (généré).
