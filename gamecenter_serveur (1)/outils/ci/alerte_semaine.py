@@ -81,16 +81,17 @@ def classer(job, relance=False, tentative=1):
 
 
 def fin_du_log(texte, n=LIGNES_LOG):
-    """Fin du log de l'étape fautive : sans horodatage, couleurs, variables d'environnement ni nettoyage du job."""
-    texte = re.sub(r"\x1b\[[0-9;]*m", "", texte.replace("\r", ""))
+    """Fin du log de l'étape fautive : sans horodatage, script recopié, couleurs, variables d'environnement, étapes
+    suivantes ni nettoyage du job."""
     lignes = [l.split(" ", 1)[1] if l[:4].isdigit() and "T" in l[:11] and " " in l else l
-              for l in texte.splitlines()]
+              for l in texte.replace("\r", "").lstrip("\ufeff").splitlines()]
+    lignes = [re.sub(r"\x1b\[[0-9;]*m", "", l) for l in lignes if not l.startswith("\x1b[36;1m")]  # script recopié
     if "Post job cleanup." in lignes:
         lignes = lignes[:lignes.index("Post job cleanup.")]
     erreur = next((i for i, l in enumerate(lignes) if l.startswith("##[error]")), len(lignes))
     debuts = [i for i, l in enumerate(lignes[:erreur]) if l.startswith("##[group]Run ")]
-    if debuts:                             # depuis le début de l'étape qui a produit la première erreur
-        lignes = lignes[debuts[-1]:]
+    suite = next((i for i in range(erreur, len(lignes)) if lignes[i].startswith("##[group]Run ")), len(lignes))
+    lignes = lignes[debuts[-1] if debuts else 0:suite]   # l'étape qui a produit la première erreur
     garde, env = [], False
     for l in lignes:
         if l == "env:":

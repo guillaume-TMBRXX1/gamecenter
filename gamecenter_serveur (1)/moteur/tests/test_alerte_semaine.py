@@ -99,11 +99,13 @@ class Classement(unittest.TestCase):
         self.assertEqual(A.fin_du_log(LOG_ESSAI_9).splitlines(), [
             '##[group]Run if [ "$TEST_ECHEC" = audit ]; then echo "::error::Anomalie grave (essai simulé de '
             'l\'alerte)"; exit 1; fi',
-            'if [ "$TEST_ECHEC" = audit ]; then echo "::error::Anomalie grave (essai simulé de l\'alerte)"; exit 1; fi',
-            "python audit_moteur.py data/weeks",
             "##[error]Anomalie grave (essai simulé de l'alerte)",
             "##[error]Process completed with exit code 1.",
         ])
+        # essai n° 10 : l'étape suivante (artefact) n'apparaît pas
+        f = A.fin_du_log(LOG_ESSAI_9.replace("Post job cleanup.", "##[group]Run actions/upload-artifact@v4\n"
+                                             "2026-10-11T00:31:18Z Artifact semaine-calculee has been uploaded"))
+        self.assertTrue(f.endswith("##[error]Process completed with exit code 1."), f)
         # le log du push refusé du 10/10 (pas de « ##[group]Run » dans la fin) garde ses dernières lignes
         self.assertIn("[rejected]", A.fin_du_log("2026-10-10T11:30:11.1Z  ! [rejected]  HEAD -> main (fetch first)\n"
                                                  "2026-10-10T11:30:11.2Z ##[error]Process completed with exit code 1."))
