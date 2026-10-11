@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "7d18d3c6fe",
+ "version": "dcaa311bd4",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -2208,6 +2208,28 @@
    "bytes": 8733
   },
   {
+   "id": "c:adj_shelve_form_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_shelve_form_calm_02.6c450a7d.mp3",
+   "text": "They go away from that formation.",
+   "dur": 1.94,
+   "bytes": 11901
+  },
+  {
+   "id": "c:adj_shelve_form_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_SHELVE_FORM",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_shelve_form_calm_03.5d7dc231.mp3",
+   "text": "That look is off the menu for now.",
+   "dur": 2.02,
+   "bytes": 12333
+  },
+  {
    "id": "c:adj_d_deep_calm_01",
    "cat": "commentary",
    "cue": "ADJ_D_DEEP",
@@ -2239,6 +2261,28 @@
    "text": "The defense answers with more pressure.",
    "dur": 2.02,
    "bytes": 12333
+  },
+  {
+   "id": "c:adj_d_heat_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_heat_calm_02.0afaad5f.mp3",
+   "text": "Here comes the extra rusher.",
+   "dur": 1.56,
+   "bytes": 9597
+  },
+  {
+   "id": "c:adj_d_heat_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_HEAT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_heat_calm_03.0fabb702.mp3",
+   "text": "They turn up the heat on the quarterback.",
+   "dur": 2.28,
+   "bytes": 13917
   },
   {
    "id": "c:adj_d_run_calm_01",
@@ -2274,6 +2318,28 @@
    "bytes": 12045
   },
   {
+   "id": "c:adj_d_press_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_press_calm_02.6efdd0c3.mp3",
+   "text": "Tight coverage on the short throws now.",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:adj_d_press_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_PRESS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_press_calm_03.72b4be8f.mp3",
+   "text": "The corners squat on those quick routes.",
+   "dur": 2.18,
+   "bytes": 13341
+  },
+  {
    "id": "c:adj_d_noblitz_calm_01",
    "cat": "commentary",
    "cue": "ADJ_D_NOBLITZ",
@@ -2285,6 +2351,28 @@
    "bytes": 10605
   },
   {
+   "id": "c:adj_d_noblitz_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_noblitz_calm_02.7486e29e.mp3",
+   "text": "No more extra rushers for now.",
+   "dur": 1.8,
+   "bytes": 11037
+  },
+  {
+   "id": "c:adj_d_noblitz_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_NOBLITZ",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_noblitz_calm_03.132ec428.mp3",
+   "text": "They sit back and rush four.",
+   "dur": 1.61,
+   "bytes": 9885
+  },
+  {
    "id": "c:adj_d_prevent_calm_01",
    "cat": "commentary",
    "cue": "ADJ_D_PREVENT",
@@ -2294,6 +2382,28 @@
    "text": "They drop into a prevent defense.",
    "dur": 1.94,
    "bytes": 11901
+  },
+  {
+   "id": "c:adj_d_prevent_calm_02",
+   "cat": "commentary",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_prevent_calm_02.5266c4d4.mp3",
+   "text": "Everybody deep now, keep it in front.",
+   "dur": 2.38,
+   "bytes": 14493
+  },
+  {
+   "id": "c:adj_d_prevent_calm_03",
+   "cat": "commentary",
+   "cue": "ADJ_D_PREVENT",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/adj_d_prevent_calm_03.68cabf9b.mp3",
+   "text": "They give up the short stuff to protect the end zone.",
+   "dur": 2.9,
+   "bytes": 17661
   },
   {
    "id": "c:adj_d_attack_calm_01",
