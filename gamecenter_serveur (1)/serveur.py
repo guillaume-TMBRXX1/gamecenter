@@ -22,7 +22,7 @@ import bisect, hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, u
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse, RedirectResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
@@ -556,6 +556,19 @@ app = FastAPI(title="GameCenter live server", docs_url="/api/docs", openapi_url=
 # rechargé (ou tué) par le navigateur du téléphone, en plein match
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 _init_clock()
+
+# Domaine du site (Railway : variable GC_DOMAINE=snapline.live). L'ancienne adresse *.up.railway.app y est redirigée,
+# chemin et paramètres compris (308 : une requête POST reste une POST). Sans la variable (local, tests) : aucune redirection.
+DOMAINE = os.environ.get("GC_DOMAINE", "").strip().lower()
+
+
+@app.middleware("http")
+async def _vers_le_domaine(request: Request, call_next):
+    hote = (request.headers.get("host") or "").split(":")[0].lower()
+    if DOMAINE and hote.endswith(".up.railway.app"):
+        url = "https://" + DOMAINE + request.url.path + (("?" + request.url.query) if request.url.query else "")
+        return RedirectResponse(url, status_code=308)
+    return await call_next(request)
 
 
 def _need_week():
