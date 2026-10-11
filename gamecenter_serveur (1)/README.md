@@ -785,7 +785,7 @@ créés = débranchés), la page reste lourde.
   touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
     et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
-  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, Game Center du notebook
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, transformations, Game Center du notebook
     (cellule 427), musique, commentaire enregistré (dernière
     semaine), foule et effets ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
@@ -868,6 +868,9 @@ créés = débranchés), la page reste lourde.
   `generer`) ; d'ici là, sous-titre et voix de l'appareil.
 - **Audit** : saut de 1 point seulement sur `pat_good`, transformation juste après un touchdown de la même équipe, sans
   temps de jeu, touchdown à 6 points quand une transformation suit.
+- **Tests** : `moteur/tests/test_transformation.py` (choix, taux, flux dédié), `test_pauses.py` (pas de pause entre le
+  touchdown et la transformation), `outils/site/test_transformation.js` (groupe site : replay d'un match avec
+  transformations — réel, ou complété tant que les semaines n'en ont pas — bannières, score, Match centre).
 
 ### Annexe — `.github/workflows/semaine.yml`
 

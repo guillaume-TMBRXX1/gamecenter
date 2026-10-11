@@ -68,6 +68,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : pauses de retransmission" node outils/site/test_pauses.js
   lancer "Site : recherche" node outils/site/test_recherche.js data/weeks 8108
   lancer "Site : scores des matchs terminés" node outils/site/test_bandeau.js
+  lancer "Site : transformations après un touchdown" node outils/site/test_transformation.js
   lancer "Notebook : Game Center (cellule 427)" node outils/site/test_cellule427.js
   lancer "Audio : musique" node outils/audio/test_musique_v04.js 8108
   lancer "Audio : commentaire enregistré" node outils/audio/test_commentaire_v02.js data/weeks 8104 "${SEM[@]}"
