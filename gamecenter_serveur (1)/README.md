@@ -784,8 +784,8 @@ créés = débranchés), la page reste lourde.
 - **Workflow « Contrôle des PR »** (`.github/workflows/controle.yml`) : sur chaque PR vers `main` (sauf celles qui ne
   touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
-    tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
-  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, musique, commentaire enregistré (dernière
+    et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, musique, commentaire enregistré (dernière
     semaine), foule et effets ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
   Un nouveau push annule le contrôle en cours de la même PR. À la main (*Actions → Contrôle des PR → Run workflow*) :
@@ -919,11 +919,17 @@ moteur V25).
 
 ## Test
 
-`python3 tserver.py data gamecenter_source.html` — démarre le serveur à plusieurs moments de la semaine du
-2026-10-05 et vérifie : aucune fuite, actions à l'heure, paris acceptés/refusés, règlement serveur = moteur = page,
-classement, nom, playoffs révélés au bon moment.
+`python3 -m unittest discover -s moteur/tests -t .` (≈ 1 min) — modules ENGINE INTELLIGENCE, pauses, alerte du calcul
+du samedi et **serveur** (`moteur/tests/test_serveur.py`, fastapi requis : sinon sautés). Le serveur tourne sur une copie
+des données, horloge déplacée à des moments choisis de la semaine la plus récente : aucune fuite (actions à l'heure,
+pauses comprises ; ni score ni action future dans `/api/delta`, `/api/feed`, la page), résultat = score du moteur,
+playoffs et champion révélés au bon moment, paris (simple, combiné, refus, règlement, cash-out, historique, semaine
+fermée), comptes (inscription, connexion, limite d'essais, paris d'invité repris, mot de passe, admin, équipe favorite),
+classements semaine / saison, `GC_DEMO_AT`, semaines enchaînées (staffs de départ = staffs ajustés de la semaine d'avant).
+Ils remplacent les tests hors dépôt `tserver.py`, `tavance.py`, `taccounts.py`, `tparis2.py`, `tsearch.py`, `tadjust.py`,
+perdus (11/10/2026) ; la recherche du site est testée dans le navigateur (`outils/site/test_recherche.js`).
 
-`python3 -m unittest discover -s moteur/tests -t .` — modules ENGINE INTELLIGENCE (quelques secondes).
+Tests navigateur (site, audio, recherche, pauses) : `bash outils/site/tests_navigateur.sh` (section 38).
 
 ## Limites (prototype)
 
