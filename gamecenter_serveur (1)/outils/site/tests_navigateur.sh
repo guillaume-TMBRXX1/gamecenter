@@ -67,6 +67,7 @@ if [ $SITE = 1 ]; then
   lancer "Audio : AudioEventMapper" node outils/audio/test_mapper_v01.js data/weeks
   lancer "Site : pauses de retransmission" node outils/site/test_pauses.js
   lancer "Site : recherche" node outils/site/test_recherche.js data/weeks 8108
+  lancer "Notebook : Game Center (cellule 427)" node outils/site/test_cellule427.js
   lancer "Audio : musique" node outils/audio/test_musique_v04.js 8108
   lancer "Audio : commentaire enregistré" node outils/audio/test_commentaire_v02.js data/weeks 8104 "${SEM[@]}"
   lancer "Audio : foule et effets" node outils/audio/test_stade_v03.js data/weeks 8104

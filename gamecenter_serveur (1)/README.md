@@ -785,7 +785,8 @@ créés = débranchés), la page reste lourde.
   touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
     et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
-  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, musique, commentaire enregistré (dernière
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, Game Center du notebook
+    (cellule 427), musique, commentaire enregistré (dernière
     semaine), foule et effets ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
   Un nouveau push annule le contrôle en cours de la même PR. À la main (*Actions → Contrôle des PR → Run workflow*) :
@@ -801,6 +802,16 @@ créés = débranchés), la page reste lourde.
   une seule prise (`ADJ_SHELVE_FORM`, `ADJ_D_NOBLITZ`, `ADJ_D_PRESS`, `ADJ_D_PREVENT`, `ADJ_D_HEAT`) se répètent
   forcément et sont listées « à enrichir » (workflow « Commentaire audio » pour leur ajouter des prises) ; le test du
   repli fait taire le match à l'antenne pendant la mesure (sa phrase passait aussi par la voix de l'appareil).
+- **Cellule 427 du notebook** (Game Center du notebook, `NGS_TEMPLATE` : copie allégée du site, sans serveur, recherche,
+  paris en ligne ni exhibitions). Après un changement de rendu de `gamecenter_source.html` : `python3 outils/regen427.py`
+  (essai) puis `--ecrire`. L'outil reporte les changements du site depuis le commit noté dans la cellule
+  (« Synchronisé avec gamecenter_source.html @ … »), bloc par bloc, là où il retrouve leur code une seule fois ; il liste
+  les blocs refusés (partie du site seulement, ou à reporter à la main). `--historique` rejoue les synchronisations
+  passées : 12 sur 17 reproduites à l'identique (les autres avaient des reports à la main). Recréé le 11/10/2026 (l'ancien
+  outil, hors dépôt, est perdu). Vérifier ensuite : `node outils/site/test_cellule427.js` (replay complet dans Chromium).
+  Synchronisée le 11/10 avec le site du 10/10 (stats du Match centre : coups de pied, temps avant la passe,
+  bannière TD allégée pour Safari) ; **pas d'écran de pause dans le notebook** (choix du 11/10 : le replay du notebook
+  n'a pas la mécanique du site) — `BRK_SEC={q:0,half:RP_HALF}` y garde les pauses d'avant (mi-temps 4 s).
 - **Rendre le contrôle obligatoire** (facultatif) : GitHub → *Settings → Branches → Add branch ruleset* (ou *Add rule*)
   sur `main` → *Require status checks to pass* → cocher « Python (tests, audit) », « Navigateur (site) » et
   « Navigateur (parite) ».
