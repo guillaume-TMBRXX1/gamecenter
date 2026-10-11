@@ -846,6 +846,29 @@ créés = débranchés), la page reste lourde.
   2 h après le premier coup d'envoi de la dernière semaine ; scores du bandeau = scores du moteur ; réglage activé,
   gardé au rechargement, désactivé.
 
+### 41. Transformation après un touchdown : point après touchdown ou 2 points (bloc 2, étape 3 — 12/10/2026)
+- **Moteur** (module `moteur/transformation.py`, tests `moteur/tests/test_transformation.py`, notebook 12.2 duodecies) :
+  le touchdown vaut 6 points ; l'attaque tente ensuite une **transformation**, action à part sans temps de jeu.
+  Point après touchdown : coup de pied de la ligne des 15, ≈ 94 % (± 0,4 point par point de précision du kicker).
+  2 points : course (45 %) ou passe (55 %) de la ligne des 2, ≈ 47 % (± 1 point par point d'écart attaque − défense).
+  Choix : tableau de Vermeil sur l'écart APRÈS le touchdown (mené de 2, 5, 9, 12 ; devant de 1, 4, 5, 12) au 4e
+  quart-temps et en prolongation, dès le 3e pour un coordinateur agressif (réglages du 4e essai) ; ailleurs le point, sauf
+  parfois un coordinateur agressif (5 % × agressivité). Touchdown gagnant sur la dernière action : pas de transformation.
+  Non modélisés (choix du 11/10) : coup de pied contré, transformation ramenée par la défense. Tirages dans un flux dédié.
+  Interrupteur `GC_TRANSFORMATION=0` : touchdown à 7 points comme avant (contrôlé dans le notebook). LEAGUE inchangé.
+- **GameFeed** (additif) : résultats `pat_good`, `pat_missed`, `two_point_good`, `two_point_failed` ; appel
+  `extra_point` / `two_point` ; `play.conversion = {choice, reason, play, good, points, p}` ; `try_follows` sur le
+  touchdown suivi d'une transformation : **pas de pause** de fin de quart-temps entre les deux (serveur `break_kind` et site
+  `brkKind`, même règle). Les anciens matchs (touchdown à 7) restent lisibles.
+- **Site** : le point après touchdown est dessiné comme un field goal, les 2 points comme une course ou une passe depuis la
+  ligne des 2 ; bannière (« EXTRA POINT · GOOD », « 2-PT CONVERSION »…), « EXTRA POINT » / « 2-PT TRY » à la place de
+  l'essai, Match centre : lignes « Extra points » et « 2-pt conversions », kicker FG / XP / PTS. Cellule 427 : même rendu.
+- **Audio** : événements `EXTRA_POINT_GOOD/MISS`, `TWO_POINT_GOOD/FAIL` (foule, effets) ; 4 répliques enregistrées à
+  générer (`PAT_GOOD`, `PAT_MISS`, `TWO_POINT_GOOD`, `TWO_POINT_FAIL`, 12 prises : workflow « Commentaire audio », mode
+  `generer`) ; d'ici là, sous-titre et voix de l'appareil.
+- **Audit** : saut de 1 point seulement sur `pat_good`, transformation juste après un touchdown de la même équipe, sans
+  temps de jeu, touchdown à 6 points quand une transformation suit.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
