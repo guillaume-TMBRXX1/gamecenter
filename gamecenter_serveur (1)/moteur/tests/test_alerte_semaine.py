@@ -94,6 +94,41 @@ class Classement(unittest.TestCase):
         f = A.fin_du_log(brut, 5).splitlines()
         self.assertEqual(f, ["ligne 96", "ligne 97", "ligne 98", "ligne 99", "ʼʼʼfinʼʼʼ"])
 
+    def test_fin_du_log_reel(self):
+        """Log réel de l'essai n° 9 (11/10) : seule l'étape fautive reste, sans env, couleurs ni nettoyage."""
+        self.assertEqual(A.fin_du_log(LOG_ESSAI_9).splitlines(), [
+            '##[group]Run if [ "$TEST_ECHEC" = audit ]; then echo "::error::Anomalie grave (essai simulé de '
+            'l\'alerte)"; exit 1; fi',
+            'if [ "$TEST_ECHEC" = audit ]; then echo "::error::Anomalie grave (essai simulé de l\'alerte)"; exit 1; fi',
+            "python audit_moteur.py data/weeks",
+            "##[error]Anomalie grave (essai simulé de l'alerte)",
+            "##[error]Process completed with exit code 1.",
+        ])
+        # le log du push refusé du 10/10 (pas de « ##[group]Run » dans la fin) garde ses dernières lignes
+        self.assertIn("[rejected]", A.fin_du_log("2026-10-10T11:30:11.1Z  ! [rejected]  HEAD -> main (fetch first)\n"
+                                                 "2026-10-10T11:30:11.2Z ##[error]Process completed with exit code 1."))
+
+
+ENV = "".join(f"2026-10-11T00:26:52.38Z {l}\n" for l in (
+    "shell: /usr/bin/bash -e {0}", "env:", "  TEST_ECHEC: audit", "  pythonLocation: /opt/hostedtoolcache/Python",
+    "##[endgroup]"))
+LOG_ESSAI_9 = (
+    "\ufeff2026-10-11T00:26:52.34Z OK (skipped=5)\n"
+    "2026-10-11T00:26:52.37Z ##[group]Run python generer_semaine.py --suivante --data data\n"
+    "2026-10-11T00:26:52.37Z \x1b[36;1mpython generer_semaine.py --suivante --data data\x1b[0m\n" + ENV +
+    "2026-10-11T00:26:52.42Z Rien à faire : la semaine suivante n'est pas encore à produire.\n"
+    "2026-10-11T00:26:52.42Z ##[group]Run if [ \"$TEST_ECHEC\" = audit ]; then echo \"::error::Anomalie grave "
+    "(essai simulé de l'alerte)\"; exit 1; fi\n"
+    "2026-10-11T00:26:52.42Z \x1b[36;1mif [ \"$TEST_ECHEC\" = audit ]; then echo \"::error::Anomalie grave (essai "
+    "simulé de l'alerte)\"; exit 1; fi\x1b[0m\n"
+    "2026-10-11T00:26:52.42Z \x1b[36;1mpython audit_moteur.py data/weeks\x1b[0m\n" + ENV +
+    "2026-10-11T00:26:52.43Z ##[error]Anomalie grave (essai simulé de l'alerte)\n"
+    "2026-10-11T00:26:52.44Z ##[error]Process completed with exit code 1.\n"
+    "2026-10-11T00:26:52.45Z Post job cleanup.\n"
+    "2026-10-11T00:26:52.55Z [command]/usr/bin/git version\n"
+    "2026-10-11T00:26:52.56Z git version 2.55.0\n"
+    "2026-10-11T00:26:52.73Z ##[warning]Node.js 20 is deprecated.\n")
+
 
 class FausseAPI(BaseHTTPRequestHandler):
     etat = {}

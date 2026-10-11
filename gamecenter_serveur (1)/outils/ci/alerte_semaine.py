@@ -15,6 +15,7 @@ Une seule relance : jamais depuis une exécution déjà relancée (relance=oui) 
 """
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -80,10 +81,25 @@ def classer(job, relance=False, tentative=1):
 
 
 def fin_du_log(texte, n=LIGNES_LOG):
+    """Fin du log de l'étape fautive : sans horodatage, couleurs, variables d'environnement ni nettoyage du job."""
+    texte = re.sub(r"\x1b\[[0-9;]*m", "", texte.replace("\r", ""))
     lignes = [l.split(" ", 1)[1] if l[:4].isdigit() and "T" in l[:11] and " " in l else l
-              for l in texte.replace("\r", "").splitlines()]   # sans l'horodatage de GitHub
-    lignes = [l for l in lignes if not l.startswith("[command]")]
-    return "\n".join(lignes[-n:]).replace("```", "ʼʼʼ")
+              for l in texte.splitlines()]
+    if "Post job cleanup." in lignes:
+        lignes = lignes[:lignes.index("Post job cleanup.")]
+    erreur = next((i for i, l in enumerate(lignes) if l.startswith("##[error]")), len(lignes))
+    debuts = [i for i, l in enumerate(lignes[:erreur]) if l.startswith("##[group]Run ")]
+    if debuts:                             # depuis le début de l'étape qui a produit la première erreur
+        lignes = lignes[debuts[-1]:]
+    garde, env = [], False
+    for l in lignes:
+        if l == "env:":
+            env = True
+        elif env and l.startswith("##[endgroup]"):
+            env = False
+        elif not env and not l.startswith(("[command]", "##[endgroup]", "shell: ")):
+            garde.append(l)
+    return "\n".join(garde[-n:]).replace("```", "ʼʼʼ")
 
 
 def corps_issue(info, run_url, numero, evenement, relance_txt, log, test=""):
