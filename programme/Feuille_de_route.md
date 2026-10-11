@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 08/10/2026 : étape 6 — 24 franchises, divisions, calibrage)
+# Feuille de route — GridironSim (mise à jour le 11/10/2026 : 09-10/10 et bloc 1 — fiabilité)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -7,9 +7,12 @@ puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/N
 programme ENGINE INTELLIGENCE ; l'extension des franchises vient après, en étape 6).
 
 Le site se met à jour par le dépôt GitHub privé `guillaume-TMBRXX1/gamecenter` (sous-dossier `gamecenter_serveur (1)/`) :
-tout changement fusionné dans `main` est redéployé par Railway. Toujours tester en local avant de pousser
-(`audit_moteur.py`, tests du notebook, tests `outils/audio/*`, `tserver.py`, `tavance.py`, `taccounts.py`, `tparis2.py`,
-`tsearch.py`, `tadjust.py`). Ne jamais relancer `--premiere` (la semaine 1 existe).
+tout changement fusionné dans `main` est redéployé par Railway. Toujours tester en local avant de pousser, depuis
+`gamecenter_serveur (1)` : `python -m unittest discover -s moteur/tests -t .` (moteur, serveur, pauses, alerte ; fastapi
+requis pour les tests serveur), `python audit_moteur.py data/weeks`, `bash outils/site/tests_navigateur.sh --semaines 1`
+(site, audio, recherche, cellule 427, parité). Chaque PR vers `main` repasse les mêmes tests sur GitHub (« Contrôle des
+PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe). Ne pas fusionner pendant un calcul
+« Semaine suivante » (samedi 01:05 UTC, dimanche en secours).
 
 ## Tableau
 
@@ -25,7 +28,9 @@ tout changement fusionné dans `main` est redéployé par Railway. Toujours test
 | 5 bis | Extension du playbook V0.1 (base de connaissances football) branchée au moteur (notebook V27) | ✅ 06/10, notebook V27 | notebook (+ module) + site |
 | 5 ter | Décisions de fin de Q2 / Q4 : field goal ou continuer (notebook V28) | ✅ 06/10 | notebook (+ module) + site |
 | **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32) · ✅ franchises 21-24 (hors bible, notebook V33) · ✅ divisions, calibrage, contrôles à 24 (notebook V34) · noms, identités, couleurs et divisions validés (08/10) | notebook (+ modules) + site + serveur |
-| 7 | Publicités | reportées à la fin | site + serveur — voir `Publicites_plan.md` |
+| — | Hors feuille de route, 09-10/10 : progression rééquilibrée, interface des matchs, iPad / Safari (page allégée), calendrier toutes les 30 min, « Grand Final », pauses de retransmission, audit à bornes par semaine | ✅ en ligne (PR #40 → #48) | notebook + site + serveur |
+| **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
+| 7 | Publicités | **prochaine étape** | site + serveur — voir `Publicites_plan.md` |
 
 ---
 
@@ -150,7 +155,7 @@ repère l'usage répété de WR2 → la couverture s'ajuste → le QB le voit �
   DOUBLE, temps avant pression), `decision_qb` (`QBDecisionEngine` : lecture dans l'ordre → cible réelle, throwaway,
   scramble, sack), `resolution` (probabilités ajustées + normalisation), `stats`, `aleatoire` (flux dédié
   `decision-passe|graine|n° d'action`). 23 tests unitaires (< 1 s), dont les 5 situations demandées + déterminisme ;
-  workflow GitHub « Tests moteur ».
+  workflow GitHub « Tests moteur » (remplacé le 11/10 par « Contrôle des PR »).
 - Notebook V22 : cellule **12.2 quinquies** (import du dossier, branchement dans `simulate_drive_franchise`, GameFeed
   `play.decision` + route de la cible réelle, textes « Pass thrown away » / « X scramble », contrôles) ;
   `DECISIONS_ENABLED` **coupé par défaut** (`GC_DECISIONS=1` pour l'allumer). Coupé : GameFeed identiques à V21
@@ -695,12 +700,62 @@ la branche du bloc C (jamais fusionnée) et passée au moteur V26 (blocs A-E, no
 `data/weeks`) — 12 GameFeeds (une par affiche) dans l'artefact « gamefeeds-v26 », à charger sur le site (« Load
 GameFeed »). Le bouton « Run workflow » n'apparaît qu'une fois le fichier dans `main`.
 
+## 09-10/10/2026 — hors feuille de route (✅ en ligne, PR #40 → #48)
+- 09/10 : validation complète avec les références régénérées (#40) ; progression rééquilibrée, interface des matchs
+  (#41) ; bannière TD / FG allégée pour Safari, relance du son, journal de diagnostic (#42) ; iPad : page allégée,
+  replay repris à la bonne action après un rechargement (#43, #44). README sections 31-34.
+- 10/10 : audit à bornes par semaine (chaque semaine contrôlée avec les bornes du garde-fou de sa production, #45) ;
+  calendrier du lundi au vendredi, un coup d'envoi toutes les 30 min de 10:00 à 22:00 ; « AI Bowl » renommé
+  **« Grand Final »** (clé interne `ai_bowl` conservée : phase, marché des futures, paris enregistrés) ; **pauses de
+  retransmission** (fin de Q1 / Q3 10 s, mi-temps 40 s, écran final ; temps de présentation seulement, serveur et site
+  sur la même ligne de temps) (#46) ; exhibition BST @ ZPH pour voir les pauses (#47) ; « Semaine suivante » reprend
+  `main` avant de pousser (#48). README sections 35-36.
+
+## Bloc 1 — Fiabilité ✅ (11/10/2026)
+Une étape = une PR, testée en local, fusionnée par Guillaume.
+1. **Alerte et relance du calcul du samedi** (PR #49, README section 37). L'échec du 10/10 venait du **push** (main avait
+   avancé pendant le calcul), pas de l'audit. Job « suivi » de `semaine.yml` : issue « calcul-semaine » (étape fautive, fin
+   du log de l'étape, mention), fermée au prochain calcul réussi ; push refusé → semaine repoussée depuis un artefact,
+   sans recalcul ; panne de machine → une seule relance ; tests / calcul / audit / dépassement → alerte seule.
+   Essais réels sur la branche (`test_echec` = audit, push, machine) : issues #50 et #51.
+2. **Temps du calcul : mesure seule, aucun changement** (décision du 11/10). ≈ 46 min sur GitHub (étape « Calculer »),
+   ≈ 47 min le job, sur 75. Cellule 15.1 ≈ 38 min, dont **91 % pour les cotes d'avant-match** (276 affiches × 50
+   simulations + demi-finales à 300, ≈ 14 400 matchs à ≈ 0,18 s) ; préambule (cellules 0 → 14.2) ≈ 5 min sur un seul cœur
+   (contrôles et démonstrations : 12.2 nonies 127 s, 12.2 undecies 59 s…). Machine GitHub d'un dépôt privé : sans doute
+   2 cœurs. Le calcul local reproduit GitHub (mêmes données JSON ; seul l'ordre des clés des stats joueurs varie d'un
+   processus à l'autre). Options écartées : mesure dans le log, parallélisation du reste en série (≈ 1,5 min), contrôles
+   sautés le samedi (≈ 5-6 min), cotes réparties sur plusieurs jobs (≈ 15 min). **Plafond réel : 3 600 s par cellule**
+   (`generer_semaine.py`, `timeout=3600`) : la 15.1 n'a donc que ≈ 22 min de marge, avant les 75 min du job.
+3. **Contrôle des PR** (PR #52, README section 38) : `controle.yml` — Python (unittest, audit), Navigateur (site) et
+   Navigateur (parité) en parallèle, ≈ 6 min ; remplace « Tests moteur ». `outils/site/tests_navigateur.sh` : la même
+   commande en local. Tests audio réparés (`test_parite_v01`, `test_commentaire_v02`, `test_stade_v03` envoyaient tout
+   `data/weeks` à la page) ; parité identique sans sons enregistrés (377 924 décisions). Puis (PR #53) : deux variantes
+   pour les 5 cues d'ajustement à une seule prise, générées le 11/10 (catalogue 198 prises).
+4. **Tests serveur et cellule 427.** `tserver.py`, `tavance.py`, `taccounts.py`, `tparis2.py`, `tsearch.py`, `tadjust.py`
+   et `regen427.py` étaient **perdus** (jamais dans le dépôt) : réécrits. PR #54 : `moteur/tests/test_serveur.py` (17
+   tests : direct sans fuite, playoffs, paris, comptes, classements, horloge, semaines enchaînées) et
+   `outils/site/test_recherche.js`. PR #55 : `outils/regen427.py` (report bloc par bloc des changements du site ; 12
+   synchronisations passées sur 17 reproduites à l'identique) ; cellule 427 synchronisée avec le site du 10/10 **sans
+   écrans de pause** (choix du 11/10 : le replay du notebook n'a pas la mécanique du site ; `BRK_SEC={q:0,half:RP_HALF}`
+   garde les pauses d'avant) ; `outils/site/test_cellule427.js`.
+5. Cette mise à jour de la feuille de route.
+
+**Ruleset de `main` : à décider par Guillaume.** Le 11/10, la PR #53 restait fusionnable pendant ses contrôles, et la
+PR #56 (`.md` seul, aucun contrôle) l'était aussi : les contrôles ne sont **pas obligatoires** aujourd'hui. Les rendre
+obligatoires a deux effets de bord : (1) « Semaine suivante » pousse **directement** sur `main` (sans PR, avec le jeton
+du workflow) — une règle « Require status checks to pass » sur `main` refuserait ce push et la semaine ne paraîtrait
+pas (l'alerte de l'étape 1 se déclencherait), sauf à exempter ce push (*Bypass list*) ; (2) une PR qui ne change que
+des `.md` ou `programme/` ne lance aucun contrôle (`paths-ignore`) et attendrait indéfiniment. Recommandation :
+**laisser les contrôles facultatifs** et ne fusionner qu'une PR aux trois coches vertes.
+
 ## Pour la conversation suivante
-1. Lire ce fichier, `gamecenter_serveur (1)/moteur/README.md` et les sections 15-22 du README du serveur.
-2. ~~Yards par course~~ : décidé le 06/10 — on laisse (les coordinateurs offensifs s'adaptent).
-3. **Étape 6** : ✅ palier 1 (8 franchises, noms validés, retraites et recrues) ; puis palier 2 (09-12), toujours sous 75 min.
-   `validation_complete.py --franchises 8` pour la ligue de 8 (`--franchises 4` : non-régression contre les rapports publiés).
-4. Générer le commentaire enregistré des 7 cues du bloc D et de `SAFETY` (workflow « Commentaire audio », mode `generer`).
+1. Lire ce fichier, puis les sections 35-38 du README du serveur (et 15-22 pour le moteur).
+2. **Étape 7 — Publicités** (`Publicites_plan.md`) : l'emplacement de la mi-temps est prêt (`BRK_SLOT.half = g => html`
+   dans le site, README section 36).
+3. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
+4. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
+   « calcul-semaine » n'est ouverte.
+5. ~~Yards par course~~ (décidé le 06/10) · ~~étape 6~~ (terminée le 08/10) · ~~commentaire des cues du bloc D~~ (généré).
 
 
 ## Extension du playbook V0.1 — ✅ branchée le 06/10/2026 (notebook V27, cellule 12.2 decies)
@@ -847,6 +902,10 @@ divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le t
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
   l'équipe qui court le plus ; à suivre sur les semaines réelles.
 - Cotes en direct recalibrées pour V21 (13.4 : outsiders −0,3 %) ; à re-vérifier si l'adaptation change.
+- **Temps du calcul du samedi** (≈ 46 min sur 75 ; la cellule 15.1 seule ≈ 38 min sur 60 permises par cellule) : toute
+  hausse des simulations de cotes ou du nombre d'équipes le rapproche du plafond. Mesures et options : bloc 1, étape 2.
+- **`data/weeks` grossit d'≈ 64 Mo par semaine** (dépôt, déploiement Railway, tests qui rejouent toutes les semaines :
+  le contrôle des PR n'en rejoue qu'une).
 
 ## Pièges connus
 - Bloc E : `reset_franchises()` remet les rosters ET l'état de progression à la base (12.3, 14.2 l'appellent) ; les
@@ -855,7 +914,13 @@ divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le t
 - La page du site a un **espace de noms JavaScript unique** : vérifier qu'un nom est libre avant de l'ajouter
   (`AC` = contexte audio ; un second `let AC` avait cassé la page).
 - Une IA qui change de plan selon le score **fausse le modèle de cotes en direct** → refaire 13.4 après tout changement.
-- La cellule 427 (site embarqué dans le notebook) doit suivre les changements de rendu du site (`outils/regen427.py`).
+- La cellule 427 (site embarqué dans le notebook) doit suivre les changements de rendu du site :
+  `python3 outils/regen427.py` (essai), `--ecrire`, puis `node outils/site/test_cellule427.js`. Les blocs refusés « à
+  reporter à la main » sont à examiner un par un (le 11/10 : écrans de pause, volontairement non reportés).
+- Tests serveur (`moteur/tests/test_serveur.py`) : ils tournent sur une copie des données (dossier temporaire) ; ne jamais
+  importer `serveur` avec `GC_DATA` sur `data/` du dépôt (la base des paris y serait écrite).
+- Parité audio (`test_parite_v01.js`) : serveur **sans** sons enregistrés (`GC_AUDIO_DIR` vide) ; avec les packs foule /
+  effets, l'Audio System s'écarte de l'ancien code, comme prévu.
 - Le site lit la musique et les sons dans `audio/manifest.json` : `generer_audio.py` et `composer_musique.py` préservent
   les catégories qu'ils ne gèrent pas ; ne pas éditer le manifeste à la main.
 - Exhibition : `outils/exhibition/simuler_exhibition.py --home X --away Y` rejoue le notebook (≈ 20 min) sans produire
