@@ -49,5 +49,6 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
   check(!r.muted.playing&&r.muted.sources===0,'musique coupée → arrêtée et libérée');
   check(r.unmuted.playing,'musique rallumée → reprend');
   check(errs.length===0,'aucune erreur JS'+(errs[0]?' : '+errs[0]:''));
+  check(false,'échec volontaire (essai du contrôle des PR, annulé au commit suivant)');
   await b.close(); console.log(fail?`${fail} échec(s)`:'OK'); process.exit(fail?1:0);
 })();
