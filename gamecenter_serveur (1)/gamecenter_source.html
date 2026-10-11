@@ -4918,9 +4918,9 @@ function boardPlan(t){
    from kickoff on the big screen (openReplay, a separate copy); the tile stays as it is. Prime Time and live games run. */
 function previewGame(g){
   g.paused=true; g.loop=false; g.preview=true;
-  if(watched(g.sched.id)){                       /* already seen here: the full final picture, with the score */
+  if(seen(g.sched.id)){                          /* watched here, or no spoiler protection: the full final picture, with the score */
     rpSeek(g,g.plays.length-1); rpResolve(g); rpCommit(g); g.paused=true;
-    g.tdFlash=false; g.toFlash=null; g.shake=null; g.chip={t:'Final · watched',c:''}; return;
+    g.tdFlash=false; g.toFlash=null; g.shake=null; g.chip={t:watched(g.sched.id)?'Final · watched':'Final',c:''}; return;
   }
   /* not seen yet: no spoiler. No score, the PRE-GAME win probability and prices, and a teaser of a few big plays
      from the first three quarters (never the ending), played fast, once, one tile at a time */
@@ -4962,6 +4962,8 @@ function teaserNext(g){
 const WATCH_KEY='gc-watched-v1'; let WATCH_DIRTY=false;
 function watchedSet(){ const d=lsGet(WATCH_KEY); return d&&SW&&d.week===SW.week.start&&Array.isArray(d.ids)?d.ids:[]; }
 function watched(id){ return watchedSet().includes(id); }
+/* score of a finished game may be shown: always, unless spoiler protection is on (Settings) and the game was not watched here */
+function seen(id){ return !SET.spoil||watched(id); }
 function markWatched(id){ if(!id||watched(id)) return; const ids=watchedSet(); ids.push(id); lsSet(WATCH_KEY,{week:SW.week.start,ids}); WATCH_DIRTY=true; }
 function makeBoardGame(s,mode,t){
   const f0=SEASON.feeds[s.id];
@@ -5038,9 +5040,11 @@ function buildBoard(force){
   syncPressed();
   return true;
 }
+/* Settings → Hide scores switched: board tiles, ticker and big plays redrawn at once */
+function spoilApply(){ if(!SEASON) return; const t=nowMs(); buildBoard(true); seasonTicker(); seasonMoments(t); }
 function seasonTicker(){
   const t=nowMs();
-  const res=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end).slice(0,8).map(g=>{ const sc=watched(g.id)?scoreAt(g,t):{home:MINUS,away:MINUS};   /* no spoiler */
+  const res=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end).slice(0,8).map(g=>{ const sc=seen(g.id)?scoreAt(g,t):{home:MINUS,away:MINUS};   /* spoiler protection: no score */
     return `<span class="tk"><span class="abbr">${TEAMS[g.away].abbr}</span><span class="sc">${sc.away}</span><span class="clk">${MINUS}</span><span class="sc">${sc.home}</span><span class="abbr">${TEAMS[g.home].abbr}</span><span class="clk">FINAL${g.phase!=='regular'?' · '+esc(PHASE[g.phase]):''}</span></span>`; }).join('');
   const group=games.filter(g=>g.mode==='live').map(tkGameHTML).join('')+res;
   tkTrack.innerHTML=group?`<div class="tk-group">${group}</div><div class="tk-group" aria-hidden="true">${group}</div>`:'';
@@ -5049,7 +5053,7 @@ function seasonTicker(){
 /* Big plays: the highlights of the latest finished games (live ones are added as they happen) */
 function seasonMoments(t){
   headlines.length=0;
-  const fin=SCHED.filter(g=>gStatus(g,t)==='final'&&watched(g.id)).sort((a,b)=>b.end-a.end).slice(0,4);   /* no spoiler: games seen here only */
+  const fin=SCHED.filter(g=>gStatus(g,t)==='final'&&seen(g.id)).sort((a,b)=>b.end-a.end).slice(0,4);   /* spoiler protection: games seen here only */
   for(const g of fin){ const f=SEASON.feeds[g.id];
     for(const P of f.plays.slice().reverse()){ if(P.highlight==='TD'||P.highlight==='INT'||P.highlight==='FUM'){
       headlines.push({k:P.highlight,gid:'rp:'+g.id,team:P.offense==='home'?g.home:g.away,text:String(P.text||''),when:`${TEAMS[g.away].abbr}@${TEAMS[g.home].abbr} ${qName(P.quarter)}`});
@@ -5365,6 +5369,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }cat
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
+    /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
     /* Audio System V0.2: commentator voice — 'recorded' (GameCenter calls, when the pack is there) or 'device' */
     voiceSrc:d.voiceSrc==='device'?'device':'recorded',
@@ -5786,6 +5791,8 @@ function renderSettings(force){
         <div class="seg" role="radiogroup" aria-labelledby="setThemeL">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([v,l])=>`<button type="button" role="radio" data-theme-set="${v}" aria-checked="${(window.__gcThemePref?window.__gcThemePref():'auto')===v}">${l}</button>`).join('')}</div></div>
       <div class="set-row"><span class="set-l" id="setFxL">Big-play effects<small>Field shake and the touchdown / turnover wipe</small></span>
         <button type="button" class="switch" role="switch" data-set="fx" aria-checked="${SET.fx}" aria-labelledby="setFxL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setSpoilL">Hide scores<small>No spoilers: finished games you haven't watched here show no score on the board, the ticker and big plays</small></span>
+        <button type="button" class="switch" role="switch" data-set="spoil" aria-checked="${SET.spoil}" aria-labelledby="setSpoilL"><i></i></button></div>
       <div class="set-row"><span class="set-l">Clock<small>${CLOCK.demo?'Preview time: the week plays from a moment you pick':'Real time, Europe/Brussels'}</small></span>
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
     </div>
@@ -5802,7 +5809,7 @@ function renderSettings(force){
 }
 function settingsClick(t){
   const o=t.closest('[data-set]');
-  if(o){ const n=o.dataset.set; if(o.getAttribute('role')==='switch') SET[n]=!SET[n]; else SET[n]=o.dataset.num!=null?+o.dataset.v:o.dataset.v; saveSettings(); applySettings(); audioApply(); renderSettings(true); if(n==='odds') BET_SIG=''; return true; }
+  if(o){ const n=o.dataset.set; if(o.getAttribute('role')==='switch') SET[n]=!SET[n]; else SET[n]=o.dataset.num!=null?+o.dataset.v:o.dataset.v; saveSettings(); applySettings(); audioApply(); renderSettings(true); if(n==='odds') BET_SIG=''; if(n==='spoil') spoilApply(); return true; }
   if(t.closest('[data-sndtest]')){ audioTest(); return true; }
   const r=t.closest('[data-setreset]');
   if(r){ const v=r.dataset.setreset;
