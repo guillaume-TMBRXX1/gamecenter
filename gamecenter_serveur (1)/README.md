@@ -895,6 +895,28 @@ créés = débranchés), la page reste lourde.
 - **Tests** : `outils/site/test_retours.js` (groupe site : replay d'un match avec retours — réel, ou complété tant que les
   semaines n'en ont pas — bannières, textes, score, Match centre).
 
+### 43. Histoire de la ligue, records et stats de carrière (bloc 2, étape 5 — 12/10/2026)
+**Décisions de Guillaume (12/10)** : onglet « History » à part ; la semaine en cours compte match par match (« Hide
+scores » : seulement les semaines terminées) ; la semaine 1 (4 franchises) est incluse ; transformations et retours
+comptent depuis qu'ils existent (semaine du 19/10), sans revenir sur les saisons précédentes.
+- **Rien ne change dans le moteur ni dans le calcul du samedi** : tout se calcule sur le serveur à partir des semaines déjà
+  enregistrées (`moteur/histoire.py`, bibliothèque standard ; l'image Docker copie maintenant `moteur/`). Chaque semaine
+  est une saison. Feuille de match par joueur depuis les GameFeed (mêmes règles que le Match centre) : les totaux de
+  saison sont **égaux aux statistiques du notebook** (`week.json`, contrôlé par les tests) — sauf les fumbles provoqués,
+  absents des GameFeed (non affichés).
+- **API** : `GET /api/league/history` (saisons : champion, score de la Grand Final, finaliste, meilleur bilan, leaders ;
+  franchises : titres, finales, demi-finales, bilan de toujours ; records d'un match, d'une saison, top 10 de carrière) et
+  `GET /api/league/career/{id}` (les carrières d'une place de roster). Matchs **terminés** seulement (rien d'un match pas
+  encore joué) ; `?finished_weeks=1` : semaines dont la Grand Final est jouée. Calculé une fois par match, mis en cache
+  tant qu'aucun match ne se termine (≈ 0,1 s par recalcul).
+- **Carrière** = identifiant + nom : une recrue reprend la place (l'identifiant) d'un retraité, mais commence sa propre
+  carrière ; la fiche dit qui tenait la place avant.
+- **Site** : onglet **History** (barre latérale ; « History » dans la recherche sur mobile) — Seasons, Franchises,
+  Records (Single game · Single season · Career) ; un record de la semaine en cours a son lien « Replay ». Fiche joueur
+  (Teams, My team) : section **Career** — une ligne par semaine, total, rang de toujours dans la statistique du poste.
+- **Tests** : `moteur/tests/test_histoire.py` (feuille de match, recrue, saison en cours, records ; totaux = `week.json`),
+  `outils/site/test_histoire.js` (groupe site : API, onglet, fiche joueur, « Hide scores », mobile 390 px).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
