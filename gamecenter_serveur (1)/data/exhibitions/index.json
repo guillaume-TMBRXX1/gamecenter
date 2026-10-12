@@ -51,59 +51,6 @@
     "passes_defended": 7,
     "interceptions": 2
    }
-  },
-  {
-   "id": "exh-v29-glt-axm",
-   "home": "AXM",
-   "away": "GLT",
-   "title": "Notebook V29 · 8 franchises · red ring on the defender who stops the play",
-   "created": "2026-10-06",
-   "plays": 143,
-   "adjustments": 27,
-   "adjust_kinds": [
-    "clock",
-    "d_attack",
-    "d_bracket",
-    "d_deep",
-    "d_disguise",
-    "d_heat",
-    "d_press",
-    "d_prevent",
-    "d_run",
-    "hurry",
-    "o_away",
-    "o_protect",
-    "o_quick",
-    "plan_d",
-    "plan_o",
-    "shelve",
-    "shelve_form"
-   ],
-   "concepts": 40,
-   "decisions": {
-    "beyond_first_read": 37,
-    "under_pressure": 16,
-    "scrambles": 0,
-    "throwaways": 7,
-    "held_sacks": 8,
-    "safeties": 0,
-    "contested": 3,
-    "broken_up": 3,
-    "busts": 3,
-    "gameplan_adjust": 8,
-    "counters": 4,
-    "bracket_throws": 0,
-    "gameplan_kinds": 5,
-    "xp_formations": 15,
-    "motions": 11,
-    "rpo": 4,
-    "rpo_throws": 3,
-    "options": 0,
-    "disguised": 13,
-    "sacks": 11,
-    "passes_defended": 8,
-    "interceptions": 0
-   }
   }
  ]
 }

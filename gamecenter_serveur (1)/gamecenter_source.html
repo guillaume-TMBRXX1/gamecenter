@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Snapline GameCenter — Live Board</title>
+<title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
@@ -8,7 +8,22 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Snapline">
 <meta name="theme-color" content="#1E5C78">
-<meta name="description" content="Snapline GameCenter: prime-time live boards for simulated football, with real-time odds, power bars and a bet slip.">
+<meta name="description" content="Watch AI-coached American football live: 24 teams play a full season every week. Live play-by-play, odds, standings, play-money picks, private leagues and replays.">
+<link rel="canonical" href="https://snapline.live/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Snapline">
+<meta property="og:url" content="https://snapline.live/">
+<meta property="og:title" content="Snapline — Live simulated American football">
+<meta property="og:description" content="Watch AI-coached American football live: 24 teams play a full season every week. Live play-by-play, odds, standings, play-money picks, private leagues and replays.">
+<meta property="og:image" content="https://snapline.live/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Snapline: live simulated American football">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Snapline — Live simulated American football">
+<meta name="twitter:description" content="Watch AI-coached American football live: 24 teams play a full season every week. Live play-by-play, odds, standings, play-money picks, private leagues and replays.">
+<meta name="twitter:image" content="https://snapline.live/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Snapline","alternateName":"Snapline GameCenter","url":"https://snapline.live/","description":"Watch AI-coached American football live: 24 teams play a full season every week. Live play-by-play, odds, standings, play-money picks, private leagues and replays.","inLanguage":"en"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Sora:wght@300..700&family=Azeret+Mono:wght@400..700&display=swap">
@@ -374,6 +389,9 @@
 
   /* ---------- Lower bento ---------- */
   .lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+  .about{margin-top:16px}
+  .about h2{margin:0 0 8px}
+  .about p{margin:6px 0 0;color:var(--ink-2);line-height:1.55;max-width:80ch}
   .exh{margin-top:20px}
   .st-conf{margin-bottom:16px}
   .st-div{margin:14px 0 6px;font:700 13px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
@@ -2009,6 +2027,11 @@
         <div id="agentList"></div>
       </div>
     </section>
+    <section class="card about" id="about" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle">What is Snapline?</h2>
+      <p>Snapline is free, live American football played by a simulation. Twenty-four teams, each coached by an AI agent, play a full season every week: the regular season, two semifinals and the AI Bowl. Every game is played snap by snap on the live board, with the score, win probability, play calls and commentary.</p>
+      <p>Back your picks with play money (no real money, ever), follow the standings, power rankings and player careers, set a reminder before kickoff, start a private league with your friends, and replay any finished game on the big screen.</p>
+    </section>
     </div>
     <section class="view" id="viewSchedule" hidden aria-label="Schedule"></section>
     <section class="view" id="viewStandings" hidden aria-label="Standings"></section>
@@ -2133,6 +2156,7 @@ const ICON = {
   restart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>',
   upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>',
   end:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 5.5v13l7.5-6.5zM11 5.5v13l7.5-6.5z"/><rect x="18.6" y="5" width="2.2" height="14" rx=".6"/></svg>',
+  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12.5v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>',
   alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>'
 };
 
@@ -4665,6 +4689,7 @@ function openModal(id){
       ${g.replay?`<span class="watch">Season ${esc(g.season||'')} · Week ${esc(g.week||'')}</span>`:`<span class="watch">${ICON.eye}${g.viewers} watching</span>`}
       ${teamKeyHTML(g)}
       ${rv?`<button type="button" class="rp-load" data-rp="load" data-rpg="${g.id}" title="Replay another engine match (a GameFeed .json file from section 11.4 of the notebook)">${ICON.upload}Load GameFeed</button>`:''}
+      ${shareId(g)?`<button class="icon-btn m-share" type="button" data-share="${esc(shareId(g))}" aria-label="Share this game" title="Share this game">${ICON.share}</button>`:''}
       <button class="icon-btn m-theater" type="button" data-theater aria-pressed="${theaterOn()}" aria-label="${theaterOn()?'Back to the standard view':'Bigger field: score, play calls and commentary on top, stats below'}" title="${theaterOn()?'Standard view':'Bigger field'}">${theaterOn()?THEATER_OUT:THEATER_IN}</button>
       <button class="icon-btn" type="button" data-close aria-label="Close board">${ICON.x}</button>
     </header>
@@ -4781,6 +4806,16 @@ function rpAction(g,act,el){
 }
 /*@ui-end*/
 const gfFile=document.getElementById('gfFile');
+/* Share (big screen): the ?watch= link opens this game on the big screen — the phone's share sheet, else the clipboard */
+const shareId=g=>{ const id=g&&(g.gid||g.id); try{ return SCHED_BY[id]?id:null; }catch(e){ return null; } };   /* season games only (none in a stand-alone file) */
+function shareGame(id){
+  const g=SCHED_BY[id]; if(!g) return;
+  const url=location.origin+'/?watch='+encodeURIComponent(id), A=TEAMS[g.away]||{name:g.away}, H=TEAMS[g.home]||{name:g.home};
+  const title=`${A.name} @ ${H.name} · Snapline`;
+  if(navigator.share){ navigator.share({title,text:`Watch ${A.name} @ ${H.name} on Snapline`,url}).catch(()=>{}); return; }
+  const done=()=>toast('Link copied: '+url);
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,()=>toast(url)); else toast(url);
+}
 function toastErr(msg){ const t=document.getElementById('toast'); t.innerHTML=ICON.alert+'<span></span>'; t.querySelector('span').textContent=msg; t.classList.add('err'); t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{ t.hidden=true; t.classList.remove('err'); },7000); }
 function loadFeedText(txt,name){
   let f;
@@ -4841,6 +4876,7 @@ document.addEventListener('click',e=>{
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
   const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled) togglePick(odd.dataset.key); return; }
   if(t.closest('[data-theater]')){ toggleTheater(); return; }
+  const sh=t.closest('[data-share]'); if(sh){ shareGame(sh.dataset.share); return; }
   if(t.closest('[data-close]') || (t===modal && MODAL_DOWN_BG)){ closeModal(); return; }   /* une sélection glissée jusqu'au fond ne ferme plus le match */
   if(t.closest('[data-drawer]')){ openDrawer(); return; }
   if(t.closest('[data-drawer-close]') || t===scrim){ closeDrawer(); return; }
