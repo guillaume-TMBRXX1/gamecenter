@@ -3261,7 +3261,7 @@ function rpCallText(g){
   const dd=ddStr(g);
   if(g.phase==='presnap'||!g.snapped) return `<b>${T} ball</b> · ${dd} · lining up`;
   let c;
-  if(P.conversion) c=`<span class="c">${P.conversion.choice==='extra_point'?'EXTRA POINT TRY':'2-PT TRY · '+(P.conversion.play==='run'?'RUN':'PASS')}</span>`;
+  if(P.conversion) c=`<span class="c">${P.conversion.choice==='extra_point'?'KICK':P.conversion.play==='run'?'RUN':'PASS'}</span>`;   /* the try itself is in dd */
   else if(t==='punt') c='<span class="c">PUNT</span>'; else if(t==='field_goal') c='<span class="c">FIELD GOAL TRY</span>';
   else { const off=[P.call.personnel?esc(P.call.personnel)+' pers.':'',pretty(P.call.formation),pretty(P.call.concept)].filter(Boolean).join(' · '), de=P.call.defense||{}, dv=[pretty(de.package||de.concept),pretty(de.front||de.formation)].filter(Boolean).join(' · '); c=`<span class="c">${off||t.toUpperCase()}</span>${dv?' vs '+dv:''}`; }
   let s=`<b>${T}</b> · ${dd} · ${c}`;

@@ -131,7 +131,7 @@ def check_game(A, week, g_sched, feed):
                 bad(s, "changement d'équipe sans raison")
             if r in ("interception", "fumble_lost") and pc not in ("turnover", "score"):
                 bad(s, f"« {r} » sans changement de possession ({pc})")
-            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff",):
+            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff", "touchdown"):   # bloc 2 : TD puis transformation
                 bad(s, f"4e tentative ratée sans perte du ballon ({r}, gain {p['gain']} sur {p['to_go']})")
             # progression des tentatives
             if pc is None and r in ("run", "complete", "incomplete", "sack") and p["down"]:
