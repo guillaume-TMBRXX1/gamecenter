@@ -402,6 +402,12 @@ with db() as _c:
     CREATE TABLE IF NOT EXISTS push_bells(player TEXT, week TEXT, game TEXT, PRIMARY KEY(player, week, game));
     CREATE TABLE IF NOT EXISTS push_sent(endpoint TEXT, week TEXT, game TEXT, at INTEGER, PRIMARY KEY(endpoint, week, game));
     """)
+    # Bloc 2, étape 7 : ligues privées entre amis (comptes seulement) : un code d'invitation par ligue.
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS leagues(id TEXT PRIMARY KEY, name TEXT, code TEXT UNIQUE, owner TEXT, created INTEGER);
+    CREATE TABLE IF NOT EXISTS league_members(league TEXT, player TEXT, joined INTEGER, PRIMARY KEY(league, player));
+    CREATE INDEX IF NOT EXISTS league_members_p ON league_members(player);
+    """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -1469,6 +1475,255 @@ def api_leaderboard(token: str = "", scope: str = "week"):
         r["rank"] = i + 1
     mine = next((r for r in rows if r["me"]), None)
     return {"scope": "week", "week": w.start, "players": len(rows), "top": rows[:20], "me": mine}
+
+
+# ------------------------------------------------------------------ ligues privées (bloc 2, étape 7)
+# Une ligue = des comptes qui se classent entre eux, avec les mêmes mesures que le classement général : solde de la
+# semaine et gains nets de la saison (leurs paris restent les leurs). On rejoint avec un code (ou le lien ?join=CODE).
+# Le créateur renomme, retire un membre, change le code (l'ancien lien ne marche plus) et supprime ; tout membre peut
+# partir (si le créateur part, la ligue passe au membre le plus ancien ; vide, elle disparaît).
+LIGUE_MAX_MEMBRES = 50
+LIGUE_MAX_PAR_COMPTE = 10
+LIGUE_CODE_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"     # sans 0/O ni 1/I : se dicte et se recopie sans erreur
+LIGUE_CODE_LEN = 6
+_CODE_RE = re.compile(r"^[A-Z2-9]{6}$")
+JOIN_FAIL_MAX_JOUEUR, JOIN_FAIL_MAX_IP = 10, 40          # codes faux en 15 min (essais en série refusés)
+
+
+def _ligue_code():
+    return "".join(secrets.choice(LIGUE_CODE_ALPHA) for _ in range(LIGUE_CODE_LEN))
+
+
+def _ligue_nom(s):
+    nom = re.sub(r"\s+", " ", str(s or "")).strip()
+    if NAME_RE.search(nom):
+        raise HTTPException(400, "league_name_chars")
+    if not (3 <= len(nom) <= 32):
+        raise HTTPException(400, "league_name_length")
+    return nom
+
+
+def _compte(token):
+    p = player_by_token(token)
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    if not p.get("login"):
+        raise HTTPException(403, "account_required")
+    return p
+
+
+def _ligue(c, lid):
+    r = c.execute("SELECT * FROM leagues WHERE id=?", (str(lid or ""),)).fetchone()
+    if not r:
+        raise HTTPException(404, "league_not_found")
+    return dict(r)
+
+
+def _membres(c, lid):
+    return [dict(r) for r in c.execute(
+        "SELECT p.id, p.name, m.joined FROM league_members m JOIN players p ON p.id=m.player WHERE m.league=? ORDER BY m.joined, p.name",
+        (lid,))]
+
+
+def _ligue_public(c, L, pid):
+    n = c.execute("SELECT COUNT(*) FROM league_members WHERE league=?", (L["id"],)).fetchone()[0]
+    return {"id": L["id"], "name": L["name"], "code": L["code"], "owner": L["owner"] == pid, "members": n,
+            "max": LIGUE_MAX_MEMBRES}
+
+
+def _ip(req):
+    return (req.headers.get("x-forwarded-for") or (req.client.host if req.client else "") or "?").split(",")[0].strip()
+
+
+@app.get("/api/leagues")
+def api_leagues(token: str = ""):
+    """Mes ligues (comptes)."""
+    p = _compte(token)
+    with db() as c:
+        ls = [dict(r) for r in c.execute("SELECT l.* FROM leagues l JOIN league_members m ON m.league=l.id WHERE m.player=? "
+                                         "ORDER BY m.joined", (p["id"],))]
+        return {"leagues": [_ligue_public(c, L, p["id"]) for L in ls], "max": LIGUE_MAX_PAR_COMPTE}
+
+
+@app.post("/api/leagues/create")
+async def api_league_create(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    nom = _ligue_nom(body.get("name"))
+    with _db_lock, db() as c:
+        if c.execute("SELECT COUNT(*) FROM league_members WHERE player=?", (p["id"],)).fetchone()[0] >= LIGUE_MAX_PAR_COMPTE:
+            raise HTTPException(409, "too_many_leagues")
+        lid, t = uuid.uuid4().hex[:12], now_ms()
+        for _ in range(20):
+            code = _ligue_code()
+            if not c.execute("SELECT 1 FROM leagues WHERE code=?", (code,)).fetchone():
+                break
+        c.execute("INSERT INTO leagues(id, name, code, owner, created) VALUES(?,?,?,?,?)", (lid, nom, code, p["id"], t))
+        c.execute("INSERT INTO league_members(league, player, joined) VALUES(?,?,?)", (lid, p["id"], t))
+        return {"league": _ligue_public(c, _ligue(c, lid), p["id"])}
+
+
+def _code_essai(req, pid, code):
+    """Un code d'invitation : la ligue, ou None (essai faux noté : trop d'essais faux = refus pendant 15 min)."""
+    keys = (("join", pid or "?"), JOIN_FAIL_MAX_JOUEUR), (("joinip", _ip(req)), JOIN_FAIL_MAX_IP)
+    if _too_many_fails(*keys):
+        raise HTTPException(429, "too_many_attempts")
+    code = str(code or "").strip().upper()
+    with db() as c:
+        r = c.execute("SELECT * FROM leagues WHERE code=?", (code,)).fetchone() if _CODE_RE.match(code) else None
+    if not r:
+        _note_fail(*(k for k, _ in keys))
+        raise HTTPException(404, "bad_code")
+    return dict(r)
+
+
+@app.get("/api/leagues/preview")
+def api_league_preview(req: Request, code: str = "", token: str = ""):
+    """Ce qu'on rejoint (lien d'invitation) : nom, nombre de membres, créateur. Sans compte aussi."""
+    p = player_by_token(token)
+    L = _code_essai(req, p and p["id"], code)
+    with db() as c:
+        n = c.execute("SELECT COUNT(*) FROM league_members WHERE league=?", (L["id"],)).fetchone()[0]
+        own = c.execute("SELECT name FROM players WHERE id=?", (L["owner"],)).fetchone()
+        mine = bool(p and c.execute("SELECT 1 FROM league_members WHERE league=? AND player=?", (L["id"], p["id"])).fetchone())
+    return {"id": L["id"], "name": L["name"], "members": n, "max": LIGUE_MAX_MEMBRES, "owner": own[0] if own else None,
+            "member": mine}
+
+
+@app.post("/api/leagues/join")
+async def api_league_join(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    L = _code_essai(req, p["id"], body.get("code"))
+    with _db_lock, db() as c:
+        if c.execute("SELECT 1 FROM league_members WHERE league=? AND player=?", (L["id"], p["id"])).fetchone():
+            return {"league": _ligue_public(c, L, p["id"]), "already": True}
+        if c.execute("SELECT COUNT(*) FROM league_members WHERE player=?", (p["id"],)).fetchone()[0] >= LIGUE_MAX_PAR_COMPTE:
+            raise HTTPException(409, "too_many_leagues")
+        if c.execute("SELECT COUNT(*) FROM league_members WHERE league=?", (L["id"],)).fetchone()[0] >= LIGUE_MAX_MEMBRES:
+            raise HTTPException(409, "league_full")
+        c.execute("INSERT INTO league_members(league, player, joined) VALUES(?,?,?)", (L["id"], p["id"], now_ms()))
+        return {"league": _ligue_public(c, L, p["id"]), "already": False}
+
+
+def _membre_ou_403(c, lid, pid):
+    L = _ligue(c, lid)
+    if not c.execute("SELECT 1 FROM league_members WHERE league=? AND player=?", (L["id"], pid)).fetchone():
+        raise HTTPException(403, "not_a_member")
+    return L
+
+
+def _createur_ou_403(c, lid, pid):
+    L = _membre_ou_403(c, lid, pid)
+    if L["owner"] != pid:
+        raise HTTPException(403, "owner_only")
+    return L
+
+
+@app.post("/api/leagues/leave")
+async def api_league_leave(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    with _db_lock, db() as c:
+        L = _membre_ou_403(c, body.get("league"), p["id"])
+        c.execute("DELETE FROM league_members WHERE league=? AND player=?", (L["id"], p["id"]))
+        rest = _membres(c, L["id"])
+        if not rest:
+            c.execute("DELETE FROM leagues WHERE id=?", (L["id"],))
+        elif L["owner"] == p["id"]:
+            c.execute("UPDATE leagues SET owner=? WHERE id=?", (rest[0]["id"], L["id"]))
+    return {"ok": True}
+
+
+@app.post("/api/leagues/rename")
+async def api_league_rename(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    nom = _ligue_nom(body.get("name"))
+    with _db_lock, db() as c:
+        L = _createur_ou_403(c, body.get("league"), p["id"])
+        c.execute("UPDATE leagues SET name=? WHERE id=?", (nom, L["id"]))
+        return {"league": _ligue_public(c, _ligue(c, L["id"]), p["id"])}
+
+
+@app.post("/api/leagues/code")
+async def api_league_code(req: Request):
+    """Nouveau code : l'ancien lien d'invitation ne marche plus (les membres restent)."""
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    with _db_lock, db() as c:
+        L = _createur_ou_403(c, body.get("league"), p["id"])
+        for _ in range(20):
+            code = _ligue_code()
+            if not c.execute("SELECT 1 FROM leagues WHERE code=?", (code,)).fetchone():
+                break
+        c.execute("UPDATE leagues SET code=? WHERE id=?", (code, L["id"]))
+        return {"league": _ligue_public(c, _ligue(c, L["id"]), p["id"])}
+
+
+@app.post("/api/leagues/kick")
+async def api_league_kick(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    with _db_lock, db() as c:
+        L = _createur_ou_403(c, body.get("league"), p["id"])
+        m = str(body.get("member") or "")
+        if m == p["id"]:
+            raise HTTPException(400, "cannot_kick_self")
+        c.execute("DELETE FROM league_members WHERE league=? AND player=?", (L["id"], m))
+    return {"ok": True}
+
+
+@app.post("/api/leagues/delete")
+async def api_league_delete(req: Request):
+    body = await _json(req)
+    p = _compte(body.get("token"))
+    with _db_lock, db() as c:
+        L = _createur_ou_403(c, body.get("league"), p["id"])
+        c.execute("DELETE FROM league_members WHERE league=?", (L["id"],))
+        c.execute("DELETE FROM leagues WHERE id=?", (L["id"],))
+    return {"ok": True}
+
+
+def ligue_classement(lid, scope, t):
+    """Classement d'une ligue : scope week (solde de la semaine en cours) ou season (gains nets cumulés, comme le
+    classement général). Tous les membres y figurent ; ceux qui n'ont pas encore parié viennent après, sans rang."""
+    with db() as c:
+        L = _ligue(c, lid)
+        membres = _membres(c, L["id"])
+    rows = []
+    if scope == "season":
+        weeks = season_weeks(t)
+        for m in membres:
+            with db() as c:
+                bets = [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=?", (m["id"],))]
+            a = _season_agg(bets, weeks, t)
+            rows.append(dict(a, id=m["id"], name=m["name"], owner=m["id"] == L["owner"]))
+        rows.sort(key=lambda r: (not r["bets"], -r["net"], -r["weeks"], r["name"].casefold()))
+    else:
+        w = _need_week()
+        for m in membres:
+            Lg = ledger(w, player_bets(m["id"], w), t)
+            rows.append({"id": m["id"], "name": m["name"], "owner": m["id"] == L["owner"], "balance": Lg["balance"],
+                         "bets": len(Lg["bets"]), "won": Lg["won"], "lost": Lg["lost"]})
+        rows.sort(key=lambda r: (not r["bets"], -r["balance"], r["name"].casefold()))
+    k = 0
+    for r in rows:
+        r["rank"] = (k := k + 1) if r["bets"] else None
+    return L, rows
+
+
+@app.get("/api/leagues/{lid}/standings")
+def api_league_standings(lid: str, token: str = "", scope: str = "week"):
+    p = _compte(token)
+    with db() as c:
+        L = _membre_ou_403(c, lid, p["id"])
+        pub = _ligue_public(c, L, p["id"])
+    t = now_ms()
+    _, rows = ligue_classement(L["id"], "season" if scope == "season" else "week", t)
+    for r in rows:
+        r["me"] = r["id"] == p["id"]
+    return {"league": pub, "scope": "season" if scope == "season" else "week", "rows": rows, "now": t}
 
 
 # ------------------------------------------------------------------ exhibitions (matchs hors calendrier)

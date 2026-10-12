@@ -943,6 +943,22 @@ générées et posées sur Railway par Claude ; icône tirée du logo.
   texte), `outils/site/test_rappels.js` (groupe site : fichiers de l'application, Réglages, cloche, rappels envoyés par le
   serveur, `?watch=`, mobile 390 px). La réception réelle se vérifie sur un appareil avec « Send a test ».
 
+### 45. Ligues privées entre amis (bloc 2, étape 7 — 12/10/2026)
+**Décisions de Guillaume (12/10)** : comptes seulement ; classement de la semaine et de la saison (les mêmes mesures que
+le classement général) ; un onglet **Leagues** à part dans la barre de gauche ; 50 membres par ligue, 10 ligues par compte.
+- **Serveur** (`serveur.py`) : tables `leagues` (nom, code, créateur) et `league_members`. Un compte crée une ligue et
+  reçoit un **code** de 6 caractères (sans 0/O ni 1/I) ; on rejoint avec le code ou le lien `/?join=CODE`. Le créateur
+  renomme, retire un membre, change le code (l'ancien lien ne marche plus) et supprime ; tout membre peut partir (le
+  créateur parti, la ligue passe au membre le plus ancien ; vide, elle disparaît). Codes faux en série refusés (10 par
+  joueur, 40 par adresse en 15 min). Classement : solde de la semaine / gains nets de la saison, tous les membres (ceux
+  qui n'ont pas parié viennent après, sans rang) ; réservé aux membres.
+- **API** : `GET /api/leagues`, `POST /api/leagues/create`, `GET /api/leagues/preview` (le lien d'invitation, sans compte
+  aussi), `POST /api/leagues/join`, `…/leave`, `…/rename`, `…/code`, `…/kick`, `…/delete`, `GET /api/leagues/{id}/standings`.
+- **Site** : onglet **Leagues** (« Leagues » dans la recherche sur mobile) — mes ligues, créer, rejoindre avec un code,
+  code et lien à partager (partage du téléphone ou copie), classement Week / Season, gestion (créateur) ou départ (avec
+  confirmation). Le lien `?join=CODE` ouvre l'invitation ; sans compte, on crée son compte et on rejoint tout de suite.
+- **Tests** : `moteur/tests/test_ligues.py`, `outils/site/test_ligues.js` (groupe site).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
