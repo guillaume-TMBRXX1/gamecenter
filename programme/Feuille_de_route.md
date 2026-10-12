@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim (mise à jour le 11/10/2026 : 09-10/10 et bloc 1 — fiabilité)
+# Feuille de route — GridironSim / Snapline (mise à jour le 12/10/2026 : bloc 2 — produit et visibilité)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -30,7 +30,9 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **6** | **Plus de franchises / divisions** — par paliers (bible des identités) | **en cours** — ✅ palier 1 : 8 franchises (05-08), retraites et recrues (notebook V29, noms validés) · site : My team, fiches joueurs, plein écran agrandi · ✅ palier 2 : 12 franchises (09-12, notebook V30) · ✅ palier 3 : 16 franchises (13-16, notebook V31) · ✅ palier 4 : 20 franchises (17-20, notebook V32) · ✅ franchises 21-24 (hors bible, notebook V33) · ✅ divisions, calibrage, contrôles à 24 (notebook V34) · noms, identités, couleurs et divisions validés (08/10) | notebook (+ modules) + site + serveur |
 | — | Hors feuille de route, 09-10/10 : progression rééquilibrée, interface des matchs, iPad / Safari (page allégée), calendrier toutes les 30 min, « Grand Final », pauses de retransmission, audit à bornes par semaine | ✅ en ligne (PR #40 → #48) | notebook + site + serveur |
 | **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
+| **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prochaine étape** | site + serveur — voir `Publicites_plan.md` |
+| 8 | Promotion du site : posts TikTok (et autres réseaux) à partir des vidéos du bloc 2 | après les publicités, **conversation dédiée** | contenu + éventuellement outils vidéo |
 
 ---
 
@@ -748,14 +750,55 @@ pas (l'alerte de l'étape 1 se déclencherait), sauf à exempter ce push (*Bypas
 des `.md` ou `programme/` ne lance aucun contrôle (`paths-ignore`) et attendrait indéfiniment. Recommandation :
 **laisser les contrôles facultatifs** et ne fusionner qu'une PR aux trois coches vertes.
 
+## Bloc 2 — Produit et visibilité ✅ (11-12/10/2026)
+Ordre choisi par Guillaume le 11/10 ; une étape = une PR, testée en local, fusionnée par Guillaume ; avant chaque
+étape, état des lieux et choix validés. **Hors bloc** (décision du 11/10) : publicités (reportées à l'étape 7) et paris
+sur les joueurs.
+1. **Domaine et nom** (PR #57, README 39). Le projet s'appelle **Snapline** ; le site garde « GameCenter ».
+   `snapline.live` (Cloudflare, `CNAME @` vers Railway en « DNS only ») est le domaine du service Railway ;
+   `www` redirigé par une règle Cloudflare ; `GC_DOMAINE=snapline.live` redirige l'ancienne adresse `*.up.railway.app`
+   (308). Les noms internes (fichiers, notebook, projet Railway « NFL Sim ») ne changent pas.
+2. **Scores des matchs terminés dans le bandeau** (PR #58, README 40). Affichés par défaut ; Réglages → Display →
+   « Hide scores » remet la protection anti-spoiler (fonction unique `seen(id)`).
+3. **Transformation après un touchdown** (PR #59, README 41 ; `moteur/transformation.py`, notebook 12.2 duodecies) :
+   touchdown à 6 points, puis point après touchdown (≈ 94 %) ou 2 points (≈ 47 %), choix selon le tableau de Vermeil et
+   l'agressivité du coordinateur. Interrupteur `GC_TRANSFORMATION=0`. 16 prises de commentaire générées.
+4. **Coup d'envoi après chaque score, avec retour** (PR #60, README 42 ; `moteur/coup_envoi.py`, 12.2 terdecies) :
+   touchback ≈ 42 %, retour ≈ 25 yards, touchdown sur retour rare (≈ 0,4 %). Interrupteur `GC_COUP_ENVOI=0`. Prises
+   générées. Les transformations et les retours arrivent dans les vraies semaines à partir de **celle du 19/10**.
+5. **Histoire, records, carrières** (PR #61, README 43 ; `moteur/histoire.py`) : onglet **History** (saisons,
+   franchises, records d'un match / d'une saison / de carrière) et section **Career** de la fiche joueur. Calculé par le
+   serveur depuis les semaines enregistrées ; rien ne change dans le calcul du samedi.
+6. **Rappel « ton équipe joue dans 10 min »** (PR #62, README 44) : Web Push (service worker, manifeste, icônes),
+   équipe favorite + cloche sur n'importe quel match, lien `/?watch=<match>`. iPhone : seulement si Snapline est sur
+   l'écran d'accueil. Clés `GC_VAPID_PUBLIC` / `GC_VAPID_PRIVATE` / `GC_VAPID_SUBJECT` posées sur Railway le 12/10.
+7. **Ligues privées** (PR #63, README 45) : onglet **Leagues**, code de 6 caractères ou lien `/?join=CODE`, classement de
+   la semaine et de la saison ; 50 membres par ligue, 10 ligues par compte ; comptes seulement.
+8. **Visibilité** (PR #64, README 46) :
+   - **Vidéos verticales 1080×1920** (`outils/video/`) : l'**action du jour** (note : bascule de probabilité, touchdown,
+     perte de balle, gros gain, « décision folle » au 4e essai, 2 points, long field goal, fin de match) avec ralenti, et
+     le **résumé** du plus beau match de la semaine (≈ 2 min 15). Le vrai site est filmé par Chromium ; son du stade
+     seulement (la musique se met sur le réseau). Workflow **« Vidéos »** : action du jour tous les soirs (22 h 30 UTC),
+     résumé le dimanche, à la demande aussi ; vidéos et légendes dans les *Artifacts* (30 jours), **publiées à la main**
+     (aucun connecteur TikTok).
+   - **Référencement** : titre, description, adresse canonique, Open Graph / Twitter (`/og.png`), JSON-LD, `/robots.txt`,
+     `/sitemap.xml`, texte « What is Snapline? », bouton **Share** au grand écran. Google Search Console : propriété
+     « Domaine » validée par Guillaume (TXT dans Cloudflare), sitemap envoyé le 12/10
+     (`https://snapline.live/sitemap.xml`), indexation demandée. Pas d'autre outil de mesure (choix du 12/10).
+   - Le même jour : un seul match d'exhibition gardé (ZPH–BST, V34) ; GLT–AXM retiré.
+
 ## Pour la conversation suivante
-1. Lire ce fichier, puis les sections 35-38 du README du serveur (et 15-22 pour le moteur).
+1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
 2. **Étape 7 — Publicités** (`Publicites_plan.md`) : l'emplacement de la mi-temps est prêt (`BRK_SLOT.half = g => html`
-   dans le site, README section 36).
-3. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
-4. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
-   « calcul-semaine » n'est ouverte.
-5. ~~Yards par course~~ (décidé le 06/10) · ~~étape 6~~ (terminée le 08/10) · ~~commentaire des cues du bloc D~~ (généré).
+   dans le site, README section 36). Le site a désormais plus de surfaces (History, Leagues, vidéos, partage) : à
+   prendre en compte dans le plan.
+3. **Étape 8 — Promotion (TikTok…)** : après les publicités, dans une conversation dédiée. Matière première : les vidéos
+   du workflow « Vidéos » et leurs légendes (README 46).
+4. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
+5. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
+   « calcul-semaine » n'est ouverte. **Le 17/10 en particulier** : premier calcul avec transformations et retours.
+6. ~~Yards par course~~ (décidé le 06/10) · ~~étape 6~~ (terminée le 08/10) · ~~commentaire des cues du bloc D~~ (généré)
+   · ~~bloc 2~~ (terminé le 12/10).
 
 
 ## Extension du playbook V0.1 — ✅ branchée le 06/10/2026 (notebook V27, cellule 12.2 decies)
@@ -906,13 +949,24 @@ divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le t
   hausse des simulations de cotes ou du nombre d'équipes le rapproche du plafond. Mesures et options : bloc 1, étape 2.
 - **`data/weeks` grossit d'≈ 64 Mo par semaine** (dépôt, déploiement Railway, tests qui rejouent toutes les semaines :
   le contrôle des PR n'en rejoue qu'une).
+- **Semaine du 19/10** (calcul du samedi 17/10) : première avec transformations et retours — temps du calcul, audit,
+  points par match ; le replay et les records (History) doivent les montrer.
+- **Google Search Console** : le sitemap passe de « Impossible de récupérer » à « Opération effectuée » en quelques jours
+  (le 12/10, Railway a bien servi `/sitemap.xml`) ; sinon, regarder.
+- **Workflow « Vidéos »** : une exécution par soir (≈ 5 min ; le dimanche ≈ 10 min avec le résumé). Une exécution rouge
+  = pas de vidéo ce jour-là, rien d'autre n'est touché.
 
 ## Pièges connus
 - Bloc E : `reset_franchises()` remet les rosters ET l'état de progression à la base (12.3, 14.2 l'appellent) ; les
   notes d'une vraie semaine viennent de `progression_reprendre(prev)` (15.1, exhibition). Les caches d'intelligence
   des blocs B / C (`QB_IQ`, `PLAYER_IQ`) sont vidés à chaque changement de notes (`appliquer_progression`).
 - La page du site a un **espace de noms JavaScript unique** : vérifier qu'un nom est libre avant de l'ajouter
-  (`AC` = contexte audio ; un second `let AC` avait cassé la page).
+  (`AC` = contexte audio ; un second `let AC` avait cassé la page ; `HIST` = historique des paris, d'où `LGH` pour
+  l'histoire de la ligue). Même chose pour les **classes CSS** (`.tot` existait déjà : `car-tot` pour la carrière ; les
+  vidéos préfixent les leurs en `v…`).
+- **Clés VAPID** (`GC_VAPID_*` sur Railway) : ne jamais les changer — tous les abonnements aux rappels seraient perdus.
+- **Vidéos** : `outils/video/filmer.js` filme en temps réel (le résumé prend ≈ 2 min 15 de tournage) ; il lui faut le
+  crochet de test (`GC_TEST_HOOK=1`, `rpSeek` exposé) et un serveur local sur une copie des données.
 - Une IA qui change de plan selon le score **fausse le modèle de cotes en direct** → refaire 13.4 après tout changement.
 - La cellule 427 (site embarqué dans le notebook) doit suivre les changements de rendu du site :
   `python3 outils/regen427.py` (essai), `--ecrire`, puis `node outils/site/test_cellule427.js`. Les blocs refusés « à
