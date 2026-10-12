@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "dcaa311bd4",
+ "version": "c6b01012e5",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -2810,6 +2810,182 @@
    "text": "They show blitz… and drop into coverage.",
    "dur": 2.38,
    "bytes": 14493
+  },
+  {
+   "id": "c:pat_good_calm_01",
+   "cat": "commentary",
+   "cue": "PAT_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pat_good_calm_01.c0a5e75d.mp3",
+   "text": "The extra point is good.",
+   "dur": 1.37,
+   "bytes": 8445
+  },
+  {
+   "id": "c:pat_good_calm_02",
+   "cat": "commentary",
+   "cue": "PAT_GOOD",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pat_good_calm_02.755b88fc.mp3",
+   "text": "Extra point, right down the middle.",
+   "dur": 2.38,
+   "bytes": 14493
+  },
+  {
+   "id": "c:pat_good_excited_01",
+   "cat": "commentary",
+   "cue": "PAT_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/pat_good_excited_01.5f6c6e8f.mp3",
+   "text": "And the extra point is good!",
+   "dur": 1.51,
+   "bytes": 9309
+  },
+  {
+   "id": "c:pat_good_excited_02",
+   "cat": "commentary",
+   "cue": "PAT_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/pat_good_excited_02.f5d7bdd4.mp3",
+   "text": "Extra point is good!",
+   "dur": 1.32,
+   "bytes": 8157
+  },
+  {
+   "id": "c:pat_miss_calm_01",
+   "cat": "commentary",
+   "cue": "PAT_MISS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pat_miss_calm_01.f99acd88.mp3",
+   "text": "The extra point is no good.",
+   "dur": 1.49,
+   "bytes": 9165
+  },
+  {
+   "id": "c:pat_miss_excited_01",
+   "cat": "commentary",
+   "cue": "PAT_MISS",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/pat_miss_excited_01.c7693786.mp3",
+   "text": "The extra point… is no good!",
+   "dur": 1.9,
+   "bytes": 11613
+  },
+  {
+   "id": "c:pat_miss_excited_02",
+   "cat": "commentary",
+   "cue": "PAT_MISS",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/pat_miss_excited_02.ae374794.mp3",
+   "text": "Doinked! The extra point misses!",
+   "dur": 2.06,
+   "bytes": 12621
+  },
+  {
+   "id": "c:pat_miss_calm_02",
+   "cat": "commentary",
+   "cue": "PAT_MISS",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/pat_miss_calm_02.378f7dd8.mp3",
+   "text": "The extra point sails wide.",
+   "dur": 1.66,
+   "bytes": 10173
+  },
+  {
+   "id": "c:two_point_good_excited_01",
+   "cat": "commentary",
+   "cue": "TWO_POINT_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/two_point_good_excited_01.f0f6d95c.mp3",
+   "text": "They go for two… and they get it!",
+   "dur": 2.06,
+   "bytes": 12621
+  },
+  {
+   "id": "c:two_point_good_excited_02",
+   "cat": "commentary",
+   "cue": "TWO_POINT_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/two_point_good_excited_02.3b31ef44.mp3",
+   "text": "Two-point conversion is good!",
+   "dur": 1.56,
+   "bytes": 9597
+  },
+  {
+   "id": "c:two_point_good_huge_01",
+   "cat": "commentary",
+   "cue": "TWO_POINT_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/two_point_good_huge_01.082b4743.mp3",
+   "text": "They go for two… IT'S GOOD! What a call!",
+   "dur": 2.35,
+   "bytes": 14349
+  },
+  {
+   "id": "c:two_point_good_huge_02",
+   "cat": "commentary",
+   "cue": "TWO_POINT_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/two_point_good_huge_02.c3e95aa8.mp3",
+   "text": "TWO-POINT CONVERSION! They got it!",
+   "dur": 1.99,
+   "bytes": 12189
+  },
+  {
+   "id": "c:two_point_fail_calm_01",
+   "cat": "commentary",
+   "cue": "TWO_POINT_FAIL",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/two_point_fail_calm_01.1ca561df.mp3",
+   "text": "The two-point try comes up short.",
+   "dur": 2.28,
+   "bytes": 13917
+  },
+  {
+   "id": "c:two_point_fail_excited_01",
+   "cat": "commentary",
+   "cue": "TWO_POINT_FAIL",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/two_point_fail_excited_01.cf9ae885.mp3",
+   "text": "They go for two… stopped! No good!",
+   "dur": 2.23,
+   "bytes": 13629
+  },
+  {
+   "id": "c:two_point_fail_excited_02",
+   "cat": "commentary",
+   "cue": "TWO_POINT_FAIL",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/two_point_fail_excited_02.61426f17.mp3",
+   "text": "The two-point try fails!",
+   "dur": 1.54,
+   "bytes": 9453
+  },
+  {
+   "id": "c:two_point_fail_calm_02",
+   "cat": "commentary",
+   "cue": "TWO_POINT_FAIL",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/two_point_fail_calm_02.d0f8a453.mp3",
+   "text": "No good on the two-point try.",
+   "dur": 1.75,
+   "bytes": 10749
   }
  ]
 }
