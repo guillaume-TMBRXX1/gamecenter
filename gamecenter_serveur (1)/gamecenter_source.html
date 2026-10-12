@@ -829,6 +829,19 @@
   .pc-car thead th{border-top:0;font:600 9.5px var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
   .pc-car th:first-child,.pc-car td:first-child{text-align:left}.pc-car tr.car-tot td{color:var(--ink);font-weight:700}
   @media (max-width:760px){ .hs-row{grid-template-columns:58px minmax(0,1fr)} .hs-lds{grid-column:1/-1} }
+  /* Leagues (bloc 2, étape 7) */
+  .lg-grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
+  .lg-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .lg-item{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:none;color:var(--ink-2);cursor:pointer;font:600 13px var(--f-ui)}
+  .lg-item small{color:var(--ink-3);font-weight:500}.lg-item[aria-pressed="true"]{border-color:var(--cyan);color:var(--ink);background:var(--l2)}
+  .lg-form{display:flex;gap:8px;margin-top:8px}.lg-form input{flex:1;min-width:0}
+  .lg-code{font:700 18px var(--f-mono);letter-spacing:.18em;color:var(--ink)}
+  .lg-share{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
+  .lg-own{color:var(--cyan);font-size:11px;margin-left:4px}.lg-x{border:0;background:none;color:var(--ink-3);cursor:pointer;padding:2px 6px}.lg-x:hover{color:var(--pink)}
+  .lg-invite{border-color:var(--cyan)}.lg-err{color:var(--pink);font-size:12px;min-height:16px;margin:4px 0 0}
+  .lg-manage{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  #viewLeagues .card-h{flex-wrap:wrap;row-gap:8px}#viewLeagues .seg button{white-space:nowrap}
+  @media (max-width:760px){ .lg-grid{grid-template-columns:minmax(0,1fr)} }
   .tr-row{display:grid;grid-template-columns:22px 70px 1fr auto;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding:6px 0}
   .tr-row span:first-child{font:700 italic 12px var(--f-display)} .tr-row .w{color:var(--cyan)} .tr-row .l{color:var(--pink)} .tr-row b{font:600 12.5px var(--f-mono);color:var(--ink)}
   .pst.roster td.tl{text-align:left;white-space:normal;color:var(--ink-3);font-size:11.5px}
@@ -1927,6 +1940,9 @@
     <button class="rail-btn" type="button" data-view="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 102.2-5.3M4.5 4v4h4"/><path d="M12 8v4.2l2.8 1.8"/></svg>History
     </button>
+    <button class="rail-btn" type="button" data-view="leagues">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3.5 19c.8-3 2.9-4.6 5.5-4.6s4.7 1.6 5.5 4.6M14.6 14.6c.6-.2 1.2-.3 1.9-.3 2 0 3.6 1.3 4.2 3.7"/></svg>Leagues
+    </button>
     <button class="rail-btn" type="button" data-exh-go hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="12" rx="2"/><path d="M10.5 9v5l4-2.5z" fill="currentColor"/><path d="M8 20.5h8"/></svg>Exhibition
     </button>
@@ -1999,6 +2015,7 @@
     <section class="view" id="viewTeams" hidden aria-label="Teams"></section>
     <section class="view" id="viewMyteam" hidden aria-label="My team"></section>
     <section class="view" id="viewHistory" hidden aria-label="History"></section>
+    <section class="view" id="viewLeagues" hidden aria-label="Leagues"></section>
     <section class="view" id="viewBets" hidden aria-label="My bets"></section>
     <section class="view" id="viewSettings" hidden aria-label="Settings"></section>
   </main>
@@ -5155,20 +5172,22 @@ function renderSeasonCards(t){
 /* ---------- views: schedule, standings, teams ---------- */
 let VIEW='live', SCH_FILTER='all', TEAM_SEL=null, PL_FOCUS=null;
 function setView(v){
+  if(v==='leagues'&&VIEW!=='leagues'){ LG.at=0; LG.data={}; }   /* fresh list and leaderboard each time the tab opens */
   VIEW=v;
-  for(const k of ['live','schedule','standings','teams','myteam','history','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  for(const k of ['live','schedule','standings','teams','myteam','history','leagues','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   renderView(true);
   window.scrollTo({top:0});
 }
 function renderView(force){
-  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewTeams','viewMyteam','viewHistory','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
+  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewTeams','viewMyteam','viewHistory','viewLeagues','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
   const t=nowMs();
   if(VIEW==='schedule') renderSchedule(t);
   else if(VIEW==='standings') renderStandings(t);
   else if(VIEW==='teams') renderTeams(t);
   else if(VIEW==='myteam') renderMyteam(t);
   else if(VIEW==='history') renderHistory(t);
+  else if(VIEW==='leagues') renderLeagues(t);
   else if(VIEW==='bets') renderBets(t);
   else if(VIEW==='settings') renderSettings(force);
 }
@@ -5640,7 +5659,7 @@ function seasonBoot(){
   seasonRefresh(true);
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); }
+  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); joinFromUrl(); }
 }
 
 
@@ -6722,6 +6741,131 @@ function leaderboardHTML(){
   const nw=(d.weeks||[]).length;
   return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Net P/L</th><th>Weeks</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} account${d.players===1?'':'s'} · net winnings added up over ${nw} week${nw===1?'':'s'} · a bet counts once it is settled</p>${cta}`;
 }
+/* ---------- Leagues (bloc 2, étape 7): private leaderboards between friends ----------
+   Accounts only. A league ranks its members with the global measures (this week's balance, the season's net winnings);
+   everyone keeps their own wallet and bets. Invite: a 6-character code, or the link /?join=CODE. */
+const LG_INV_KEY='gc-join-v1';
+const LG={list:null,max:10,sel:null,scope:'week',data:{},busy:false,err:'',invite:null,preview:null,confirm:null,at:0};
+const LG_ERR={league_name_length:'A league name has 3 to 32 characters.',league_name_chars:'Letters, digits, spaces and . \' - only.',too_many_leagues:'You are already in 10 leagues: leave one first.',
+  league_full:'This league is full (50 members).',bad_code:'No league has this code. Check it and try again.',too_many_attempts:'Too many wrong codes: wait 15 minutes.',
+  account_required:'Leagues need an account.',owner_only:'Only the league’s creator can do this.',not_a_member:'You are not in this league any more.',league_not_found:'This league no longer exists.'};
+function lgMsg(e){ return LG_ERR[e&&e.message]||'Something went wrong. Try again.'; }
+function lgAcct(){ return SERVER&&PLAYER&&PLAYER.account&&PLAYER.token; }
+function lgLink(code){ return location.origin+'/?join='+code; }
+async function leaguesLoad(force){
+  if(LG.loading&&force){ LG.again=true; return; }   /* a change while the list loads: load it again right after */
+  if(!lgAcct()||LG.loading||(LG.list&&!force&&Date.now()-LG.at<60e3)) return;
+  LG.at=Date.now(); LG.loading=true;
+  try{ const r=await api('/leagues?token='+encodeURIComponent(PLAYER.token)); LG.list=r.leagues; LG.max=r.max;
+    if(!LG.sel||!LG.list.some(l=>l.id===LG.sel)) LG.sel=LG.list.length?LG.list[0].id:null; }
+  catch(e){ LG.list=LG.list||[]; }
+  LG.loading=false;
+  if(LG.again){ LG.again=false; return leaguesLoad(true); }
+  if(LG.sel) await standingsLoad(true);
+  if(VIEW==='leagues') renderView(true);
+}
+async function standingsLoad(force){
+  const id=LG.sel, sc=LG.scope, k=id+'|'+sc; if(!id) return;
+  const d=LG.data[k]; if((d&&!force&&Date.now()-d.at<60e3)||LG.sLoading===k) return;
+  LG.sLoading=k;
+  try{ const r=await api(`/leagues/${encodeURIComponent(id)}/standings?scope=${sc}&token=${encodeURIComponent(PLAYER.token)}`); r.at=Date.now(); LG.data[k]=r; }
+  catch(e){ if(e.status===403||e.status===404){ LG.data={}; LG.at=0; leaguesLoad(true); } }
+  LG.sLoading=null;
+  if(VIEW==='leagues') renderView(true);
+}
+/* ?join=CODE: the invite is kept (this tab) until it is used, even through creating an account */
+function joinFromUrl(){
+  let code=null; try{ code=new URLSearchParams(location.search).get('join'); }catch(e){}
+  if(!code){ try{ code=sessionStorage.getItem(LG_INV_KEY); }catch(e){} if(code) LG.invite=code; return; }
+  try{ history.replaceState(null,'',location.pathname+location.hash); sessionStorage.setItem(LG_INV_KEY,code); }catch(e){}
+  LG.invite=String(code).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); invitePreview(); setView('leagues');
+}
+async function invitePreview(){
+  if(!LG.invite) return;
+  try{ LG.preview=await api('/leagues/preview?code='+encodeURIComponent(LG.invite)+(PLAYER&&PLAYER.token?'&token='+encodeURIComponent(PLAYER.token):'')); LG.err=''; }
+  catch(e){ LG.preview={error:lgMsg(e)}; }
+  if(VIEW==='leagues') renderView(true);
+}
+function inviteDone(){ LG.invite=null; LG.preview=null; try{ sessionStorage.removeItem(LG_INV_KEY); }catch(e){} }
+function leaguesAfterLogin(){ LG.list=null; LG.data={}; if(LG.invite) leagueAction('join',LG.invite); }
+async function leagueAction(a,arg){
+  if(LG.busy) return;
+  if(a==='sel'){ LG.sel=arg; LG.confirm=null; LG.err=''; renderView(true); standingsLoad(false); return; }
+  if(a==='scope'){ LG.scope=arg; renderView(true); standingsLoad(false); return; }
+  if(a==='later'){ inviteDone(); renderView(true); return; }
+  if(a==='confirm'){ LG.confirm=arg; renderView(true); return; }
+  if(a==='share'||a==='copy'){ const L=(LG.list||[]).find(l=>l.id===LG.sel); if(!L) return; const url=lgLink(L.code);
+    if(a==='share'&&navigator.share){ try{ await navigator.share({title:'Snapline · '+L.name,text:`Join my league “${L.name}” on Snapline: code ${L.code}`,url}); }catch(e){} return; }
+    try{ await navigator.clipboard.writeText(url); toast('Invite link copied'); }catch(e){ toastErr('Copy this link: '+url); } return; }
+  if(!lgAcct()) return;
+  LG.busy=true; LG.err=''; renderView(true);
+  const post=(u,b)=>api(u,{method:'POST',body:JSON.stringify(Object.assign({token:PLAYER.token},b))});
+  try{
+    if(a==='join'){ const r=await post('/leagues/join',{code:arg}); inviteDone(); LG.sel=r.league.id; toast(r.already?`You are already in ${r.league.name}`:`Welcome to ${r.league.name}`); }
+    else if(a==='leave'){ await post('/leagues/leave',{league:LG.sel}); toast('You left the league'); LG.sel=null; }
+    else if(a==='delete'){ await post('/leagues/delete',{league:LG.sel}); toast('League deleted'); LG.sel=null; }
+    else if(a==='code'){ await post('/leagues/code',{league:LG.sel}); toast('New invite code · the old link no longer works'); }
+    else if(a==='kick'){ await post('/leagues/kick',{league:LG.sel,member:arg}); toast('Member removed'); }
+    LG.confirm=null; LG.data={}; LG.at=0;
+  }catch(e){ LG.err=lgMsg(e); if(a==='join'&&LG.invite) LG.preview={error:LG.err}; }
+  finally{ LG.busy=false; }
+  await leaguesLoad(true); renderView(true);
+}
+async function leagueForm(f){
+  const kind=f.dataset.lgform, v=(f.querySelector('input')||{}).value||'';
+  if(LG.busy||!lgAcct()) return;
+  if(kind==='join'){ leagueAction('join',v.trim()); return; }
+  LG.busy=true; LG.err='';
+  try{
+    if(kind==='create'){ const r=await api('/leagues/create',{method:'POST',body:JSON.stringify({token:PLAYER.token,name:v})}); LG.sel=r.league.id; toast(`League created · share code ${r.league.code}`); }
+    else if(kind==='rename'){ await api('/leagues/rename',{method:'POST',body:JSON.stringify({token:PLAYER.token,league:LG.sel,name:v})}); LG.confirm=null; toast('League renamed'); }
+  }catch(e){ LG.err=lgMsg(e); }
+  finally{ LG.busy=false; }
+  LG.data={}; await leaguesLoad(true); renderView(true);
+}
+function lgTable(d){
+  const sc=d.scope, sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), own=d.league.owner;
+  const rows=d.rows.map(r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.owner?'<span class="lg-own" title="Created the league">★</span>':''}${r.me?' <span class="lb-you">you</span>':''}</th>
+    <td class="${sc==='season'?(r.net<0?'dn':r.net>0?'up':''):''}">${sc==='season'?sgn(r.net):money(r.balance)}</td><td>${sc==='season'?r.weeks:r.bets}</td><td>${r.won}–${r.lost}</td>
+    ${own?`<td>${r.me?'':`<button type="button" class="lg-x" data-lg="${LG.confirm==='kick:'+r.id?'kick':'confirm'}" data-arg="${LG.confirm==='kick:'+r.id?esc(r.id):'kick:'+esc(r.id)}" title="Remove ${esc(r.name)}" aria-label="Remove ${esc(r.name)}">${LG.confirm==='kick:'+r.id?'Remove?':'×'}</button>`}</td>`:''}</tr>`).join('');
+  return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Member</th><th>${sc==='season'?'Net P/L':'Balance'}</th><th>${sc==='season'?'Weeks':'Bets'}</th><th>W–L</th>${own?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="np-note">${sc==='season'?'Net winnings added up over the season · a bet counts once it is settled':'This week’s wallets · balances include open bets at their stake'} · members without a bet come last, without a rank</p>`;
+}
+function renderLeagues(t){
+  const el=document.getElementById('viewLeagues'); if(!el) return;
+  const head=`<div class="view-head"><h2>Leagues</h2><p class="eyebrow">Your friends, your leaderboard · everyone keeps their own wallet and bets · up to 50 members per league</p></div>`;
+  if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Leagues live on the server.</p></div>'; return; }
+  if(lgAcct()) leaguesLoad(false); if(LG.sel) standingsLoad(false);
+  const P=LG.preview, inv=LG.invite?`<div class="card lg-invite"><div class="card-h"><h2>Invitation</h2></div>${!P?'<p class="st-none">Loading…</p>':P.error?`<p class="lg-err">${esc(P.error)}</p><button type="button" class="chip-btn" data-lg="later">Dismiss</button>`:
+    `<p class="set-p">Join <b>${esc(P.name)}</b>${P.owner?` · created by ${esc(P.owner)}`:''} · ${P.members} member${P.members===1?'':'s'}</p>
+     ${lgAcct()?(P.member?`<p class="set-p">You are already in this league.</p><button type="button" class="chip-btn" data-lg="later">OK</button>`:`<div class="lg-manage"><button type="button" class="chip-btn" data-lg="join" data-arg="${esc(LG.invite)}"${LG.busy?' disabled':''}>Join the league</button><button type="button" class="chip-btn" data-lg="later">Not now</button></div>`)
+      :`<p class="set-p">Leagues need a free account: create one (or sign in) and you join right after.</p><div class="lg-manage"><button type="button" class="chip-btn" data-view-go="settings">Create an account</button><button type="button" class="chip-btn" data-lg="later">Not now</button></div>`}`}</div>`:'';
+  const key=['lg',!!lgAcct(),JSON.stringify(LG.list),LG.sel,LG.scope,LG.busy,LG.err,LG.confirm,JSON.stringify(P),LG.invite,(LG.data[LG.sel+'|'+LG.scope]||{}).at].join('|');
+  if(el._k===key) return; el._k=key;
+  if(!lgAcct()){ el.innerHTML=head+inv+`<div class="card"><p class="st-empty"><b>Create a free account to play in leagues</b>Make a league for your friends, or join one with its code. Your wallet and bets stay yours.</p><button type="button" class="chip-btn" data-view-go="settings">Create an account</button></div>`; return; }
+  const list=LG.list;
+  const side=`<div class="card"><div class="card-h"><h2>My leagues</h2><span class="label">${list?list.length:0} / ${LG.max}</span></div>
+    <div class="lg-list">${list===null?'<p class="st-none">Loading…</p>':list.length?list.map(l=>`<button type="button" class="lg-item" data-lg="sel" data-arg="${esc(l.id)}" aria-pressed="${l.id===LG.sel}"><span>${esc(l.name)}${l.owner?'<span class="lg-own">★</span>':''}</span><small>${l.members} member${l.members===1?'':'s'}</small></button>`).join(''):'<p class="st-none">No league yet: create one for your friends, or join with a code.</p>'}</div>
+    <form data-lgform="create" class="lg-form" autocomplete="off"><input class="set-sel" type="text" maxlength="32" placeholder="New league name" aria-label="New league name" required><button class="chip-btn" type="submit"${LG.busy?' disabled':''}>Create</button></form>
+    <form data-lgform="join" class="lg-form" autocomplete="off"><input class="set-sel" type="text" maxlength="6" placeholder="Invite code" aria-label="Invite code" style="text-transform:uppercase" required><button class="chip-btn" type="submit"${LG.busy?' disabled':''}>Join</button></form>
+    <p class="lg-err" role="alert">${esc(LG.err)}</p></div>`;
+  const L=list&&list.find(l=>l.id===LG.sel), d=L&&LG.data[L.id+'|'+LG.scope];
+  const main=L?`<div class="card"><div class="card-h"><h2>${esc(L.name)}</h2><div class="seg" role="tablist" aria-label="League leaderboard">${[['week',`Week ${SW.week.index}`],['season','Season']].map(([k,l])=>`<button type="button" role="tab" data-lg="scope" data-arg="${k}" aria-selected="${LG.scope===k}">${l}</button>`).join('')}</div></div>
+    <div class="lg-share"><span class="label">Invite code</span><span class="lg-code">${esc(L.code)}</span>${navigator.share?'<button type="button" class="chip-btn" data-lg="share">Share</button>':''}<button type="button" class="chip-btn" data-lg="copy">Copy link</button></div>
+    ${d?lgTable(d):'<p class="st-none">Loading the leaderboard…</p>'}
+    <div class="lg-manage">${L.owner?`<form data-lgform="rename" class="lg-form" autocomplete="off" style="margin:0"><input class="set-sel" type="text" maxlength="32" value="${esc(L.name)}" aria-label="League name"><button class="chip-btn" type="submit">Rename</button></form>
+      <button type="button" class="chip-btn" data-lg="${LG.confirm==='code'?'code':'confirm'}" data-arg="code">${LG.confirm==='code'?'Confirm: the old link stops working':'New invite code'}</button>
+      <button type="button" class="chip-btn danger" data-lg="${LG.confirm==='delete'?'delete':'confirm'}" data-arg="delete">${LG.confirm==='delete'?'Confirm: delete for everyone':'Delete the league'}</button>`
+      :`<button type="button" class="chip-btn danger" data-lg="${LG.confirm==='leave'?'leave':'confirm'}" data-arg="leave">${LG.confirm==='leave'?'Confirm: leave the league':'Leave the league'}</button>`}</div></div>`
+    :`<div class="card"><p class="st-empty"><b>Play against your friends</b>Create a league, share its code or link, and follow your own leaderboard every week and over the season.</p></div>`;
+  /* what is being typed survives a refresh of the view (the list and the leaderboard reload in the background) */
+  const keep={}; let focus=null;
+  el.querySelectorAll('[data-lgform] input').forEach(i=>{ const k=i.closest('[data-lgform]').dataset.lgform; if(i.value&&(k!=='rename'||i===document.activeElement)) keep[k]=i.value; if(i===document.activeElement) focus=k; });
+  el.innerHTML=head+inv+`<div class="lg-grid">${side}${main}</div>`;
+  for(const k in keep){ const i=el.querySelector(`[data-lgform="${k}"] input`); if(i) i.value=keep[k]; }
+  if(focus){ const i=el.querySelector(`[data-lgform="${focus}"] input`); if(i) i.focus(); }
+}
+
 function lbScope(sc){
   LB.scope=sc; document.querySelectorAll('[data-lbscope]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.lbscope===sc)));
   const el=document.getElementById('lbBox'); if(el) el.innerHTML=leaderboardHTML(); leaderboardLoad(true);
@@ -6776,7 +6920,7 @@ async function accountSubmit(){
     const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
     PLAYER={token:r.token,name:r.name,account:true,fav_team:r.fav_team||null}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
     ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
-    await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs());
+    await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs()); leaguesAfterLogin();
     toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
     if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
   }catch(e){ ACCT.busy=false; btn.disabled=false; btn.textContent=reg?'Create account':'Sign in'; acErr(accMsg(e)); }
@@ -6795,18 +6939,21 @@ async function accountPassword(){
 }
 function accountSignOut(){
   pushForget();   /* reminders of this account stop on this device */
+  LG.list=null; LG.sel=null; LG.data={};
   const n=PLAYER&&PLAYER.name; PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(e){}
   WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
   renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true);
   toast(`Signed out${n?' · '+n:''}. Sign in again any time.`);
 }
 document.addEventListener('submit',e=>{ if(!SERVER) return;
-  if(e.target.id==='acForm'){ e.preventDefault(); accountSubmit(); } else if(e.target.id==='acPwForm'){ e.preventDefault(); accountPassword(); } });
+  if(e.target.id==='acForm'){ e.preventDefault(); accountSubmit(); } else if(e.target.id==='acPwForm'){ e.preventDefault(); accountPassword(); }
+  else if(e.target.dataset&&e.target.dataset.lgform){ e.preventDefault(); leagueForm(e.target); } });
 document.addEventListener('click',e=>{ if(!SERVER||!e.target.closest) return; const t=e.target;
   const m=t.closest('[data-acmode]'); if(m){ if(ACCT.mode!==m.dataset.acmode){ ACCT.mode=m.dataset.acmode; renderSettings(true); document.getElementById('acPseudo')?.focus(); } return; }
   if(t.closest('[data-acpw]')){ ACCT.pwOpen=!ACCT.pwOpen; renderSettings(true); if(ACCT.pwOpen) document.getElementById('acOld')?.focus(); return; }
   if(t.closest('#acOut')){ accountSignOut(); return; }
-  const sc=t.closest('[data-lbscope]'); if(sc){ lbScope(sc.dataset.lbscope); } });
+  const sc=t.closest('[data-lbscope]'); if(sc){ lbScope(sc.dataset.lbscope); return; }
+  const lg=t.closest('[data-lg]'); if(lg&&!lg.disabled){ leagueAction(lg.dataset.lg,lg.dataset.arg); } });
 document.addEventListener('input',e=>{ if(SERVER&&e.target.closest&&e.target.closest('#acForm,#acPwForm')) acErr(''); });
 document.addEventListener('change',e=>{ if(SERVER&&e.target.id==='setName') renameMe(e.target.value); });
 
@@ -6819,7 +6966,7 @@ const POS_LONG={QB:'Quarterback',RB:'Running back',WR:'Wide receiver',TE:'Tight 
 function searchIndex(){
   const it=[]; const add=(g,o)=>it.push(Object.assign({g,keys:[o.title].concat(o.alt||[]).map(fold)},o));
   for(const [v,l,alt] of [['live','Live board',['scores','games now','tableau']],['schedule','Schedule',['calendar','fixtures','results','calendrier']],['standings','Standings',['ranking','table','playoffs','futures','classement']],
-                         ['teams','Teams',['franchises','rosters','équipes']],['myteam','My team',['favourite','favorite','my franchise','mon équipe','équipe favorite']],['history','History',['records','career','champions','hall of fame','histoire','palmarès','carrière']],['bets','My bets',['wallet','history','leaderboard','cash out','combo','paris']],['settings','Settings',['account','sign in','sound','theme','réglages']]])
+                         ['teams','Teams',['franchises','rosters','équipes']],['myteam','My team',['favourite','favorite','my franchise','mon équipe','équipe favorite']],['history','History',['records','career','champions','hall of fame','histoire','palmarès','carrière']],['leagues','Leagues',['private league','friends','invite','join','ligue','amis']],['bets','My bets',['wallet','history','leaderboard','cash out','combo','paris']],['settings','Settings',['account','sign in','sound','theme','réglages']]])
     add('Pages',{kind:'view',view:v,title:l,sub:'Page',alt});
   if(SEASON&&SW&&SW.teams){
     for(const T of Object.values(SW.teams)){
