@@ -44,6 +44,8 @@ def check_game(A, week, g_sched, feed):
         bad(None, "match sans aucune action"); return None
     prev = None
     halves = 0
+    retours = any(p.get("kick_return") for p in plays)      # bloc 2 : moteur avec coups d'envoi après les scores
+    marque = ("field_goal_good", "pat_good", "pat_missed", "two_point_good", "two_point_failed")
     score = {"home": 0, "away": 0}
     for i, p in enumerate(plays):
         s, a = p["seq"], p["after"]
@@ -100,6 +102,16 @@ def check_game(A, week, g_sched, feed):
         if r in ("run", "complete") and scorer:
             warn(s, f"points sur « {r} » sans touchdown (+{dh or da})")
         score = dict(ns)
+        # --- coups d'envoi (bloc 2) : après chaque score, touchback aux 25 ---
+        kr = p.get("kick_return")
+        if retours and prev is not None and prev["after"]["status"] == "live" and q <= 4 and (
+                prev["result"] in marque or (prev["result"] == "touchdown" and not prev.get("try_follows"))) \
+                and p["call"]["type"] != "kickoff":
+            bad(s, f"pas de coup d'envoi après le score (« {prev['result']} » → « {r} »)")
+        if kr and kr.get("touchback") and a["status"] == "live" and a["los_x"] != (35 if p["offense"] == "home" else 85):
+            bad(s, f"touchback : départ attendu aux 25 ({a['los_x']})")
+        if kr and kr.get("td") and (r != "touchdown" or not p.get("try_follows") and a["status"] == "live"):
+            bad(s, "touchdown sur retour mal annoncé (résultat ou transformation)")
         # --- continuité avec l'action précédente ---
         if prev is not None:
             pa = prev["after"]
