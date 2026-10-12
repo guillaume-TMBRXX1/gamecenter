@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "c6b01012e5",
+ "version": "67a2732ae5",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -2986,6 +2986,116 @@
    "text": "No good on the two-point try.",
    "dur": 1.75,
    "bytes": 10749
+  },
+  {
+   "id": "c:touchback_calm_01",
+   "cat": "commentary",
+   "cue": "TOUCHBACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/touchback_calm_01.b2ec1c05.mp3",
+   "text": "Touchback.",
+   "dur": 0.77,
+   "bytes": 4845
+  },
+  {
+   "id": "c:touchback_calm_02",
+   "cat": "commentary",
+   "cue": "TOUCHBACK",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/touchback_calm_02.83dac8d7.mp3",
+   "text": "Into the end zone, and that's a touchback.",
+   "dur": 2.35,
+   "bytes": 14349
+  },
+  {
+   "id": "c:kick_return_big_calm_01",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/kick_return_big_calm_01.6a18a73b.mp3",
+   "text": "Nice return, great field position.",
+   "dur": 2.4,
+   "bytes": 14637
+  },
+  {
+   "id": "c:kick_return_big_calm_02",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/kick_return_big_calm_02.90ca1425.mp3",
+   "text": "He brings it way back out.",
+   "dur": 1.34,
+   "bytes": 8301
+  },
+  {
+   "id": "c:kick_return_big_excited_01",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/kick_return_big_excited_01.07df0a80.mp3",
+   "text": "He breaks the return! Huge field position!",
+   "dur": 2.52,
+   "bytes": 15357
+  },
+  {
+   "id": "c:kick_return_big_excited_02",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/kick_return_big_excited_02.5a2cfbab.mp3",
+   "text": "What a kick return!",
+   "dur": 1.18,
+   "bytes": 7293
+  },
+  {
+   "id": "c:kick_return_td_excited_01",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_TD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/kick_return_td_excited_01.561168c4.mp3",
+   "text": "Kickoff return… all the way! Touchdown!",
+   "dur": 2.71,
+   "bytes": 16509
+  },
+  {
+   "id": "c:kick_return_td_excited_02",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_TD",
+   "tier": "excited",
+   "tags": [],
+   "file": "commentary/kick_return_td_excited_02.d33290fc.mp3",
+   "text": "He takes it back for a touchdown!",
+   "dur": 1.85,
+   "bytes": 11325
+  },
+  {
+   "id": "c:kick_return_td_huge_01",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_TD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/kick_return_td_huge_01.e8881f7b.mp3",
+   "text": "He's gone! KICKOFF RETURN TOUCHDOWN!",
+   "dur": 2.42,
+   "bytes": 14781
+  },
+  {
+   "id": "c:kick_return_td_huge_02",
+   "cat": "commentary",
+   "cue": "KICK_RETURN_TD",
+   "tier": "huge",
+   "tags": [],
+   "file": "commentary/kick_return_td_huge_02.a5bc032e.mp3",
+   "text": "All the way back! WHAT A RETURN!",
+   "dur": 2.09,
+   "bytes": 12765
   }
  ]
 }
