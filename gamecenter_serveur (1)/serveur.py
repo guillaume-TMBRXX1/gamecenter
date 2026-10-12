@@ -393,6 +393,15 @@ with db() as _c:
     for _col, _typ in (("legs", "TEXT"), ("cashed_at", "INTEGER"), ("cashed_amt", "REAL")):
         if _col not in _bcols:
             _c.execute(f"ALTER TABLE bets ADD COLUMN {_col} {_typ}")
+    # Bloc 2, étape 6 : rappels « ton équipe joue dans 10 min » (Web Push). Un abonnement par appareil (endpoint) ;
+    # cloches = matchs choisis par un joueur (tous ses appareils) ; envois déjà faits (aucun doublon après un redémarrage).
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS push_subs(endpoint TEXT PRIMARY KEY, player TEXT, p256dh TEXT, auth TEXT, fav INTEGER,
+                                         created INTEGER);
+    CREATE INDEX IF NOT EXISTS push_subs_p ON push_subs(player);
+    CREATE TABLE IF NOT EXISTS push_bells(player TEXT, week TEXT, game TEXT, PRIMARY KEY(player, week, game));
+    CREATE TABLE IF NOT EXISTS push_sent(endpoint TEXT, week TEXT, game TEXT, at INTEGER, PRIMARY KEY(endpoint, week, game));
+    """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -956,6 +965,253 @@ async def api_fav_team(req: Request):
     return {"fav_team": team}
 
 
+# ------------------------------------------------------------------ rappels avant le coup d'envoi (bloc 2, étape 6)
+# Web Push (standard des navigateurs) : le serveur prévient chaque appareil abonné RAPPEL_MIN minutes avant le coup
+# d'envoi des matchs de l'équipe favorite du compte (si « My team's games » est coché sur l'appareil) et des matchs
+# choisis d'une cloche dans le calendrier (comptes et invités). Rien d'un score : les équipes et l'heure seulement.
+# Clés VAPID dans les variables (Railway) : GC_VAPID_PUBLIC, GC_VAPID_PRIVATE (base64url), GC_VAPID_SUBJECT (mailto:…).
+# Les changer coupe tous les abonnements. Sans clés : pas de rappel (le site le dit dans Réglages).
+RAPPEL_MIN = 10
+PUSH_TICK = float(os.environ.get("GC_PUSH_TICK", "30"))   # secondes entre deux tours de la boucle d'envoi (tests : moins)
+PUSH_MAX_PAR_JOUEUR = 10             # appareils abonnés par joueur
+VAPID_PUBLIC = os.environ.get("GC_VAPID_PUBLIC", "").strip()
+VAPID_PRIVATE = os.environ.get("GC_VAPID_PRIVATE", "").strip()
+VAPID_SUBJECT = os.environ.get("GC_VAPID_SUBJECT", "").strip() or "mailto:contact@snapline.live"
+_B64URL = re.compile(r"^[A-Za-z0-9_-]{8,200}={0,2}$")
+PUSH_LOG = []                        # GC_PUSH_FAKE=1 (tests) : les envois sont notés ici au lieu de partir
+PHASE_NOM = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl": "Grand Final"}
+
+
+def push_ok():
+    return bool(VAPID_PUBLIC and VAPID_PRIVATE) or os.environ.get("GC_PUSH_FAKE") == "1"
+
+
+def rappel_texte(w, g, t):
+    """Titre, texte et lien d'un rappel (équipes et heure : jamais de score)."""
+    T = w.doc["teams"]
+    a, h = T.get(g["away"], {}), T.get(g["home"], {})
+    mins = max(1, round((g["ko"] - t) / 60000))
+    ko = datetime.fromtimestamp(g["ko"] / 1000, TZ).strftime("%H:%M")
+    phase = PHASE_NOM.get(g["phase"], "")
+    if g["phase"] == "semifinal" and not w.doc["week"].get("league"):
+        phase = "Semi-final"
+    return {"title": f"{g['away']} @ {g['home']} · kickoff in {mins} min",
+            "body": f"{a.get('name', g['away'])} @ {h.get('name', g['home'])} · {phase} · {ko}. Tap to watch live.",
+            "url": f"/?watch={g['id']}", "tag": f"ko-{g['id']}"}
+
+
+def rappels_dus(t, subs, bells, sent):
+    """Rappels à envoyer à l'instant t (fonction pure, testée) :
+    subs  : [{endpoint, player, fav (0/1), fav_team}] ; bells : {(player, week, game)} ; sent : {(endpoint, week, game)}.
+    Un match est dû entre RAPPEL_MIN minutes avant son coup d'envoi et le coup d'envoi, s'il est révélé (équipes des
+    playoffs connues). Renvoie [(sub, week, match)]."""
+    out = []
+    for w in load_weeks().values():
+        if w.open > t:
+            continue
+        for g in w.sched:
+            if not (g["ko"] - RAPPEL_MIN * 60000 <= t < g["ko"]) or not w.teams_known(g, t):
+                continue
+            for s in subs:
+                if (s["endpoint"], w.start, g["id"]) in sent:
+                    continue
+                mien = s.get("fav") and s.get("fav_team") in (g["home"], g["away"])
+                if mien or (s["player"], w.start, g["id"]) in bells:
+                    out.append((s, w, g))
+    return out
+
+
+def _push_envoyer(sub, data):
+    """Un envoi. Renvoie True (parti), False (abonnement à supprimer : 404 / 410) ; lève sinon (réessayé au tour suivant)."""
+    if os.environ.get("GC_PUSH_FAKE") == "1":
+        PUSH_LOG.append({"endpoint": sub["endpoint"], **data})
+        return True
+    from pywebpush import webpush, WebPushException
+    try:
+        webpush({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}},
+                data=json.dumps(data), vapid_private_key=VAPID_PRIVATE, vapid_claims={"sub": VAPID_SUBJECT},
+                ttl=RAPPEL_MIN * 60, timeout=10)
+        return True
+    except WebPushException as e:
+        if e.response is not None and e.response.status_code in (404, 410):
+            return False
+        raise
+
+
+def _push_oublier(endpoint):
+    with _db_lock, db() as c:
+        c.execute("DELETE FROM push_subs WHERE endpoint=?", (endpoint,))
+        c.execute("DELETE FROM push_sent WHERE endpoint=?", (endpoint,))
+
+
+def push_tour(t=None):
+    """Un tour de la boucle : envoie les rappels dus, note chaque envoi (aucun doublon). Renvoie le nombre d'envois."""
+    t = now_ms() if t is None else t
+    with db() as c:
+        subs = [dict(r) for r in c.execute("SELECT s.*, p.fav_team FROM push_subs s LEFT JOIN players p ON p.id=s.player")]
+        bells = {tuple(r) for r in c.execute("SELECT player, week, game FROM push_bells")}
+        sent = {tuple(r) for r in c.execute("SELECT endpoint, week, game FROM push_sent")}
+    n = 0
+    for s, w, g in rappels_dus(t, subs, bells, sent):
+        try:
+            ok = _push_envoyer(s, rappel_texte(w, g, t))
+        except Exception as e:
+            print("rappel non envoyé :", g["id"], str(e)[:200])
+            continue
+        if not ok:
+            _push_oublier(s["endpoint"])
+            continue
+        n += 1
+        with _db_lock, db() as c:
+            c.execute("INSERT OR IGNORE INTO push_sent(endpoint, week, game, at) VALUES(?,?,?,?)",
+                      (s["endpoint"], w.start, g["id"], t))
+    return n
+
+
+def _push_loop():
+    while True:
+        try:
+            if push_ok() and os.environ.get("GC_PUSH_LOOP", "1") == "1":   # GC_PUSH_LOOP=0 : arrêtée (tests)
+                push_tour()
+        except Exception as e:
+            print("rappels :", e)
+        time.sleep(PUSH_TICK)
+
+
+def _push_sub_from(body):
+    s = body.get("subscription") or {}
+    ep, keys = str(s.get("endpoint") or ""), s.get("keys") or {}
+    p256, auth = str(keys.get("p256dh") or ""), str(keys.get("auth") or "")
+    if not (ep.startswith("https://") and len(ep) <= 1000 and _B64URL.match(p256) and _B64URL.match(auth)):
+        raise HTTPException(400, "bad_subscription")
+    return ep, p256, auth
+
+
+def _push_player(body):
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    return p
+
+
+@app.get("/api/push/key")
+def api_push_key():
+    cle = VAPID_PUBLIC or ("BPushFakeTestKey0123456789" if os.environ.get("GC_PUSH_FAKE") == "1" else None)   # tests
+    return {"public_key": cle, "enabled": push_ok(), "minutes": RAPPEL_MIN}
+
+
+@app.post("/api/push/subscribe")
+async def api_push_subscribe(req: Request):
+    """Abonne cet appareil (ou met à jour son réglage « My team's games »)."""
+    body = await _json(req)
+    p = _push_player(body)
+    ep, p256, auth = _push_sub_from(body)
+    fav = 1 if body.get("fav") else 0
+    with _db_lock, db() as c:
+        if c.execute("SELECT COUNT(*) FROM push_subs WHERE player=? AND endpoint<>?", (p["id"], ep)).fetchone()[0] >= PUSH_MAX_PAR_JOUEUR:
+            raise HTTPException(429, "too_many_devices")
+        c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created) VALUES(?,?,?,?,?,?) "
+                  "ON CONFLICT(endpoint) DO UPDATE SET player=excluded.player, p256dh=excluded.p256dh, "
+                  "auth=excluded.auth, fav=excluded.fav", (ep, p["id"], p256, auth, fav, now_ms()))
+    return {"ok": True, "fav": bool(fav), "fav_team": p.get("fav_team")}
+
+
+@app.post("/api/push/unsubscribe")
+async def api_push_unsubscribe(req: Request):
+    body = await _json(req)
+    p = _push_player(body)
+    ep = str(body.get("endpoint") or "")
+    with _db_lock, db() as c:
+        c.execute("DELETE FROM push_subs WHERE endpoint=? AND player=?", (ep, p["id"]))
+    return {"ok": True}
+
+
+_PUSH_TEST_AT = {}
+
+
+@app.post("/api/push/test")
+async def api_push_test(req: Request):
+    """« Send a test » (Réglages) : une notification tout de suite sur cet appareil."""
+    body = await _json(req)
+    p = _push_player(body)
+    ep = str(body.get("endpoint") or "")
+    with db() as c:
+        r = c.execute("SELECT * FROM push_subs WHERE endpoint=? AND player=?", (ep, p["id"])).fetchone()
+    if not r:
+        raise HTTPException(404, "not_subscribed")
+    if not push_ok():
+        raise HTTPException(503, "push_disabled")
+    if time.time() - _PUSH_TEST_AT.get(ep, 0) < 10:
+        raise HTTPException(429, "too_soon")
+    _PUSH_TEST_AT[ep] = time.time()
+    try:
+        ok = _push_envoyer(dict(r), {"title": "Snapline · test", "url": "/", "tag": "test",
+                                     "body": f"Reminders arrive like this, {RAPPEL_MIN} minutes before kickoff."})
+    except Exception as e:
+        print("test de rappel :", str(e)[:200])
+        raise HTTPException(502, "push_failed")
+    if not ok:
+        _push_oublier(ep)
+        raise HTTPException(410, "subscription_gone")
+    return {"ok": True}
+
+
+@app.get("/api/push/bells")
+def api_push_bells(token: str = ""):
+    p = player_by_token(token)
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    w = _need_week()
+    with db() as c:
+        games = [r[0] for r in c.execute("SELECT game FROM push_bells WHERE player=? AND week=?", (p["id"], w.start))]
+    return {"week": w.start, "games": games}
+
+
+@app.post("/api/push/bell")
+async def api_push_bell(req: Request):
+    """Cloche d'un match du calendrier (on = prévenir, sinon non) : semaine en cours, match pas encore commencé."""
+    body = await _json(req)
+    p = _push_player(body)
+    w, t = _need_week(), now_ms()
+    g = w.by.get(str(body.get("game") or ""))
+    if not g or w.status(g, t) != "upcoming":
+        raise HTTPException(400, "bad_game")
+    with _db_lock, db() as c:
+        if body.get("on"):
+            c.execute("INSERT OR IGNORE INTO push_bells(player, week, game) VALUES(?,?,?)", (p["id"], w.start, g["id"]))
+        else:
+            c.execute("DELETE FROM push_bells WHERE player=? AND week=? AND game=?", (p["id"], w.start, g["id"]))
+    return {"ok": True, "game": g["id"], "on": bool(body.get("on"))}
+
+
+@app.get("/api/push/_log")
+def api_push_log():
+    """Tests seulement (GC_TEST_HOOK=1 et GC_PUSH_FAKE=1) : les rappels « envoyés »."""
+    if os.environ.get("GC_TEST_HOOK") != "1":
+        raise HTTPException(404)
+    return {"sent": PUSH_LOG}
+
+
+# service worker (à la racine : il reçoit les rappels pour tout le site), manifeste et icônes (écran d'accueil iPhone)
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(os.path.join(HERE, "static", "sw.js"), media_type="text/javascript",
+                        headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return FileResponse(os.path.join(HERE, "static", "manifest.webmanifest"), media_type="application/manifest+json")
+
+
+@app.get("/icons/{name}")
+def icons(name: str):
+    if name not in ("icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"):
+        raise HTTPException(404)
+    return FileResponse(os.path.join(HERE, "static", "icons", name), media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/api/teams/history")
 def api_teams_history():
     """Semaines TERMINÉES (Grand Final jouée) : champion, finaliste, têtes de série et classement final de chaque équipe —
@@ -1295,3 +1551,5 @@ def _autogen_loop():
 
 if os.environ.get("GC_AUTOGEN") == "1":
     threading.Thread(target=_autogen_loop, daemon=True).start()
+if os.environ.get("GC_PUSH_LOOP", "1") == "1":       # rappels avant le coup d'envoi (bloc 2, étape 6)
+    threading.Thread(target=_push_loop, daemon=True).start()

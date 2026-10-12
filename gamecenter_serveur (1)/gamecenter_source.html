@@ -2,6 +2,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline GameCenter — Live Board</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Snapline">
+<meta name="theme-color" content="#1E5C78">
 <meta name="description" content="Snapline GameCenter: prime-time live boards for simulated football, with real-time odds, power bars and a bet slip.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -832,7 +838,7 @@
   .pill.upcoming{background:var(--l3);color:var(--ink-2);box-shadow:none}
   .pill.upcoming .dot{background:var(--ink-3);animation:none;box-shadow:none}
   @media (max-width:959px){ .st-two,.tp-grid{grid-template-columns:minmax(0,1fr)} .team-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
-  @media (max-width:560px){ .sch-m .fn{display:none} .sch-m .ab{display:inline} .sch-row{grid-template-columns:44px minmax(0,1fr) auto;row-gap:2px;padding:6px 0} .sch-ph{display:none} .sch-row .sch-go,.sch-row .sch-odds,.sch-row .sch-bet{grid-column:2/-1;justify-self:start} }
+  @media (max-width:560px){ .sch-m .fn{display:none} .sch-m .ab{display:inline} .sch-row{grid-template-columns:44px minmax(0,1fr) auto;row-gap:2px;padding:6px 0} .sch-ph{display:none} .sch-row .sch-go,.sch-row .sch-odds,.sch-row .sch-bet,.sch-row .sch-acts{grid-column:2/-1;justify-self:start} }
 
 
   /* ---------- Sound: topbar switch, on-air captions, settings controls ---------- */
@@ -882,6 +888,12 @@
   .delta.neg{color:var(--pink)}
   .odd.sm{height:32px;padding:0 9px;font-size:11.5px;gap:6px;min-width:76px}
   .sch-bet{display:inline-flex;gap:6px;justify-content:flex-end}
+  /* bloc 2, étape 6: reminder bell on upcoming games, Notifications settings */
+  .sch-acts{display:inline-flex;gap:8px;align-items:center;justify-content:flex-end}
+  .sch-bell{width:32px;height:32px;display:grid;place-items:center;border-radius:var(--r-md);border:1px solid var(--line);background:none;color:var(--ink-3);cursor:pointer;flex-shrink:0}
+  .sch-bell svg{width:16px;height:16px}.sch-bell:hover{color:var(--ink);background:var(--l2)}
+  .sch-bell[aria-pressed="true"]{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-soft,transparent)}
+  .set-note{font-size:12px;color:var(--ink-3);margin:6px 0 0;line-height:1.45}.set-note b{color:var(--ink-2)}
   .odd.fodd{height:auto;min-height:40px;padding:6px 8px;flex-direction:column;align-items:flex-end;justify-content:center;gap:2px;width:100%;min-width:62px}
   .odd.fodd b{font:600 12.5px var(--f-mono)} .odd.fodd small{font:500 10px var(--f-mono);color:var(--ink-3)}
   .odd.fodd[aria-pressed="true"] b{color:var(--cyan)}
@@ -4794,6 +4806,7 @@ document.addEventListener('click',e=>{
   const bk=t.closest('[data-brk]'); if(bk){ const id=bk.dataset.g; brkAction(byId[id]||(replayGame&&replayGame.id===id?replayGame:null)||(modalGame&&modalGame.id===id?modalGame:null),bk.dataset.brk); return; }
   const rp=t.closest('[data-rp]'); if(rp){ if(rp.dataset.rp!=='seek'){ const host=rp.closest('[data-rpg]'); rpAction(byId[host&&host.dataset.rpg],rp.dataset.rp,rp); } return; }
   const open=t.closest('[data-open]'); if(open){ const id=open.dataset.open; if(SEASON&&id.startsWith('rp:')) openReplayFeed(SEASON.feeds[id.slice(3)]); else if(byId[id]&&byId[id].preview) openReplay(id); else openModal(id); return; }
+  const bl=t.closest('[data-bell]'); if(bl&&SEASON){ bellToggle(bl.dataset.bell); return; }
   const sch=t.closest('[data-sched]'); if(sch&&SEASON){ const s=SCHED_BY[sch.dataset.sched], st=gStatus(s,nowMs());
     if(st==='live'&&byId['s-'+s.id]) openModal('s-'+s.id); else if(st==='final') openReplayFeed(SEASON.feeds[s.id]); return; }
   if(t.closest('[data-snd]')){ setSound(!soundOn()); return; }
@@ -4959,7 +4972,7 @@ function recordOf(a,t){ const r=standingsAt(t).table.find(x=>x.team===a); return
 /* ---------- the board: live games, recent replays, what is next ---------- */
 let BOARD_SIG='', NEXT_GAMES=[], BOARD_AT=0, BOARD_PENDING=false;
 function boardPlan(t){
-  const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
+  const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(b.id===WATCH_ID)-(a.id===WATCH_ID)||(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
   const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end);
   const up=SCHED.filter(g=>gStatus(g,t)==='upcoming'&&revealed(g,t)).sort((a,b)=>a.ko-b.ko);
   const nLive=window.matchMedia&&window.matchMedia('(min-width: 900px)').matches?4:2;   /* étape 6 : 4 matchs par créneau (2 animés sur mobile) */
@@ -5173,11 +5186,11 @@ function renderSchedule(t){
     (days[fmtDay.format(new Date(g.ko))]=days[fmtDay.format(new Date(g.ko))]||[]).push(g); }
   const rows=Object.entries(days).map(([d,list])=>`<section class="sch-day"><h3 class="sch-h">${esc(d)}</h3>${list.map(g=>{
       const st=gStatus(g,t), o=g.odds||{}, rv=revealed(g,t), A=rv?TEAMS[g.away].abbr:'TBD', H=rv?TEAMS[g.home].abbr:'TBD';
-      const act= st==='upcoming' ? (rv&&o.ml?`<span class="sch-bet">${schOdd(g,'away',t)}${schOdd(g,'home',t)}</span>`:`<span class="sch-odds">Odds at the lock</span>`) :
+      const act= st==='upcoming' ? `<span class="sch-acts">${rv?bellBtn(g):''}${rv&&o.ml?`<span class="sch-bet">${schOdd(g,'away',t)}${schOdd(g,'home',t)}</span>`:`<span class="sch-odds">Odds at the lock</span>`}</span>` :
         `<button class="chip-btn sch-go" type="button" data-sched="${g.id}">${st==='live'?'Watch live':'Replay'}</button>`;
       return `<div class="sch-row ${st}"><span class="sch-t">${esc(tStr(g.ko))}</span><span class="sch-ph">${g.phase==='regular'?'Slot '+g.slot:esc(PHASE[g.phase])}</span>
         <span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>${statusCell(g,t)}${act}</div>`; }).join('')}</section>`).join('');
-  const key='sch|'+SCH_FILTER+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN);
+  const key='sch|'+SCH_FILTER+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN)+'|'+pushSig();
   if(el._k===key) return; el._k=key;
   el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · a kickoff every 30 min, 10:00–22:00, Monday to Friday · playoffs Saturday and Sunday</p>
     <div class="seg" role="tablist" aria-label="Schedule filter">${[['all','All games'],['upcoming','Upcoming'],['results','Results']].map(([k,l])=>`<button type="button" role="tab" data-schf="${k}" aria-selected="${SCH_FILTER===k}">${l}</button>`).join('')}</div></div>
@@ -5401,6 +5414,125 @@ function careerHTML(pid,name,pos){
   return lab+`<div class="st-scroll"><table><thead><tr><th scope="col">Week</th>${cols.map(([l])=>`<th scope="col">${l}</th>`).join('')}</tr></thead><tbody>${C.seasons.map(s=>tr(`W${s.week} ${esc(s.team)}`,s)).join('')}${C.seasons.length>1?tr('Total',C.total,'car-tot'):''}</tbody></table></div>${rk}${prev}`;
 }
 
+/* ---------- Reminders 10 min before kickoff (bloc 2, étape 6): Web Push ----------
+   The server sends them (serveur.py, rappels_dus): games of the account's team ("My team's games", per device) and games
+   picked with a bell in the Schedule (guests too). The permission prompt only ever follows a tap. iPhone / iPad: Apple
+   delivers web notifications to sites added to the Home Screen only (iOS 16.4+). */
+const PUSH_KEY='gc-push-v1';
+const PUSH={key:null,enabled:false,min:10,reg:null,sub:null,fav:true,ready:false,busy:false,bells:new Set(),bellsAt:0};
+let WATCH_ID=null;
+function pushSupported(){ return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window; }
+function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+function isStandalone(){ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
+function pushSig(){ return [PUSH.ready,PUSH.enabled,!!PUSH.sub,PUSH.fav,PUSH.busy,PUSH.bells.size,[...PUSH.bells].join(','),(window.Notification&&Notification.permission)||''].join(':'); }
+function b64u(s){ const p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+async function pushInit(){
+  const d=lsGet(PUSH_KEY); if(d&&d.fav===false) PUSH.fav=false;
+  try{ const k=await api('/push/key'); PUSH.key=k.public_key; PUSH.enabled=!!k.enabled; PUSH.min=k.minutes||10; }catch(e){}
+  if(pushSupported()){
+    try{ PUSH.reg=await navigator.serviceWorker.register('/sw.js'); PUSH.sub=await PUSH.reg.pushManager.getSubscription(); }catch(e){}
+    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); });
+  }
+  PUSH.ready=true; await pushRebind(); renderView(true);
+}
+/* the device follows the signed-in player (account, or guest): no new permission prompt */
+async function pushRebind(){
+  PUSH.bells=new Set();
+  if(PUSH.sub&&PLAYER&&PLAYER.token&&window.Notification&&Notification.permission==='granted'){
+    try{ await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,subscription:PUSH.sub.toJSON(),fav:PUSH.fav})}); }catch(e){} }
+  await loadBells();
+}
+function pushForget(){
+  const s=PUSH.sub; if(!s||!PLAYER) return;
+  api('/push/unsubscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,endpoint:s.endpoint})}).catch(()=>{});
+  s.unsubscribe().catch(()=>{}); PUSH.sub=null; PUSH.bells=new Set();
+}
+async function loadBells(){
+  if(!PLAYER||!PLAYER.token) return;
+  try{ const r=await api('/push/bells?token='+encodeURIComponent(PLAYER.token)); PUSH.bells=new Set(r.games||[]); PUSH.bellsAt=Date.now(); }catch(e){}
+}
+/* why reminders cannot be turned on here (null: they can) */
+function pushBlocked(){
+  if(!PUSH.ready) return 'Checking this device…';
+  if(!pushSupported()) return isIOS()&&!isStandalone()?'On iPhone and iPad: tap Share, then “Add to Home Screen”, and open Snapline from the Home Screen to turn reminders on.':'This browser does not support notifications.';
+  if(!PUSH.enabled||!PUSH.key) return 'Reminders are not available on the server yet.';
+  if(Notification.permission==='denied') return 'Notifications are blocked for this site: allow them in your browser or device settings, then come back.';
+  return null;
+}
+async function pushSubscribe(fav){
+  const perm=Notification.permission==='granted'?'granted':await Notification.requestPermission();   /* first: still inside the tap */
+  if(perm!=='granted') throw Object.assign(new Error('denied'),{code:'denied'});
+  const reg=PUSH.reg||await navigator.serviceWorker.ready;
+  const s=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(PUSH.key)});
+  const p=await ensurePlayer();
+  await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:p.token,subscription:s.toJSON(),fav:!!fav})});
+  PUSH.sub=s; PUSH.fav=!!fav; lsSet(PUSH_KEY,{fav:PUSH.fav});
+}
+async function pushAction(a){
+  if(PUSH.busy) return; PUSH.busy=true; renderView(true);
+  try{
+    if(a==='on') { await pushSubscribe(PUSH.fav); await loadBells(); toast(`Reminders on · ${PUSH.min} min before kickoff`); }
+    else if(a==='off'){ const s=PUSH.sub; if(s){ try{ await api('/push/unsubscribe',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:s.endpoint})}); }catch(e){} try{ await s.unsubscribe(); }catch(e){} }
+      PUSH.sub=null; toast('Reminders off on this device'); }
+    else if(a==='fav'){ await pushSubscribe(!PUSH.fav); toast(PUSH.fav?'Your team’s games: on':'Your team’s games: off'); }
+    else if(a==='test'){ await api('/push/test',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:PUSH.sub&&PUSH.sub.endpoint})}); toast('Test sent · it should arrive in a few seconds'); }
+  }catch(e){
+    toastErr(e.code==='denied'?'Notifications were not allowed. You can allow them in your browser settings.':e.status===429?'Wait a few seconds before the next test.':e.status===410?'This device is no longer subscribed: turn reminders on again.':'Could not change reminders. Try again.');
+    if(e.status===410) PUSH.sub=null;
+  }finally{ PUSH.busy=false; renderView(true); }
+}
+function pushCard(){
+  const why=pushBlocked(), on=!!PUSH.sub&&!why, fav=PLAYER&&PLAYER.fav_team, acct=PLAYER&&PLAYER.account;
+  const team=fav&&TEAMS[fav]?TEAMS[fav].name:fav;
+  return `<div class="card set-card" id="pushCard"><div class="card-h"><h2>Notifications</h2><span class="label">${on?'On on this device':'Off'}</span></div>
+    <div class="set-row"><span class="set-l" id="setPushL">Game reminders<small>A notification ${PUSH.min} minutes before kickoff, even when Snapline is closed · teams and time only, never a score</small></span>
+      <button type="button" class="switch" role="switch" data-push="${on?'off':'on'}" aria-checked="${on}" aria-labelledby="setPushL"${why||PUSH.busy?' disabled':''}><i></i></button></div>
+    <div class="set-row"><span class="set-l" id="setPushFavL">My team’s games<small>${acct&&fav?`Every ${esc(team)} game, playoffs included`:acct?'Pick your team in My team first':'Needs an account and a team (My team)'}</small></span>
+      <button type="button" class="switch" role="switch" data-push="fav" aria-checked="${on&&PUSH.fav&&!!fav}" aria-labelledby="setPushFavL"${!on||!fav||PUSH.busy?' disabled':''}><i></i></button></div>
+    <div class="set-row"><span class="set-l">Any other game<small>Tap the bell next to a game in the Schedule${PUSH.bells.size?` · ${PUSH.bells.size} picked this week`:''}</small></span>
+      <button type="button" class="chip-btn" data-view-go="schedule">Schedule</button></div>
+    <div class="set-row"><span class="set-l">Check this device<small>Sends one notification now</small></span>
+      <button type="button" class="chip-btn" data-push="test"${on&&!PUSH.busy?'':' disabled'}>Send a test</button></div>
+    ${why?`<p class="set-note">${esc(why)}</p>`:''}</div>`;
+}
+function bellBtn(g){
+  if(!SERVER) return '';
+  const on=PUSH.bells.has(g.id);
+  return `<button type="button" class="sch-bell" data-bell="${g.id}" aria-pressed="${on}" title="${on?'Reminder set':'Remind me'} · ${PUSH.min} min before kickoff" aria-label="${on?'Cancel the reminder for':'Remind me before'} ${esc(TEAMS[g.away].abbr)} at ${esc(TEAMS[g.home].abbr)}">${ICON.bell}</button>`;
+}
+async function bellToggle(gid){
+  if(PUSH.busy) return;
+  const why=pushBlocked(); if(why){ toastErr(why); return; }
+  const on=!PUSH.bells.has(gid); PUSH.busy=true;
+  try{
+    if(!PUSH.sub) await pushSubscribe(PUSH.fav);
+    await api('/push/bell',{method:'POST',body:JSON.stringify({token:PLAYER.token,game:gid,on})});
+    if(on) PUSH.bells.add(gid); else PUSH.bells.delete(gid);
+    const g=SCHED_BY[gid]; toast(on?`Reminder set · ${TEAMS[g.away].abbr} @ ${TEAMS[g.home].abbr}, ${PUSH.min} min before kickoff`:'Reminder removed');
+  }catch(e){ toastErr(e.code==='denied'?'Notifications were not allowed. You can allow them in your browser settings.':'Could not set the reminder. Try again.'); }
+  finally{ PUSH.busy=false; renderView(true); }
+}
+/* ?watch=<game> (a reminder was tapped): the game opens on the big screen — now if it is live or over, at kickoff otherwise */
+function watchFromUrl(){
+  let id=null; try{ id=new URLSearchParams(location.search).get('watch'); }catch(e){}
+  if(!id) return;
+  try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+  watchGame(id);
+}
+function watchGame(gid){
+  const s=SCHED_BY[gid]; if(!s) return;
+  const t=nowMs(), st=gStatus(s,t);
+  if(st==='final'){ openReplayFeed(SEASON.feeds[gid]); return; }
+  WATCH_ID=gid; if(VIEW!=='live') setView('live');
+  if(st==='live'){ BOARD_SIG=''; seasonRefresh(true); return; }
+  toast(`${TEAMS[s.away].abbr} @ ${TEAMS[s.home].abbr} · kickoff at ${tStr(s.ko)} · the game opens here`);
+}
+function watchTick(t){
+  const s=SCHED_BY[WATCH_ID], st=s?gStatus(s,t):'final';
+  if(st==='final'){ WATCH_ID=null; return; }
+  if(st==='live'&&byId['s-'+s.id]&&!modalGame){ const id=s.id; WATCH_ID=null; openModal('s-'+id); }
+}
+
 /* ---------- clock: real time during the week, preview time otherwise ---------- */
 function clockPresets(){
   const slot=n=>{ const g=SCHED.find(x=>x.phase==='regular'&&x.slot===n); return g?g.ko:null; };
@@ -5442,6 +5574,7 @@ function seasonRefresh(force){
   /* keep live boards in step with the clock */
   /* a play lasts ≈ 6-7.5 s on screen, the server reveals one every 6.5 s: catch up by playing a little faster (every play,
      score banner and chip still shown) and jump only on a real gap (tab in the background, clock changed) */
+  if(WATCH_ID) watchTick(t);
   for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t), lag=k-g.idx;
     if(gStatus(g.sched,t)!=='live'){ g.speed=1; continue; }
     if(lag>8||lag<-2){ liveSeek(g,t); g.paused=false; rpAfterSeek(g); g.speed=1; }
@@ -5507,7 +5640,7 @@ function seasonBoot(){
   seasonRefresh(true);
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); }
+  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); }
 }
 
 
@@ -5927,7 +6060,7 @@ let SET_CONFIRM=false, SET_ERR='';
 function renderSettings(force){
   const el=document.getElementById('viewSettings');
   const nPrev=CLOCK.demo?WAL.bets.length:0;
-  const key='set|'+JSON.stringify(SET)+'|'+SET_CONFIRM+'|'+SET_ERR+'|'+CLOCK.demo+'|'+nPrev+'|'+slip.picks.length+'|'+(SERVER?acctSig():'');
+  const key='set|'+JSON.stringify(SET)+'|'+SET_CONFIRM+'|'+SET_ERR+'|'+CLOCK.demo+'|'+nPrev+'|'+slip.picks.length+'|'+(SERVER?acctSig():'')+'|'+pushSig();
   if(!force&&el._k===key) return; el._k=key;
   const radio=(name,val,lab,desc)=>`<button type="button" class="set-opt" role="radio" data-set="${name}" data-v="${val}" aria-checked="${SET[name]===val}"><span class="set-dot" aria-hidden="true"></span><span><b>${lab}</b>${desc?`<small>${desc}</small>`:''}</span></button>`;
   el.innerHTML=`<div class="view-head"><h2>Settings</h2><p class="eyebrow">Saved in this browser as soon as you change them</p></div>
@@ -5951,6 +6084,7 @@ function renderSettings(force){
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
     </div>
     ${soundCard()}
+    ${SERVER?pushCard():''}
     <div class="card set-card" id="acCard"><div class="card-h"><h2>${SERVER?'Account':'Your data'}</h2>${SERVER?`<span class="label">${PLAYER&&PLAYER.account?'Signed in':'Guest'}</span>`:''}</div>
       ${SERVER?accountHTML():`<p class="set-p">Bets, the slip and these settings are kept in this browser only. Nothing is sent anywhere.</p>`}
       ${SERVER?'':`<div class="set-row"><span class="set-l">${CLOCK.demo?'Preview wallet':'Real-time wallet'}<small>${CLOCK.demo?`${nPrev} bet${nPrev===1?'':'s'} placed in preview time`:'Resets by itself on Monday 00:00'}</small></span>
@@ -5965,6 +6099,7 @@ function settingsClick(t){
   const o=t.closest('[data-set]');
   if(o){ const n=o.dataset.set; if(o.getAttribute('role')==='switch') SET[n]=!SET[n]; else SET[n]=o.dataset.num!=null?+o.dataset.v:o.dataset.v; saveSettings(); applySettings(); audioApply(); renderSettings(true); if(n==='odds') BET_SIG=''; if(n==='spoil') spoilApply(); return true; }
   if(t.closest('[data-sndtest]')){ audioTest(); return true; }
+  const pu=t.closest('[data-push]'); if(pu){ if(!pu.disabled) pushAction(pu.dataset.push); return true; }
   const r=t.closest('[data-setreset]');
   if(r){ const v=r.dataset.setreset;
     if(v==='ask') SET_CONFIRM=true;
@@ -6641,7 +6776,7 @@ async function accountSubmit(){
     const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
     PLAYER={token:r.token,name:r.name,account:true,fav_team:r.fav_team||null}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
     ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
-    await serverWalletLoad(); renderSettings(true); walletRender(nowMs());
+    await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs());
     toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
     if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
   }catch(e){ ACCT.busy=false; btn.disabled=false; btn.textContent=reg?'Create account':'Sign in'; acErr(accMsg(e)); }
@@ -6659,6 +6794,7 @@ async function accountPassword(){
   finally{ ACCT.busy=false; }
 }
 function accountSignOut(){
+  pushForget();   /* reminders of this account stop on this device */
   const n=PLAYER&&PLAYER.name; PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(e){}
   WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
   renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true);
