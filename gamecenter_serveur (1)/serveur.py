@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse, RedirectResponse
 from fastapi.middleware.gzip import GZipMiddleware
+from moteur import histoire as _histoire
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 # Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
@@ -970,6 +971,62 @@ def api_teams_history():
                     "standings": [{k: r.get(k) for k in ("rank", "team", "w", "l", "t", "pf", "pa")}
                                   for r in d.get("standings") or []]})
     return {"now": t, "weeks": out}
+
+
+# ------------------------------------------------------------------ histoire, records, carrières (bloc 2, étape 5)
+_HIST, _HIST_LOCK = {}, threading.Lock()
+
+
+def _feuille(w, gid):
+    """Feuille de match d'un match (moteur/histoire.py), calculée une fois par match."""
+    fm = w.__dict__.setdefault("feuilles", {})
+    if gid not in fm:
+        fm[gid] = _histoire.feuille_de_match(w.feeds[gid])
+    return fm[gid]
+
+
+def league_history(t, finished_weeks=False):
+    """Histoire de la ligue à l'instant t : semaines publiées, matchs TERMINÉS seulement (rien d'un match pas encore joué).
+    finished_weeks : seulement les semaines dont la Grand Final est jouée (réglage « Hide scores » du site).
+    Mis en cache tant qu'aucun match ne se termine."""
+    ws = [w for w in sorted(load_weeks().values(), key=lambda w: w.monday) if w.open <= t]
+    sem, cle = [], []
+    for w in ws:
+        fini = w.status(w.final, t) == "final"
+        if finished_weeks and not fini:
+            continue
+        gs = [g for g in w.sched if w.status(g, t) == "final"]
+        if not gs:
+            continue
+        cle.append((w.start, len(gs)))
+        sem.append((w, gs, fini))
+    cle = tuple(cle)
+    with _HIST_LOCK:
+        if cle not in _HIST:
+            if len(_HIST) > 8:
+                _HIST.clear()
+            _HIST[cle] = _histoire.histoire([{"index": w.doc["week"]["index"], "start": w.start, "doc": w.doc,
+                                               "terminee": fini, "matchs": [(g, _feuille(w, g["id"])) for g in gs]}
+                                              for w, gs, fini in sem])
+        return _HIST[cle]
+
+
+@app.get("/api/league/history")
+def api_league_history(finished_weeks: int = 0):
+    """Saisons (une par semaine), franchises, records (un match, une saison, une carrière). Sans les carrières détaillées
+    (voir /api/league/career/{id})."""
+    t = now_ms()
+    h = league_history(t, bool(finished_weeks))
+    return {"now": t, **{k: v for k, v in h.items() if k != "careers"}}
+
+
+@app.get("/api/league/career/{pid}")
+def api_league_career(pid: str, finished_weeks: int = 0):
+    """Les carrières d'une place de roster (identifiant) : le joueur actuel et ceux qui l'ont tenue avant lui."""
+    if not re.fullmatch(r"[A-Z0-9]{2,4}_[A-Z]{1,4}\d{1,2}", pid):
+        raise HTTPException(400, "bad_id")
+    t = now_ms()
+    return {"now": t, "careers": _histoire.carriere(league_history(t, bool(finished_weeks)), pid)}
 
 
 def _check_pick(w, pk, t):

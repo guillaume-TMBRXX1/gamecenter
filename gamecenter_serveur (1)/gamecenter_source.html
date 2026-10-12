@@ -802,6 +802,27 @@
   .tp-head{display:flex;gap:14px;align-items:center} .tp-head h2{font-size:24px} .tp-head .eyebrow{margin:6px 0 0}
   .tp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .tp-grid .panel{display:flex;flex-direction:column;gap:7px}
+  /* History (bloc 2, étape 5): seasons, franchises, records; career on the player card */
+  .hs-row{display:grid;grid-template-columns:78px minmax(0,1fr) minmax(0,1.5fr);gap:16px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
+  .hs-row:first-child{border-top:0;padding-top:4px}
+  .hs-wk{display:flex;flex-direction:column;gap:2px}.hs-wk b{font:800 22px/1 var(--f-display);color:var(--ink)}.hs-wk small,.hs-sub{font-size:11.5px;color:var(--ink-3)}
+  .hs-champ{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hs-champ b{font-size:14px;color:var(--ink)}
+  .hs-sub{margin:6px 0 0}.hs-sub b{color:var(--ink-2);font-weight:600}.hs-sub .win{color:var(--ink);font-weight:800}
+  .hs-lds{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+  .hs-ld{display:flex;flex-direction:column;gap:1px;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r-md);min-width:0}
+  .hs-ld b{font:700 15px var(--f-mono);color:var(--ink)}.hs-ld small{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hist-sub{margin:14px 0 10px}
+  .rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+  .rc-card h3{font-size:14px;margin:0 0 6px}
+  .rc-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;border-top:1px solid var(--line);padding:6px 0;font-size:12.5px}
+  .rc-row:nth-of-type(1) .rc-v{color:var(--cyan)}
+  .rc-i{font:700 11px var(--f-mono);color:var(--ink-3)}.rc-who{display:flex;flex-direction:column;min-width:0}.rc-who b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rc-who small{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rc-who .link{font-size:11px;padding:0;justify-self:start}.rc-v{font:700 13px var(--f-mono);color:var(--ink)}
+  .pc-car table{width:100%;border-collapse:collapse;font:500 11.5px var(--f-mono)}
+  .pc-car th,.pc-car td{padding:4px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap;color:var(--ink-2)}
+  .pc-car thead th{border-top:0;font:600 9.5px var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .pc-car th:first-child,.pc-car td:first-child{text-align:left}.pc-car tr.car-tot td{color:var(--ink);font-weight:700}
+  @media (max-width:760px){ .hs-row{grid-template-columns:58px minmax(0,1fr)} .hs-lds{grid-column:1/-1} }
   .tr-row{display:grid;grid-template-columns:22px 70px 1fr auto;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding:6px 0}
   .tr-row span:first-child{font:700 italic 12px var(--f-display)} .tr-row .w{color:var(--cyan)} .tr-row .l{color:var(--pink)} .tr-row b{font:600 12.5px var(--f-mono);color:var(--ink)}
   .pst.roster td.tl{text-align:left;white-space:normal;color:var(--ink-3);font-size:11.5px}
@@ -1891,6 +1912,9 @@
     <button class="rail-btn" type="button" data-view="myteam">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>My team
     </button>
+    <button class="rail-btn" type="button" data-view="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 102.2-5.3M4.5 4v4h4"/><path d="M12 8v4.2l2.8 1.8"/></svg>History
+    </button>
     <button class="rail-btn" type="button" data-exh-go hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="12" rx="2"/><path d="M10.5 9v5l4-2.5z" fill="currentColor"/><path d="M8 20.5h8"/></svg>Exhibition
     </button>
@@ -1962,6 +1986,7 @@
     <section class="view" id="viewStandings" hidden aria-label="Standings"></section>
     <section class="view" id="viewTeams" hidden aria-label="Teams"></section>
     <section class="view" id="viewMyteam" hidden aria-label="My team"></section>
+    <section class="view" id="viewHistory" hidden aria-label="History"></section>
     <section class="view" id="viewBets" hidden aria-label="My bets"></section>
     <section class="view" id="viewSettings" hidden aria-label="Settings"></section>
   </main>
@@ -4277,7 +4302,7 @@ function rosterCardHTML(abbr,pid){
       <div class="pc-name" id="pcName">${esc(p.name)}</div>
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${esc(T.name)} · ${POS_NAME[p.pos]||esc(p.pos)}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
-  return head+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week');
+  return head+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
 }
 function openRosterCard(abbr,pid,cx,cy){ const h=rosterCardHTML(abbr,pid); if(h) showCardEl(h,cx,cy,null); }
 /* nearest player dot to a click, through the field's 3D tilt */
@@ -4778,6 +4803,7 @@ document.addEventListener('click',e=>{
   if(SEASON&&settingsClick(t)) return;
   const vg=t.closest('[data-view-go]'); if(vg){ closeDrawer(); setView(vg.dataset.viewGo); return; }
   const sf=t.closest('[data-schf]'); if(sf){ SCH_FILTER=sf.dataset.schf; renderView(true); return; }
+  const hb=t.closest('[data-hist],[data-histrec]'); if(hb){ if(hb.dataset.hist) HIST_TAB=hb.dataset.hist; else HIST_REC=hb.dataset.histrec; renderView(true); return; }
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
   if(t.closest('[data-favchange]')){ MT_PICK=true; renderView(true); return; }
   if(t.closest('[data-favcancel]')){ MT_PICK=false; renderView(true); return; }
@@ -5117,18 +5143,19 @@ function renderSeasonCards(t){
 let VIEW='live', SCH_FILTER='all', TEAM_SEL=null, PL_FOCUS=null;
 function setView(v){
   VIEW=v;
-  for(const k of ['live','schedule','standings','teams','myteam','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  for(const k of ['live','schedule','standings','teams','myteam','history','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   renderView(true);
   window.scrollTo({top:0});
 }
 function renderView(force){
-  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewTeams','viewMyteam','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
+  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewTeams','viewMyteam','viewHistory','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
   const t=nowMs();
   if(VIEW==='schedule') renderSchedule(t);
   else if(VIEW==='standings') renderStandings(t);
   else if(VIEW==='teams') renderTeams(t);
   else if(VIEW==='myteam') renderMyteam(t);
+  else if(VIEW==='history') renderHistory(t);
   else if(VIEW==='bets') renderBets(t);
   else if(VIEW==='settings') renderSettings(force);
 }
@@ -5275,6 +5302,103 @@ async function setFavTeam(team){
   try{ const r=await api('/account/team',{method:'POST',body:JSON.stringify({token:PLAYER.token,team})});
     PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; renderView(true); }
   catch(err){ if(e) e.textContent=err.status===401?'Sign in to your account first.':'Could not save your team. Try again.'; }
+}
+
+/* ---------- History (bloc 2, étape 5): seasons, franchises, records, careers ----------
+   Built by the server (moteur/histoire.py) from every week: finished games only, nothing from a game still to come.
+   Hide scores on (Settings): only the weeks whose Grand Final is played. */
+let LGH=null, HIST_K='', HIST_TAB='seasons', HIST_REC='game', HIST_LOAD=false, CAREER={}, CAREER_K='';
+const HIST_LEAD=[['pyd','Pass yds'],['ryd','Rush yds'],['yd','Rec yds'],['sk','Sacks'],['tk','Tackles'],['int','INT']];
+function histParam(){ return SET.spoil?'?finished_weeks=1':''; }
+function histKey(t){ return SET.spoil?'s':'a|'+SCHED.filter(g=>gStatus(g,t)==='final').length; }
+function tName(a){ return TEAMS[a]?TEAMS[a].name:a; }
+function wkDate(s){ try{ return new Date(s+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){ return s; } }
+async function loadHistory(t){
+  const k=histKey(t); if(HIST_LOAD||(LGH&&HIST_K===k)) return;
+  HIST_LOAD=true;
+  try{ LGH=await api('/league/history'+histParam()); }catch(e){ LGH=LGH&&!LGH.error?LGH:{error:true}; }
+  HIST_K=k; HIST_LOAD=false;
+  if(VIEW==='history') renderView(true);
+}
+function histSeasonsHTML(){
+  const S=LGH.seasons.slice().reverse();
+  if(!S.length) return '<div class="card"><p class="st-none">No finished game yet.</p></div>';
+  return `<div class="card">${S.map(s=>{
+    const F=s.final, fin=F?(()=>{ const hw=F.score.home>F.score.away; return `<p class="hs-sub">Grand Final · <span class="${hw?'':'win'}">${F.away} ${F.score.away}</span>${MINUS}<span class="${hw?'win':''}">${F.score.home} ${F.home}</span></p>`; })():'';
+    const champ=s.complete&&s.champion?`<div class="hs-champ"><span class="badge">${esc(s.champion)}</span><b>${esc(tName(s.champion))}</b><span class="label">Champion</span></div>${fin}${s.runner_up?`<p class="hs-sub">Finalist · <b>${esc(tName(s.runner_up))}</b></p>`:''}`
+      :`<div class="hs-champ"><b>In progress</b></div><p class="hs-sub">${s.games} of ${s.games_total} games played</p>`;
+    const br=s.best_record?`<p class="hs-sub">Best regular-season record · <b>${esc(s.best_record.team)}</b> ${s.best_record.w}-${s.best_record.l}${s.best_record.t?'-'+s.best_record.t:''}</p>`:'';
+    const ld=HIST_LEAD.map(([k,l])=>{ const x=s.leaders[k]; return x?`<div class="hs-ld"><span class="label">${l}</span><b>${x.value}</b><small>${esc(x.name)} · ${esc(x.team)}</small></div>`:''; }).join('');
+    return `<div class="hs-row"><div class="hs-wk"><b>W${s.week}</b><small>${esc(wkDate(s.start))}</small><small>${s.teams}-team league</small></div><div>${champ}${br}</div><div class="hs-lds">${ld}</div></div>`; }).join('')}</div>`;
+}
+function histFranchisesHTML(){
+  const pct=f=>{ const n=f.w+f.l+f.t; return n?((f.w+f.t/2)/n).toFixed(3):'—'; };
+  const rows=LGH.franchises.map(f=>`<tr><th scope="row"><span class="badge">${esc(f.team)}</span> ${esc(tName(f.team))}</th><td class="${f.titles?'lead':''}">${f.titles}${f.title_weeks.length?` <small>(${f.title_weeks.map(w=>'W'+w).join(', ')})</small>`:''}</td><td>${f.finals}</td><td>${f.playoffs}</td><td>${f.seasons}</td><td>${f.w}-${f.l}${f.t?'-'+f.t:''}</td><td>${pct(f)}</td><td>${f.pf}</td><td>${f.pa}</td></tr>`).join('');
+  return `<div class="card"><div class="st-scroll"><table class="tst stand"><thead><tr><th scope="col">Team</th><th>Titles</th><th>Finals</th><th>Playoffs</th><th>Seasons</th><th>W-L-T</th><th>Pct</th><th>PF</th><th>PA</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="np-note">All weeks · regular-season record · Playoffs = semi-final appearances · a title is the Grand Final.</p></div>`;
+}
+function recCtx(x,kind){
+  const ph=x.phase&&x.phase!=='regular'?' · '+(PHASE[x.phase]||x.phase):'';
+  const rp=x.game&&x.week===SW.week.index&&SCHED_BY[x.game]?` <button class="link" type="button" data-sched="${esc(x.game)}">Replay</button>`:'';
+  if(kind==='game') return `${esc(x.team)} vs ${esc(x.opp)}${x.score?' · '+esc(x.score):''} · W${x.week}${ph}${rp}`;
+  if(kind==='season') return `${esc(x.team)} · W${x.week}${x.complete===false?' · in progress':''}${x.record?' · '+esc(x.record):''}`;
+  return `${esc(x.team)} · ${esc(x.pos||'')} · ${x.seasons} season${x.seasons>1?'s':''}`;
+}
+function recCard(title,list,kind,n,team){
+  const rows=(list||[]).slice(0,n).map((x,i)=>`<div class="rc-row"><span class="rc-i">${i+1}</span><span class="rc-who"><b>${esc(team?tName(x.team):x.name)}</b><small>${recCtx(x,kind)}</small></span><b class="rc-v">${x.value}</b></div>`).join('');
+  return `<div class="card rc-card"><h3>${esc(title)}</h3>${rows||'<p class="st-none">No record yet.</p>'}</div>`;
+}
+function histRecordsHTML(){
+  const R=LGH.records, L=R.labels, k=HIST_REC;
+  const sub=`<div class="seg hist-sub" role="tablist" aria-label="Records">${[['game','Single game'],['season','Single season'],['career','Career']].map(([v,l])=>`<button type="button" role="tab" data-histrec="${v}" aria-selected="${k===v}">${l}</button>`).join('')}</div>`;
+  let cards='';
+  if(k==='career') cards=Object.keys(R.career).map(c=>recCard(L[c],R.career[c],'career',10)).join('');
+  else { const B=R[k], TL=k==='season'?{pts:'Points in a season',wins:'Wins in a season'}:{};
+    cards=Object.keys(B.players).map(c=>recCard(L[c],B.players[c],k,5)).join('')+Object.keys(B.teams).map(c=>recCard(TL[c]||L[c],B.teams[c],k,5,true)).join(''); }
+  return sub+`<div class="rc-grid">${cards}</div><p class="np-note">${k==='game'?'Playoffs included · extra points and kick returns count from the week of 19 October 2026 (when they joined the engine).':k==='season'?'One week is one season, playoffs included.':'All weeks, playoffs included. A rookie who takes a retired player’s roster spot starts his own career.'}</p>`;
+}
+function renderHistory(t){
+  const el=document.getElementById('viewHistory'); if(!el) return;
+  const head=`<div class="view-head"><h2>History</h2><p class="eyebrow">Every week is a full season · champions, franchises, records and careers · ${SET.spoil?'<b>Hide scores is on</b>: a week counts once its Grand Final is played':'this week counts game by game, as each one ends'}</p>
+    <div class="seg" role="tablist" aria-label="History">${[['seasons','Seasons'],['franchises','Franchises'],['records','Records']].map(([k,l])=>`<button type="button" role="tab" data-hist="${k}" aria-selected="${HIST_TAB===k}">${l}</button>`).join('')}</div></div>`;
+  if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>League history is built on the server from every week played.</p></div>'; return; }
+  loadHistory(t);
+  const key='hi|'+HIST_K+'|'+HIST_TAB+'|'+HIST_REC+'|'+(LGH?LGH.now||'e':'-');
+  if(el._k===key) return; el._k=key;
+  if(!LGH){ el.innerHTML=head+'<div class="card"><p class="st-none">Loading…</p></div>'; return; }
+  if(LGH.error){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>History is not available right now</b>Try again in a moment.</p></div>'; return; }
+  el.innerHTML=head+(HIST_TAB==='franchises'?histFranchisesHTML():HIST_TAB==='records'?histRecordsHTML():histSeasonsHTML());
+}
+/* Career on the roster player card: one row per week (season), total, all-time rank */
+const CAR_COLS=(()=>{ const v=k=>o=>o[k]||0, ma=(m,a)=>o=>`${o[m]||0}/${o[a]||0}`;
+  return {pass:[['C/A',ma('cmp','att')],['Yds',v('pyd')],['TD',v('ptd')],['INT',v('pint')]],rush:[['Car',v('car')],['Yds',v('ryd')],['TD',v('rtd')],['RecY',v('yd')]],
+    rec:[['Rec',v('rec')],['Yds',v('yd')],['TD',v('td')]],def:[['Tkl',v('tk')],['Sck',v('sk')],['INT',v('int')],['PD',v('pd')]],kick:[['FG',ma('fgm','fga')],['XP',ma('xpm','xpa')]],
+    kr:[['KR',v('kr')],['KRY',v('kry')]],g:[['G',v('games')]]}; })();
+const CAR_RANK={pyd:'Passing yards',ryd:'Rushing yards',yd:'Receiving yards',sk:'Sacks',tk:'Tackles',fgm:'Field goals'};
+function carCols(pos,tot){
+  const c=pos==='QB'?CAR_COLS.pass:pos==='RB'?CAR_COLS.rush:pos==='WR'||pos==='TE'?CAR_COLS.rec:pos==='K'?CAR_COLS.kick:['EDGE','DT','LB','CB','S'].includes(pos)?CAR_COLS.def:[];
+  return [...CAR_COLS.g,...c,...(tot&&tot.kr?CAR_COLS.kr:[])];
+}
+async function loadCareer(pid){
+  const k=histKey(nowMs()); if(CAREER_K!==k){ CAREER={}; CAREER_K=k; }
+  if(CAREER[pid]) return;
+  CAREER[pid]={loading:true};
+  try{ CAREER[pid]=await api('/league/career/'+encodeURIComponent(pid)+histParam()); }catch(e){ CAREER[pid]={error:true}; }
+  const el=document.querySelector('.pcard [data-career]'); if(el&&el.dataset.career===pid) el.innerHTML=careerHTML(pid,el.dataset.cname);
+}
+function careerHTML(pid,name,pos){
+  const lab='<span class="label">Career</span>';
+  if(!SERVER) return lab+'<p class="pc-note">Arrives with the GameCenter server.</p>';
+  if(CAREER_K!==histKey(nowMs())||!CAREER[pid]){ loadCareer(pid); return lab+'<p class="pc-note">Loading…</p>'; }
+  const D=CAREER[pid]; if(D.loading) return lab+'<p class="pc-note">Loading…</p>';
+  if(D.error) return lab+'<p class="pc-note">Career stats are not available right now.</p>';
+  const C=(D.careers||[]).find(c=>c.name===name), before=(D.careers||[]).filter(c=>c.name!==name);
+  const prev=before.length?`<p class="pc-note">Before him at this roster spot: ${before.map(c=>`${esc(c.name)} (W${c.seasons[0].week}${c.seasons.length>1?'–W'+c.seasons[c.seasons.length-1].week:''})`).join(', ')}</p>`:'';
+  if(!C) return lab+'<p class="pc-note">No finished game yet in his career.</p>'+prev;
+  const cols=carCols(pos||C.pos,C.total);
+  const tr=(l,o,cls)=>`<tr${cls?` class="${cls}"`:''}><td>${l}</td>${cols.map(([,f])=>`<td>${f(o)}</td>`).join('')}</tr>`;
+  const rk=C.rank_key&&C.ranks&&C.ranks[C.rank_key]?`<div class="pc-line"><span>All-time · ${CAR_RANK[C.rank_key]||C.rank_key}</span><b>#${C.ranks[C.rank_key][0]} of ${C.ranks[C.rank_key][1]} · ${C.total[C.rank_key]}</b></div>`:'';
+  return lab+`<div class="st-scroll"><table><thead><tr><th scope="col">Week</th>${cols.map(([l])=>`<th scope="col">${l}</th>`).join('')}</tr></thead><tbody>${C.seasons.map(s=>tr(`W${s.week} ${esc(s.team)}`,s)).join('')}${C.seasons.length>1?tr('Total',C.total,'car-tot'):''}</tbody></table></div>${rk}${prev}`;
 }
 
 /* ---------- clock: real time during the week, preview time otherwise ---------- */
@@ -6559,7 +6683,7 @@ const POS_LONG={QB:'Quarterback',RB:'Running back',WR:'Wide receiver',TE:'Tight 
 function searchIndex(){
   const it=[]; const add=(g,o)=>it.push(Object.assign({g,keys:[o.title].concat(o.alt||[]).map(fold)},o));
   for(const [v,l,alt] of [['live','Live board',['scores','games now','tableau']],['schedule','Schedule',['calendar','fixtures','results','calendrier']],['standings','Standings',['ranking','table','playoffs','futures','classement']],
-                         ['teams','Teams',['franchises','rosters','équipes']],['myteam','My team',['favourite','favorite','my franchise','mon équipe','équipe favorite']],['bets','My bets',['wallet','history','leaderboard','cash out','combo','paris']],['settings','Settings',['account','sign in','sound','theme','réglages']]])
+                         ['teams','Teams',['franchises','rosters','équipes']],['myteam','My team',['favourite','favorite','my franchise','mon équipe','équipe favorite']],['history','History',['records','career','champions','hall of fame','histoire','palmarès','carrière']],['bets','My bets',['wallet','history','leaderboard','cash out','combo','paris']],['settings','Settings',['account','sign in','sound','theme','réglages']]])
     add('Pages',{kind:'view',view:v,title:l,sub:'Page',alt});
   if(SEASON&&SW&&SW.teams){
     for(const T of Object.values(SW.teams)){
