@@ -1567,6 +1567,76 @@
    "tier": "calm",
    "tags": [],
    "text": "No good on the two-point try."
+  },
+  {
+   "id": "touchback_calm_01",
+   "cue": "TOUCHBACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Touchback."
+  },
+  {
+   "id": "touchback_calm_02",
+   "cue": "TOUCHBACK",
+   "tier": "calm",
+   "tags": [],
+   "text": "Into the end zone, and that's a touchback."
+  },
+  {
+   "id": "kick_return_big_calm_01",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "calm",
+   "tags": [],
+   "text": "Nice return, great field position."
+  },
+  {
+   "id": "kick_return_big_calm_02",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "calm",
+   "tags": [],
+   "text": "He brings it way back out."
+  },
+  {
+   "id": "kick_return_big_excited_01",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "excited",
+   "tags": [],
+   "text": "He breaks the return! Huge field position!"
+  },
+  {
+   "id": "kick_return_big_excited_02",
+   "cue": "KICK_RETURN_BIG",
+   "tier": "excited",
+   "tags": [],
+   "text": "What a kick return!"
+  },
+  {
+   "id": "kick_return_td_excited_01",
+   "cue": "KICK_RETURN_TD",
+   "tier": "excited",
+   "tags": [],
+   "text": "Kickoff return… all the way! Touchdown!"
+  },
+  {
+   "id": "kick_return_td_excited_02",
+   "cue": "KICK_RETURN_TD",
+   "tier": "excited",
+   "tags": [],
+   "text": "He takes it back for a touchdown!"
+  },
+  {
+   "id": "kick_return_td_huge_01",
+   "cue": "KICK_RETURN_TD",
+   "tier": "huge",
+   "tags": [],
+   "text": "He's gone! KICKOFF RETURN TOUCHDOWN!"
+  },
+  {
+   "id": "kick_return_td_huge_02",
+   "cue": "KICK_RETURN_TD",
+   "tier": "huge",
+   "tags": [],
+   "text": "All the way back! WHAT A RETURN!"
   }
  ]
 }

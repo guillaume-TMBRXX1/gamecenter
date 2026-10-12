@@ -31,6 +31,7 @@ function reactions(c,ev){
   else if(has('TURNOVER_ON_DOWNS')) out.push(!homeOff?['cheer_medium',.15,1]:['disappointment',.15,1]);
   else if(has('FIELD_GOAL_GOOD')) out.push(homeOff?[big?'cheer_huge':'cheer_medium',.2,1]:['disappointment',.25,.7]);
   else if(has('FIELD_GOAL_MISS')) out.push(homeOff?['disappointment',.2,1]:['cheer_medium',.2,.9]);
+  else if(has('KICK_RETURN_BIG')) out.push(homeOff?['cheer_medium',.2,1]:['disappointment',.25,.6]);   /* bloc 2 : grand retour */
   else if(has('TWO_POINT_GOOD')) out.push(homeOff?[big?'cheer_huge':'cheer_medium',.2,1]:['disappointment',.25,.7]);   /* bloc 2 */
   else if(has('EXTRA_POINT_MISS')||has('TWO_POINT_FAIL')) out.push(homeOff?['disappointment',.2,.8]:['cheer_medium',.2,.7]);
   else if(has('SAFETY')) out.push(!homeOff?['cheer_huge',.15,1]:['disappointment',.15,1]);

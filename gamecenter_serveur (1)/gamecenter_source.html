@@ -2703,7 +2703,13 @@ function planKick(g,type,P){
   const z=new Array(11).fill(0);
   const sx=P&&P.spot&&isFinite(P.spot.x)?P.spot.x:g.los, sy=clamp(P&&P.spot&&isFinite(P.spot.y)?P.spot.y:MIDY,4,49.3);
   if(type==='kickoff'){
-    const kd=g.kd||-dirOf(g), T={x:g.los,y:MIDY}, S={x:clamp(sx,0.5,119.5),y:sy};
+    const kd=g.kd||-dirOf(g), T={x:g.los,y:MIDY}, KR=P&&P.kick_return;
+    let S={x:clamp(sx,0.5,119.5),y:sy};
+    /* bloc 2 — kickoff with a return (play.kick_return): the ball comes down where the returner catches it (C), then he
+       runs it back to the spot; a touchback is a knee where he caught it (the drive starts at the 25) */
+    const ret=!!(KR&&!KR.touchback), C=KR?{x:clamp(T.x+kd*num(KR.kick,60),0.5,119.5),y:clamp(sy+rand(-5,5),8,45)}:S;
+    if(KR&&KR.touchback) S={x:C.x,y:C.y};
+    const tc=ret?0.4:0.56, dur=ret?3.9+Math.min(2.4,num(KR.return,0)/18):3.9;
     for(let i=0;i<11;i++){
       const s=D[i];
       def[i]= i===5 ? [[0,s.x,s.y],[0.14,T.x-kd*0.6,T.y-0.3],[1,lerp(T.x,S.x,.55),lerp(T.y,S.y,.3)]]
@@ -2711,11 +2717,11 @@ function planKick(g,type,P){
     }
     for(let i=0;i<11;i++){
       const s=O[i];
-      off[i]= i===7 ? [[0,s.x,s.y],[0.5,S.x,S.y],[1,S.x+kd*0.4,S.y]]
+      off[i]= i===7 ? (ret?[[0,s.x,s.y],[tc,C.x,C.y],[1,S.x,S.y]]:[[0,s.x,s.y],[0.5,S.x,S.y],[1,S.x+kd*0.4,S.y]])
                     : [[0,s.x,s.y],[0.3,s.x-kd*1.5,s.y],[1,lerp(s.x,S.x,.45),lerp(s.y,S.y,.25)]];
     }
-    return {type:'kick',kind:'kickoff',kick:true,off,def,dur:3.9,elapsed:0,tee:T,carrier:[[0.56,1,'off',7]],
-      flight:{t0:0.15,t1:0.56,from:T,to:S,peak:10},loose:null,pStart:0.58,pEnd:0.96,
+    return {type:'kick',kind:'kickoff',kick:true,off,def,dur,elapsed:0,tee:T,carrier:[[tc,1,'off',7]],
+      flight:{t0:0.15,t1:tc,from:T,to:ret?C:S,peak:10},loose:null,pStart:tc+0.02,pEnd:0.96,
       wDef:[.5,.5,.6,.6,.7,.3,.7,.6,.6,.5,.5],wOff:z.slice(),oDef:offsets(),oOff:offsets(),spot:S,gain:+(P&&P.gain)||0};
   }
   const d=dirOf(g), L=g.los;
@@ -3112,7 +3118,9 @@ function rpChip(P){
     case 'two_point_good': return {t:'2-PT CONVERSION',c:'td'};
     case 'two_point_failed': return {t:'2-PT TRY FAILED',c:'bad'};
     case 'punt': return {t:'PUNT · '+Math.abs(gn)+' YDS',c:''};
-    case 'kickoff': return {t:'KICKOFF · '+Math.abs(gn)+' YDS',c:''};
+    case 'kickoff': { const kr=P.kick_return;   /* bloc 2: kickoff with a return */
+      if(kr) return kr.touchback?{t:'TOUCHBACK',c:''}:num(kr.return,0)>=40?{t:'BIG RETURN · '+kr.return+' YDS',c:'good'}:{t:'KICKOFF · RETURN '+kr.return+' YDS',c:''};
+      return {t:'KICKOFF · '+Math.abs(gn)+' YDS',c:''}; }
     case 'incomplete': return {t:'INCOMPLETE',c:'bad'};
     case 'sack': return {t:'SACK '+MINUS+Math.abs(gn),c:'bad'};
   }
@@ -3815,7 +3823,7 @@ function computeStats(g,n){
   const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
 }
 function computeStatsNow(g,n){
-  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0});
+  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0,kr:0,kry:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
@@ -3867,6 +3875,9 @@ function computeStatsNow(g,n){
       const x=who(ds,null,df.name); x.def=x.def||{tk:0,sk:0,i:0,pd:0,ff:0};
       const k={TACKLE:'tk',SACK:'sk',INTERCEPTION:'i',PASS_DEFENDED:'pd',FORCED_FUMBLE:'ff'}[df.credit]; if(k) x.def[k]++;
     }
+    if(t==='kickoff'&&P.kick_return&&!P.kick_return.touchback){ const kr=P.kick_return, y=num(kr.return,0);   /* bloc 2: kick returns */
+      S.kr++; S.kry+=y;
+      if(car.id||car.name){ const b=who(o,car.id,car.name); b.kr=b.kr||{n:0,y:0,lng:0,td:0}; b.kr.n++; b.kr.y+=y; b.kr.lng=Math.max(b.kr.lng,y); if(kr.td) b.kr.td++; } }
     if(t==='kickoff') continue;
     if(!cur||cur.team!==o||cur.done){ cur={n:drives.length+1,team:o,q:P.quarter,clk:num(P.clock_start,0),start:num(P.los_x,60),plays:0,yds:0,time:0,result:null,done:false,rz:false}; drives.push(cur); }
     cur.time+=secs;
@@ -3925,7 +3936,7 @@ function renderStats(g){
       const rows=[
         ['Total yards',a.yds,h.yds,1],['Passing yards',a.passYds-a.sackYds,h.passYds-h.sackYds,1],['Completions / attempts',`${a.comp}/${a.passAtt}`,`${h.comp}/${h.passAtt}`],
         ['Passing touchdowns',a.passTd,h.passTd,1],['Rushing yards',a.rushYds,h.rushYds,1],['Rushing attempts',a.rushAtt,h.rushAtt,0],['Rushing touchdowns',a.rushTd,h.rushTd,1],
-        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],...(a.xpa+h.xpa+a.c2a+h.c2a?[['Extra points',`${a.xpm}/${a.xpa}`,`${h.xpm}/${h.xpa}`],['2-pt conversions',`${a.c2m}/${a.c2a}`,`${h.c2m}/${h.c2a}`]]:[]),
+        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],...(a.xpa+h.xpa+a.c2a+h.c2a?[['Extra points',`${a.xpm}/${a.xpa}`,`${h.xpm}/${h.xpa}`],['2-pt conversions',`${a.c2m}/${a.c2a}`,`${h.c2m}/${h.c2a}`]]:[]),...(a.kr+h.kr?[['Kick return yards',`${a.kry} (${a.kr})`,`${h.kry} (${h.kr})`]]:[]),
         ['Red zone (TD / trips)',`${a.rzTd}/${a.rz}`,`${h.rzTd}/${h.rz}`],['Sacked (yards lost)',`${a.sacks} (${a.sackYds})`,`${h.sacks} (${h.sackYds})`],
         ['Turnovers',a.ints+a.fum,h.ints+h.fum,-1],['Plays',a.plays,h.plays,0],['Time of possession',top(a),top(h),0,a.top,h.top]];
       /* engine decisions (blocks A-B): time to throw, pressure, scrambles */
@@ -3947,7 +3958,8 @@ function renderStats(g){
         const rec=list.filter(p=>p.rec).sort((a,b)=>b.rec.y-a.rec.y).map(p=>`<tr>${nm(p)}<td>${p.rec.r}</td><td>${p.rec.t}</td><td>${p.rec.y}</td><td>${p.rec.lng}</td><td>${p.rec.td}</td></tr>`);
         const dfn=list.filter(p=>p.def).sort((a,b)=>(b.def.tk+2*b.def.sk+3*b.def.i+b.def.pd)-(a.def.tk+2*a.def.sk+3*a.def.i+a.def.pd)).map(p=>`<tr>${nm(p)}<td>${p.def.tk}</td><td>${p.def.sk}</td><td>${p.def.i}</td><td>${p.def.pd}</td></tr>`);
         const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${p.kick.xm||0}/${p.kick.xa||0}</td><td>${3*p.kick.m+(p.kick.xm||0)}</td></tr>`);
-        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick);
+        const kret=list.filter(p=>p.kr).sort((a,b)=>b.kr.y-a.kr.y).map(p=>`<tr>${nm(p)}<td>${p.kr.n}</td><td>${p.kr.y}</td><td>${(p.kr.y/p.kr.n).toFixed(1)}</td><td>${p.kr.lng}</td><td>${p.kr.td}</td></tr>`);
+        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick)+tbl('Kick returns',['KR','YDS','AVG','LNG','TD'],kret);
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -6041,6 +6053,7 @@ function playLine(g,P){
   let text='', prio=1; const tdY=Math.min(Math.max(1,Math.round(gain)),goalDist(P));
   switch(P.result){
     case 'touchdown': prio=3;
+      if(P.call&&P.call.type==='kickoff'){ const kr=P.kick_return||{}; text=V([`Kickoff return touchdown! ${car} goes ${yds(num(kr.return,0))}!`,`${car} takes it all the way back! Touchdown ${nick(off)}!`])+' '+scoreLine(g); break; }
       text = P.call&&P.call.type==='pass' ? V([`Touchdown ${nick(off)}! ${sur(qb)} finds ${car} from ${yds(tdY)} out!`,`${sur(qb)} throws… caught! ${car}, touchdown, ${yds(tdY)}!`,`Touchdown! ${car} hauls it in, ${yds(tdY)} from ${sur(qb)}!`])
         : V([`Touchdown ${nick(off)}! ${car} takes it in from ${yds(tdY)}!`,`${car}… into the end zone! Touchdown, ${yds(tdY)}!`,`He's in! ${car}, ${yds(tdY)} out, touchdown ${nick(off)}!`]);
       text+=' '+scoreLine(g); break;
@@ -6074,7 +6087,11 @@ function playLine(g,P){
       else text=V([`${sur(car)} for ${yds(gain)}${fd?', first down':''}.`,`${sur(car)} up the middle, ${yds(gain)}${fd?'. First down':''}.`,`${sur(car)} picks up ${yds(gain)}${fd?' and the first down':''}.`]);
       break;
     case 'punt': { const m=String(P.text).match(/(\d+) yds/); text=`${nick(off)} punt it away${m?', '+m[1]+' yards':''}.`; break; }
-    case 'kickoff': text= g.idx===0 ? '' : /^Free kick/.test(String(P.text||'')) ? `${nick(dfT)} free kick after the safety.` : `${nick(off)} kick off.`; break;
+    case 'kickoff': { const kr=P.kick_return;   /* bloc 2: the return is told (the opening kickoff stays silent: the intro speaks) */
+      if(kr&&g.idx!==0){ if(kr.touchback) text=V([`Touchback. ${nick(off)} start at the 25.`,`Into the end zone, and that's a touchback.`]);
+        else if(num(kr.return,0)>=40){ prio=2; text=V([`${car} breaks the return! ${yds(kr.return)}!`,`What a return by ${car} — ${yds(kr.return)}!`]); }
+        else text=V([`${sur(car)} brings it back ${yds(kr.return)}.`,`Returned by ${sur(car)}, ${yds(kr.return)}.`]); break; }
+      text= g.idx===0 ? '' : /^Free kick/.test(String(P.text||'')) ? `${nick(dfT)} free kick after the safety.` : `${nick(off)} kick off.`; break; }
     default: text='';
   }
   const st=P.after&&P.after.status;

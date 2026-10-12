@@ -62,7 +62,7 @@ function mapResolve(g,P,wpBefore){
   const takeaway=r==='interception'||r==='fumble_lost';
   if(takeaway){ c.team=c.defense==='home'?'HOME':'AWAY'; }
   switch(r){
-    case 'touchdown': ev.push('TOUCHDOWN'); break;
+    case 'touchdown': ev.push('TOUCHDOWN'); if(ty==='kickoff') ev.push('KICK_RETURN_TD'); break;
     case 'interception': ev.push('INTERCEPTION','TURNOVER'); break;
     case 'fumble_lost': ev.push('FUMBLE','TURNOVER'); break;
     case 'sack': ev.push('SACK'); break;
@@ -74,7 +74,8 @@ function mapResolve(g,P,wpBefore){
     case 'two_point_good': ev.push('TWO_POINT_GOOD'); break;
     case 'two_point_failed': ev.push('TWO_POINT_FAIL'); break;
     case 'punt': ev.push('PUNT'); break;
-    case 'kickoff': ev.push('KICKOFF'); break;
+    case 'kickoff': ev.push('KICKOFF'); { const kr=P.kick_return;   /* bloc 2 : coup d'envoi avec retour */
+      if(kr&&kr.touchback) ev.push('TOUCHBACK'); else if(kr&&(+kr.return||0)>=40) ev.push('KICK_RETURN_BIG'); } break;
     case 'incomplete': ev.push('INCOMPLETE'); break;
     case 'complete': ev.push('PASS_COMPLETE'); break;
     case 'run': ev.push('RUN'); break;
@@ -96,7 +97,7 @@ function mapResolve(g,P,wpBefore){
 }
 
 /* 0..1 — how big the moment is: the event, then the game situation */
-const WEIGHT={TOUCHDOWN:.55,INTERCEPTION:.5,FUMBLE:.5,TURNOVER_ON_DOWNS:.4,FIELD_GOAL_GOOD:.35,FIELD_GOAL_MISS:.35,SAFETY:.5,EXTRA_POINT_GOOD:.1,EXTRA_POINT_MISS:.3,TWO_POINT_GOOD:.45,TWO_POINT_FAIL:.35,SACK:.3,BIG_PLAY:.35,
+const WEIGHT={TOUCHDOWN:.55,INTERCEPTION:.5,FUMBLE:.5,TURNOVER_ON_DOWNS:.4,FIELD_GOAL_GOOD:.35,FIELD_GOAL_MISS:.35,SAFETY:.5,EXTRA_POINT_GOOD:.1,EXTRA_POINT_MISS:.3,TWO_POINT_GOOD:.45,TWO_POINT_FAIL:.35,TOUCHBACK:.05,KICK_RETURN_BIG:.4,KICK_RETURN_TD:.6,SACK:.3,BIG_PLAY:.35,
   FOURTH_DOWN_ATTEMPT:.3,THIRD_DOWN:.15,FIRST_DOWN:.1,PUNT:.08,INCOMPLETE:.08,PASS_COMPLETE:.08,RUN:.08,SNAP:.05,KICK_SNAP:.08,KICKOFF:.08,
   HALFTIME:.4,GAME_END:.35,VICTORY:.55,DEFEAT:.3,TIE:.45,QUARTER_START:.2,QUARTER_END:.2,OVERTIME:.8,RED_ZONE:.2,COORD_ADJUST:.1,LEAD_CHANGE:.5};
 function importance(c,ev){

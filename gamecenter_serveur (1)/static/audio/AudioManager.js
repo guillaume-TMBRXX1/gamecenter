@@ -143,7 +143,7 @@ class AudioManager{
     else if(ty==='extra_point') R.push({cue:'PAT_GOOD',tags:[]},{cue:'PAT_MISS',tags:[]});
     else if(ty==='two_point') R.push({cue:'TWO_POINT_GOOD',tags:[]},{cue:'TWO_POINT_FAIL',tags:[]});
     else if(ty==='punt') R.push({cue:'PUNT',tags:[]});
-    else if(ty==='kickoff') R.push({cue:'KICKOFF',tags:[]});
+    else if(ty==='kickoff') R.push({cue:'KICKOFF',tags:[]},{cue:'TOUCHBACK',tags:[]},{cue:'KICK_RETURN_BIG',tags:[]});
     if(c.isRedZone&&(ty==='pass'||ty==='run')) R.unshift({cue:'TOUCHDOWN',tags:T});
     if(c.isLateGame) R.push({cue:'VICTORY',tags:[]},{cue:'DEFEAT',tags:[]});
     this.voice.prefetch(g,P.seq,lite?R.slice(0,3):R,Math.max(c.importance,.3));

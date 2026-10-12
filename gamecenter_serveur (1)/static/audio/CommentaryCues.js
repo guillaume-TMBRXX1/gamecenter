@@ -21,7 +21,7 @@ function resolveCues(c,P,g){
   if(ty==='pass') T.push('pass'); if(ty==='run') T.push('run');
   if(c.isLeadChange||c.isGameWinning) T.push('lead');
   switch(r){
-    case 'touchdown': out.push({cue:'TOUCHDOWN',tags:T}); break;
+    case 'touchdown': out.push(ty==='kickoff'?{cue:'KICK_RETURN_TD',tags:[]}:{cue:'TOUCHDOWN',tags:T}); break;   /* bloc 2 : TD sur retour */
     case 'interception': out.push({cue:'INTERCEPTION',tags:T}); break;
     case 'fumble_lost': out.push({cue:'FUMBLE',tags:T}); break;
     case 'field_goal_good': out.push({cue:'FIELD_GOAL_GOOD',tags:T}); break;
@@ -42,7 +42,8 @@ function resolveCues(c,P,g){
       else if(gain<=0) out.push({cue:'RUN_STUFFED',tags:T});
       else out.push({cue:'RUN',tags:c.isFirstDown?T.concat('fd'):T}); break;
     case 'punt': out.push({cue:'PUNT',tags:T}); break;
-    case 'kickoff': if(g&&g.idx!==0) out.push({cue:'KICKOFF',tags:T}); break;
+    case 'kickoff': if(g&&g.idx!==0){ const kr=P.kick_return;   /* bloc 2 : coup d'envoi avec retour */
+      out.push(kr&&kr.touchback?{cue:'TOUCHBACK',tags:[]}:kr&&(+kr.return||0)>=40?{cue:'KICK_RETURN_BIG',tags:[]}:{cue:'KICKOFF',tags:T}); } break;
   }
   if(c.status==='half') out.push({cue:'HALFTIME',tags:[],tier:'calm'});
   if(c.status==='final'){
