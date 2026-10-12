@@ -959,6 +959,53 @@ le classement général) ; un onglet **Leagues** à part dans la barre de gauche
   confirmation). Le lien `?join=CODE` ouvre l'invitation ; sans compte, on crée son compte et on rejoint tout de suite.
 - **Tests** : `moteur/tests/test_ligues.py`, `outils/site/test_ligues.js` (groupe site).
 
+### 46. Visibilité : vidéos pour les réseaux et référencement (bloc 2, étape 8 — 12/10/2026)
+**Décisions de Guillaume (12/10)** : l'action du jour (la plus belle, une décision folle, une action incroyable) et le
+résumé d'un match en 2 à 3 minutes ; le son du stade seulement (la musique se met sur le réseau) ; automatique pour
+l'action du jour et pour le plus beau match de la semaine, à la demande aussi ; pas d'outil de mesure ajouté (Google
+Search Console suffit).
+- **Choix** (`outils/video/choisir.py`, bibliothèque standard, rien d'aléatoire) : chaque action est notée — bascule de
+  la probabilité de victoire, touchdown (sur retour : plus), perte de balle, gain ou retour de 40 yards et plus,
+  **« décision folle »** (4e essai tenté et réussi dans son camp ou avec 4 yards et plus à faire), 2 points réussis,
+  field goal de 55 yards et plus ; ×1,5 dans les 2 dernières minutes et en prolongation (« game-winning » si elle fait
+  basculer le match). **Action du jour** : la mieux notée des matchs du jour (heure de Bruxelles). **Plus beau match** :
+  bascules cumulées, écart final serré, prolongation, remontée, playoffs. **Résumé** : tous les scores, les pertes de
+  balle et la dernière action, complétés par les plus grosses bascules jusqu'à ≈ 2 min 30 (19 actions environ).
+- **Rendu** (`outils/video/faire_video.py` + `filmer.js`) : le vrai site tourne en local (crochet de test) ; Chromium
+  filme le grand terrain du replay en **1080×1920** (vertical : TikTok, Reels, Shorts), avec un bandeau en haut (match),
+  un en bas (essai, horloge, texte de l'action) et des cartons (ouverture, fin de quart-temps, score final,
+  snapline.live). L'action du jour passe à vitesse normale puis au **ralenti**. Son : les sons du stade du site
+  (`audio/manifest.json` : ambiance, snap, coup de pied, réactions selon l'action, sifflet, klaxon), calés sur le snap
+  et le résultat filmés, mixés par ffmpeg (−16 LUFS, 48 kHz). Sortie : `videos/<nom>.mp4`, `.txt` (légende anglaise
+  avec mots-dièse, prête à coller) et `.json` (ce qui a été choisi).
+  ```
+  python outils/video/faire_video.py action [--jour AAAA-MM-JJ]       # action du jour (défaut : la journée qui finit)
+  python outils/video/faire_video.py resume [--match w3-r91]          # résumé (défaut : le plus beau match de la semaine)
+  ```
+  Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. ≈ 25 s de tournage pour une action,
+  ≈ 2 min 15 pour un résumé (le tournage se fait en temps réel).
+- **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
+  dimanche, en plus, le résumé du plus beau match de la semaine. Les vidéos ne vont **pas** dans le dépôt : onglet
+  Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis publication à la main. À la
+  demande : Actions → « Vidéos » → *Run workflow* (type `action` ou `resume`, jour, match).
+- **Référencement** : titre et description en anglais, adresse canonique `https://snapline.live/`, Open Graph et Twitter
+  (aperçu des liens partagés, image `/og.png` 1200×630 faite par `outils/site/faire_og.js`), JSON-LD `WebSite`,
+  `/robots.txt` (tout sauf `/api/`) et `/sitemap.xml`. Texte **« What is Snapline? »** en bas de l'accueil (lisible par
+  les moteurs). Bouton **Share** sur le grand écran d'un match de la saison : feuille de partage du téléphone, sinon le
+  lien `/?watch=<match>` est copié (il rouvre ce match).
+- **Google Search Console** (à faire une fois, par Guillaume) :
+  1. search.google.com/search-console → *Ajouter une propriété* → **Domaine** → `snapline.live` ; Google donne un
+     enregistrement `google-site-verification=…`.
+  2. Cloudflare → `snapline.live` → **DNS** → *Add record* : type **TXT**, nom `@`, contenu = la valeur donnée par
+     Google → *Save* ; puis *Valider* dans Search Console (quelques minutes, parfois plus).
+  3. Search Console → **Sitemaps** → `sitemap.xml` → *Envoyer*. Puis *Inspection de l'URL* → `https://snapline.live/`
+     → *Demander l'indexation*.
+  Variante sans DNS : propriété **Préfixe d'URL** + méthode « balise HTML » : mettre la valeur `content` de la balise dans
+  la variable Railway `GC_GOOGLE_VERIFY` (le serveur l'ajoute à la page).
+- **Tests** : `moteur/tests/test_videos.py` (notes, décision folle, fin de match, bandeaux, sons ; action du jour, plus
+  beau match et résumé sur la dernière semaine), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
+  du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -1070,7 +1117,8 @@ de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0
 `GC_BLOC_C=0` (intelligence des receveurs et des défenseurs coupée : moteur V23) · `GC_BLOC_D=0` (plan de jeu et adaptation
 en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueurs coupée : rosters de base chaque semaine,
 moteur V25) · `GC_DOMAINE` (domaine du site, ex. `snapline.live` : l'adresse `*.up.railway.app` y est redirigée,
-README section 39).
+README section 39) · `GC_GOOGLE_VERIFY` (balise de vérification Google Search Console, facultative,
+README section 46).
 
 ## Test
 

@@ -18,7 +18,7 @@ Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecente
 Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/audio assemblés, versionnés) et /audio/*
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
-import bisect, hashlib, hmac, json, os, re, secrets, sqlite3, threading, time, uuid, math
+import bisect, hashlib, hmac, html, json, os, re, secrets, sqlite3, threading, time, uuid, math
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
@@ -754,9 +754,38 @@ def page():
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API},audio:AUDIO_API,"
-                      "playerCardHTML,openPlayerCard,openReplayFeed,stepGame,updateGameUI,rpDone,replayGame:()=>replayGame,"
+                      "playerCardHTML,openPlayerCard,openReplayFeed,stepGame,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft}};\n})();")
+    if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
+        s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-store"})
+
+
+# Référencement (bloc 2, étape 8) : robots.txt, plan du site, image de partage (Open Graph, 1200×630)
+GOOGLE_VERIFY = os.environ.get("GC_GOOGLE_VERIFY", "").strip()
+
+
+def _origine(request):
+    return "https://" + DOMAINE if DOMAINE else str(request.base_url).rstrip("/")
+
+
+@app.get("/robots.txt")
+def robots(request: Request):
+    txt = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /audio/ecoute\n\nSitemap: " + _origine(request) + "/sitemap.xml\n"
+    return Response(txt, media_type="text/plain", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/sitemap.xml")
+def sitemap(request: Request):
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           "  <url><loc>" + _origine(request) + "/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>\n</urlset>\n")
+    return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/og.png")
+def og_image():
+    return FileResponse(os.path.join(HERE, "static", "og.png"), media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/api/time")

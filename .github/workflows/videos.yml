@@ -1,0 +1,84 @@
+# Vidéos verticales pour les réseaux (bloc 2, étape 8) : MP4 1080×1920 + légende, à télécharger puis publier à la main
+# (TikTok, Reels, Shorts). Rien n'est ajouté au dépôt : les vidéos sont des « artifacts » de l'exécution (30 jours).
+# Tous les soirs à 22 h 30 UTC (00 h 30 l'été, 23 h 30 l'hiver à Bruxelles, la journée de matchs est finie) :
+#   l'action du jour ; le dimanche soir, en plus, le résumé du plus beau match de la semaine (2 à 3 min).
+# À la demande (onglet Actions → « Vidéos » → Run workflow) : action d'un jour ou résumé d'un match.
+# Script : outils/video/faire_video.py (README section 46).
+name: Vidéos
+
+on:
+  schedule:
+    - cron: "30 22 * * *"
+  workflow_dispatch:
+    inputs:
+      type:
+        description: "action = action du jour · resume = résumé d'un match"
+        type: choice
+        options: [action, resume]
+        default: action
+      jour:
+        description: "Jour de l'action (AAAA-MM-JJ) ; vide = la journée qui vient de finir"
+        required: false
+        default: ""
+      match:
+        description: "Match à résumer (ex. w3-r91) ; vide = le plus beau match de la semaine"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: videos
+  cancel-in-progress: false
+
+jobs:
+  videos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: "gamecenter_serveur (1)"
+    env:
+      NODE_PATH: ${{ github.workspace }}/../pw/node_modules
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Installer (serveur, Playwright + Chromium, ffmpeg)
+        run: |
+          pip install -q -r requirements.txt
+          npm install --no-audit --no-fund --prefix "$GITHUB_WORKSPACE/../pw" playwright@1.56.1
+          node "$GITHUB_WORKSPACE/../pw/node_modules/playwright/cli.js" install --with-deps chromium
+          command -v ffmpeg > /dev/null || sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Quelles vidéos
+        id: quoi
+        env:
+          EVENEMENT: ${{ github.event_name }}
+          TYPE: ${{ inputs.type }}
+          JOUR: ${{ inputs.jour }}
+        run: |
+          jour="${JOUR:-$(TZ=Europe/Brussels date -d '3 hours ago' +%F)}"
+          if [ "$EVENEMENT" = workflow_dispatch ]; then liste="$TYPE"
+          elif [ "$(date -d "$jour" +%u)" = 7 ]; then liste="action resume"
+          else liste="action"; fi
+          echo "jour=$jour" >> "$GITHUB_OUTPUT"; echo "liste=$liste" >> "$GITHUB_OUTPUT"
+          echo "Jour $jour · vidéos : $liste"
+      - name: Action du jour
+        if: contains(steps.quoi.outputs.liste, 'action')
+        run: python outils/video/faire_video.py action --jour "${{ steps.quoi.outputs.jour }}" --sortie videos
+      - name: Résumé d'un match
+        if: contains(steps.quoi.outputs.liste, 'resume')
+        env:
+          MATCH: ${{ inputs.match }}
+        run: python outils/video/faire_video.py resume --jour "${{ steps.quoi.outputs.jour }}" ${MATCH:+--match "$MATCH"} --sortie videos
+      - uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ steps.quoi.outputs.jour }}
+          path: "gamecenter_serveur (1)/videos/"
+          retention-days: 30
+          if-no-files-found: error
