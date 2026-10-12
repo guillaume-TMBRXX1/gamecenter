@@ -864,7 +864,7 @@ créés = débranchés), la page reste lourde.
   ligne des 2 ; bannière (« EXTRA POINT · GOOD », « 2-PT CONVERSION »…), « EXTRA POINT » / « 2-PT TRY » à la place de
   l'essai, Match centre : lignes « Extra points » et « 2-pt conversions », kicker FG / XP / PTS. Cellule 427 : même rendu.
 - **Audio** : événements `EXTRA_POINT_GOOD/MISS`, `TWO_POINT_GOOD/FAIL` (foule, effets) ; 4 répliques enregistrées à
-  générer (`PAT_GOOD`, `PAT_MISS`, `TWO_POINT_GOOD`, `TWO_POINT_FAIL`, 12 prises : workflow « Commentaire audio », mode
+  générer (`PAT_GOOD`, `PAT_MISS`, `TWO_POINT_GOOD`, `TWO_POINT_FAIL`, 16 prises, 2 par niveau d'intensité : workflow « Commentaire audio », mode
   `generer`) ; d'ici là, sous-titre et voix de l'appareil.
 - **Audit** : saut de 1 point seulement sur `pat_good`, transformation juste après un touchdown de la même équipe, sans
   temps de jeu, touchdown à 6 points quand une transformation suit.

@@ -1478,6 +1478,13 @@
    "text": "And the extra point is good!"
   },
   {
+   "id": "pat_good_excited_02",
+   "cue": "PAT_GOOD",
+   "tier": "excited",
+   "tags": [],
+   "text": "Extra point is good!"
+  },
+  {
    "id": "pat_miss_calm_01",
    "cue": "PAT_MISS",
    "tier": "calm",
@@ -1497,6 +1504,13 @@
    "tier": "excited",
    "tags": [],
    "text": "Doinked! The extra point misses!"
+  },
+  {
+   "id": "pat_miss_calm_02",
+   "cue": "PAT_MISS",
+   "tier": "calm",
+   "tags": [],
+   "text": "The extra point sails wide."
   },
   {
    "id": "two_point_good_excited_01",
@@ -1520,6 +1534,13 @@
    "text": "They go for two… IT'S GOOD! What a call!"
   },
   {
+   "id": "two_point_good_huge_02",
+   "cue": "TWO_POINT_GOOD",
+   "tier": "huge",
+   "tags": [],
+   "text": "TWO-POINT CONVERSION! They got it!"
+  },
+  {
    "id": "two_point_fail_calm_01",
    "cue": "TWO_POINT_FAIL",
    "tier": "calm",
@@ -1539,6 +1560,13 @@
    "tier": "excited",
    "tags": [],
    "text": "The two-point try fails!"
+  },
+  {
+   "id": "two_point_fail_calm_02",
+   "cue": "TWO_POINT_FAIL",
+   "tier": "calm",
+   "tags": [],
+   "text": "No good on the two-point try."
   }
  ]
 }
