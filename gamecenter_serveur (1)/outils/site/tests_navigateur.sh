@@ -71,6 +71,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : transformations après un touchdown" node outils/site/test_transformation.js
   lancer "Site : coups d'envoi et retours" node outils/site/test_retours.js
   lancer "Site : histoire, records, carrières" node outils/site/test_histoire.js
+  lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js
   lancer "Notebook : Game Center (cellule 427)" node outils/site/test_cellule427.js
   lancer "Audio : musique" node outils/audio/test_musique_v04.js 8108
   lancer "Audio : commentaire enregistré" node outils/audio/test_commentaire_v02.js data/weeks 8104 "${SEM[@]}"

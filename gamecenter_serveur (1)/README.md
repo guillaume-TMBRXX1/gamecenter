@@ -917,6 +917,32 @@ comptent depuis qu'ils existent (semaine du 19/10), sans revenir sur les saisons
 - **Tests** : `moteur/tests/test_histoire.py` (feuille de match, recrue, saison en cours, records ; totaux = `week.json`),
   `outils/site/test_histoire.js` (groupe site : API, onglet, fiche joueur, « Hide scores », mobile 390 px).
 
+### 44. Rappel « ton équipe joue dans 10 min » (bloc 2, étape 6 — 12/10/2026)
+**Décisions de Guillaume (12/10)** : tous les matchs de l'équipe favorite (playoffs compris) + une cloche sur n'importe
+quel match du calendrier ; cloches aussi pour les invités (l'équipe favorite demande un compte, comme avant) ; clés
+générées et posées sur Railway par Claude ; icône tirée du logo.
+- **Web Push** (standard des navigateurs) : la notification arrive même site fermé — ordinateur et Android ; **iPhone /
+  iPad : seulement si Snapline est ajouté à l'écran d'accueil** (iOS 16.4+ ; Partager → « Sur l'écran d'accueil »).
+  D'où le manifeste (`static/manifest.webmanifest`), les icônes (`static/icons/`) et le service worker (`static/sw.js`,
+  servi à la racine : `/sw.js`) — aucun cache hors ligne.
+- **Serveur** (`serveur.py`) : tables `push_subs` (un abonnement par appareil), `push_bells` (cloches d'un joueur),
+  `push_sent` (envois faits : aucun doublon, même après un redémarrage). Boucle toutes les 30 s (`rappels_dus`,
+  `push_tour`) : un match est dû entre 10 min avant son coup d'envoi et le coup d'envoi, quand ses équipes sont connues
+  (playoffs). Un abonnement refusé (404 / 410) est oublié. Texte : équipes, phase et heure — **jamais de score**. Lien :
+  `/?watch=<match>` (le match s'ouvre sur le grand écran : tout de suite s'il est en direct ou terminé, au coup d'envoi
+  sinon). Dépendance : `pywebpush`.
+- **API** : `GET /api/push/key`, `POST /api/push/subscribe` (`fav` : « My team's games »), `POST /api/push/unsubscribe`,
+  `POST /api/push/test` (« Send a test », une fois par 10 s), `GET /api/push/bells`, `POST /api/push/bell`.
+- **Variables Railway** (posées le 12/10, **ne jamais les changer** : cela couperait tous les abonnements) :
+  `GC_VAPID_PUBLIC`, `GC_VAPID_PRIVATE`, `GC_VAPID_SUBJECT`. Sans elles : pas de rappel (Réglages le dit).
+  Tests : `GC_PUSH_FAKE=1` (envois notés, rien ne part), `GC_PUSH_LOOP=0` (boucle arrêtée), `GC_PUSH_TICK` (secondes).
+- **Site** : Réglages → **Notifications** (activer sur cet appareil, « My team's games », « Send a test », explication
+  iPhone) ; cloche 🔔 sur chaque match à venir du calendrier. La demande d'autorisation ne vient qu'après un geste. À la
+  connexion à un compte, l'appareil le suit ; à la déconnexion, ses rappels s'arrêtent.
+- **Tests** : `moteur/tests/test_rappels.py` (fenêtre, équipe favorite, cloches, playoffs, doublons, abonnement refusé,
+  texte), `outils/site/test_rappels.js` (groupe site : fichiers de l'application, Réglages, cloche, rappels envoyés par le
+  serveur, `?watch=`, mobile 390 px). La réception réelle se vérifie sur un appareil avec « Send a test ».
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
