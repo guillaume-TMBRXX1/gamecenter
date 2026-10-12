@@ -35,6 +35,8 @@ BREAK_SEC = {"q": 10, "half": 40}
 def break_kind(p):
     """Pause après l'action p : « half » (mi-temps), « q » (fin d'un quart-temps, horloge à 0, match en cours), None."""
     a = p.get("after") or {}
+    if p.get("try_follows"):            # bloc 2 : la transformation suit le touchdown, la pause vient après elle
+        return None
     if a.get("status") == "half":
         return "half"
     if a.get("status") == "live" and p.get("clock_end") is not None and p["clock_end"] <= 0:

@@ -53,6 +53,18 @@ class TestServeur(unittest.TestCase):
             n += 1
         self.assertGreater(n, 100)
 
+    def test_transformation_avant_la_pause(self):
+        """Bloc 2 : touchdown sur la dernière seconde du Q1 suivi d'une transformation — la pause vient après elle."""
+        td = {"quarter": 1, "clock_start": 4, "clock_end": 0, "result": "touchdown", "try_follows": True,
+              "after": {"status": "live"}}
+        cv = {"quarter": 1, "clock_start": 0, "clock_end": 0, "result": "pat_good", "after": {"status": "live"}}
+        self.assertIsNone(serveur.break_kind(td))
+        self.assertEqual(serveur.break_kind(cv), "q")
+        self.assertEqual(serveur.break_kind(dict(td, try_follows=False)), "q")
+        mi = dict(cv, quarter=2, after={"status": "half"})
+        self.assertIsNone(serveur.break_kind(dict(td, quarter=2)))
+        self.assertEqual(serveur.break_kind(mi), "half")
+
     def test_durees(self):
         self.assertTrue(8 <= serveur.BREAK_SEC["q"] <= 12)
         self.assertTrue(30 <= serveur.BREAK_SEC["half"] <= 45)

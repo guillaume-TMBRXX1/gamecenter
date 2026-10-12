@@ -140,6 +140,8 @@ class AudioManager{
     if(ty==='pass') R.push({cue:'PASS_COMPLETE',tags:T},{cue:'INCOMPLETE',tags:T},{cue:'PASS_COMPLETE',tags:T.concat('fd')},{cue:'SACK',tags:T},{cue:'BIG_PLAY',tags:T});
     else if(ty==='run') R.push({cue:'RUN',tags:T},{cue:'RUN',tags:T.concat('fd')},{cue:'RUN_STUFFED',tags:T},{cue:'BIG_PLAY',tags:T});
     else if(ty==='field_goal') R.push({cue:'FIELD_GOAL_GOOD',tags:[]},{cue:'FIELD_GOAL_MISS',tags:[]});
+    else if(ty==='extra_point') R.push({cue:'PAT_GOOD',tags:[]},{cue:'PAT_MISS',tags:[]});
+    else if(ty==='two_point') R.push({cue:'TWO_POINT_GOOD',tags:[]},{cue:'TWO_POINT_FAIL',tags:[]});
     else if(ty==='punt') R.push({cue:'PUNT',tags:[]});
     else if(ty==='kickoff') R.push({cue:'KICKOFF',tags:[]});
     if(c.isRedZone&&(ty==='pass'||ty==='run')) R.unshift({cue:'TOUCHDOWN',tags:T});

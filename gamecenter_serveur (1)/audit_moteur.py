@@ -64,13 +64,13 @@ def check_game(A, week, g_sched, feed):
                 bad(s, f"{k} hors du terrain : {p[k]}")
         if p.get("win_prob_home") is not None and not (0 <= p["win_prob_home"] <= 1):
             bad(s, f"probabilité de victoire hors [0,1] : {p['win_prob_home']}")
-        # --- score : jamais en baisse, sauts possibles 0/2/3/6/7/8 ---
+        # --- score : jamais en baisse, sauts possibles 0/2/3/6/7/8 (1 : point après touchdown, bloc 2) ---
         ns = a["score"]
         dh, da = ns["home"] - score["home"], ns["away"] - score["away"]
         if dh < 0 or da < 0:
             bad(s, f"le score recule : {score} → {ns}")
         for side, d in (("home", dh), ("away", da)):
-            if d not in (0, 2, 3, 6, 7, 8):
+            if d not in (0, 1, 2, 3, 6, 7, 8):
                 bad(s, f"saut de score impossible pour {side} : +{d}")
         if dh and da:
             bad(s, "les deux équipes marquent sur la même action")
@@ -82,7 +82,20 @@ def check_game(A, week, g_sched, feed):
             bad(s, f"field goal réussi mal compté ({dh}/{da})")
         if r == "safety" and (scorer is None or scorer == p["offense"] or (dh or da) != 2):
             bad(s, f"safety mal compté ({dh}/{da}) : 2 points pour la défense")
-        if r in ("incomplete", "punt", "field_goal_missed", "kickoff") and scorer:
+        if r == "touchdown" and p.get("try_follows") and (dh or da) != 6:
+            bad(s, f"touchdown suivi d'une transformation : 6 points attendus ({dh}/{da})")
+        if r in ("pat_good", "two_point_good") and (scorer != p["offense"] or (dh or da) != (1 if r == "pat_good" else 2)):
+            bad(s, f"transformation réussie mal comptée ({r} : {dh}/{da})")
+        if r in ("pat_good", "pat_missed", "two_point_good", "two_point_failed"):
+            if prev is None or prev["result"] != "touchdown" or not prev.get("try_follows") or prev["offense"] != p["offense"]:
+                bad(s, f"transformation « {r} » sans touchdown de la même équipe juste avant")
+            if p["clock_start"] != p["clock_end"]:
+                bad(s, "une transformation ne prend pas de temps de jeu")
+        elif p.get("conversion") or (prev is not None and prev.get("try_follows")):
+            bad(s, "touchdown annoncé avec transformation (try_follows), mais l'action suivante n'en est pas une")
+        if (dh or da) == 1 and r != "pat_good":
+            bad(s, f"1 point hors d'un point après touchdown (« {r} »)")
+        if r in ("incomplete", "punt", "field_goal_missed", "kickoff", "pat_missed", "two_point_failed") and scorer:
             bad(s, f"des points sur une action « {r} »")
         if r in ("run", "complete") and scorer:
             warn(s, f"points sur « {r} » sans touchdown (+{dh or da})")
@@ -118,7 +131,7 @@ def check_game(A, week, g_sched, feed):
                 bad(s, "changement d'équipe sans raison")
             if r in ("interception", "fumble_lost") and pc not in ("turnover", "score"):
                 bad(s, f"« {r} » sans changement de possession ({pc})")
-            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff",):
+            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff", "touchdown"):   # bloc 2 : TD puis transformation
                 bad(s, f"4e tentative ratée sans perte du ballon ({r}, gain {p['gain']} sur {p['to_go']})")
             # progression des tentatives
             if pc is None and r in ("run", "complete", "incomplete", "sack") and p["down"]:

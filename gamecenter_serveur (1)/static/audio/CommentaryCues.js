@@ -27,6 +27,10 @@ function resolveCues(c,P,g){
     case 'field_goal_good': out.push({cue:'FIELD_GOAL_GOOD',tags:T}); break;
     case 'field_goal_missed': out.push({cue:'FIELD_GOAL_MISS',tags:T}); break;
     case 'safety': out.push({cue:'SAFETY',tags:T}); break;
+    case 'pat_good': out.push({cue:'PAT_GOOD',tags:[]}); break;          /* bloc 2 : transformation */
+    case 'pat_missed': out.push({cue:'PAT_MISS',tags:[]}); break;
+    case 'two_point_good': out.push({cue:'TWO_POINT_GOOD',tags:[]}); break;
+    case 'two_point_failed': out.push({cue:'TWO_POINT_FAIL',tags:[]}); break;
     case 'sack': out.push({cue:'SACK',tags:T}); break;
     case 'complete':
       if(gain>=20) out.push({cue:'BIG_PLAY',tags:T.concat('pass')});

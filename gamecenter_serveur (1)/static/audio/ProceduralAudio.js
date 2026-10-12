@@ -79,7 +79,7 @@ ProceduralAudio.LIB={
    A cue is [name, delay, ...args]; delay/args undefined where the old code left them out. */
 ProceduralAudio.cuesSnap=function(ctx){
   const ty=ctx.callType;
-  return ty==='punt'||ty==='field_goal'||ty==='kickoff' ? [['kick',.45]] : [['snap']];
+  return ty==='punt'||ty==='field_goal'||ty==='kickoff'||ty==='extra_point' ? [['kick',.45]] : [['snap']];
 };
 ProceduralAudio.cuesResolve=function(ctx){
   const r=ctx.result, gain=ctx.gain, st=ctx.status, c=[];
@@ -87,7 +87,9 @@ ProceduralAudio.cuesResolve=function(ctx){
   else if(r==='interception'||r==='fumble_lost'){ c.push(['ooh'],['roar',.5,.85,2.4],['whistle',.9]); }
   else if(r==='field_goal_good'){ c.push(['roar',0,.7,2]); }
   else if(r==='safety'){ c.push(['hit',0,1.2],['roar',.05,1,3],['whistle',.6]); }
-  else if(r==='field_goal_missed'){ c.push(['groan']); }
+  else if(r==='field_goal_missed'||r==='pat_missed'||r==='two_point_failed'){ c.push(['groan']); }
+  else if(r==='pat_good'){ c.push(['roar',0,.45,1.4]); }          /* bloc 2 : transformation (comme la page) */
+  else if(r==='two_point_good'){ c.push(['roar',0,.9,2.4]); }
   else if(r==='sack'){ c.push(['hit',0,1.2],['roar',.05,.5,1.4],['whistle',.5]); }
   else if(r==='incomplete'){ c.push(['groan'],['whistle',.35,.7]); }
   else if(r==='run'||r==='complete'){ c.push(['hit',0,gain>=10?1:.65]); if(gain>=15) c.push(['roar',0,.45,1.6]); c.push(['whistle',.4,.7]); }

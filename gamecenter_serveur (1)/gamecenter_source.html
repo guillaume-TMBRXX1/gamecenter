@@ -2118,7 +2118,8 @@ function ownSpot(side,y){ return side==='home'?10+y:110-y; }
 function offTeam(g){ return g.poss==='home'?g.home:g.away; }
 function defTeam(g){ return g.poss==='home'?g.away:g.home; }
 function spotLabel(g,x){ if(Math.abs(x-60)<0.5) return '50'; return x<60 ? TEAMS[g.home].abbr+' '+Math.round(x-10) : TEAMS[g.away].abbr+' '+Math.round(110-x); }
-function ddStr(g){ const y=ytg(g); const o=['1ST','2ND','3RD','4TH'][g.down-1]||'4TH'; return o+' & '+(g.toGo>=y-0.5?'GOAL':Math.max(1,Math.round(g.toGo))); }
+function ddStr(g){ const cv=g.cur&&g.cur.conversion; if(cv) return cv.choice==='extra_point'?'EXTRA POINT':'2-PT TRY';   /* bloc 2 */
+  const y=ytg(g); const o=['1ST','2ND','3RD','4TH'][g.down-1]||'4TH'; return o+' & '+(g.toGo>=y-0.5?'GOAL':Math.max(1,Math.round(g.toGo))); }
 
 /* ---------------- playbook on the field: formations, routes, coverages ----------------
    Everything is drawn from the call the engine made (Playbook section 04 + AI section 03):
@@ -2736,7 +2737,7 @@ function planKick(g,type,P){
       wDef:z.slice(),wOff:[.3,.3,.3,.3,.3,.45,0,.45,.8,.8,.45],oDef:offsets(),oOff:offsets(),spot:S,gain:+(P&&P.gain)||0};
   }
   /* field goal: the holder (index 6) takes the snap, the kicker (index 7) strikes it toward the posts on the end line */
-  const hold=O[6], kick=O[7], good=!(P&&P.result==='field_goal_missed');
+  const hold=O[6], kick=O[7], good=!(P&&(P.result==='field_goal_missed'||P.result==='pat_missed'));
   const T={x:g.poss==='home'?119.6:0.4, y: good ? MIDY+rand(-1.2,1.2) : MIDY+(RNG()<.5?-1:1)*rand(4.4,6.8)};
   for(let i=0;i<11;i++){
     if(i===6||i===7) continue;
@@ -2966,8 +2967,8 @@ function makeGame(id,home,away,o){
    The engine decides, the page shows. Nothing about the match is computed here: every play's
    result, clock, score, possession, win probability and price comes from the feed. The animators
    above only draw the result they are handed. */
-const RP_TYPES=['run','pass','punt','field_goal','kickoff'];
-const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff','safety'];
+const RP_TYPES=['run','pass','punt','field_goal','kickoff','extra_point','two_point'];
+const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff','safety','pat_good','pat_missed','two_point_good','two_point_failed'];
 const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
 /* ---------- broadcast breaks (10/10/2026) ----------
    End of Q1 / Q3 (and of regulation before overtime): a short break; halftime: a dedicated screen; end of game: the
@@ -2977,6 +2978,7 @@ const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
    the same timeline (serveur.py BREAK_SEC, sent in #gf-server): live boards, live prices and bet settlement agree. */
 const BRK_SEC={q:10,half:40};
 function brkKind(P){ const A=P&&P.after; if(!A) return null;
+  if(P.try_follows) return null;   /* bloc 2: the conversion is still to come — the break follows it */
   if(A.status==='half') return 'half';
   return A.status==='live'&&P.clock_end!=null&&num(P.clock_end,1)<=0 ? 'q' : null; }
 /* breaks are for the match itself: never in a teaser, a spoiler-free preview or a still tile */
@@ -3020,11 +3022,17 @@ function rpSlot(P){
   if(/^WR/.test(k)) return 8; if(/^TE/.test(k)) return 5; if(/^(RB|FB|HB)/.test(k)) return 7;
   return null;
 }
+/* bloc 2 — a conversion after a touchdown (play.conversion) is drawn as the play it is: the extra point as a
+   field-goal kick, the two-point try as a run or a pass from the 2 (good = in the end zone) */
+function convType(P){ const c=P.conversion; if(!c) return P.call.type; return c.choice==='extra_point'?'field_goal':c.play==='run'?'run':'pass'; }
+function convResult(P){ const c=P.conversion; if(!c) return P.result;
+  if(c.choice==='extra_point') return c.good?'field_goal_good':'field_goal_missed';
+  return c.good?'touchdown':c.play==='run'?'run':'incomplete'; }
 /* Where the ball ends up. The spot is authoritative; if it disagrees with the gain on a normal
    down, the gain (which the play text also states) wins. */
 function rpEndX(g,P){
   const d=dirOf(g), s=P.spot&&num(P.spot.x,null), byGain=g.los+d*num(P.gain,0);
-  if(P.result==='touchdown') return goalX(g);
+  if(P.result==='touchdown'||P.result==='two_point_good') return goalX(g);
   if(P.result==='safety') return (g.poss==='home'?10:110)-d*2;   /* downed in his own end zone */
   if(P.result==='interception') return s!==null?s:byGain;
   if(s!==null && Math.abs(s-byGain)<0.75) return s;
@@ -3032,7 +3040,7 @@ function rpEndX(g,P){
 }
 function planFromFeed(g,P){
   if(P.tracks&&Array.isArray(P.tracks.frames)&&P.tracks.frames.length>1) return planTracks(g,P);
-  const t=P.call.type, r=P.result==='safety'?(P.safety_via||'run'):P.result;   /* a safety is drawn as the play it was */
+  const t=convType(P), r=P.result==='safety'?(P.safety_via||'run'):convResult(P);   /* a safety is drawn as the play it was */
   if(t==='punt'||t==='kickoff'||t==='field_goal') return planKick(g,t,P);
   const endX=rpEndX(g,P), td=r==='touchdown', concept=P.call.concept;
   const call=g.call||callFromFeed(P);
@@ -3051,7 +3059,7 @@ function planFromFeed(g,P){
 function rpKind(P){
   const r=P.result;
   if(r==='touchdown') return 'td';
-  if(r==='field_goal_good'||r==='safety') return 'score';
+  if(r==='field_goal_good'||r==='safety'||r==='pat_good'||r==='two_point_good') return 'score';
   if(r==='interception'||r==='fumble_lost'||r==='field_goal_missed'||r==='punt'||P.possession_change==='downs') return 'to';
   return 'play';
 }
@@ -3099,6 +3107,10 @@ function rpChip(P){
     case 'field_goal_good': return {t:'FIELD GOAL',c:'good'};
     case 'safety': return {t:'SAFETY · 2 PTS',c:'hot'};
     case 'field_goal_missed': return {t:'FG MISSED',c:'bad'};
+    case 'pat_good': return {t:'EXTRA POINT · GOOD',c:'good'};
+    case 'pat_missed': return {t:'EXTRA POINT · NO GOOD',c:'bad'};
+    case 'two_point_good': return {t:'2-PT CONVERSION',c:'td'};
+    case 'two_point_failed': return {t:'2-PT TRY FAILED',c:'bad'};
     case 'punt': return {t:'PUNT · '+Math.abs(gn)+' YDS',c:''};
     case 'kickoff': return {t:'KICKOFF · '+Math.abs(gn)+' YDS',c:''};
     case 'incomplete': return {t:'INCOMPLETE',c:'bad'};
@@ -3123,7 +3135,7 @@ function rpEnter(g,k,hard){
   const prevLos=g.los;
   g.poss=P.offense; g.los=num(P.los_x,60); g.bally=clamp(num(P.ball_y,MIDY),1,52.3);
   g.down=P.down||1; g.toGo=num(P.to_go,10); g.q=P.quarter||g.q; g.clock=num(P.clock_start,g.clock);
-  const t=P.call.type; g.special=(t==='punt'||t==='kickoff'||t==='field_goal')?t:null;
+  const t=convType(P); g.special=(t==='punt'||t==='kickoff'||t==='field_goal')?t:null;
   const f=withSeed(g.seed+':f:'+P.seq,()=>{
     if(g.special){ g.call=null; return specialFormation(g,g.special,P); }
     g.call=callFromFeed(P); g.call.flip=RNG()<.5;
@@ -3162,7 +3174,7 @@ function rpResolve(g){
   g.feed.unshift(rpFeedItem(g,P)); while(g.feed.length>40) g.feed.pop();
   g.hs=A.score.home; g.as=A.score.away;
   g.chip=rpChip(P); g.lastText=String(P.text||'');
-  if(P.result==='touchdown') g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety';
+  if(P.result==='touchdown') g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety'; else if(P.result==='two_point_good') g.tdFlash='Two points';
   if(P.result==='interception') g.toFlash='Interception'; else if(P.result==='fumble_lost') g.toFlash='Fumble';
   g.shake=shakeLevel(P.result,num(P.gain,0));
   g.clock=num(P.clock_end,g.clock);
@@ -3249,7 +3261,8 @@ function rpCallText(g){
   const dd=ddStr(g);
   if(g.phase==='presnap'||!g.snapped) return `<b>${T} ball</b> · ${dd} · lining up`;
   let c;
-  if(t==='punt') c='<span class="c">PUNT</span>'; else if(t==='field_goal') c='<span class="c">FIELD GOAL TRY</span>';
+  if(P.conversion) c=`<span class="c">${P.conversion.choice==='extra_point'?'KICK':P.conversion.play==='run'?'RUN':'PASS'}</span>`;   /* the try itself is in dd */
+  else if(t==='punt') c='<span class="c">PUNT</span>'; else if(t==='field_goal') c='<span class="c">FIELD GOAL TRY</span>';
   else { const off=[P.call.personnel?esc(P.call.personnel)+' pers.':'',pretty(P.call.formation),pretty(P.call.concept)].filter(Boolean).join(' · '), de=P.call.defense||{}, dv=[pretty(de.package||de.concept),pretty(de.front||de.formation)].filter(Boolean).join(' · '); c=`<span class="c">${off||t.toUpperCase()}</span>${dv?' vs '+dv:''}`; }
   let s=`<b>${T}</b> · ${dd} · ${c}`;
   if(g.phase!=='play'){
@@ -3802,7 +3815,7 @@ function computeStats(g,n){
   const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
 }
 function computeStatsNow(g,n){
-  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0});
+  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
@@ -3815,6 +3828,11 @@ function computeStatsNow(g,n){
     const secs=Math.max(0,num(P.clock_start,0)-num(P.clock_end,0)), scrim=t==='run'||t==='pass', fdn=/1st down/i.test(P.text||'');
     const pp=P.players||{}, car=pp.carrier||{}, pas=pp.passer||null, df=pp.defender||{};
     S.top+=secs;
+    if(P.conversion){ const c=P.conversion;   /* bloc 2: kicker's extra points; a two-point try counts apart (no yards, no TD) */
+      if(c.choice==='extra_point'){ S.xpa++; if(c.good) S.xpm++;
+        if(car.id||car.name){ const k=who(o,car.id,car.name); k.kick=k.kick||{m:0,a:0,lng:0,xm:0,xa:0}; k.kick.xa=(k.kick.xa||0)+1; if(c.good) k.kick.xm=(k.kick.xm||0)+1; } }
+      else { S.c2a++; if(c.good) S.c2m++; }
+      continue; }
     const dc=P.decision; if(dc){ S.db++; if(dc.action==='LANCER'&&num(dc.throw_time,null)!==null){ S.tt+=dc.throw_time; S.tn++; } if(dc.pressure||dc.hurried) S.pr++; if(dc.action==='SCRAMBLE') S.scr++;
       /* block C: contested balls won by the offense, coverage busts given up by the defense */
       if(dc.reception){ S.bc++; if(dc.reception==='contested'&&P.result!=='sack'){ S.ct++; if(P.result==='complete'||P.result==='touchdown'||P.result==='fumble_lost') S.cw++; } if(dc.bust) team[ds].bust++; } }
@@ -3841,7 +3859,7 @@ function computeStatsNow(g,n){
       S.rushAtt++; S.rushYds+=gain; if(r==='touchdown') S.rushTd++;
       if(car.id||car.name){ const b=who(o,car.id,car.name); b.rush=b.rush||{c:0,y:0,td:0,lng:0}; b.rush.c++; b.rush.y+=gain; b.rush.lng=Math.max(b.rush.lng,gain); if(r==='touchdown') b.rush.td++; }
     } else if(t==='field_goal'&&(car.id||car.name)){   /* the kicker is the feed's carrier on a field goal try */
-      const k=who(o,car.id,car.name); k.kick=k.kick||{m:0,a:0,lng:0}; k.kick.a++;
+      const k=who(o,car.id,car.name); k.kick=k.kick||{m:0,a:0,lng:0,xm:0,xa:0}; k.kick.a++;
       const d=/(\d+)\s*yds/i.exec(P.text||''); if(r==='field_goal_good'){ k.kick.m++; if(d) k.kick.lng=Math.max(k.kick.lng,+d[1]); }
     }
     if(r==='fumble_lost') S.fum++;
@@ -3907,7 +3925,7 @@ function renderStats(g){
       const rows=[
         ['Total yards',a.yds,h.yds,1],['Passing yards',a.passYds-a.sackYds,h.passYds-h.sackYds,1],['Completions / attempts',`${a.comp}/${a.passAtt}`,`${h.comp}/${h.passAtt}`],
         ['Passing touchdowns',a.passTd,h.passTd,1],['Rushing yards',a.rushYds,h.rushYds,1],['Rushing attempts',a.rushAtt,h.rushAtt,0],['Rushing touchdowns',a.rushTd,h.rushTd,1],
-        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],
+        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],...(a.xpa+h.xpa+a.c2a+h.c2a?[['Extra points',`${a.xpm}/${a.xpa}`,`${h.xpm}/${h.xpa}`],['2-pt conversions',`${a.c2m}/${a.c2a}`,`${h.c2m}/${h.c2a}`]]:[]),
         ['Red zone (TD / trips)',`${a.rzTd}/${a.rz}`,`${h.rzTd}/${h.rz}`],['Sacked (yards lost)',`${a.sacks} (${a.sackYds})`,`${h.sacks} (${h.sackYds})`],
         ['Turnovers',a.ints+a.fum,h.ints+h.fum,-1],['Plays',a.plays,h.plays,0],['Time of possession',top(a),top(h),0,a.top,h.top]];
       /* engine decisions (blocks A-B): time to throw, pressure, scrambles */
@@ -3928,8 +3946,8 @@ function renderStats(g){
         const rush=list.filter(p=>p.rush).sort((a,b)=>b.rush.y-a.rush.y).map(p=>`<tr>${nm(p)}<td>${p.rush.c}</td><td>${p.rush.y}</td><td>${(p.rush.y/p.rush.c).toFixed(1)}</td><td>${p.rush.lng}</td><td>${p.rush.td}</td></tr>`);
         const rec=list.filter(p=>p.rec).sort((a,b)=>b.rec.y-a.rec.y).map(p=>`<tr>${nm(p)}<td>${p.rec.r}</td><td>${p.rec.t}</td><td>${p.rec.y}</td><td>${p.rec.lng}</td><td>${p.rec.td}</td></tr>`);
         const dfn=list.filter(p=>p.def).sort((a,b)=>(b.def.tk+2*b.def.sk+3*b.def.i+b.def.pd)-(a.def.tk+2*a.def.sk+3*a.def.i+a.def.pd)).map(p=>`<tr>${nm(p)}<td>${p.def.tk}</td><td>${p.def.sk}</td><td>${p.def.i}</td><td>${p.def.pd}</td></tr>`);
-        const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${3*p.kick.m}</td></tr>`);
-        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','FG PTS'],kick);
+        const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${p.kick.xm||0}/${p.kick.xa||0}</td><td>${3*p.kick.m+(p.kick.xm||0)}</td></tr>`);
+        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick);
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -3963,7 +3981,7 @@ function perfScore(p){
   if(r) v+=r.y/10+6*r.td;
   if(c) v+=c.y/10+6*c.td+0.5*c.r;
   if(d) v+=d.tk+2*d.sk+3*d.i+d.pd+2*d.ff;
-  if(k) v+=3*k.m;
+  if(k) v+=3*k.m+(k.xm||0);
   return v;
 }
 /* the stat group shown for a player: his position first, else what he did most in this game */
@@ -3978,14 +3996,14 @@ function topPerformers(st,side,n){
     .sort((a,b)=>b.v-a.v||String(a.p.name).localeCompare(String(b.p.name))).slice(0,n||3);
 }
 /* [label, value] of a card: the position's stats (QB C/ATT YDS TD INT · RB CAR YDS TD · WR/TE REC YDS TD ·
-   defense TKL SCK INT PD · K FG PTS), then one line for anything else the player did */
+   defense TKL SCK INT PD · K FG XP PTS), then one line for anything else the player did */
 function perfStats(p,role){
   const a=p.pass, r=p.rush, c=p.rec, d=p.def, k=p.kick;
   const main= role==='pass'?[['C/ATT',`${a.c}/${a.a}`],['YDS',a.y],['TD',a.td],['INT',a.i]]
     : role==='rush'?[['CAR',r.c],['YDS',r.y],['TD',r.td]]
     : role==='rec'?[['REC',c.r],['YDS',c.y],['TD',c.td]]
     : role==='def'?[['TKL',d.tk],['SCK',d.sk],['INT',d.i],['PD',d.pd]]
-    : [['FG',`${k.m}/${k.a}`],['FG PTS',3*k.m]];
+    : [['FG',`${k.m}/${k.a}`],['XP',`${k.xm||0}/${k.xa||0}`],['PTS',3*k.m+(k.xm||0)]];
   const more=[];
   if(role==='pass'&&a.tn) more.push(`${(a.tt/a.tn).toFixed(2)} s avg. time to throw`);   /* engine decisions (Next Gen Stats style) */
   if(role!=='rush'&&r&&r.c) more.push(`${r.c} rush, ${r.y} yds${r.td?`, ${r.td} TD`:''}`);
@@ -6033,6 +6051,10 @@ function playLine(g,P){
         : V([`${car} is dropped in the end zone — safety!`,`Tackled in his own end zone! Two points for the ${nick(dfT)}!`,`Safety! ${def?sur(def)+' wraps up '+sur(car):'They bring him down'} behind the goal line!`]);
       text+=' '+scoreLine(g); break;
     case 'field_goal_missed': prio=2; text=V([`No good! ${car} misses it.`,`The kick is wide! No points for the ${nick(off)}.`]); break;
+    case 'pat_good': prio=1; text=V([`The extra point is good.`,`${car} adds the extra point.`]); text+=' '+scoreLine(g); break;
+    case 'pat_missed': prio=2; text=V([`The extra point is no good!`,`${car} misses the extra point!`]); text+=' '+scoreLine(g); break;
+    case 'two_point_good': prio=3; text=V([`They go for two… and they get it! ${car}!`,`Two-point conversion is good!`]); text+=' '+scoreLine(g); break;
+    case 'two_point_failed': prio=2; text=V([`The two-point try fails!`,`They went for two — and came up short.`]); text+=' '+scoreLine(g); break;
     case 'sack': prio=2; if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc&&P.decision.bloc!=='A'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
       text=V([`Sacked! ${def||'The pass rush'} gets to ${sur(qb)}, loss of ${yds(gain)}.`,`${sur(qb)} goes down! ${def||'They'} with the sack.`,`Pressure… and ${sur(qb)} is sacked!`]); break;
     case 'complete':
@@ -6138,7 +6160,7 @@ function audioSnap(g){
   const q=num(P.quarter,1);
   if(q!==F_Q&&!jump&&F_Q){ say(q>4?`We're headed to overtime! ${scoreLine(g)}`:`Start of the ${ORD[q].toLowerCase()} quarter. ${scoreLine(g)}`,q>4?3:2,g); }
   F_Q=q;
-  if(ty==='punt'||ty==='field_goal'||ty==='kickoff') sfx('kick',.45); else sfx('snap');
+  if(ty==='punt'||ty==='field_goal'||ty==='kickoff'||ty==='extra_point') sfx('kick',.45); else sfx('snap');
   const al=adjLine(g,P), l=snapLine(g,P);
   if(al||l) say([al&&al.text,l&&l.text].filter(Boolean).join(' '),Math.max(al?al.prio:0,l?l.prio:0),g);
 }
@@ -6150,7 +6172,9 @@ function audioResolve(g){
   else if(r==='interception'||r==='fumble_lost'){ sfx('ooh'); sfx('roar',.5,.85,2.4); sfx('whistle',.9); }
   else if(r==='field_goal_good'){ sfx('roar',0,.7,2); }
   else if(r==='safety'){ sfx('hit',0,1.2); sfx('roar',.05,1,3); sfx('whistle',.6); }
-  else if(r==='field_goal_missed'){ sfx('groan'); }
+  else if(r==='field_goal_missed'||r==='pat_missed'||r==='two_point_failed'){ sfx('groan'); }
+  else if(r==='pat_good'){ sfx('roar',0,.45,1.4); }
+  else if(r==='two_point_good'){ sfx('roar',0,.9,2.4); }
   else if(r==='sack'){ sfx('hit',0,1.2); sfx('roar',.05,.5,1.4); sfx('whistle',.5); }
   else if(r==='incomplete'){ sfx('groan'); sfx('whistle',.35,.7); }
   else if(r==='run'||r==='complete'){ sfx('hit',0,gain>=10?1:.65); if(gain>=15) sfx('roar',0,.45,1.6); sfx('whistle',.4,.7); }
@@ -6219,7 +6243,7 @@ function audioSweep(){
     f.plays.forEach((P,i)=>{ g.idx=i; g.hs=P.after.score.home; g.as=P.after.score.away;
       const a=snapLine(g,P); if(a){ out.snap++; if(/undefined|null|NaN/.test(a.text)) out.bad.push(a.text); }
       const l=playLine(g,P); g.hist.push(num(P.win_prob_home,.5));
-      if(!l){ if(['touchdown','interception','fumble_lost','field_goal_good','field_goal_missed','sack','safety'].includes(P.result)||P.after.status!=='live') out.missing.push(s.id+'#'+i+' '+P.result); return; }
+      if(!l){ if(['touchdown','interception','fumble_lost','field_goal_good','field_goal_missed','sack','safety','pat_good','pat_missed','two_point_good','two_point_failed'].includes(P.result)||P.after.status!=='live') out.missing.push(s.id+'#'+i+' '+P.result); return; }
       if(s===SCHED[0]&&(out.sample=out.sample||[]).length<70) out.sample.push((a?'['+a.text+'] ':'')+l.prio+' '+l.text);
       out.lines++; out.prio[l.prio]++; out.maxLen=Math.max(out.maxLen,l.text.length);
       if(/undefined|null|NaN|\s\s|\s[.,!]/.test(l.text)) out.bad.push(l.text);
