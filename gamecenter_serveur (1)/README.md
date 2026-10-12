@@ -785,7 +785,7 @@ créés = débranchés), la page reste lourde.
   touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
     et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
-  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, transformations, Game Center du notebook
+  - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, transformations, coups d'envoi et retours, Game Center du notebook
     (cellule 427), musique, commentaire enregistré (dernière
     semaine), foule et effets ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
@@ -871,6 +871,29 @@ créés = débranchés), la page reste lourde.
 - **Tests** : `moteur/tests/test_transformation.py` (choix, taux, flux dédié), `test_pauses.py` (pas de pause entre le
   touchdown et la transformation), `outils/site/test_transformation.js` (groupe site : replay d'un match avec
   transformations — réel, ou complété tant que les semaines n'en ont pas — bannières, score, Match centre).
+
+### 42. Coup d'envoi après chaque score, avec retour (bloc 2, étape 4 — 12/10/2026)
+- **Moteur** (module `moteur/coup_envoi.py`, tests `moteur/tests/test_coup_envoi.py`, notebook 12.2 terdecies) : coup
+  d'envoi de la ligne des 35 après chaque touchdown (après la transformation) et chaque field goal réussi — sauf quand la
+  mi-temps ou la fin du match arrive, et en prolongation (départ aux 25 comme avant). Longueur selon la puissance du
+  kicker ; **touchback** (≈ 42 %, départ aux 25) ou **retour** du receveur (le plus rapide des WR2, WR3, RB2 : vitesse +
+  agilité, contre les équipes spéciales adverses), ≈ 25 yards en moyenne, parfois une grande chevauchée ; **touchdown sur
+  retour** (≈ 0,4 % des coups d'envoi après un score) : 6 points, transformation, puis coup d'envoi en sens inverse.
+  Départ moyen ≈ 25,7 (avant : 25). Les coups d'envoi du début de match, de la mi-temps et de la prolongation ont aussi un
+  retour (sans touchdown possible). Pas de temps de jeu (comme avant). Non modélisés (choix du 12/10) : onside kick,
+  fumble sur retour. Flux dédié ; `GC_COUP_ENVOI=0` : moteur d'avant à l'identique (contrôlé). LEAGUE inchangé.
+- **GameFeed** (additif) : `play.kick_return = {kick, landing, touchback, return, td}`, porteur = le receveur, texte
+  « Kickoff 66 yds · X returns 24 » / « touchback » ; touchdown sur retour = `result: touchdown` sur un appel `kickoff`
+  (`try_follows`, puis transformation). `highlight: BIG` à partir de 40 yards.
+- **Site** : le ballon tombe là où le receveur l'attrape, puis il remonte le terrain (genou à terre sur un touchback) ;
+  bannières « TOUCHBACK », « KICKOFF · RETURN n YDS », « BIG RETURN » ; Match centre : « Kick return yards », tableau
+  « Kick returns » ; commentaire. Cellule 427 : même rendu.
+- **Audio** : événements `TOUCHBACK`, `KICK_RETURN_BIG`, `KICK_RETURN_TD` ; 3 répliques, **10 prises à générer**
+  (workflow « Commentaire audio », mode `generer`).
+- **Audit** : un coup d'envoi après chaque score (feeds avec retours), touchback = départ aux 25, touchdown sur retour
+  suivi de sa transformation.
+- **Tests** : `outils/site/test_retours.js` (groupe site : replay d'un match avec retours — réel, ou complété tant que les
+  semaines n'en ont pas — bannières, textes, score, Match centre).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
