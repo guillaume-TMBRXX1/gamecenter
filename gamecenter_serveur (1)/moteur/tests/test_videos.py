@@ -268,6 +268,65 @@ class TestSemaineReelle(unittest.TestCase):
             self.assertIsNone(PARIS.search(t), PARIS.search(t))
             self.assertNotIn("🏆", str(seg2))                                           # pas d'emoji à l'écran
 
+    def test_match_hors_norme(self):
+        """Étape 8.6 b : un record battu au moment du match (égaler ne suffit pas), sinon 100 points cumulés ; jamais un
+        match pas encore terminé ; actions du score dans l'ordre ; aucun mot de paris."""
+        plus_tard = datetime(2100, 1, 1, tzinfo=C.TZ)
+        d = SEMAINES[-1]
+        r = C.match_hors_norme(d, plus_tard, SEMAINES)
+        tous = []
+        for x in SEMAINES:
+            w = json.load(open(os.path.join(x, "week.json"), encoding="utf-8"))
+            tous += [(g["kickoff"], g["id"], C._valeurs(g), os.path.basename(x)) for g in w["schedule"] if g.get("result")]
+        tous.sort()
+        if r is not None:
+            g = next(t for t in tous if t[1] == r["game"])
+            self.assertEqual(g[3], os.path.basename(d))
+            if r["previous"] is not None:
+                avant = [t[2][r["kind"]] for t in tous if (t[0], t[1]) < (g[0], g[1])]
+                self.assertEqual(r["previous"], max(avant))
+                self.assertGreater(r["value"], r["previous"])
+            else:
+                self.assertGreaterEqual(r["value"], C.SEUIL_POINTS)
+            doc, feeds = C.charger_semaine(d)
+            top, seg, info, leg = V.plan_chiffres(r, doc, feeds)
+            self.assertEqual(seg[0]["type"], "stats")
+            idx = [x["index"] for x in seg if x["type"] == "play"]
+            self.assertEqual(idx, sorted(idx))
+            self.assertTrue(all(feeds[r["game"]]["plays"][i]["result"] in ("touchdown", "field_goal_good")
+                                or (feeds[r["game"]]["plays"][i].get("kick_return") or {}).get("td") for i in idx))
+            for t in (leg, str(seg)):
+                self.assertIsNone(PARIS.search(t), PARIS.search(t))
+        ko = min(datetime.fromisoformat(g["kickoff"]) for g in json.load(open(os.path.join(d, "week.json")))["schedule"])
+        self.assertIsNone(C.match_hors_norme(d, ko, SEMAINES))                         # rien de joué : rien
+
+    def test_franchise(self):
+        """Étape 8.6 b : une franchise par semaine, toujours la même pour une semaine, les 24 sur 24 semaines ; légende
+        et actions de cette franchise ; aucun mot de paris, pas de texte français de la bible à l'écran."""
+        plus_tard = datetime(2100, 1, 1, tzinfo=C.TZ)
+        d = SEMAINES[-1]
+        f = C.franchise_de_la_semaine(d, SEMAINES, plus_tard)
+        self.assertEqual(f["team"], C.franchise_de_la_semaine(d, SEMAINES, plus_tard)["team"])
+        doc = json.load(open(os.path.join(d, "week.json"), encoding="utf-8"))
+        equipes = sorted(doc["teams"])
+        debut = min(json.load(open(os.path.join(x, "week.json")))["week"]["start"] for x in SEMAINES)
+        rang = (datetime.fromisoformat(doc["week"]["start"]) - datetime.fromisoformat(debut)).days // 7
+        self.assertEqual(f["team"], equipes[rang % len(equipes)])
+        if f["legende"]:
+            self.assertEqual(f["legende"]["team"], f["team"])
+        for a in f["actions"]:
+            w = json.load(open(os.path.join(a["dossier"], "week.json"), encoding="utf-8"))
+            g = next(x for x in w["schedule"] if x["id"] == a["game"])
+            self.assertIn(f["team"], (g["home"], g["away"]))
+        top, seg, info, leg = V.plan_franchise(f, doc)
+        self.assertEqual(seg[0]["type"], "stats")
+        self.assertEqual(seg[-1]["title"], "snapline.live")
+        for t in (leg, str(seg)):
+            self.assertIsNone(PARIS.search(t), PARIS.search(t))
+            for fr in (f["fiche"].get("style"), f["fiche"].get("identity")):
+                if fr:
+                    self.assertNotIn(fr, t)
+
     def test_score_fantasy(self):
         base = {k: 0 for k in ("pyd", "ptd", "pint", "ryd", "rtd", "yd", "td", "rec", "kry", "krtd", "tk", "sk", "int",
                                "pd", "fgm", "xpm")}
