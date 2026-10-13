@@ -4,6 +4,7 @@ stade (outils/video/faire_video.py, sans filmer : le tournage est vérifié à l
     python -m unittest discover -s moteur/tests -t .        (depuis « gamecenter_serveur (1) »)
 """
 import glob
+import json
 import os
 import re
 import sys
@@ -115,6 +116,8 @@ class TestSonEtBandeaux(unittest.TestCase):
         self.assertNotIn((12.0, "snap"), kinds)                     # le ralenti : pas de snap ni de sifflet
         self.assertIn((20.0, "react_td"), kinds)
         self.assertIn((25.1, "cheer_medium"), kinds)                # carton final
+        tl["segments"].insert(0, {"type": "card", "kind": "stats", "from": 0, "to": 3})
+        self.assertIn((0.2, "cheer_medium"), [(round(t, 2), k) for t, k, g in V.evenements_son(tl)])
         self.assertTrue(all(t >= 0 for t, k, g in ev))
         assets = V._assets()
         self.assertTrue(all(k in assets for _, k, _ in ev), "chaque son existe dans audio/manifest.json")
@@ -222,6 +225,57 @@ class TestSemaineReelle(unittest.TestCase):
         for a in C.trois_actions([SEMAINES[-1]], ko + C.FINI_APRES + timedelta(hours=3)):
             g = next(x for x in self.doc["schedule"] if x["id"] == a["game"])
             self.assertLessEqual(datetime.fromisoformat(g["kickoff"]) + C.FINI_APRES, ko + C.FINI_APRES + timedelta(hours=3))
+
+    def test_joueur_et_champion(self):
+        """Étape 8.6 a : joueur de la semaine (score fantasy, ses actions) et champion (après la Grand Final seulement),
+        sur une semaine terminée ; cartons de statistiques ; aucun mot de paris."""
+        fini = [d for d in SEMAINES if json.load(open(os.path.join(d, "week.json"), encoding="utf-8")).get("champion")]
+        if not fini:
+            self.skipTest("aucune semaine terminée")
+        d = fini[-1]
+        doc, feeds = C.charger_semaine(d)
+        plus_tard = datetime(2100, 1, 1, tzinfo=C.TZ)
+        r = C.joueur_de_la_semaine(d, plus_tard)
+        j = r["joueur"]
+        self.assertEqual(r, C.joueur_de_la_semaine(d, plus_tard))                       # déterministe
+        self.assertTrue(1 <= len(r["actions"]) <= 3)
+        for a in r["actions"]:
+            g = next(x for x in doc["schedule"] if x["id"] == a["game"])
+            self.assertTrue(C._implique(a["play"], g, j))
+        top, seg, info, leg = V.plan_joueur(r, doc)
+        self.assertEqual(seg[0]["type"], "stats")
+        self.assertEqual(len(seg[0]["stats"]), 4)
+        self.assertEqual(seg[-1]["title"], "snapline.live")
+        ko = min(datetime.fromisoformat(g["kickoff"]) for g in doc["schedule"])
+        self.assertIsNone(C.joueur_de_la_semaine(d, ko))
+        fin = next(g for g in doc["schedule"] if g["phase"] == "ai_bowl")
+        self.assertIsNone(C.champion(d, datetime.fromisoformat(fin["kickoff"]), SEMAINES))   # finale pas finie
+        c = C.champion(d, plus_tard, SEMAINES)
+        self.assertEqual(c["team"], doc["champion"])
+        noms = sorted(os.path.basename(x) for x in SEMAINES if os.path.basename(x) <= os.path.basename(d))
+        attendu = sum(json.load(open(os.path.join(os.path.dirname(d), n, "week.json"), encoding="utf-8")).get("champion") == c["team"]
+                      for n in noms)
+        self.assertEqual(c["titres"], attendu)
+        self.assertEqual(C.champion(os.path.relpath(d), plus_tard, SEMAINES)["titres"], attendu)   # chemins mélangés
+        for a in c["actions"]:
+            g = next(x for x in doc["schedule"] if x["id"] == a["game"])
+            self.assertIn(g["phase"], ("semifinal", "ai_bowl"))
+            self.assertIn(c["team"], (g["home"], g["away"]))
+        top, seg2, info, leg2 = V.plan_champion(c, doc)
+        self.assertEqual(seg2[0]["stats"][0]["v"], f"{c['score'][0]}–{c['score'][1]}")
+        self.assertGreater(c["score"][0], c["score"][1])
+        for t in (leg, leg2, str(seg), str(seg2)):
+            self.assertIsNone(PARIS.search(t), PARIS.search(t))
+            self.assertNotIn("🏆", str(seg2))                                           # pas d'emoji à l'écran
+
+    def test_score_fantasy(self):
+        base = {k: 0 for k in ("pyd", "ptd", "pint", "ryd", "rtd", "yd", "td", "rec", "kry", "krtd", "tk", "sk", "int",
+                               "pd", "fgm", "xpm")}
+        self.assertEqual(C.score_fantasy(dict(base, pyd=300, ptd=3, pint=1)), 22.0)
+        self.assertEqual(C.score_fantasy(dict(base, ryd=120, rtd=2, rec=4, yd=30)), 29.0)
+        self.assertEqual(C.score_fantasy(dict(base, tk=8, sk=2, int=1)), 22.0)
+        ch = V.chiffres_joueur(dict(base, pos="RB", ryd=700, rtd=5, car=0, yd=200, cmp=0, att=0, fga=0))
+        self.assertEqual([x["l"] for x in ch][-1], "Carries")                          # les nuls en dernier
 
     def test_semaine_du_jour(self):
         self.assertEqual(os.path.basename(V.semaine_du(self.jour)), os.path.basename(SEMAINES[-1]))

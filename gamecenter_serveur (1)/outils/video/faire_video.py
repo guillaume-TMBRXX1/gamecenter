@@ -7,6 +7,8 @@
     python outils/video/faire_video.py resume [--match ID]          résumé court d'un match (≈ 60 s) ; par défaut : le
                                                                       plus beau match de la semaine ; --long : 2 à 3 min
     python outils/video/faire_video.py presentation                 « What is Snapline? » (≈ 20 s) : 3 actions
+    python outils/video/faire_video.py joueur                       le joueur de la semaine (≈ 25 s, étape 8.6 a)
+    python outils/video/faire_video.py champion                     le champion de la Grand Final (≈ 30 s, étape 8.6 a)
     options : --semaine data/weeks/week_AAAA-MM-JJ (défaut : la dernière), --sortie videos/ (défaut), --port 8150
 
 Le site rejoue l'action sur son terrain (serveur local avec le crochet de test ; outils/video/filmer.js filme le
@@ -115,6 +117,8 @@ def evenements_son(timeline):
         if s["type"] == "card":
             if s is timeline["segments"][-1]:
                 ev.append((s["from"] + 0.1, "cheer_medium", 0.5))
+            elif s.get("kind") == "stats":                   # les chiffres du carton de statistiques (étape 8.6 a)
+                ev.append((s["from"] + 0.2, "cheer_medium", 0.45))
             continue
         lent = s.get("speed", 1) < 1
         g = 0.55 if lent else 1.0
@@ -264,6 +268,87 @@ def plan_presentation(choix, semaines):
     return seg[0]["top"], seg, info, legende
 
 
+# étape 8.6 a : carton de statistiques (choisir.joueur_de_la_semaine, choisir.champion)
+CHIFFRES = {"QB": (("pyd", "Pass yards"), ("ptd", "Pass TD"), ("cmp%", "Completion %"), ("ryd", "Rush yards")),
+            "RB": (("ryd", "Rush yards"), ("rtd", "Rush TD"), ("car", "Carries"), ("yd", "Receiving yards")),
+            "WR": (("yd", "Receiving yards"), ("rec", "Receptions"), ("td", "Receiving TD"), ("tgt", "Targets")),
+            "TE": (("yd", "Receiving yards"), ("rec", "Receptions"), ("td", "Receiving TD"), ("tgt", "Targets")),
+            "K": (("fgm", "Field goals"), ("fga", "Attempts"), ("xpm", "Extra points"), ("fg_pct", "FG %"))}
+DEFENSE = (("tk", "Tackles"), ("sk", "Sacks"), ("int", "Interceptions"), ("pd", "Passes defended"))
+POSTE = {"QB": "Quarterback", "RB": "Running back", "WR": "Wide receiver", "TE": "Tight end", "K": "Kicker",
+         "EDGE": "Edge rusher", "DT": "Defensive tackle", "LB": "Linebacker", "CB": "Cornerback", "S": "Safety"}
+
+
+def chiffres_joueur(j):
+    """Les 4 chiffres du carton (selon le poste), les nuls en dernier ; pourcentages calculés."""
+    v = dict(j)
+    v["cmp%"] = round(100 * j.get("cmp", 0) / j["att"]) if j.get("att") else 0
+    v["fg_pct"] = round(100 * j.get("fgm", 0) / j["fga"]) if j.get("fga") else 0
+    choix = [{"v": int(round(v.get(k, 0))), "l": l} for k, l in CHIFFRES.get(j["pos"], DEFENSE)]
+    return sorted(choix, key=lambda x: x["v"] == 0)
+
+
+def _nom_equipe(doc, abbr):
+    return ((doc.get("teams") or {}).get(abbr) or {}).get("name", abbr)
+
+
+def _segments_actions(actions, semaines, top):
+    seg = []
+    for a in actions:
+        g = next(x for x in semaines[a["dossier"]]["schedule"] if x["id"] == a["game"])
+        P = a["play"]
+        seg.append({"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"),
+                    "after": 0.8, "feed": os.path.join(a["dossier"], g["feed"]),
+                    "top": dict(top, sub=f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}")})
+    return seg
+
+
+def plan_joueur(res, doc):
+    """Joueur de la semaine (≈ 25 s) : carton de statistiques, ses plus belles actions, carton snapline.live."""
+    j = res["joueur"]
+    equipe = _nom_equipe(doc, j["team"])
+    stats = chiffres_joueur(j)
+    seg = [{"type": "stats", "kicker": "Player of the week", "title": j["name"],
+            "sub": f"{equipe} · {POSTE.get(j['pos'], j['pos'])} · {j['games']} games", "team": j["team"],
+            "stats": stats, "dur": 3.4}]
+    seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
+                             {"kicker": "Player of the week", "title": j["name"]})
+    seg.append(dict(FIN))
+    info = {"type": "joueur", "player": j["id"], "name": j["name"], "team": j["team"], "score": res["score"],
+            "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
+    ligne = " · ".join(f"{x['v']:,} {x['l']}" for x in stats[:3] if x["v"])
+    legende = legendes(f"{j['name']} ({equipe}) is the player of the week 🏈",
+                       f"{ligne} in {j['games']} games.",
+                       "Who's your MVP this week?", "#playeroftheweek",
+                       f"Player of the week: {j['name']}, {ligne} | AI football")
+    return seg[1]["top"] if len(seg) > 2 else {"kicker": "", "title": "", "sub": ""}, seg, info, legende
+
+
+def plan_champion(res, doc):
+    """Champion de la Grand Final (≈ 30 s) : carton de statistiques, ses plus belles actions des demi-finales et de la
+    finale, carton final."""
+    t, o = res["team"], res["opp"]
+    nom = _nom_equipe(doc, t)
+    b = res["bilan"]
+    bilan = f"{b['w']}-{b['l']}" + (f"-{b['t']}" if b.get("t") else "")
+    stats = [{"v": f"{res['score'][0]}–{res['score'][1]}", "l": f"Grand Final vs {o}"}, {"v": bilan, "l": "Regular season"},
+             {"v": res["titres"], "l": "Titles all-time"}]
+    seg = [{"type": "stats", "kicker": "Grand Final champions", "title": nom, "sub": f"{t} beat {o} {res['score'][0]}–{res['score'][1]}",
+            "team": t, "stats": stats, "dur": 3.4}]
+    seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
+                             {"kicker": "Road to the title", "title": nom})
+    seg.append({"type": "card", "kicker": "Champions", "title": f"{t} {res['score'][0]}–{res['score'][1]} {o}",
+                "sub": "A new season starts Monday · watch it live on snapline.live", "dur": 2.6})
+    info = {"type": "champion", "team": t, "opp": o, "score": list(res["score"]), "titles": res["titres"],
+            "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
+    legende = legendes(f"{nom} win the Grand Final 🏆",
+                       f"{res['score'][0]}–{res['score'][1]} against {_nom_equipe(doc, o)}, after a {bilan} regular season. "
+                       f"Title number {res['titres']}.",
+                       "Who takes the crown next week?", "#grandfinal",
+                       f"{nom} win the Grand Final, {res['score'][0]}–{res['score'][1]} | AI football")
+    return seg[1]["top"] if len(seg) > 2 else {"kicker": "", "title": "", "sub": ""}, seg, info, legende
+
+
 # ------------------------------------------------------------------ tournage
 def serveur(port):
     data = tempfile.mkdtemp(prefix="gc-video-")
@@ -293,7 +378,7 @@ def semaine_du(jour):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("type", choices=("action", "resume", "presentation"))
+    ap.add_argument("type", choices=("action", "resume", "presentation", "joueur", "champion"))
     ap.add_argument("--jour")
     ap.add_argument("--match")
     ap.add_argument("--meilleure", action="store_true", help="action : la plus belle de toutes les semaines (matchs terminés)")
@@ -304,7 +389,13 @@ def main():
     a = ap.parse_args()
     jour = a.jour or (datetime.now(C.TZ) - timedelta(hours=3)).date().isoformat()   # la journée qui vient de finir
     toutes = glob.glob(os.path.join(RACINE, "data", "weeks", "week_*"))
-    if a.type == "presentation":
+    if a.type in ("joueur", "champion"):
+        dossier = a.semaine or semaine_du(jour)
+        res = (C.joueur_de_la_semaine(dossier, datetime.now(C.TZ)) if a.type == "joueur"
+               else C.champion(dossier, datetime.now(C.TZ), toutes))
+        if not res or not res["actions"]:
+            raise SystemExit("pas encore de match terminé" if a.type == "joueur" else "la Grand Final n'est pas terminée")
+    elif a.type == "presentation":
         choix = C.trois_actions(toutes, datetime.now(C.TZ))
         if len(choix) < 3:
             raise SystemExit("pas assez de matchs terminés")
@@ -317,7 +408,11 @@ def main():
     else:
         dossier = a.semaine or semaine_du(jour)
     doc, feeds = C.charger_semaine(dossier)
-    if a.type == "presentation":
+    if a.type in ("joueur", "champion"):
+        top, seg, info, legende = (plan_joueur if a.type == "joueur" else plan_champion)(res, doc)
+        g = next(x for x in doc["schedule"] if x["id"] == res["actions"][0]["game"])
+        nom = f"{'joueur-de-la-semaine' if a.type == 'joueur' else 'champion'}-{os.path.basename(dossier)[5:]}"
+    elif a.type == "presentation":
         semaines = {c["dossier"]: C.charger_semaine(c["dossier"])[0] for c in choix}
         top, seg, info, legende = plan_presentation(choix, semaines)
         g = next(x for x in doc["schedule"] if x["id"] == choix[0]["game"])

@@ -32,7 +32,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
-| **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
+| **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
 
 ---
 
@@ -805,8 +805,9 @@ musique, premiers posts, mesure, tableau du bilan du lundi). Une étape = une PR
   : que des formats courts sur les réseaux, choix du 13/10) ; « What is Snapline? » (PR #69) · 8.4 lien compté `/tt`
   (TikTok seulement) **en attente** : pas de lien cliquable avant 1 000 abonnés · 8.4 bis ✅ adresse visible dans les
   vidéos, carton « Type it in your browser », commentaire à épingler ; pistes sans lien : `Promotion.md` section 8 · 8.5
-  Instagram Reels, YouTube Shorts et bilan · 8.6 autres formats (joueur de la semaine, champion de la Grand Final, match
-  hors norme, histoire d'une franchise : `Promotion.md` section 7). Plus tard, à décider : commentaire et sous-titres
+  Instagram Reels, YouTube Shorts et bilan · 8.6 a ✅ carton de statistiques animé, joueur de la semaine (score
+  fantasy) et champion de la Grand Final, produits le dimanche · 8.6 b match hors norme et histoire d'une franchise
+  (`Promotion.md` section 7). Plus tard, à décider : commentaire et sous-titres
   incrustés, image de couverture.
 
 ## Pour la conversation suivante
