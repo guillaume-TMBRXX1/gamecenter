@@ -750,6 +750,8 @@ def page():
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
+    if ADS_CLIENT:
+        srv["ads"] = {"client": ADS_CLIENT, "slots": ADS_SLOTS}
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -758,11 +760,63 @@ def page():
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
+    if ADS_CLIENT:                                   # publicités (bloc 2 bis) : rien sans GC_ADSENSE_CLIENT
+        s = s.replace("</title>", '</title>\n<meta name="google-adsense-account" content="' + ADS_CLIENT + '">\n'
+                      '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS_CLIENT
+                      + '" crossorigin="anonymous"></script>', 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-store"})
 
 
 # Référencement (bloc 2, étape 8) : robots.txt, plan du site, image de partage (Open Graph, 1200×630)
 GOOGLE_VERIFY = os.environ.get("GC_GOOGLE_VERIFY", "").strip()
+
+# Publicités (étape 7 de la feuille de route) : Google AdSense. GC_ADSENSE_CLIENT = identifiant d'éditeur
+# (« ca-pub-1234567890123456 ») : sans lui, aucune publicité ni script de régie, et /ads.txt n'existe pas.
+# GC_ADSENSE_SLOTS = blocs d'annonces créés dans AdSense, par emplacement : « half=123,home=456,page=789 »
+# (mi-temps du grand écran, accueil, bas des onglets Schedule / Standings / Teams / History) ; un emplacement sans bloc
+# reste vide (rien n'est réservé à l'écran).
+ADS_EMPLACEMENTS = ("half", "home", "page")
+
+
+def _ads_client(v):
+    v = (v or "").strip()
+    return v if re.fullmatch(r"ca-pub-\d{10,20}", v) else ""
+
+
+def _ads_slots(v):
+    out = {}
+    for part in (v or "").split(","):
+        k, _, n = part.strip().partition("=")
+        if k.strip() in ADS_EMPLACEMENTS and re.fullmatch(r"\d{5,20}", n.strip()):
+            out[k.strip()] = n.strip()
+    return out
+
+
+ADS_CLIENT = _ads_client(os.environ.get("GC_ADSENSE_CLIENT"))
+ADS_SLOTS = _ads_slots(os.environ.get("GC_ADSENSE_SLOTS")) if ADS_CLIENT else {}
+
+
+@app.get("/ads.txt")
+def ads_txt():
+    if not ADS_CLIENT:
+        raise HTTPException(404)
+    return Response("google.com, " + ADS_CLIENT[3:] + ", DIRECT, f08c47fec0942fa0\n", media_type="text/plain",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+# Page « Rules, privacy & legal » (anglais, comme le site) : static/legal.html. L'éditeur (mentions légales, droit belge)
+# vient des variables GC_EDITEUR (nom), GC_EDITEUR_ADRESSE (adresse) et GC_CONTACT (adresse e-mail) ; sans elles, la
+# ligne correspondante dit « not set ».
+@app.get("/legal", response_class=HTMLResponse)
+def legal():
+    with open(os.path.join(HERE, "static", "legal.html"), encoding="utf-8") as fh:
+        s = fh.read()
+    val = lambda k: html.escape(os.environ.get(k, "").strip()) or "<i>not set</i>"
+    contact = os.environ.get("GC_CONTACT", "").strip()
+    s = (s.replace("__EDITEUR__", val("GC_EDITEUR")).replace("__ADRESSE__", val("GC_EDITEUR_ADRESSE"))
+         .replace("__CONTACT__", f'<a href="mailto:{html.escape(contact, quote=True)}">{html.escape(contact)}</a>' if contact else "<i>not set</i>")
+         .replace("__ADS__", "on" if ADS_CLIENT else "off"))
+    return HTMLResponse(s, headers={"Cache-Control": "no-cache"})
 
 
 def _origine(request):
@@ -778,7 +832,8 @@ def robots(request: Request):
 @app.get("/sitemap.xml")
 def sitemap(request: Request):
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-           "  <url><loc>" + _origine(request) + "/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>\n</urlset>\n")
+           "  <url><loc>" + _origine(request) + "/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>\n"
+           "  <url><loc>" + _origine(request) + "/legal</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>\n</urlset>\n")
     return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
 

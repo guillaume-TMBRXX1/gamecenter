@@ -392,6 +392,17 @@
   .about{margin-top:16px}
   .about h2{margin:0 0 8px}
   .about p{margin:6px 0 0;color:var(--ink-2);line-height:1.55;max-width:80ch}
+  .about a{color:var(--ink);font-weight:600}
+  /* advertising (roadmap step 7): fixed-size boxes, the space is reserved before the ad arrives */
+  .ad-box{display:flex;flex-direction:column;align-items:center;gap:4px;margin:16px 0 0;min-height:118px;overflow:hidden}
+  .ad-box[hidden]{display:none}
+  .ad-l{font:600 10px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .brk-slot{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:118px}
+  .brk-slot .ad-l{color:rgba(255,255,255,.6)}
+  .site-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin:24px 0 8px;padding-top:14px;border-top:1px solid var(--line);
+    font:500 12.5px/1.4 var(--f-ui);color:var(--ink-2)}
+  .site-foot b{color:var(--ink);font-weight:700}
+  .site-foot a{color:inherit}
   .exh{margin-top:20px}
   .st-conf{margin-bottom:16px}
   .st-div{margin:14px 0 6px;font:700 13px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
@@ -2027,10 +2038,12 @@
         <div id="agentList"></div>
       </div>
     </section>
+    <div class="ad-box" id="adHome" data-ad="home" hidden></div>
     <section class="card about" id="about" aria-labelledby="aboutTitle">
       <h2 id="aboutTitle">What is Snapline?</h2>
-      <p>Snapline is free, live American football played by a simulation. Twenty-four teams, each coached by an AI agent, play a full season every week: the regular season, two semifinals and the AI Bowl. Every game is played snap by snap on the live board, with the score, win probability, play calls and commentary.</p>
+      <p>Snapline is free, live American football played by a simulation. Twenty-four teams, each coached by an AI agent, play a full season every week: the regular season, two semifinals and the Grand Final. Every game is played snap by snap on the live board, with the score, win probability, play calls and commentary.</p>
       <p>Back your picks with play money (no real money, ever), follow the standings, power rankings and player careers, set a reminder before kickoff, start a private league with your friends, and replay any finished game on the big screen.</p>
+      <p>Snapline is for adults (18+). Play money only: it can never be bought, cashed out or exchanged for a prize. <a href="/legal">Rules, privacy &amp; legal</a></p>
     </section>
     </div>
     <section class="view" id="viewSchedule" hidden aria-label="Schedule"></section>
@@ -2041,6 +2054,8 @@
     <section class="view" id="viewLeagues" hidden aria-label="Leagues"></section>
     <section class="view" id="viewBets" hidden aria-label="My bets"></section>
     <section class="view" id="viewSettings" hidden aria-label="Settings"></section>
+    <div class="ad-box" id="adPage" data-ad="page" hidden></div>
+    <footer class="site-foot"><b>Play money · No real winnings · 18+</b><a href="/legal">Rules, privacy &amp; legal</a><button type="button" class="link" id="privacyBtn" hidden>Privacy choices</button></footer>
   </main>
 
   <aside class="slip-col" id="slipCol" aria-label="Wallet and bet slip">
@@ -4133,7 +4148,7 @@ function brkHTML(g,big){
   if(b.kind==='final'&&big){ const all=[...topPerformers(st,'away',1).map(x=>[x,g.away]),...topPerformers(st,'home',1).map(x=>[x,g.home])].sort((x,y)=>y[0].v-x[0].v);
     if(all.length){ const [x,abbr]=all[0], s=perfStats(x.p,x.role);
       potg=`<div class="brk-potg" style="--tc:${DA_TEAM[abbr]||'var(--cyan)'}"><span class="label">Player of the game</span><b>${esc(x.p.name)}</b><span>${esc(x.p.pos||'')} · ${abbr} · ${s.main.map(([l,v])=>`${v} ${l}`).join(' · ')}</span></div>`; } }
-  const slot=BRK_SLOT[b.kind]?BRK_SLOT[b.kind](g):'';
+  const slot=BRK_SLOT[b.kind]?BRK_SLOT[b.kind](g,full):'';
   const live=g.mode==='live';
   const acts=b.kind==='final'?`<button type="button" class="brk-btn" data-brk="hide" data-g="${g.id}">Show the field</button>`
     : (!live&&big?`<button type="button" class="brk-btn" data-brk="resume" data-g="${g.id}">Resume now</button>`:'');
@@ -4156,7 +4171,7 @@ function renderBrk(g,el){
   if(!b){ if(!el.hidden&&!el.classList.contains('out')){ el.classList.add('out'); el._k=null; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; el.classList.remove('out','on','end'); },450); }
     renderBrkTab(g,el); return; }
   const key=[b.kind,b.q,g.idx,g.plays.length,big,g.mode,g.hs,g.as].join('|');
-  if(el._k!==key){ el._k=key; clearTimeout(el._t); el.innerHTML=brkHTML(g,big); el.dataset.kind=b.kind; el.setAttribute('aria-label',BRK_TITLE[b.kind](b.q));
+  if(el._k!==key){ el._k=key; clearTimeout(el._t); el.innerHTML=brkHTML(g,big); if(typeof adPush==='function') adPush(el); el.dataset.kind=b.kind; el.setAttribute('aria-label',BRK_TITLE[b.kind](b.q));
     el.classList.remove('out'); if(el.hidden){ el.hidden=false; el.classList.remove('on'); void el.offsetWidth; } el.classList.add('on'); }
   const cd=el.querySelector('[data-brk-cd]'); if(cd){ const left=g.pause/Math.max(1,g.speed||1);
     setTxt(cd, g.pause>0?(b.kind==='half'?'Second half in ':'Back in ')+clockStr(left):'Back in a moment'); }
@@ -4806,6 +4821,29 @@ function rpAction(g,act,el){
 }
 /*@ui-end*/
 const gfFile=document.getElementById('gfFile');
+/* Advertising (roadmap step 7): Google AdSense, only when the server sends #gf-server.ads (GC_ADSENSE_CLIENT, with a
+   unit per slot in GC_ADSENSE_SLOTS). Fixed-size units (nothing moves during a live game), never on the field, the
+   prices or the slip: home page, bottom of Schedule / Standings / Teams / History, halftime screen of the big screen. */
+const ADS=(SERVER&&SERVER.ads&&SERVER.ads.client)?SERVER.ads:null, AD_VIEWS=['schedule','standings','teams','history'];
+const adOn=kind=>!!(ADS&&ADS.slots&&ADS.slots[kind]);
+function adHTML(kind,w){
+  if(!adOn(kind)) return '';
+  const [aw,ah]=kind!=='half'&&w>=728?[728,90]:[320,100];
+  return `<span class="ad-l">Advertisement</span><ins class="adsbygoogle" style="display:inline-block;width:${aw}px;height:${ah}px" data-ad-client="${esc(ADS.client)}" data-ad-slot="${esc(ADS.slots[kind])}"></ins>`;
+}
+function adPush(root){ root.querySelectorAll('ins.adsbygoogle:not([data-pushed])').forEach(i=>{ i.dataset.pushed='1'; try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} }); }
+function adShow(id,on){
+  const box=document.getElementById(id); if(!box) return;
+  if(!on||!adOn(box.dataset.ad)){ box.hidden=true; return; }
+  box.hidden=false; if(!box.innerHTML){ box.innerHTML=adHTML(box.dataset.ad,box.clientWidth); adPush(box); }
+}
+function adsForView(v){ adShow('adHome',v==='live'); adShow('adPage',AD_VIEWS.includes(v)); }
+BRK_SLOT.half=(g,full)=>full?adHTML('half'):'';
+if(ADS){
+  const pb=document.getElementById('privacyBtn');
+  if(pb){ pb.hidden=false; pb.addEventListener('click',()=>{ if(window.googlefc&&googlefc.callbackQueue) googlefc.callbackQueue.push(googlefc.showRevocationMessage); else location.href='/legal#privacy'; }); }
+  setTimeout(()=>adsForView(VIEW),0);
+}
 /* Share (big screen): the ?watch= link opens this game on the big screen — the phone's share sheet, else the clipboard */
 const shareId=g=>{ const id=g&&(g.gid||g.id); try{ return SCHED_BY[id]?id:null; }catch(e){ return null; } };   /* season games only (none in a stand-alone file) */
 function shareGame(id){
@@ -5211,6 +5249,7 @@ function setView(v){
   if(v==='leagues'&&VIEW!=='leagues'){ LG.at=0; LG.data={}; }   /* fresh list and leaderboard each time the tab opens */
   VIEW=v;
   for(const k of ['live','schedule','standings','teams','myteam','history','leagues','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  if(typeof adsForView==='function'&&ADS) adsForView(v);
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   renderView(true);
   window.scrollTo({top:0});
