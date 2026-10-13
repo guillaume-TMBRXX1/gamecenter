@@ -5,8 +5,10 @@ stade (outils/video/faire_video.py, sans filmer : le tournage est vérifié à l
 """
 import glob
 import os
+import re
 import sys
 import unittest
+from datetime import datetime, timedelta
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = os.path.normpath(os.path.join(ICI, "..", ".."))
@@ -15,6 +17,7 @@ import choisir as C  # noqa: E402
 import faire_video as V  # noqa: E402
 
 SEMAINES = sorted(glob.glob(os.path.join(RACINE, "data", "weeks", "week_*")))
+PARIS = re.compile(r"\b(odds|bets?|betting|wagers?|parlays?|gambl\w*|picks?|casino|stakes?|cash.?out)\b", re.I)
 
 
 def action(t, r, gain=0, wp=0.5, down=1, to_go=10, los=60, offense="home", q=2, clock=600, text="", **kw):
@@ -48,6 +51,48 @@ class TestInteret(unittest.TestCase):
         self.assertTrue(why.startswith("game-winning"), why)
         self.assertIn("58-yard field goal", why)
         self.assertEqual(V.titre_action(why, F["plays"][1]), "Game-winner: 58-yard field goal")
+
+
+class TestEnjeu(unittest.TestCase):
+    """Étape 8.2 : l'accroche du haut de la vidéo (sans dévoiler le résultat) et la bascule de probabilité."""
+    G = {"home": "AXM", "away": "AEG"}
+
+    def avec_score(self, home, away, **kw):
+        avant = action("run", "run", 2, wp=0.5)
+        avant["after"]["score"] = {"home": home, "away": away}
+        return feed([avant, action(**kw)])
+
+    def test_fin_de_match(self):
+        F = self.avec_score(31, 31, t="pass", r="interception", wp=0.19, q=4, clock=14)
+        self.assertEqual(C.enjeu(F, 1, self.G), "Tied 31–31 · 0:14 left")
+        F = self.avec_score(28, 31, t="pass", r="touchdown", wp=0.9, q=4, clock=62, offense="home")
+        self.assertEqual(C.enjeu(F, 1, self.G), "AXM down 28–31 · 1:02 left")
+        F = self.avec_score(24, 24, t="run", r="touchdown", wp=0.9, q=5, clock=200)
+        self.assertEqual(C.enjeu(F, 1, self.G), "Overtime · tied 24–24")
+        F = self.avec_score(24, 27, t="run", r="touchdown", wp=0.9, q=5, clock=200, offense="home")
+        self.assertEqual(C.enjeu(F, 1, self.G), "Overtime · AXM down 24–27")
+
+    def test_quatrieme_essai_et_milieu_de_match(self):
+        F = self.avec_score(7, 3, t="pass", r="complete", gain=9, wp=0.55, down=4, to_go=6, los=45, q=2, clock=100)
+        self.assertEqual(C.enjeu(F, 1, self.G), "4th & 6 · own 35")
+        F = self.avec_score(14, 10, t="run", r="run", gain=3, wp=0.6, q=2, clock=95)
+        self.assertEqual(C.enjeu(F, 1, self.G), "AEG 10–14 AXM · Q2 1:35")
+
+    def test_bascule(self):
+        F = feed([action("run", "run", 2, wp=0.74), action("pass", "interception", wp=0.19)])
+        self.assertEqual(C.bascule(F, 1, self.G), {"team": "AEG", "avant": 26, "apres": 81})
+        F = feed([action("pass", "touchdown", wp=0.80)], p_home=0.40)
+        self.assertEqual(C.bascule(F, 0, self.G), {"team": "AXM", "avant": 40, "apres": 80})
+
+    def test_legendes(self):
+        txt = V.legendes("Tied 31–31 · 0:14 left… Game-winner 🏈", "Intercepted.", V.question("game-winning takeaway"),
+                         "#playoftheday", "x" * 120)
+        self.assertEqual([l for l in txt.splitlines() if l.startswith("===")],
+                         ["=== TikTok ===", "=== Instagram ===", "=== YouTube Shorts ==="])
+        titre = txt.split("=== YouTube Shorts ===\n")[1].splitlines()[0]
+        self.assertTrue(titre.endswith(" #Shorts") and len(titre) <= 100, titre)
+        self.assertEqual(V.raison("4th-and-6 gamble · touchdown"), "4th-and-6 go-for-it · touchdown")
+        self.assertIsNone(PARIS.search(V.question("4th-and-6 gamble")))
 
 
 class TestSonEtBandeaux(unittest.TestCase):
@@ -101,6 +146,36 @@ class TestSemaineReelle(unittest.TestCase):
         scores = [i for i, P in enumerate(F["plays"]) if P["result"] in ("touchdown", "field_goal_good")]
         self.assertTrue(set(scores) <= set(idx) or len(idx) >= int(C.RESUME_MAX // C.DUREE_ACTION))
         self.assertTrue(C.RESUME_MIN <= len(idx) * C.DUREE_ACTION <= C.RESUME_MAX + C.DUREE_ACTION, len(idx))
+
+    def test_plans_sans_paris(self):
+        """Le plan de l'action du jour : l'action d'abord (pas de carton fixe), le ralenti avec la bascule en haut, le
+        carton snapline.live ; aucun mot de paris dans les textes à l'écran ni dans les légendes (étape 8.2)."""
+        g, seg, top, info, leg = V.plan_action(self.doc, self.feeds, self.jour)
+        self.assertEqual([x["type"] for x in seg], ["play", "play", "card"])
+        self.assertEqual(seg[1]["speed"], 0.5)
+        self.assertIn("win probability", seg[1]["top"]["kicker"])
+        self.assertEqual(seg[-1]["title"], "snapline.live")
+        self.assertEqual(top["title"], info["enjeu"])
+        textes = [leg, str(top), str(seg)]
+        g, seg, top, info, leg2 = V.plan_resume(self.doc, self.feeds)
+        textes += [leg2, str(top), str(seg)]
+        for t in textes:
+            self.assertIsNone(PARIS.search(t), PARIS.search(t))
+
+    def test_meilleure_action_matchs_termines(self):
+        """« Best play so far » : jamais un match pas encore terminé (la semaine en cours est calculée d'avance)."""
+        tz = C.TZ
+        ko = sorted(datetime.fromisoformat(g["kickoff"]) for g in self.doc["schedule"])
+        self.assertIsNone(C.meilleure_action([SEMAINES[-1]], ko[0] - timedelta(minutes=1)))
+        maintenant = ko[len(ko) // 2]
+        m = C.meilleure_action([SEMAINES[-1]], maintenant)
+        g = next(x for x in self.doc["schedule"] if x["id"] == m["game"])
+        self.assertLessEqual(datetime.fromisoformat(g["kickoff"]) + C.FINI_APRES, maintenant)
+        tout = C.meilleure_action(SEMAINES, datetime(2100, 1, 1, tzinfo=tz))
+        self.assertGreaterEqual(tout["note"], m["note"])
+        g, seg, top, info, leg = V.plan_action(*C.charger_semaine(tout["dossier"]), None, tout)
+        self.assertEqual(top["kicker"], "Best play so far")
+        self.assertEqual(info["type"], "meilleure")
 
     def test_semaine_du_jour(self):
         self.assertEqual(os.path.basename(V.semaine_du(self.jour)), os.path.basename(SEMAINES[-1]))

@@ -8,10 +8,11 @@ publication **à la main** (aucun connecteur TikTok).
 | # | Étape | État |
 |---|---|---|
 | 8.1 | Ce plan, photo de profil (`outils/promotion/`) | ✅ 13/10 (cette PR) |
-| 8.2 | Générateur — action du jour pour TikTok : accroche, enjeu, zones sûres, terrain agrandi, appel à l'action, légendes par réseau | à faire |
-| 8.3 | Générateur — résumé court 45-60 s (« Game in 60 seconds ») en plus du long | à faire |
+| 8.2 | Générateur — action du jour pour TikTok : accroche, enjeu, zones sûres, terrain agrandi, appel à l'action, légendes par réseau ; « Best play so far » (post épinglé n° 2) | ✅ 13/10 |
+| 8.3 | Générateur — résumé court 45-60 s (« Game in 60 seconds ») en plus du long ; « What is Snapline? » (post épinglé n° 1) | à faire |
 | 8.4 | Mesure — liens `snapline.live/tt`, `/ig`, `/yt` comptés par le serveur | à faire |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
+| 8.6 | Autres formats (demande de Guillaume, 13/10) : voir section 7 | à faire |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») ; image de couverture `.jpg` | — |
 
 ## 1. Le compte
@@ -63,7 +64,8 @@ regardé), une question en légende.
 
 - **Légende** : une phrase d'accroche + une question (« Would you go for it? ») + `snapline.live`. 3 à 5 hashtags au
   plus : `#americanfootball #football #simulation #ai #playoftheday` (`#nfl` possible pendant la saison, pour être
-  trouvé). L'étape 8.2 fera une légende par réseau.
+  trouvé). Depuis l'étape 8.2, le `.txt` de chaque vidéo a trois blocs prêts à copier : TikTok, Instagram, YouTube
+  Shorts.
 - **Musique** : le son du stade reste le son original de la vidéo (d'autres peuvent le réutiliser). Option : un son
   tendance à **5-10 %** du volume, ajouté dans l'éditeur de TikTok au moment de publier.
 - **Couverture** : choisir l'image de l'action (pas un carton vide).
@@ -74,7 +76,7 @@ Avant le premier post : compte créé, photo, bio, nom réservé sur Instagram e
 semaine, **les trois premières épinglées** :
 1. **« What is Snapline? »** (≈ 20 s) : 3 actions à la suite avec le texte « 24 teams · 24 AI coaches · every game
    simulated live ».
-2. **La plus belle action de la saison** jusqu'ici (un game-winner).
+2. **La plus belle action** jusqu'ici (un game-winner) : Actions → « Vidéos » → *Run workflow* → type `meilleure`.
 3. **Le résumé** du dernier grand match.
 Ensuite, le rythme de la section 2.
 
@@ -93,3 +95,12 @@ Ensuite, le rythme de la section 2.
 | Semaine | Vidéos | Vues | Durée moy. / % en entier | Abonnés | Clics `/tt` | Comptes créés | Remarque |
 |---|---|---|---|---|---|---|---|
 | | | | | | | | |
+
+## 7. Autres formats à produire (demande du 13/10, étape 8.6)
+En plus de l'action du jour et du résumé, des posts tirés des données du site (semaines, onglet History, fiches) :
+- **Joueur de la semaine** : les statistiques du meilleur joueur de la semaine (carte + ses plus belles actions).
+- **Champion** : la victoire d'une équipe en **Grand Final**, avec ses plus belles actions de la semaine.
+- **Match hors norme** : les chiffres d'un match (par exemple 102 points cumulés), avec les actions qui les ont faits.
+- **Histoire d'une franchise** : titres, records, joueurs marquants (bible des identités, onglet History).
+- Records battus, séries (victoires, défaites), « Who wins tomorrow? » (affiche du lendemain).
+Le détail (lesquels, dans quel ordre, cartes fixes ou action filmée) se décide au début de l'étape 8.6.
