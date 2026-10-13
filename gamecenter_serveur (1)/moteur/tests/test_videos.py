@@ -88,7 +88,9 @@ class TestEnjeu(unittest.TestCase):
         txt = V.legendes("Tied 31–31 · 0:14 left… Game-winner 🏈", "Intercepted.", V.question("game-winning takeaway"),
                          "#playoftheday", "x" * 120)
         self.assertEqual([l for l in txt.splitlines() if l.startswith("===")],
-                         ["=== TikTok ===", "=== Instagram ===", "=== YouTube Shorts ==="])
+                         ["=== TikTok ===", "=== Pinned comment (TikTok) ===", "=== Instagram ===", "=== YouTube Shorts ==="])
+        self.assertIn("snapline.live", txt.split("=== Pinned comment (TikTok) ===\n")[1].splitlines()[0])
+        self.assertIsNone(PARIS.search(V.EPINGLE))
         titre = txt.split("=== YouTube Shorts ===\n")[1].splitlines()[0]
         self.assertTrue(titre.endswith(" #Shorts") and len(titre) <= 100, titre)
         self.assertEqual(V.raison("4th-and-6 gamble · touchdown"), "4th-and-6 go-for-it · touchdown")

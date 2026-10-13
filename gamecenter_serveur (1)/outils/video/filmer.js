@@ -40,7 +40,14 @@ const CSS=`
   #vidCard .vk{font:800 14px/1 Archivo,system-ui;letter-spacing:.26em;color:#2EE6FF;text-transform:uppercase}
   #vidCard .vt{font:900 60px/.95 'Big Shoulders Display',Archivo,system-ui;text-transform:uppercase;margin-top:14px}
   #vidCard .vs{font:600 17px/1.4 Archivo,system-ui;color:#C9D3E6;margin-top:16px}
-  #vidCard .vu{position:absolute;bottom:40px;left:30px;font:800 15px/1 Archivo,system-ui;letter-spacing:.22em}`;
+  #vidCard .vu{margin-top:26px;font:800 15px/1 Archivo,system-ui;letter-spacing:.22em}
+  /* étape 8.4 bis : l'adresse toujours visible (le bas de l'écran est sous la légende de TikTok) — badge au-dessus du
+     texte de l'action, à gauche (le haut du terrain porte les étiquettes du site, la droite les boutons du réseau) */
+  #vidMark{top:520px;left:16px;width:auto;display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:999px;
+    background:rgba(11,14,26,.78);font:800 13px/1 Archivo,system-ui;letter-spacing:.06em}
+  #vidMark i{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#2EE6FF,#7A5CFF 55%,#FF3D9A);display:grid;place-items:center}
+  #vidMark svg{width:16px;height:16px}`;
+const LOGO='<svg viewBox="0 0 24 24"><path d="M1.6 9.6h3.6M.8 12h4.4M1.6 14.4h3.6" stroke="#fff" stroke-opacity=".7" stroke-width="1.3" stroke-linecap="round"/><path d="M7 12C9.7 7.3 19.3 7.3 22.4 12 19.3 16.7 9.7 16.7 7 12Z" fill="#fff"/><path d="M11.8 12h6.4M13.4 10.7v2.6M15 10.7v2.6M16.6 10.7v2.6" stroke="#1E5C78" stroke-width="1.2" stroke-linecap="round"/></svg>';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 (async()=>{
@@ -60,12 +67,13 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
   const th=await p.$('[data-theater][aria-pressed="false"]'); if(th) await th.click();
   await p.addStyleTag({content:CSS});
   const top=plan.top||{};
-  await p.evaluate(([t,esc])=>{ const e=new Function('return '+esc)();
-    for(const id of ['vidTop','vidBot','vidFoot','vidCard']){ const d=document.createElement('div'); d.id=id; d.className='vid'; document.body.appendChild(d); }
+  await p.evaluate(([t,esc,logo])=>{ const e=new Function('return '+esc)();
+    for(const id of ['vidTop','vidBot','vidFoot','vidMark','vidCard']){ const d=document.createElement('div'); d.id=id; d.className='vid'; document.body.appendChild(d); }
     document.getElementById('vidFoot').innerHTML='<div class="vu">SNAPLINE.LIVE</div>';
+    document.getElementById('vidMark').innerHTML='<i>'+logo+'</i>snapline.live';
     window.__vidTop=t=>{ document.getElementById('vidTop').innerHTML=`<div class="vk">${e(t.kicker)}</div><div class="vt">${e(t.title)}</div><div class="vs">${e(t.sub)}</div>`;
       const vt=document.querySelector('#vidTop .vt'); for(let f=40;f>24&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px'; };   /* le titre tient sur une ligne */
-    window.__vidTop(t); },[top,esc.toString()]);
+    window.__vidTop(t); },[top,esc.toString(),LOGO]);
   const resserrer=()=>p.evaluate(v=>{ const m=window.__gc.getModalView(); if(m){ m.viewW=v; m.resize(); } window.dispatchEvent(new Event('resize')); },VIEW_YARDS);
   await resserrer(); await attendre(800);
   const ouvrir=async(chemin,i)=>{                                // une action d'un autre match (« What is Snapline? »)
@@ -75,7 +83,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
     await resserrer(); await attendre(1500); };
 
   const carton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
-    c.innerHTML=`<div class="vk">${e(s.kicker)}</div><div class="vt">${e(s.title)}</div><div class="vs">${e(s.sub)}</div><div class="vu">SNAPLINE.LIVE</div>`; c.style.display='flex'; },[s,esc.toString()]);
+    c.innerHTML=`<div class="vk">${e(s.kicker)}</div><div class="vt">${e(s.title)}</div><div class="vs">${e(s.sub)}</div>${s.title==='snapline.live'?'':'<div class="vu">SNAPLINE.LIVE</div>'}`; c.style.display='flex'; },[s,esc.toString()]);
   if(plan.segments.length&&plan.segments[0].feed&&plan.segments[0].feed!==feedOuvert) await ouvrir(plan.segments[0].feed,plan.segments[0].index);
   else if(plan.segments.length&&plan.segments[0].type!=='card'){ await p.evaluate(i=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },plan.segments[0].index);
     await attendre(1500); }   // la 1re image (couverture) montre déjà l'action : la caméra a rejoint le ballon

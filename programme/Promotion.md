@@ -10,7 +10,8 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.1 | Ce plan, photo de profil (`outils/promotion/`) | ✅ 13/10 (cette PR) |
 | 8.2 | Générateur — action du jour pour TikTok : accroche, enjeu, zones sûres, terrain agrandi, appel à l'action, légendes par réseau ; « Best play so far » (post épinglé n° 2) | ✅ 13/10 |
 | 8.3 | Qualité (tournage image par image, 1080×1920 natif, 60 images/s) ; résumé court ≈ 60 s (« Game in 60 seconds », post épinglé n° 3 ; le long seulement à la demande) ; « What is Snapline? » (post épinglé n° 1) | ✅ 13/10 |
-| 8.4 | Mesure — liens `snapline.live/tt`, `/ig`, `/yt` comptés par le serveur | à faire |
+| 8.4 | Mesure — lien `snapline.live/tt` compté par le serveur (TikTok seulement, choix du 13/10) | **en attente** : pas de lien cliquable avant 1 000 abonnés (section 8) |
+| 8.4 bis | Adresse visible dans les vidéos (badge « snapline.live », carton « Type it in your browser ») et commentaire à épingler dans le `.txt` | ✅ 13/10 |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
 | 8.6 | Autres formats (demande de Guillaume, 13/10) : voir section 7 | à faire |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») ; image de couverture `.jpg` | — |
@@ -105,3 +106,22 @@ En plus de l'action du jour et du résumé, des posts tirés des données du sit
 - **Histoire d'une franchise** : titres, records, joueurs marquants (bible des identités, onglet History).
 - Records battus, séries (victoires, défaites), « Who wins tomorrow? » (affiche du lendemain).
 Le détail (lesquels, dans quel ordre, cartes fixes ou action filmée) se décide au début de l'étape 8.6.
+
+## 8. Amener les gens sur le site sans lien cliquable (13/10)
+Un compte TikTok **personnel** n'a pas de lien cliquable avant **1 000 abonnés**. En attendant :
+1. **Essayer le compte Entreprise** (réversible) : Paramètres → Compte → *Passer à un compte Entreprise* (catégorie
+   Divertissement ou Sport) → *Modifier le profil* : si le champ **Site web** apparaît, y mettre
+   `https://snapline.live` (avec `https://`, sinon le lien reste du texte). Selon les guides, un compte Entreprise a ce
+   champ sans minimum d'abonnés (non confirmé par TikTok) ; on perd les sons tendance, mais nos vidéos ont leur propre
+   son de stade. Si le champ n'apparaît pas : revenir au compte personnel.
+2. **Instagram** : TikTok → *Modifier le profil* → *Liens* → Instagram (sans minimum) ; dans la bio Instagram, le lien
+   `https://snapline.live` est cliquable tout de suite ; une Story par jour avec l'autocollant **lien** (« match en
+   direct maintenant »). Avance l'étape 8.5.
+3. **L'adresse partout** : nom d'utilisateur `@snapline.live` (c'est l'adresse), nom affiché avec « snapline.live »,
+   **commentaire épinglé** sous chaque vidéo (bloc « Pinned comment » du `.txt`), badge et carton final dans la vidéo
+   (étape 8.4 bis), format « Who wins tomorrow? » (le match se regarde sur le site).
+4. **Liens cliquables ailleurs**, une publication soignée chacun : Reddit (r/SideProject, r/WebGames,
+   r/InternetIsBeautiful, communautés de football américain et de simulation — lire leurs règles), Hacker News
+   « Show HN », Product Hunt, X / Bluesky.
+5. Plus tard, payant : TikTok **Promote** avec l'objectif « visites du site web », quand on sait quelles vidéos
+   accrochent.

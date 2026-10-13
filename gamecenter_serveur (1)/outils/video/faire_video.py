@@ -42,7 +42,8 @@ PHASE = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl"
 ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
 HASHTAGS = "#americanfootball #football #simulation #ai"
 FIN = {"type": "card", "kicker": "Watch the next game live", "title": "snapline.live",
-       "sub": "Simulated American football · AI coaches · new games every 30 min", "dur": 2.0}
+       "sub": "Type it in your browser · free · a new game every 30 min", "dur": 2.0}
+EPINGLE = "Watch the next game live → snapline.live (free, a new game every 30 min) 🏈"
 
 
 def horloge(P):
@@ -75,11 +76,13 @@ def question(why):
 
 
 def legendes(accroche, detail, quest, tag, titre_yt):
-    """Les trois blocs prêts à copier : TikTok, Instagram (quelques hashtags de plus), YouTube Shorts (titre ≤ 100
-    caractères avec #Shorts, puis la description)."""
+    """Les blocs prêts à copier : TikTok, le commentaire à épingler sous la vidéo TikTok (étape 8.4 bis : sans lien
+    cliquable avant 1 000 abonnés, l'adresse doit se lire partout), Instagram (quelques hashtags de plus), YouTube
+    Shorts (titre ≤ 100 caractères avec #Shorts, puis la description)."""
     corps = f"{accroche}\n{detail}\n{quest}\n\nEvery game simulated and played live by AI coaches → snapline.live"
     yt = titre_yt if len(titre_yt) <= 91 else titre_yt[:90].rstrip() + "…"
     return (f"=== TikTok ===\n{corps}\n\n{HASHTAGS} {tag}\n\n"
+            f"=== Pinned comment (TikTok) ===\n{EPINGLE}\n\n"
             f"=== Instagram ===\n{corps}\n\n{HASHTAGS} {tag} #snapline #gameday #footballseason\n\n"
             f"=== YouTube Shorts ===\n{yt} #Shorts\n\n{corps}\n\n{HASHTAGS} {tag}")
 
@@ -252,7 +255,7 @@ def plan_presentation(choix, semaines):
                     "top": {"kicker": "What is Snapline?", "title": phrase,
                             "sub": f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"}})
     seg.append({"type": "card", "kicker": "Free to watch", "title": "snapline.live",
-                "sub": "Simulated American football · AI coaches · new games every 30 min", "dur": 2.5})
+                "sub": "Type it in your browser · AI coaches · a new game every 30 min", "dur": 2.5})
     info = {"type": "presentation", "plays": [{"game": a["game"], "index": a["index"], "why": a["why"]} for a in choix]}
     legende = legendes("What is Snapline? 🏈 24 teams, 24 AI coaches, every game simulated and played live.",
                        "A full season every week, with replays, records and private leagues with friends.",
