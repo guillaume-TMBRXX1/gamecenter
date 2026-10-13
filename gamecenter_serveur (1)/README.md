@@ -981,9 +981,23 @@ Search Console suffit).
   ```
   python outils/video/faire_video.py action [--jour AAAA-MM-JJ]       # action du jour (défaut : la journée qui finit)
   python outils/video/faire_video.py resume [--match w3-r91]          # résumé (défaut : le plus beau match de la semaine)
+  python outils/video/faire_video.py action --meilleure               # la plus belle action jusqu'ici (matchs terminés)
   ```
   Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. ≈ 25 s de tournage pour une action,
   ≈ 2 min 15 pour un résumé (le tournage se fait en temps réel).
+- **Format TikTok (étape 8.2, 13/10)** : l'action du jour **s'ouvre sur l'action** (plus de carton fixe ; la 1re image,
+  qui sert de couverture, montre déjà le terrain), avec l'**enjeu** en grand en haut (`choisir.enjeu` : « Tied 31–31 ·
+  0:14 left », « AXM down 28–31 · 1:02 left », « Overtime · … », « 4th & 6 · own 35 », sinon score et horloge ; rien
+  sur le résultat) ; au ralenti, la **bascule** de probabilité de victoire (`choisir.bascule` : « AEG win probability ·
+  26% → 81% ») ; carton final de 2 s « Watch the next game live · snapline.live ». ≈ 20 s. **Zones sûres** : rien
+  d'important dans les ≈ 215 px du haut, les ≈ 400 px du bas et les ≈ 140 px de droite (interface de TikTok, Reels,
+  Shorts) ; terrain de 500 à 1 575 px, **resserré à 46 yards** (70 sur le site : joueurs ≈ 1,5× plus gros), tableau de
+  score du site masqué (le résumé affiche le score en haut, action par action). **Légende** (`.txt`) : trois blocs à
+  copier — TikTok, Instagram, YouTube Shorts (titre de 100 caractères au plus avec `#Shorts`) —, l'accroche en 1re
+  ligne, une question selon l'action, 4-5 mots-dièse ; **aucun mot de paris** (« gamble » devient « go-for-it » ; un
+  test le vérifie). **« Best play so far »** : `faire_video.py action --meilleure` — la plus belle action de toutes les
+  semaines, **parmi les matchs terminés** (coup d'envoi + 2 h : la semaine en cours est calculée d'avance) ; dans le
+  workflow, type `meilleure`.
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
   dimanche, en plus, le résumé du plus beau match de la semaine. Les vidéos ne vont **pas** dans le dépôt : onglet
   Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis publication à la main. À la
@@ -1003,7 +1017,8 @@ Search Console suffit).
   Variante sans DNS : propriété **Préfixe d'URL** + méthode « balise HTML » : mettre la valeur `content` de la balise dans
   la variable Railway `GC_GOOGLE_VERIFY` (le serveur l'ajoute à la page).
 - **Tests** : `moteur/tests/test_videos.py` (notes, décision folle, fin de match, bandeaux, sons ; action du jour, plus
-  beau match et résumé sur la dernière semaine), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
+  beau match et résumé sur la dernière semaine ; étape 8.2 : enjeu, bascule, légendes, aucun mot de paris, « Best play
+  so far » sans match à venir), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
   du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
 
 ### 47. Publicités : Google AdSense, consentement, mentions et page légale (étape 7 — 13/10/2026)

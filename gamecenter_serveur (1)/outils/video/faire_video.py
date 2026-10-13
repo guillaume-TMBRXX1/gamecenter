@@ -1,7 +1,9 @@
 """Vidéos verticales pour les réseaux (bloc 2, étape 8) : MP4 1080×1920 + légende, à publier à la main.
 
-    python outils/video/faire_video.py action [--jour AAAA-MM-JJ]   l'action du jour (≈ 20 s) ; jour par défaut : la
+    python outils/video/faire_video.py action [--jour AAAA-MM-JJ]   l'action du jour (≈ 18 s) ; jour par défaut : la
                                                                       veille au soir (heure de Bruxelles, 3 h de marge)
+    python outils/video/faire_video.py action --meilleure           la plus belle action de toutes les semaines, parmi
+                                                                      les matchs terminés (« Best play so far »)
     python outils/video/faire_video.py resume [--match ID]          résumé d'un match (2 à 3 min) ; par défaut : le plus
                                                                       beau match de la semaine
     options : --semaine data/weeks/week_AAAA-MM-JJ (défaut : la dernière), --sortie videos/ (défaut), --port 8150
@@ -11,8 +13,12 @@ navigateur), ffmpeg assemble les images et le son du stade (foule et effets du d
 sur le snap et le résultat de chaque action). Depuis « gamecenter_serveur (1) » ; il faut Python avec fastapi/uvicorn,
 Node avec Playwright (Chromium) et ffmpeg. Pas de commentaire ni de musique (choix du 12/10 : la musique se met au
 moment de publier).
+Étape 8.2 (13/10) : format TikTok — la vidéo s'ouvre sur l'action (enjeu en grand en haut), la bascule de probabilité
+s'affiche au ralenti, rien d'important dans les zones couvertes par l'interface des réseaux, terrain resserré ; la
+légende (.txt) a trois blocs : TikTok, Instagram, YouTube Shorts. Jamais de paris dans les textes (README section 46).
 """
 import argparse
+import glob
 import hashlib
 import json
 import os
@@ -31,6 +37,9 @@ import choisir as C  # noqa: E402
 
 PHASE = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl": "Grand Final"}
 ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
+HASHTAGS = "#americanfootball #football #simulation #ai"
+FIN = {"type": "card", "kicker": "Watch the next game live", "title": "snapline.live",
+       "sub": "Simulated American football · AI coaches · new games every 30 min", "dur": 2.0}
 
 
 def horloge(P):
@@ -40,6 +49,36 @@ def horloge(P):
     jeu = (P.get("call") or {}).get("type") in ("run", "pass")          # l'essai n'a de sens que sur une course ou une passe
     d = f" · {ORD.get(P.get('down'), '')} & {P.get('to_go')}" if jeu and P.get("down") and P.get("to_go") is not None else ""
     return f"{qn} {s // 60}:{s % 60:02d}{d}"
+
+
+def raison(why):
+    """La raison en texte public : « gamble » (4e essai) devient « go-for-it » (aucun mot qui évoque les jeux d'argent)."""
+    return why.replace("gamble", "go-for-it")
+
+
+def question(why):
+    """La question de la légende, selon le genre d'action (pour faire réagir en commentaire)."""
+    if "gamble" in why:
+        return "Would you have gone for it?"
+    if "takeaway" in why or "interception" in why or "fumble" in why:
+        return "Bad read or great defense?"
+    if "return" in why:
+        return "Best return you've seen?"
+    if "field goal" in why:
+        return "Would you trust your kicker from there?"
+    if why.startswith("game-winning"):
+        return "Clutch or lucky?"
+    return "Which team are you rooting for?"
+
+
+def legendes(accroche, detail, quest, tag, titre_yt):
+    """Les trois blocs prêts à copier : TikTok, Instagram (quelques hashtags de plus), YouTube Shorts (titre ≤ 100
+    caractères avec #Shorts, puis la description)."""
+    corps = f"{accroche}\n{detail}\n{quest}\n\nEvery game simulated and played live by AI coaches → snapline.live"
+    yt = titre_yt if len(titre_yt) <= 91 else titre_yt[:90].rstrip() + "…"
+    return (f"=== TikTok ===\n{corps}\n\n{HASHTAGS} {tag}\n\n"
+            f"=== Instagram ===\n{corps}\n\n{HASHTAGS} {tag} #snapline #gameday #footballseason\n\n"
+            f"=== YouTube Shorts ===\n{yt} #Shorts\n\n{corps}\n\n{HASHTAGS} {tag}")
 
 
 def titre_action(why, P):
@@ -120,27 +159,35 @@ def mixer_son(timeline, sortie):
 
 
 # ------------------------------------------------------------------ plans
-def plan_action(doc, feeds, jour):
-    a = C.action_du_jour(doc, feeds, jour)
+def plan_action(doc, feeds, jour, a=None):
+    """L'action du jour (ou, avec a, l'action donnée : « Best play so far ») : l'action à vitesse normale, l'enjeu en
+    haut ; le ralenti, la bascule de probabilité en haut ; le carton snapline.live."""
+    meilleure = a is not None
+    a = a or C.action_du_jour(doc, feeds, jour)
     if not a:
         raise SystemExit(f"aucun match le {jour}")
     g = next(x for x in doc["schedule"] if x["id"] == a["game"])
-    P = a["play"]
-    d = datetime.fromisoformat(jour)
-    jour_txt = d.strftime("%A %-d %B")
-    seg = [{"type": "card", "kicker": "Play of the day", "title": titre_action(a["why"], P),
-            "sub": f"{jour_txt} · {g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}", "dur": 2.6},
-           {"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 2.4},
-           {"type": "play", "index": a["index"], "speed": 0.5, "label": "Replay · slow motion", "text": P.get("text"), "after": 1.4},
-           {"type": "card", "kicker": "Every game, played live by the engine", "title": "snapline.live",
-            "sub": "Simulated football · new games every day · free to watch", "dur": 2.8}]
-    top = {"kicker": f"Play of the day · {d.strftime('%a %-d %b')}", "title": f"{g['away']} @ {g['home']}",
-           "sub": a["why"][:1].upper() + a["why"][1:]}
-    info = {"type": "action", "game": g["id"], "index": a["index"], "why": a["why"], "note": a["note"], "jour": jour}
-    legende = (f"Play of the day ({d.strftime('%-d %B')}): {a['why']} — {P.get('text')}. "
-               f"{g['away']} @ {g['home']}, {PHASE.get(g['phase'], '')}.\n"
-               "Every game simulated and played live on snapline.live\n\n"
-               "#Snapline #AmericanFootball #Football #SportsSimulation #PlayOfTheDay")
+    F, P = feeds[a["game"]], a["play"]
+    d = datetime.fromisoformat(C.jour_du_match(g) if meilleure else jour)
+    kicker = "Best play so far" if meilleure else f"Play of the day · {d.strftime('%a %-d %b')}"
+    match = f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"
+    hook = C.enjeu(F, a["index"], g)
+    sw = C.bascule(F, a["index"], g)
+    top_ralenti = ({"kicker": f"{sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
+                   if sw else {"kicker": kicker, "title": hook, "sub": match})
+    seg = [{"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.8},
+           {"type": "play", "index": a["index"], "speed": 0.5, "label": "Replay · slow motion", "text": P.get("text"),
+            "after": 1.0, "top": top_ralenti},
+           dict(FIN)]
+    top = {"kicker": kicker, "title": hook, "sub": match}
+    info = {"type": "meilleure" if meilleure else "action", "game": g["id"], "index": a["index"], "why": a["why"],
+            "note": a["note"], "jour": d.date().isoformat(), "enjeu": hook, "bascule": sw}
+    titre = titre_action(raison(a["why"]), P)
+    quand = "Best play so far" if meilleure else f"Play of the day ({d.strftime('%-d %B')})"
+    legende = legendes(f"{hook}… {titre} 🏈",
+                       f"{quand}: {P.get('text')}. {g['away']} @ {g['home']}, {PHASE.get(g['phase'], '')}.",
+                       question(a["why"]), "#bestplay" if meilleure else "#playoftheday",
+                       f"{titre} · {hook} | AI football")
     return g, seg, top, info, legende
 
 
@@ -164,7 +211,10 @@ def plan_resume(doc, feeds, gid=None):
             seg.append({"type": "card", "kind": "quarter", "kicker": {1: "End of Q1", 2: "Halftime", 3: "End of Q3"}.get(q_avant, "End of regulation"),
                         "title": f"{g['away']} {fin_q['away']} – {fin_q['home']} {g['home']}", "sub": "", "dur": 2.2})
         q_avant = q
-        seg.append({"type": "play", "index": i, "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.6})
+        sc = C.score_avant(F, i)
+        seg.append({"type": "play", "index": i, "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.6,
+                    "top": {"kicker": f"Game of the week · {d.strftime('%a %-d %b')}",
+                            "title": f"{g['away']} {sc['away']}–{sc['home']} {g['home']}", "sub": PHASE.get(g["phase"], "")}})
     gagnant = "home" if fs["home"] > fs["away"] else "away"
     seg.append({"type": "card", "kicker": "Final" + (" · OT" if any((P.get("quarter") or 0) >= 5 for P in F["plays"]) else ""),
                 "title": f"{g['away']} {fs['away']} – {fs['home']} {g['home']}",
@@ -172,10 +222,10 @@ def plan_resume(doc, feeds, gid=None):
     top = {"kicker": f"Game of the week · {d.strftime('%a %-d %b')}", "title": f"{g['away']} @ {g['home']}",
            "sub": PHASE.get(g["phase"], "")}
     info = {"type": "resume", "game": gid, "plays": idx, "spectacle": C.spectacle(F, g)}
-    legende = (f"Game of the week: {names['away']} at {names['home']}, {fs['away']}–{fs['home']} "
-               f"({PHASE.get(g['phase'], '')}, {d.strftime('%-d %B')}). Every score, every turnover, the final drive.\n"
-               "Every game simulated and played live on snapline.live\n\n"
-               "#Snapline #AmericanFootball #Football #SportsSimulation #GameRecap")
+    legende = legendes(f"Game of the week: {names['away']} at {names['home']}, {fs['away']}–{fs['home']} 🏈",
+                       f"{PHASE.get(g['phase'], '')}, {d.strftime('%-d %B')}. Every score, every turnover, the final drive.",
+                       "Which team are you rooting for?", "#gamerecap",
+                       f"{names['away']} at {names['home']}, {fs['away']}–{fs['home']} | AI football recap")
     return g, seg, top, info, legende
 
 
@@ -211,14 +261,24 @@ def main():
     ap.add_argument("type", choices=("action", "resume"))
     ap.add_argument("--jour")
     ap.add_argument("--match")
+    ap.add_argument("--meilleure", action="store_true", help="action : la plus belle de toutes les semaines (matchs terminés)")
     ap.add_argument("--semaine")
     ap.add_argument("--sortie", default="videos")
     ap.add_argument("--port", type=int, default=8150)
     a = ap.parse_args()
     jour = a.jour or (datetime.now(C.TZ) - timedelta(hours=3)).date().isoformat()   # la journée qui vient de finir
-    dossier = a.semaine or semaine_du(jour)
+    if a.type == "action" and a.meilleure:
+        m = C.meilleure_action(glob.glob(os.path.join(RACINE, "data", "weeks", "week_*")), datetime.now(C.TZ))
+        if not m:
+            raise SystemExit("aucun match terminé")
+        dossier = m["dossier"]
+    else:
+        dossier = a.semaine or semaine_du(jour)
     doc, feeds = C.charger_semaine(dossier)
-    if a.type == "action":
+    if a.type == "action" and a.meilleure:
+        g, seg, top, info, legende = plan_action(doc, feeds, jour, m)
+        nom = f"meilleure-action-{jour}"
+    elif a.type == "action":
         g, seg, top, info, legende = plan_action(doc, feeds, jour)
         nom = f"action-du-jour-{jour}"
     else:

@@ -32,7 +32,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
-| **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · 8.2 action du jour pour TikTok · 8.3 résumé court · 8.4 liens comptés `/tt` `/ig` `/yt` · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
+| **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · 8.3 résumé court · 8.4 liens comptés `/tt` `/ig` `/yt` · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
 
 ---
 
@@ -797,9 +797,12 @@ musique, premiers posts, mesure, tableau du bilan du lundi). Une étape = une PR
 - **Constat sur les vidéos du 12/10** (action du 9/10 filmée en local) : ouverture sur 2,6 s de carton fixe (pas
   d'accroche), enjeu (score, temps, probabilité) peu visible, texte de l'action sous la légende de TikTok (à partir de
   1 550 px sur 1 920), haut sous les onglets, terrain sur 61 % de la hauteur, résumé de 2 min 15 long pour TikTok.
-- 8.1 ✅ plan et photo de profil · 8.2 action du jour pour TikTok · 8.3 résumé court 45-60 s · 8.4 liens comptés
-  `/tt`, `/ig`, `/yt` · 8.5 Instagram Reels, YouTube Shorts et bilan. Plus tard, à décider : commentaire et
-  sous-titres incrustés, image de couverture.
+- 8.1 ✅ plan et photo de profil (PR #67) · 8.2 ✅ action du jour au format TikTok (ouverture sur l'action, enjeu,
+  bascule de probabilité au ralenti, zones sûres, terrain resserré à 46 yards, légendes TikTok / Instagram / YouTube
+  sans mot de paris) et « Best play so far » (matchs terminés seulement ; README 46) · 8.3 résumé court 45-60 s et
+  « What is Snapline? » · 8.4 liens comptés `/tt`, `/ig`, `/yt` · 8.5 Instagram Reels, YouTube Shorts et bilan ·
+  8.6 autres formats (joueur de la semaine, champion de la Grand Final, match hors norme, histoire d'une franchise :
+  `Promotion.md` section 7). Plus tard, à décider : commentaire et sous-titres incrustés, image de couverture.
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
@@ -808,7 +811,7 @@ musique, premiers posts, mesure, tableau du bilan du lundi). Une étape = une PR
    des jeux d'argent, 3 blocs d'annonces ; puis poser les variables (`GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS`,
    `GC_EDITEUR`, `GC_EDITEUR_ADRESSE`, `GC_CONTACT`). Revenus réalistes : quelques centimes à quelques euros pour 1 000
    pages vues ; les sponsors directs (une marque par franchise, « présenté par » sur la Grand Final) restent une piste.
-3. **Étape 8 — Promotion** : en cours (section « Étape 8 » ci-dessus, `programme/Promotion.md`) ; prochaine étape 8.2.
+3. **Étape 8 — Promotion** : en cours (section « Étape 8 » ci-dessus, `programme/Promotion.md`) ; prochaine étape 8.3.
 4. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
 5. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
    « calcul-semaine » n'est ouverte. **Le 17/10 en particulier** : premier calcul avec transformations et retours.

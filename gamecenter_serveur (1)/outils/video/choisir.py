@@ -8,17 +8,21 @@ Tout se lit dans les GameFeed d'une semaine (data/weeks/week_*/games) :
   plus_beau_match(...): le match le plus spectaculaire de la semaine (bascules de probabilité, écart final, prolongation,
                         remontée, playoffs) ;
   resume(...)         : les actions d'un résumé de 2 à 3 minutes (tous les scores, les pertes de balle, les plus
-                        grosses bascules, la dernière action), dans l'ordre du match.
+                        grosses bascules, la dernière action), dans l'ordre du match ;
+  meilleure_action(...): la plus belle action de toutes les semaines, parmi les matchs déjà terminés (étape 8.2) ;
+  enjeu(...), bascule(...) : le texte de l'accroche (score, temps, 4e essai) et la probabilité de victoire avant /
+                        après, pour le haut de la vidéo (étape 8.2).
 Rien d'aléatoire : la même semaine donne toujours les mêmes vidéos.
 """
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("Europe/Brussels")
 DUREE_ACTION = 8.0           # secondes à l'écran par action dans un résumé (action, bannière, respiration)
 RESUME_MIN, RESUME_MAX = 120.0, 175.0
+FINI_APRES = timedelta(hours=2)   # un match est terminé 2 h après son coup d'envoi (il dure ≈ 25 min à l'écran)
 
 
 def charger_semaine(dossier):
@@ -157,3 +161,67 @@ def resume(feed, cible=150.0):
         if interet(feed, i)[0] > 0:
             choisis.add(i)
     return sorted(choisis)
+
+
+def meilleure_action(dossiers, maintenant):
+    """La plus belle action de toutes les semaines (dossiers week_*), parmi les matchs terminés à l'instant maintenant
+    (datetime avec fuseau) : la semaine en cours est calculée d'avance, ses matchs à venir ne doivent rien dévoiler."""
+    meilleur = None
+    for dossier in sorted(dossiers):
+        doc, feeds = charger_semaine(dossier)
+        for g in doc["schedule"]:
+            if datetime.fromisoformat(g["kickoff"]) + FINI_APRES > maintenant:
+                continue
+            F = feeds[g["id"]]
+            for i in range(len(F["plays"])):
+                n, why = interet(F, i)
+                if meilleur is None or n > meilleur["note"]:
+                    meilleur = {"game": g["id"], "index": i, "note": n, "why": why, "play": F["plays"][i],
+                                "dossier": dossier}
+    return meilleur
+
+
+def score_avant(feed, i):
+    return dict(feed["plays"][i - 1]["after"]["score"]) if i > 0 else {"home": 0, "away": 0}
+
+
+def _temps(P):
+    q, s = P.get("quarter") or 1, int(P.get("clock_start") or 0)
+    return f"{s // 60}:{s % 60:02d}"
+
+
+def enjeu(feed, i, g):
+    """L'accroche du haut de la vidéo, en anglais, sans dévoiler le résultat : le 4e essai tenté (« 4th & 6 · own 35 »),
+    la fin de match (« Tied 31–31 · 0:14 left », « AXM down 28–31 · 1:02 left », « Overtime · … ») ou le score et
+    l'horloge (« AEG 14–10 AXM · Q2 7:12 »)."""
+    P = feed["plays"][i]
+    sc = score_avant(feed, i)
+    att = P.get("offense") or "home"
+    dfn = "away" if att == "home" else "home"
+    if P.get("down") == 4 and (P.get("call") or {}).get("type") in ("run", "pass") and "gamble" in interet(feed, i)[1]:
+        los = P.get("los_x") or 60
+        propre = (los < 60) if att == "home" else (los > 60)
+        ligne = (los - 10 if att == "home" else 110 - los) if propre else (110 - los if att == "home" else los - 10)
+        cote = "own" if propre else "opp"
+        return f"4th & {P.get('to_go')} · {cote} {ligne}" if ligne != 50 else f"4th & {P.get('to_go')} · midfield"
+    if _fin_de_match(P):
+        q = P.get("quarter") or 4
+        if sc["home"] == sc["away"]:
+            t = f"{'tied' if q >= 5 else 'Tied'} {sc['away']}–{sc['home']}"
+        else:
+            etat = "up" if sc[att] > sc[dfn] else "down"
+            t = f"{g[att]} {etat} {sc[att]}–{sc[dfn]}"
+        return f"Overtime · {t}" if q >= 5 else f"{t} · {_temps(P)} left"
+    q = P.get("quarter") or 1
+    return f"{g['away']} {sc['away']}–{sc['home']} {g['home']} · Q{q} {_temps(P)}"
+
+
+def bascule(feed, i, g):
+    """Probabilité de victoire avant / après l'action, pour l'équipe qu'elle a aidée : {"team": "AEG", "avant": 26,
+    "apres": 81} (en %), None si la probabilité manque. Texte : « AEG win probability 26% → 81% »."""
+    wa, wb = _wp_avant(feed, i), feed["plays"][i].get("win_prob_home")
+    if wa is None or wb is None:
+        return None
+    cote = "home" if wb >= wa else "away"
+    a, b = (wa, wb) if cote == "home" else (1 - wa, 1 - wb)
+    return {"team": g[cote], "avant": round(a * 100), "apres": round(b * 100)}
