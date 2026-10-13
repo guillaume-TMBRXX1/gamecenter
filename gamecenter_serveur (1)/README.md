@@ -1018,6 +1018,10 @@ Search Console suffit).
   trois matchs terminés (`choisir.trois_actions` : le plus beau touchdown, la plus belle perte de balle, le plus beau
   4e essai tenté), une phrase en haut de chacune (« 24 teams. 24 AI coaches. », « Every game simulated live », « A full
   season every week »), puis « Free to watch · snapline.live ».
+- **Adresse visible (étape 8.4 bis, 13/10)** : sans lien cliquable sur TikTok avant 1 000 abonnés, l'adresse doit se
+  lire : badge « snapline.live » (logo du site) au-dessus du texte de l'action pendant toute la vidéo (le bas de
+  l'écran est sous la légende du réseau), « SNAPLINE.LIVE » sous le texte des cartons, carton final « Type it in your
+  browser » ; le `.txt` a un bloc **Pinned comment (TikTok)** : le commentaire à épingler sous chaque vidéo.
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
   dimanche, en plus, le **résumé court** du plus beau match de la semaine (limite du job : 90 min). Les vidéos ne vont
   **pas** dans le dépôt : onglet Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis
