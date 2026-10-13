@@ -1,7 +1,10 @@
 // Vidéos verticales (bloc 2, étape 8) : filme le terrain du site en 1080×1920 (Playwright + serveur réel, crochet de
 // test). Appelé par outils/video/faire_video.py :   node outils/video/filmer.js plan.json
 // plan = {url, feed (chemin du GameFeed), out (dossier), top: {kicker, title, sub},
-//         segments: [{type:"card", kicker, title, sub, dur} | {type:"play", index, speed, label, text, after, top?}]}
+//         segments: [{type:"card", kicker, title, sub, dur} | {type:"play", index, speed, label, text, after, top?}
+//                    | {type:"stats", kicker, title, sub, team, stats:[{v, l}], dur}]}
+// (stats, étape 8.6 a : carton aux couleurs de l'équipe, gros chiffres qui montent de 0 à leur valeur en 0,8 s ; une
+//  valeur texte, « 49–21 », s'affiche telle quelle.)
 // (top d'une action : remplace le bandeau du haut à partir de cette action ; feed : l'action vient d'un autre match.)
 // Tournage image par image (étape 8.3) : l'horloge de la page est pilotée (page.clock), elle avance de 1/60 s entre deux
 // images en pleine résolution (1080×1920 : mise en page « téléphone » 432×768 × 2,5, terrain dessiné à × 2,5) ; la
@@ -34,7 +37,7 @@ const CSS=`
   #vidBot{top:556px;height:74px;padding:14px 60px 0 22px;background:linear-gradient(180deg,rgba(11,14,26,0),rgba(11,14,26,.9) 38%)}
   #vidFoot{top:630px;bottom:0;padding:16px 22px 0;background:#0B0E1A}
   #vidBot .vl{font:800 12px/1 Archivo,system-ui;letter-spacing:.2em;color:#2EE6FF;text-transform:uppercase}
-  #vidBot .vx{font:800 19px/1.2 Archivo,system-ui;margin-top:8px}
+  #vidBot .vx{font:800 19px/1.2 Archivo,system-ui;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #vidFoot .vu{font:800 12px/1 Archivo,system-ui;letter-spacing:.22em;opacity:.8}
   #vidCard{top:0;height:${H}px;display:none;flex-direction:column;justify-content:center;padding:0 60px 0 30px;background:radial-gradient(120% 80% at 20% 0%,#2A4E74,#0B0E1A 70%)}
   #vidCard .vk{font:800 14px/1 Archivo,system-ui;letter-spacing:.26em;color:#2EE6FF;text-transform:uppercase}
@@ -43,6 +46,11 @@ const CSS=`
   #vidCard .vu{margin-top:26px;font:800 15px/1 Archivo,system-ui;letter-spacing:.22em}
   /* étape 8.4 bis : l'adresse toujours visible (le bas de l'écran est sous la légende de TikTok) — badge au-dessus du
      texte de l'action, à gauche (le haut du terrain porte les étiquettes du site, la droite les boutons du réseau) */
+  #vidCard .sg{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px;margin-top:28px}
+  #vidCard .si{border-left:4px solid var(--tc,#2EE6FF);padding-left:11px}
+  #vidCard .si b{display:block;font:900 46px/1 'Big Shoulders Display',Archivo,system-ui;font-variant-numeric:tabular-nums}
+  #vidCard .si span{display:block;margin-top:6px;font:800 11px/1.25 Archivo,system-ui;letter-spacing:.16em;text-transform:uppercase;color:#C9D3E6}
+  #vidCard .bar{width:64px;height:6px;border-radius:3px;background:var(--tc,#2EE6FF);margin-top:18px}
   #vidMark{top:520px;left:16px;width:auto;display:flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:999px;
     background:rgba(11,14,26,.78);font:800 13px/1 Archivo,system-ui;letter-spacing:.06em}
   #vidMark i{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#2EE6FF,#7A5CFF 55%,#FF3D9A);display:grid;place-items:center}
@@ -84,8 +92,20 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 
   const carton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
     c.innerHTML=`<div class="vk">${e(s.kicker)}</div><div class="vt">${e(s.title)}</div><div class="vs">${e(s.sub)}</div>${s.title==='snapline.live'?'':'<div class="vu">SNAPLINE.LIVE</div>'}`; c.style.display='flex'; },[s,esc.toString()]);
+  const statsCarton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
+    const tc=s.team?getComputedStyle(document.documentElement).getPropertyValue('--t-'+s.team.toLowerCase()).trim():'';
+    c.style.setProperty('--tc',tc||'#2EE6FF');
+    c.innerHTML=`<div class="vk">${e(s.kicker)}</div><div class="vt">${e(s.title)}</div><div class="vs">${e(s.sub)}</div><div class="bar"></div>`+
+      `<div class="sg">${(s.stats||[]).map(x=>`<div class="si"><b ${typeof x.v==='number'?`data-v="${x.v}">0`:`>${e(x.v)}`}</b><span>${e(x.l)}</span></div>`).join('')}</div>`+
+      '<div class="vu">SNAPLINE.LIVE</div>';
+    c.style.display='flex';
+    const els=[...c.querySelectorAll('b[data-v]')], t0=performance.now();          /* horloge pilotée : même rendu à chaque fois */
+    const f=()=>{ const q=Math.min(1,(performance.now()-t0)/800), k=1-Math.pow(1-q,3);
+      for(const b of els) b.textContent=Math.round(+b.dataset.v*k).toLocaleString('en-US');
+      if(q<1) requestAnimationFrame(f); };
+    f(); },[s,esc.toString()]);
   if(plan.segments.length&&plan.segments[0].feed&&plan.segments[0].feed!==feedOuvert) await ouvrir(plan.segments[0].feed,plan.segments[0].index);
-  else if(plan.segments.length&&plan.segments[0].type!=='card'){ await p.evaluate(i=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },plan.segments[0].index);
+  else if(plan.segments.length&&plan.segments[0].type==='play'){ await p.evaluate(i=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },plan.segments[0].index);
     await attendre(1500); }   // la 1re image (couverture) montre déjà l'action : la caméra a rejoint le ballon
 
   /* capture : une image toutes les 1/60 s de temps de la page ; le temps de la vidéo = images × durée */
@@ -106,6 +126,15 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
   const now=()=>t;
   const timeline={segments:[]}, debut=Date.now();
   for(const s of plan.segments){
+    if(s.type==='stats'){                                    // les chiffres montent (≈ 0,9 s d'images), puis une image fixe
+      const a=now();
+      await statsCarton(s);
+      for(let k=0;k<Math.round(0.9*FPS);k++) await pas();
+      await attendre(DT); await image(Math.max(1/FPS,(s.dur||3)-(now()-a)));
+      await p.evaluate(()=>{ const c=document.getElementById('vidCard'); c.style.display='none'; c.style.removeProperty('--tc'); });
+      timeline.segments.push({type:'card',kind:'stats',from:a,to:now()});
+      continue;
+    }
     if(s.type==='card'){                                     // un carton est fixe : une seule image, qui dure s.dur
       const a=now();
       await carton(s); await attendre(DT); await image(s.dur);
@@ -116,7 +145,8 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
     if(s.feed&&s.feed!==feedOuvert) await ouvrir(s.feed,s.index);
     await p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), G=window.__gc, g=G.replayGame(); G.rpSeek(g,s.index); g.speed=s.speed||1; g.paused=false;
       if(s.top) window.__vidTop(s.top);
-      document.getElementById('vidBot').innerHTML=`<div class="vl">${e(s.label)}</div><div class="vx">${e(s.text)}</div>`; },[s,esc.toString()]);
+      document.getElementById('vidBot').innerHTML=`<div class="vl">${e(s.label)}</div><div class="vx">${e(s.text)}</div>`;
+      const vx=document.querySelector('#vidBot .vx'); for(let f=19;f>14&&vx.scrollWidth>vx.clientWidth;f--) vx.style.fontSize=f+'px'; },[s,esc.toString()]);   /* le texte de l'action tient sur une ligne */
     const a=now(); let snap=null, res=null;
     for(let k=0;k<50*FPS;k++){                                // au plus 50 s par action
       await pas();

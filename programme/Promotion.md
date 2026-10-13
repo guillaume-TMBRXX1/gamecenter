@@ -13,7 +13,8 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.4 | Mesure — lien `snapline.live/tt` compté par le serveur (TikTok seulement, choix du 13/10) | **en attente** : pas de lien cliquable avant 1 000 abonnés (section 8) |
 | 8.4 bis | Adresse visible dans les vidéos (badge « snapline.live », carton « Type it in your browser ») et commentaire à épingler dans le `.txt` | ✅ 13/10 |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
-| 8.6 | Autres formats (demande de Guillaume, 13/10) : voir section 7 | à faire |
+| 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
+| 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | à faire |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») ; image de couverture `.jpg` | — |
 
 ## 1. Le compte
@@ -105,7 +106,11 @@ En plus de l'action du jour et du résumé, des posts tirés des données du sit
 - **Match hors norme** : les chiffres d'un match (par exemple 102 points cumulés), avec les actions qui les ont faits.
 - **Histoire d'une franchise** : titres, records, joueurs marquants (bible des identités, onglet History).
 - Records battus, séries (victoires, défaites), « Who wins tomorrow? » (affiche du lendemain).
-Le détail (lesquels, dans quel ordre, cartes fixes ou action filmée) se décide au début de l'étape 8.6.
+Décisions du 13/10 : deux PR (8.6 a : joueur de la semaine et champion ; 8.6 b : match hors norme et franchise) ;
+joueur de la semaine au score fantasy ; le dimanche le champion et le joueur de la semaine, le mercredi le match hors
+norme (seulement s'il est vraiment remarquable : 100 points cumulés ou plus, ou un record de tous les temps), le
+vendredi une franchise (ordre fixe sur 24 semaines) ; chiffres animés. Records battus, séries et « Who wins
+tomorrow? » : plus tard.
 
 ## 8. Amener les gens sur le site sans lien cliquable (13/10)
 Un compte TikTok **personnel** n'a pas de lien cliquable avant **1 000 abonnés**. En attendant :

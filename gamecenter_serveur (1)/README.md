@@ -984,6 +984,8 @@ Search Console suffit).
   python outils/video/faire_video.py resume --long [--match w3-r91]   # résumé long, 2 à 3 min (à la demande seulement)
   python outils/video/faire_video.py action --meilleure               # la plus belle action jusqu'ici (matchs terminés)
   python outils/video/faire_video.py presentation                     # « What is Snapline? » (≈ 20 s, 3 actions)
+  python outils/video/faire_video.py joueur [--semaine data/weeks/…]  # le joueur de la semaine (≈ 22 s)
+  python outils/video/faire_video.py champion [--semaine …]            # le champion de la Grand Final (≈ 28 s)
   ```
   Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. Tournage en local (4 cœurs) : ≈ 4 min
   pour une action, ≈ 12-15 min pour un résumé court (sur GitHub, à 2 cœurs : compter ≈ 1,5×).
@@ -1022,11 +1024,22 @@ Search Console suffit).
   lire : badge « snapline.live » (logo du site) au-dessus du texte de l'action pendant toute la vidéo (le bas de
   l'écran est sous la légende du réseau), « SNAPLINE.LIVE » sous le texte des cartons, carton final « Type it in your
   browser » ; le `.txt` a un bloc **Pinned comment (TikTok)** : le commentaire à épingler sous chaque vidéo.
+- **Joueur de la semaine et champion (étape 8.6 a, 13/10)** : carton de **statistiques** aux couleurs de l'équipe
+  (couleurs du site, `--t-<équipe>`), gros chiffres qui montent de 0 à leur valeur en 0,8 s (horloge pilotée : même
+  rendu à chaque tournage). `faire_video.py joueur` (≈ 22 s) — le meilleur joueur de la semaine (une semaine = une
+  saison) au **score fantasy** (`choisir.score_fantasy` : passe yards / 25 + 4 par TD − 2 par interception ; course et
+  réception yards / 10 + 6 par TD + 0,5 par réception ; défense plaquage 1, sack 4, interception 6 ; field goal 3),
+  matchs terminés seulement ; 4 chiffres selon le poste, puis ses 3 plus belles actions (touchdown ou gain de 15 yards
+  qu'il porte ou lance, interception / sack / fumble en défense). `faire_video.py champion` (≈ 28 s) — après la Grand
+  Final seulement : score de la finale, bilan de la saison régulière, titres de tous les temps, puis ses 4 plus belles
+  actions des demi-finales et de la finale. Un match est « terminé » 1 h après son coup d'envoi (avant : 2 h ; la
+  Grand Final du dimanche 22 h doit être finie au tournage de 22 h 30 UTC, même l'hiver).
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
-  dimanche, en plus, le **résumé court** du plus beau match de la semaine (limite du job : 90 min). Les vidéos ne vont
+  dimanche, en plus, le **résumé court** du plus beau match de la semaine, le **champion** et le **joueur de la
+  semaine** (limite du job : 90 min). Les vidéos ne vont
   **pas** dans le dépôt : onglet Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis
   publication à la main. À la demande : Actions → « Vidéos » → *Run workflow* (type `action`, `resume`, `long`,
-  `meilleure` ou `presentation` ; jour, match).
+  `meilleure`, `presentation`, `joueur` ou `champion` ; jour, match).
 - **Référencement** : titre et description en anglais, adresse canonique `https://snapline.live/`, Open Graph et Twitter
   (aperçu des liens partagés, image `/og.png` 1200×630 faite par `outils/site/faire_og.js`), JSON-LD `WebSite`,
   `/robots.txt` (tout sauf `/api/`) et `/sitemap.xml`. Texte **« What is Snapline? »** en bas de l'accueil (lisible par
@@ -1043,7 +1056,8 @@ Search Console suffit).
   la variable Railway `GC_GOOGLE_VERIFY` (le serveur l'ajoute à la page).
 - **Tests** : `moteur/tests/test_videos.py` (notes, décision folle, fin de match, bandeaux, sons ; action du jour, plus
   beau match et résumé sur la dernière semaine ; étape 8.2 : enjeu, bascule, légendes, aucun mot de paris, « Best play
-  so far » sans match à venir ; étape 8.3 : résumé court, « What is Snapline? »), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
+  so far » sans match à venir ; étape 8.3 : résumé court, « What is Snapline? » ; étape 8.6 a : score fantasy, joueur
+  de la semaine, champion après la finale seulement, titres), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
   du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
 
 ### 47. Publicités : Google AdSense, consentement, mentions et page légale (étape 7 — 13/10/2026)

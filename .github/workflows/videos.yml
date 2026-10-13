@@ -1,7 +1,8 @@
 # Vidéos verticales pour les réseaux (bloc 2, étape 8) : MP4 1080×1920 + légende, à télécharger puis publier à la main
 # (TikTok, Reels, Shorts). Rien n'est ajouté au dépôt : les vidéos sont des « artifacts » de l'exécution (30 jours).
 # Tous les soirs à 22 h 30 UTC (00 h 30 l'été, 23 h 30 l'hiver à Bruxelles, la journée de matchs est finie) :
-#   l'action du jour ; le dimanche soir, en plus, le résumé court (≈ 60 s) du plus beau match de la semaine.
+#   l'action du jour ; le dimanche soir, en plus, le résumé court (≈ 60 s) du plus beau match de la semaine, le champion
+#   de la Grand Final et le joueur de la semaine (étape 8.6 a).
 # À la demande (onglet Actions → « Vidéos » → Run workflow) : action d'un jour, résumé court d'un match, résumé long
 #   (2 à 3 min), la plus belle action jusqu'ici (« Best play so far », étape 8.2) ou « What is Snapline? » (étape 8.3).
 # Tournage image par image à 60 images/s (étape 8.3) : ≈ 4-5 min par action, ≈ 15-25 min pour un résumé court.
@@ -14,9 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       type:
-        description: "action = action du jour · resume = résumé court · long = résumé long · meilleure = plus belle action · presentation = What is Snapline?"
+        description: "action = action du jour · resume = résumé court · long = résumé long · meilleure = plus belle action · presentation = What is Snapline? · joueur = joueur de la semaine · champion = champion de la Grand Final"
         type: choice
-        options: [action, resume, long, meilleure, presentation]
+        options: [action, resume, long, meilleure, presentation, joueur, champion]
         default: action
       jour:
         description: "Jour de l'action (AAAA-MM-JJ) ; vide = la journée qui vient de finir"
@@ -66,7 +67,7 @@ jobs:
         run: |
           jour="${JOUR:-$(TZ=Europe/Brussels date -d '3 hours ago' +%F)}"
           if [ "$EVENEMENT" = workflow_dispatch ]; then liste="$TYPE"
-          elif [ "$(date -d "$jour" +%u)" = 7 ]; then liste="action resume"
+          elif [ "$(date -d "$jour" +%u)" = 7 ]; then liste="action resume champion joueur"
           else liste="action"; fi
           echo "jour=$jour" >> "$GITHUB_OUTPUT"; echo "liste=$liste" >> "$GITHUB_OUTPUT"
           echo "Jour $jour · vidéos : $liste"
@@ -89,6 +90,12 @@ jobs:
         env:
           MATCH: ${{ inputs.match }}
         run: python outils/video/faire_video.py resume --jour "${{ steps.quoi.outputs.jour }}" ${MATCH:+--match "$MATCH"} --sortie videos
+      - name: Champion de la Grand Final
+        if: contains(steps.quoi.outputs.liste, 'champion')
+        run: python outils/video/faire_video.py champion --jour "${{ steps.quoi.outputs.jour }}" --sortie videos
+      - name: Joueur de la semaine
+        if: contains(steps.quoi.outputs.liste, 'joueur')
+        run: python outils/video/faire_video.py joueur --jour "${{ steps.quoi.outputs.jour }}" --sortie videos
       - uses: actions/upload-artifact@v4
         with:
           name: videos-${{ steps.quoi.outputs.jour }}

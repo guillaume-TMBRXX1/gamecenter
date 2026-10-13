@@ -12,6 +12,8 @@ Tout se lit dans les GameFeed d'une semaine (data/weeks/week_*/games) :
   resume_court(...)   : les actions du résumé court (≈ 60 s, étape 8.3) : touchdowns, pertes de balle, dernière action ;
   meilleure_action(...): la plus belle action de toutes les semaines, parmi les matchs déjà terminés (étape 8.2) ;
   trois_actions(...)  : trois belles actions de genres et de matchs différents (« What is Snapline? », étape 8.3) ;
+  joueur_de_la_semaine(...), champion(...) : le joueur de la semaine (score « fantasy ») et le champion de la Grand
+                        Final, avec leurs plus belles actions (étape 8.6 a) ;
   enjeu(...), bascule(...) : le texte de l'accroche (score, temps, 4e essai) et la probabilité de victoire avant /
                         après, pour le haut de la vidéo (étape 8.2).
 Rien d'aléatoire : la même semaine donne toujours les mêmes vidéos.
@@ -25,7 +27,8 @@ TZ = ZoneInfo("Europe/Brussels")
 DUREE_ACTION = 8.0           # secondes à l'écran par action dans un résumé (action, bannière, respiration)
 RESUME_MIN, RESUME_MAX = 120.0, 175.0
 COURT_ACTION, COURT_MAX = 5.4, 55.0   # résumé court : ≈ 5,4 s par action (avant le snap, l'action, 0,8 s après), 55 s
-FINI_APRES = timedelta(hours=2)   # un match est terminé 2 h après son coup d'envoi (il dure ≈ 25 min à l'écran)
+FINI_APRES = timedelta(hours=1)   # un match est terminé 1 h après son coup d'envoi (il dure ≈ 25 min à l'écran ; 1 h :
+                                  # la Grand Final du dimanche 22 h, Bruxelles, est finie au tournage de 22 h 30 UTC l'hiver)
 
 
 def charger_semaine(dossier):
@@ -288,3 +291,115 @@ def trois_actions(dossiers, maintenant):
         if a["game"] not in matchs:
             choix.append(a); matchs.add(a["game"])
     return choix
+
+
+# ------------------------------------------------------------------ étape 8.6 a : joueur de la semaine, champion
+def _termines(doc, maintenant):
+    return [g for g in doc["schedule"] if datetime.fromisoformat(g["kickoff"]) + FINI_APRES <= maintenant]
+
+
+def _feuille(feed):
+    """Statistiques par joueur d'un match : moteur/histoire.py (mêmes règles que le site et l'onglet History)."""
+    import sys
+    racine = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    if racine not in sys.path:
+        sys.path.insert(0, racine)
+    from moteur.histoire import feuille_de_match
+    return feuille_de_match(feed)
+
+
+def score_fantasy(j):
+    """Le score du joueur de la semaine : passe (yards / 25 + 4 par TD − 2 par interception), course et réception
+    (yards / 10 + 6 par TD + 0,5 par réception), retours (yards / 25 + 6 par TD), défense (plaquage 1, sack 4,
+    interception 6, passe défendue 1), coups de pied (field goal 3, transformation 1)."""
+    return round(j["pyd"] / 25 + 4 * j["ptd"] - 2 * j["pint"] + j["ryd"] / 10 + 6 * j["rtd"] + j["yd"] / 10 + 6 * j["td"]
+                 + 0.5 * j["rec"] + j["kry"] / 25 + 6 * j["krtd"] + j["tk"] + 4 * j["sk"] + 6 * j["int"] + j["pd"]
+                 + 3 * j["fgm"] + j["xpm"], 2)
+
+
+def _implique(P, g, joueur):
+    """L'action est un beau moment du joueur : touchdown ou gain de 15 yards et plus qu'il porte ou lance ; interception,
+    sack ou fumble récupéré par lui en défense."""
+    pl = P.get("players") or {}
+    r, gain = P.get("result"), P.get("gain") or 0
+    attaque = (pl.get("carrier") or {}).get("id") == joueur["id"] or (pl.get("passer") or {}).get("id") == joueur["id"]
+    if attaque:
+        return r == "touchdown" or (r in ("complete", "run") and gain >= 15)
+    defense = g["away"] if P.get("offense") == "home" else g["home"]
+    return ((pl.get("defender") or {}).get("name") == joueur["name"] and defense == joueur["team"]
+            and r in ("interception", "sack", "fumble_lost"))
+
+
+def joueur_de_la_semaine(dossier, maintenant, n_actions=3):
+    """Le meilleur joueur de la semaine (une semaine = une saison) au score fantasy, matchs terminés seulement :
+    {"joueur": stats cumulées (id, name, team, pos, games, …), "score", "actions": ses plus belles actions (ordre du
+    calendrier)}. None si aucun match n'est terminé."""
+    doc, feeds = charger_semaine(dossier)
+    jeux = _termines(doc, maintenant)
+    if not jeux:
+        return None
+    tot = {}
+    for g in jeux:
+        for j in _feuille(feeds[g["id"]])["joueurs"].values():
+            q = tot.setdefault((j["id"], j["name"]), dict(id=j["id"], name=j["name"], team=j["team"], pos=j["pos"], games=0))
+            for k, v in j.items():
+                if isinstance(v, (int, float)) and k not in ("lng", "fg_lng", "kr_lng"):
+                    q[k] = q.get(k, 0) + v
+            q["games"] += 1
+    best = max(tot.values(), key=lambda q: (score_fantasy(q), q["id"]))
+    cand = []
+    for g in jeux:
+        F = feeds[g["id"]]
+        for i, P in enumerate(F["plays"]):
+            if _implique(P, g, best):
+                n, why = interet(F, i)
+                cand.append({"game": g["id"], "index": i, "note": n, "why": why, "play": P, "dossier": dossier,
+                             "ko": g["kickoff"]})
+    cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
+    actions = sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))
+    return {"joueur": best, "score": score_fantasy(best), "actions": actions}
+
+
+def champion(dossier, maintenant, toutes=(), n_actions=4):
+    """Le champion de la semaine, une fois la Grand Final terminée : {"team", "opp", "final" (identifiant), "score"
+    (champion, adversaire), "bilan" (saison régulière : w, l, t), "titres" (dans les semaines données, celle-ci
+    comprise), "actions" : ses plus belles actions des demi-finales et de la finale (touchdowns, gains de 25 yards et
+    plus, pertes de balle provoquées), dans l'ordre}. None avant la fin de la Grand Final."""
+    doc, feeds = charger_semaine(dossier)
+    fin = next((g for g in doc["schedule"] if g["phase"] == "ai_bowl"), None)
+    if not fin or fin not in _termines(doc, maintenant):
+        return None
+    F = feeds[fin["id"]]
+    fs = F["game"].get("final_score") or F["plays"][-1]["after"]["score"]
+    cote = "home" if fs["home"] > fs["away"] else "away"
+    equipe = doc.get("champion") or fin[cote]
+    cote = "home" if fin["home"] == equipe else "away"
+    autre = "away" if cote == "home" else "home"
+    ligne = next((r for r in doc.get("standings") or [] if r.get("team") == equipe), {})
+    titres = 0                                          # une fois par semaine (nom du dossier), celle-ci comprise
+    par_nom = {os.path.basename(os.path.normpath(d)): d for d in toutes}
+    par_nom[os.path.basename(os.path.normpath(dossier))] = dossier
+    for nom in sorted(par_nom):
+        if nom > os.path.basename(os.path.normpath(dossier)):
+            continue
+        with open(os.path.join(par_nom[nom], "week.json"), encoding="utf-8") as fh:
+            if json.load(fh).get("champion") == equipe:
+                titres += 1
+    cand = []
+    for g in doc["schedule"]:
+        if g["phase"] not in ("semifinal", "ai_bowl") or equipe not in (g["home"], g["away"]):
+            continue
+        G = feeds[g["id"]]
+        cote_g = "home" if g["home"] == equipe else "away"
+        for i, P in enumerate(G["plays"]):
+            r, gain = P.get("result"), P.get("gain") or 0
+            pour = P.get("offense") == cote_g and (r == "touchdown" or (r in ("complete", "run") and gain >= 25))
+            contre = P.get("offense") != cote_g and r in ("interception", "fumble_lost")
+            if pour or contre or ((P.get("kick_return") or {}).get("td") and P.get("offense") != cote_g):
+                n, why = interet(G, i)
+                cand.append({"game": g["id"], "index": i, "note": n, "why": why, "play": P, "dossier": dossier,
+                             "ko": g["kickoff"]})
+    cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
+    return {"team": equipe, "opp": fin[autre], "final": fin["id"], "score": (fs[cote], fs[autre]),
+            "bilan": {k: ligne.get(k, 0) for k in ("w", "l", "t")}, "titres": titres,
+            "actions": sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))}
