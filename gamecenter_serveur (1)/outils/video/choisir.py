@@ -9,7 +9,9 @@ Tout se lit dans les GameFeed d'une semaine (data/weeks/week_*/games) :
                         remontée, playoffs) ;
   resume(...)         : les actions d'un résumé de 2 à 3 minutes (tous les scores, les pertes de balle, les plus
                         grosses bascules, la dernière action), dans l'ordre du match ;
+  resume_court(...)   : les actions du résumé court (≈ 60 s, étape 8.3) : touchdowns, pertes de balle, dernière action ;
   meilleure_action(...): la plus belle action de toutes les semaines, parmi les matchs déjà terminés (étape 8.2) ;
+  trois_actions(...)  : trois belles actions de genres et de matchs différents (« What is Snapline? », étape 8.3) ;
   enjeu(...), bascule(...) : le texte de l'accroche (score, temps, 4e essai) et la probabilité de victoire avant /
                         après, pour le haut de la vidéo (étape 8.2).
 Rien d'aléatoire : la même semaine donne toujours les mêmes vidéos.
@@ -22,6 +24,7 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("Europe/Brussels")
 DUREE_ACTION = 8.0           # secondes à l'écran par action dans un résumé (action, bannière, respiration)
 RESUME_MIN, RESUME_MAX = 120.0, 175.0
+COURT_ACTION, COURT_MAX = 5.4, 55.0   # résumé court : ≈ 5,4 s par action (avant le snap, l'action, 0,8 s après), 55 s
 FINI_APRES = timedelta(hours=2)   # un match est terminé 2 h après son coup d'envoi (il dure ≈ 25 min à l'écran)
 
 
@@ -225,3 +228,63 @@ def bascule(feed, i, g):
     cote = "home" if wb >= wa else "away"
     a, b = (wa, wb) if cote == "home" else (1 - wa, 1 - wb)
     return {"team": g[cote], "avant": round(a * 100), "apres": round(b * 100)}
+
+
+def resume_court(feed):
+    """Indices du résumé court (« Game in 60 seconds »), dans l'ordre du match : chaque touchdown (y compris sur retour),
+    chaque perte de balle, les field goals des 2 dernières minutes et de la prolongation, la dernière action ; au plus
+    COURT_MAX secondes (d'abord les scores, puis les mieux notées ; la dernière action toujours), et au moins 6 actions."""
+    P = feed["plays"]
+    n_max = int(COURT_MAX // COURT_ACTION)
+    dernier = len(P) - 1
+    oblig = [i for i, p in enumerate(P)
+             if p.get("result") in ("touchdown", "interception", "fumble_lost") or (p.get("kick_return") or {}).get("td")
+             or (p.get("result") == "field_goal_good" and _fin_de_match(p))]
+    marque = lambda i: P[i].get("result") in ("touchdown", "field_goal_good") or (P[i].get("kick_return") or {}).get("td")
+    choisis = {dernier} | set(sorted((i for i in oblig if i != dernier),                  # les scores d'abord : le score
+                                     key=lambda i: (not marque(i), -interet(feed, i)[0], i))[:n_max - 1])   # en haut se suit
+    if len(choisis) < 6:
+        reste = sorted((i for i in range(len(P)) if i not in choisis and (P[i].get("call") or {}).get("type") in ("run", "pass")),
+                       key=lambda i: (-interet(feed, i)[0], i))
+        choisis |= set(reste[:6 - len(choisis)])
+    return sorted(choisis)
+
+
+def _genre(why):
+    if "gamble" in why:
+        return "gamble"
+    if "takeaway" in why or "interception" in why or "fumble" in why:
+        return "takeaway"
+    if "touchdown" in why:
+        return "touchdown"
+    return "autre"
+
+
+def trois_actions(dossiers, maintenant):
+    """Trois belles actions pour « What is Snapline? » : la meilleure de chaque genre (touchdown, perte de balle,
+    4e essai tenté), de trois matchs différents, parmi les matchs terminés ; complétées par les mieux notées s'il manque
+    un genre. [{game, index, note, why, play, dossier}], dans l'ordre : touchdown, perte de balle, 4e essai."""
+    toutes = []
+    for dossier in sorted(dossiers):
+        doc, feeds = charger_semaine(dossier)
+        for g in doc["schedule"]:
+            if datetime.fromisoformat(g["kickoff"]) + FINI_APRES > maintenant:
+                continue
+            F = feeds[g["id"]]
+            for i in range(len(F["plays"])):
+                n, why = interet(F, i)
+                if n > 0:
+                    toutes.append({"game": g["id"], "index": i, "note": n, "why": why, "play": F["plays"][i],
+                                   "dossier": dossier})
+    toutes.sort(key=lambda a: (-a["note"], a["dossier"], a["game"], a["index"]))
+    choix, matchs = [], set()
+    for genre in ("touchdown", "takeaway", "gamble"):
+        a = next((a for a in toutes if _genre(a["why"]) == genre and a["game"] not in matchs), None)
+        if a:
+            choix.append(a); matchs.add(a["game"])
+    for a in toutes:
+        if len(choix) >= 3:
+            break
+        if a["game"] not in matchs:
+            choix.append(a); matchs.add(a["game"])
+    return choix

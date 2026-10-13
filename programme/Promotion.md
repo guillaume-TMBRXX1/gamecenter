@@ -9,7 +9,7 @@ publication **à la main** (aucun connecteur TikTok).
 |---|---|---|
 | 8.1 | Ce plan, photo de profil (`outils/promotion/`) | ✅ 13/10 (cette PR) |
 | 8.2 | Générateur — action du jour pour TikTok : accroche, enjeu, zones sûres, terrain agrandi, appel à l'action, légendes par réseau ; « Best play so far » (post épinglé n° 2) | ✅ 13/10 |
-| 8.3 | Générateur — résumé court 45-60 s (« Game in 60 seconds ») en plus du long ; « What is Snapline? » (post épinglé n° 1) | à faire |
+| 8.3 | Qualité (tournage image par image, 1080×1920 natif, 60 images/s) ; résumé court ≈ 60 s (« Game in 60 seconds », post épinglé n° 3 ; le long seulement à la demande) ; « What is Snapline? » (post épinglé n° 1) | ✅ 13/10 |
 | 8.4 | Mesure — liens `snapline.live/tt`, `/ig`, `/yt` comptés par le serveur | à faire |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
 | 8.6 | Autres formats (demande de Guillaume, 13/10) : voir section 7 | à faire |
@@ -36,7 +36,8 @@ publication **à la main** (aucun connecteur TikTok).
 ## 2. Rythme et heures
 
 - **Chaque jour : l'action du jour** (au moins 4 semaines sans trou — la régularité compte plus que le volume).
-  **Le lundi : le résumé** du match de la semaine (court sur TikTok à partir de l'étape 8.3 ; long sur YouTube).
+  **Le lundi : le résumé court** (≈ 60 s) du match de la semaine. **Que des formats courts** sur les réseaux (choix du
+  13/10) : ils donnent envie d'aller sur le site, où les replays montrent les matchs entiers.
 - **Publication programmée** depuis l'ordinateur : TikTok Studio (tiktok.com → *Upload* → *Schedule*). La vidéo arrive
   vers 23 h (Bruxelles) dans les *Artifacts* ; le matin, la télécharger et la programmer (≈ 5 min).
 - **Deux créneaux testés pendant 2 semaines**, puis on garde le meilleur (statistiques, section 5) :
@@ -75,9 +76,9 @@ regardé), une question en légende.
 Avant le premier post : compte créé, photo, bio, nom réservé sur Instagram et YouTube. Puis 3 à 5 vidéos la première
 semaine, **les trois premières épinglées** :
 1. **« What is Snapline? »** (≈ 20 s) : 3 actions à la suite avec le texte « 24 teams · 24 AI coaches · every game
-   simulated live ».
+   simulated live » : Actions → « Vidéos » → *Run workflow* → type `presentation`.
 2. **La plus belle action** jusqu'ici (un game-winner) : Actions → « Vidéos » → *Run workflow* → type `meilleure`.
-3. **Le résumé** du dernier grand match.
+3. **Le résumé court** du dernier grand match : type `resume` (le dimanche, il est produit tout seul).
 Ensuite, le rythme de la section 2.
 
 ## 6. Mesurer ce qui marche

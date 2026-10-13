@@ -2,10 +2,12 @@
 // test). Appelé par outils/video/faire_video.py :   node outils/video/filmer.js plan.json
 // plan = {url, feed (chemin du GameFeed), out (dossier), top: {kicker, title, sub},
 //         segments: [{type:"card", kicker, title, sub, dur} | {type:"play", index, speed, label, text, after, top?}]}
-// (top d'une action : remplace le bandeau du haut à partir de cette action.)
-// Les images viennent du navigateur lui-même (Page.startScreencast, à la résolution de l'écran : 432×768 × 2,5), avec
-// leur instant. Écrit out/images/*.jpg, out/images.txt (liste ffmpeg « concat » : image + durée) et out/timeline.json
-// (instants du snap et du résultat de chaque action, en secondes depuis la première image : le son du stade s'y cale).
+// (top d'une action : remplace le bandeau du haut à partir de cette action ; feed : l'action vient d'un autre match.)
+// Tournage image par image (étape 8.3) : l'horloge de la page est pilotée (page.clock), elle avance de 1/60 s entre deux
+// images en pleine résolution (1080×1920 : mise en page « téléphone » 432×768 × 2,5, terrain dessiné à × 2,5) ; la
+// vidéo ne dépend donc ni de la vitesse de la machine ni de la qualité adaptative du site (qui baissait la résolution du
+// terrain en temps réel). Écrit out/images/*.jpg, out/images.txt (liste ffmpeg « concat » : image + durée) et
+// out/timeline.json (instants du snap et du résultat de chaque action, en secondes de vidéo : le son du stade s'y cale).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path');
 const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined);
@@ -14,7 +16,7 @@ const W=432, H=768, DPR=2.5;                       // 1080 × 1920 : la mise en 
 /* Zones sûres (étape 8.2) : l'interface de TikTok / Reels / Shorts couvre ≈ 215 px en haut (onglets), ≈ 400 px en bas
    (légende, nom du son) et ≈ 140 px à droite (boutons) sur 1920 × 1080 → ici 86, 160 et 56 px. L'enjeu est entre 86 et
    200, le terrain entre 200 et 630 (resserré : 46 yards de large au lieu de 70), le texte de l'action en bas du terrain. */
-const VIEW_YARDS=46;
+const VIEW_YARDS=46, FPS=60, DT=1000/FPS, JPEG=93;   // 60 images/s (choix du 13/10)
 
 const CSS=`
   html,body{background:#0B0E1A!important}
@@ -42,15 +44,19 @@ const CSS=`
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 (async()=>{
-  const F=JSON.parse(fs.readFileSync(plan.feed,'utf8'));
+  let F=JSON.parse(fs.readFileSync(plan.feed,'utf8')), feedOuvert=plan.feed;
   const dir=path.join(plan.out,'images'); fs.mkdirSync(dir,{recursive:true});
-  const b=await chromium.launch({executablePath:EXE});
+  const b=await chromium.launch({executablePath:EXE,args:['--force-device-scale-factor='+DPR]});   // dessin natif × 2,5 : images 1080×1920 sans mise à l'échelle
   const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:DPR,isMobile:true,hasTouch:true});
   const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
   await p.addInitScript(()=>{ try{ localStorage.setItem('gc-theme','light'); }catch(e){} });
-  await p.goto(plan.url); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:60000});
+  await p.clock.install(); await p.clock.pauseAt(Date.now()+1000);   // le temps de la page n'avance que quand on le demande
+  const attendre=ms=>p.clock.runFor(ms);
+  await p.goto(plan.url);
+  for(let k=0;!(await p.evaluate(()=>!!(window.__gc&&window.__gc.season)));k++){ if(k>600) throw new Error('le site ne démarre pas'); await attendre(100); }
   await p.evaluate(F=>{ window.__gc.openReplayFeed(F); const g=window.__gc.replayGame(); g.paused=true; },F);
-  await p.waitForTimeout(600);
+  await p.evaluate(d=>window.__gc.fx(d,true),DPR);              // terrain net (× 2,5, halos), sans qualité adaptative
+  await attendre(600);
   const th=await p.$('[data-theater][aria-pressed="false"]'); if(th) await th.click();
   await p.addStyleTag({content:CSS});
   const top=plan.top||{};
@@ -60,60 +66,73 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
     window.__vidTop=t=>{ document.getElementById('vidTop').innerHTML=`<div class="vk">${e(t.kicker)}</div><div class="vt">${e(t.title)}</div><div class="vs">${e(t.sub)}</div>`;
       const vt=document.querySelector('#vidTop .vt'); for(let f=40;f>24&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px'; };   /* le titre tient sur une ligne */
     window.__vidTop(t); },[top,esc.toString()]);
-  await p.evaluate(v=>{ const m=window.__gc.getModalView(); if(m){ m.viewW=v; m.resize(); } window.dispatchEvent(new Event('resize')); },VIEW_YARDS); await p.waitForTimeout(800);
+  const resserrer=()=>p.evaluate(v=>{ const m=window.__gc.getModalView(); if(m){ m.viewW=v; m.resize(); } window.dispatchEvent(new Event('resize')); },VIEW_YARDS);
+  await resserrer(); await attendre(800);
+  const ouvrir=async(chemin,i)=>{                                // une action d'un autre match (« What is Snapline? »)
+    F=JSON.parse(fs.readFileSync(chemin,'utf8')); feedOuvert=chemin;
+    await p.evaluate(([F,i])=>{ const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },[F,i]);
+    const th=await p.$('[data-theater][aria-pressed="false"]'); if(th) await th.click();
+    await resserrer(); await attendre(1500); };
 
   const carton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
     c.innerHTML=`<div class="vk">${e(s.kicker)}</div><div class="vt">${e(s.title)}</div><div class="vs">${e(s.sub)}</div><div class="vu">SNAPLINE.LIVE</div>`; c.style.display='flex'; },[s,esc.toString()]);
-  if(plan.segments.length&&plan.segments[0].type==='card'){ await carton(plan.segments[0]); await p.waitForTimeout(200); }   // la 1re image est déjà le carton
-  else if(plan.segments.length){ await p.evaluate(i=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },plan.segments[0].index);
-    await p.waitForTimeout(1500); }   // la 1re image (couverture) montre déjà l'action : la caméra a rejoint le ballon
+  if(plan.segments.length&&plan.segments[0].feed&&plan.segments[0].feed!==feedOuvert) await ouvrir(plan.segments[0].feed,plan.segments[0].index);
+  else if(plan.segments.length&&plan.segments[0].type!=='card'){ await p.evaluate(i=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },plan.segments[0].index);
+    await attendre(1500); }   // la 1re image (couverture) montre déjà l'action : la caméra a rejoint le ballon
 
-  /* capture : chaque image envoyée par le navigateur, avec son instant (horloge de la machine) */
-  const cdp=await ctx.newCDPSession(p), frames=[]; let n=0;
-  cdp.on('Page.screencastFrame',async f=>{ const file=path.join(dir,String(++n).padStart(6,'0')+'.jpg');
-    fs.writeFileSync(file,Buffer.from(f.data,'base64')); frames.push({file,t:Date.now()/1000});
-    try{ await cdp.send('Page.screencastFrameAck',{sessionId:f.sessionId}); }catch(e){} });
-  const t0=Date.now()/1000, now=()=>Date.now()/1000-t0;
-  await cdp.send('Page.startScreencast',{format:'jpeg',quality:88,maxWidth:W*DPR,maxHeight:H*DPR,everyNthFrame:1});
-  const timeline={segments:[]};
+  /* capture : une image toutes les 1/60 s de temps de la page ; le temps de la vidéo = images × durée */
+  /* les images viennent du « screencast » du navigateur (rapide, à la résolution native) : après chaque pas d'horloge, on
+     garde la première image produite après ce pas ; si rien n'a changé à l'écran (pas de nouvelle image), la précédente */
+  const cdp=await ctx.newCDPSession(p), liste=[]; let n=0, t=0, derniere=null, attente=null, vides=0;
+  cdp.on('Page.screencastFrame',f=>{ cdp.send('Page.screencastFrameAck',{sessionId:f.sessionId}).catch(()=>{});
+    if(attente&&f.metadata.timestamp>=attente.depuis){ const w=attente; attente=null; w.ok(f.data); } else derniere=derniere||f.data; });
+  await cdp.send('Page.startScreencast',{format:'jpeg',quality:JPEG,maxWidth:W*DPR,maxHeight:H*DPR,everyNthFrame:1});
+  const image=async dur=>{
+    const data=await new Promise(ok=>{ const w={depuis:Date.now()/1000,ok}; attente=w;
+      setTimeout(()=>{ if(attente===w){ attente=null; vides++; ok(null); } },400); });
+    if(data) derniere=data;
+    if(!derniere){ const r=await cdp.send('Page.captureScreenshot',{format:'jpeg',quality:JPEG}); derniere=r.data; }
+    const file=String(++n).padStart(6,'0')+'.jpg'; fs.writeFileSync(path.join(dir,file),Buffer.from(derniere,'base64'));
+    liste.push({file,dur}); t+=dur; };
+  const pas=async()=>{ await attendre(DT); await image(1/FPS); };
+  const now=()=>t;
+  const timeline={segments:[]}, debut=Date.now();
   for(const s of plan.segments){
-    if(s.type==='card'){
+    if(s.type==='card'){                                     // un carton est fixe : une seule image, qui dure s.dur
       const a=now();
-      await carton(s);
-      await p.waitForTimeout(s.dur*1000);
+      await carton(s); await attendre(DT); await image(s.dur);
       await p.evaluate(()=>{ document.getElementById('vidCard').style.display='none'; });
       timeline.segments.push({type:'card',kind:s.kind||'card',from:a,to:now()});
       continue;
     }
+    if(s.feed&&s.feed!==feedOuvert) await ouvrir(s.feed,s.index);
     await p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), G=window.__gc, g=G.replayGame(); G.rpSeek(g,s.index); g.speed=s.speed||1; g.paused=false;
       if(s.top) window.__vidTop(s.top);
       document.getElementById('vidBot').innerHTML=`<div class="vl">${e(s.label)}</div><div class="vx">${e(s.text)}</div>`; },[s,esc.toString()]);
     const a=now(); let snap=null, res=null;
-    for(let k=0;k<500;k++){                                   // au plus 50 s par action
+    for(let k=0;k<50*FPS;k++){                                // au plus 50 s par action
+      await pas();
       const st=await p.evaluate(()=>{ const g=window.__gc.replayGame(); return {idx:g.idx,phase:g.phase}; });
       if(snap===null&&st.idx===s.index&&st.phase!=='presnap') snap=now();
       if(res===null&&((st.idx===s.index&&st.phase==='post')||st.idx>s.index)) res=now();
       if(st.idx>s.index||st.phase==='done'||(res!==null&&now()-res>=(s.after==null?2.2:s.after))) break;
-      await p.waitForTimeout(80);
     }
     await p.evaluate(()=>{ window.__gc.replayGame().paused=true; });
     const P=F.plays[s.index];
     timeline.segments.push({type:'play',index:s.index,result:P.result,call:(P.call||{}).type,highlight:P.highlight||null,
       td:P.result==='touchdown'||!!(P.kick_return||{}).td,from:a,snap:snap===null?a:snap,res:res===null?now():res,to:now(),speed:s.speed||1});
   }
-  const fin=now();
-  await cdp.send('Page.stopScreencast'); await new Promise(r=>setTimeout(r,300));
+  await cdp.send('Page.stopScreencast').catch(()=>{});
   await ctx.close(); await b.close();
-  if(!frames.length) throw new Error('aucune image capturée');
-  /* liste ffmpeg : chaque image dure jusqu'à la suivante ; la première est à l'instant 0 de la vidéo */
-  const base=frames[0].t; let txt='ffconcat version 1.0\n';
-  frames.forEach((f,i)=>{ const next=i+1<frames.length?frames[i+1].t:t0+fin; txt+=`file '${path.basename(f.file)}'\nduration ${Math.max(0.001,next-f.t).toFixed(4)}\n`; });
-  txt+=`file '${path.basename(frames[frames.length-1].file)}'\n`;
+  if(!liste.length) throw new Error('aucune image capturée');
+  let txt='ffconcat version 1.0\n';
+  for(const f of liste) txt+=`file '${f.file}'\nduration ${f.dur.toFixed(6)}\n`;
+  txt+=`file '${liste[liste.length-1].file}'\n`;
   fs.writeFileSync(path.join(dir,'images.txt'),txt);
-  const decal=base-t0;                                         // la vidéo commence à la première image
-  for(const s of timeline.segments) for(const k of ['from','to','snap','res']) if(s[k]!=null) s[k]=+(s[k]-decal).toFixed(3);
-  timeline.end=+(fin-decal).toFixed(3); timeline.frames=frames.length;
+  for(const s of timeline.segments) for(const k of ['from','to','snap','res']) if(s[k]!=null) s[k]=+s[k].toFixed(3);
+  timeline.end=+t.toFixed(3); timeline.frames=liste.length;
   fs.writeFileSync(path.join(plan.out,'timeline.json'),JSON.stringify(timeline,null,1));
   if(errs.length){ console.error('erreurs JS :',errs); process.exit(1); }
-  console.log(`filmé : ${timeline.end.toFixed(1)} s, ${frames.length} images, ${timeline.segments.length} segments`);
+  console.log(`filmé : ${timeline.end.toFixed(1)} s, ${liste.length} images, ${timeline.segments.length} segments · tournage ${((Date.now()-debut)/1000).toFixed(0)} s` +
+    (vides?` · ${vides} images reprises (écran inchangé)`:''));
 })().catch(e=>{ console.error(e); process.exit(1); });
