@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim / Snapline (mise à jour le 12/10/2026 : bloc 2 — produit et visibilité)
+# Feuille de route — GridironSim / Snapline (mise à jour le 13/10/2026 : étape 8 — promotion)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -32,7 +32,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
-| 8 | Promotion du site : posts TikTok (et autres réseaux) à partir des vidéos du bloc 2 | après les publicités, **conversation dédiée** | contenu + éventuellement outils vidéo |
+| **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · 8.2 action du jour pour TikTok · 8.3 résumé court · 8.4 liens comptés `/tt` `/ig` `/yt` · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
 
 ---
 
@@ -787,6 +787,20 @@ sur les joueurs.
      (`https://snapline.live/sitemap.xml`), indexation demandée. Pas d'autre outil de mesure (choix du 12/10).
    - Le même jour : un seul match d'exhibition gardé (ZPH–BST, V34) ; GLT–AXM retiré.
 
+## Étape 8 — Promotion (en cours, depuis le 13/10/2026)
+Plan complet, validé par Guillaume le 13/10 : **`programme/Promotion.md`** (compte, rythme, heures, formats, hashtags,
+musique, premiers posts, mesure, tableau du bilan du lundi). Une étape = une PR, testée en local, fusionnée par Guillaume.
+- **Décisions du 13/10** : compte TikTok **personnel** (sons tendance), `@snapline.live`, « Snapline · AI Football »,
+  photo de profil = le logo du site (`gamecenter_serveur (1)/outils/promotion/photo_profil.png`, refaite par
+  `faire_profil.js`) ; **jamais de paris** sur les réseaux ; une action par jour, le résumé le lundi, publication
+  programmée (TikTok Studio), deux créneaux testés 2 semaines (19:00 et 01:00 à Bruxelles).
+- **Constat sur les vidéos du 12/10** (action du 9/10 filmée en local) : ouverture sur 2,6 s de carton fixe (pas
+  d'accroche), enjeu (score, temps, probabilité) peu visible, texte de l'action sous la légende de TikTok (à partir de
+  1 550 px sur 1 920), haut sous les onglets, terrain sur 61 % de la hauteur, résumé de 2 min 15 long pour TikTok.
+- 8.1 ✅ plan et photo de profil · 8.2 action du jour pour TikTok · 8.3 résumé court 45-60 s · 8.4 liens comptés
+  `/tt`, `/ig`, `/yt` · 8.5 Instagram Reels, YouTube Shorts et bilan. Plus tard, à décider : commentaire et
+  sous-titres incrustés, image de couverture.
+
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
 2. **Étape 7 — Publicités** : le code est en place (README section 47) ; rien ne s'affiche tant que
@@ -794,8 +808,7 @@ sur les joueurs.
    des jeux d'argent, 3 blocs d'annonces ; puis poser les variables (`GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS`,
    `GC_EDITEUR`, `GC_EDITEUR_ADRESSE`, `GC_CONTACT`). Revenus réalistes : quelques centimes à quelques euros pour 1 000
    pages vues ; les sponsors directs (une marque par franchise, « présenté par » sur la Grand Final) restent une piste.
-3. **Étape 8 — Promotion (TikTok…)** : après les publicités, dans une conversation dédiée. Matière première : les vidéos
-   du workflow « Vidéos » et leurs légendes (README 46).
+3. **Étape 8 — Promotion** : en cours (section « Étape 8 » ci-dessus, `programme/Promotion.md`) ; prochaine étape 8.2.
 4. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).
 5. Après chaque samedi : la semaine suivante est dans le dépôt (commit « Nouvelle semaine … ») et aucune issue
    « calcul-semaine » n'est ouverte. **Le 17/10 en particulier** : premier calcul avec transformations et retours.

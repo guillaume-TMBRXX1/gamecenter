@@ -1043,6 +1043,12 @@ Belgique depuis le 01/07/2023), emplacements de taille fixe, jamais sur le terra
   `outils/site/test_publicites.js` (groupe site : deux serveurs, sans et avec AdSense ; script de Google remplacé par un
   bouchon local ; emplacements par onglet, tailles, place réservée, mi-temps, mobile, mode sombre, `/legal`).
 
+### 48. Promotion sur les réseaux (étape 8 — 13/10/2026)
+Plan (compte, rythme, formats, mesure) : `programme/Promotion.md` à la racine du dépôt. Les vidéos viennent du workflow
+« Vidéos » (section 46) et se publient à la main.
+- **Photo de profil** : `outils/promotion/photo_profil.png` (1080×1080, le logo du site sur son dégradé ; le réseau
+  l'affiche en rond). À refaire seulement si le logo change : `node outils/promotion/faire_profil.js` (Playwright).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
