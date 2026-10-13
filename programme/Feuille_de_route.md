@@ -31,7 +31,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | — | Hors feuille de route, 09-10/10 : progression rééquilibrée, interface des matchs, iPad / Safari (page allégée), calendrier toutes les 30 min, « Grand Final », pauses de retransmission, audit à bornes par semaine | ✅ en ligne (PR #40 → #48) | notebook + site + serveur |
 | **B1** | **Fiabilité** (avant les publicités) : alerte et relance du calcul du samedi, temps du calcul mesuré, contrôle automatique des PR, tests serveur et cellule 427 rapatriés | ✅ **terminé le 11/10** (PR #49, #52 → #55 ; étape 2 : mesure seule) | workflows + tests + notebook (cellule 427) |
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
-| 7 | Publicités | **prochaine étape** | site + serveur — voir `Publicites_plan.md` |
+| 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | 8 | Promotion du site : posts TikTok (et autres réseaux) à partir des vidéos du bloc 2 | après les publicités, **conversation dédiée** | contenu + éventuellement outils vidéo |
 
 ---
@@ -789,9 +789,11 @@ sur les joueurs.
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
-2. **Étape 7 — Publicités** (`Publicites_plan.md`) : l'emplacement de la mi-temps est prêt (`BRK_SLOT.half = g => html`
-   dans le site, README section 36). Le site a désormais plus de surfaces (History, Leagues, vidéos, partage) : à
-   prendre en compte dans le plan.
+2. **Étape 7 — Publicités** : le code est en place (README section 47) ; rien ne s'affiche tant que
+   `GC_ADSENSE_CLIENT` n'est pas posé sur Railway. Reste à Guillaume : compte AdSense, message de consentement, blocage
+   des jeux d'argent, 3 blocs d'annonces ; puis poser les variables (`GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS`,
+   `GC_EDITEUR`, `GC_EDITEUR_ADRESSE`, `GC_CONTACT`). Revenus réalistes : quelques centimes à quelques euros pour 1 000
+   pages vues ; les sponsors directs (une marque par franchise, « présenté par » sur la Grand Final) restent une piste.
 3. **Étape 8 — Promotion (TikTok…)** : après les publicités, dans une conversation dédiée. Matière première : les vidéos
    du workflow « Vidéos » et leurs légendes (README 46).
 4. Ne fusionner qu'une PR aux trois contrôles verts (ils restent facultatifs : voir « Ruleset de `main` », bloc 1).

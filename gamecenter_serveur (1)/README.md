@@ -1006,6 +1006,43 @@ Search Console suffit).
   beau match et résumé sur la dernière semaine), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
   du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
 
+### 47. Publicités : Google AdSense, consentement, mentions et page légale (étape 7 — 13/10/2026)
+**Décisions de Guillaume (13/10)** : régie **Google AdSense** ; emplacements **mi-temps du grand écran, accueil, bas des
+onglets** ; consentement par l'**outil gratuit de Google** (Confidentialité et messages, certifié IAB TCF v2.2) ; page
+**Privacy** et **`/ads.txt`**. Repris du plan du 03/10 (`Publicites_plan.md`) : mention permanente « argent fictif ·
+aucun gain réel · 18+ », page de règles, mentions légales, blocage des publicités pour les jeux d'argent (interdites en
+Belgique depuis le 01/07/2023), emplacements de taille fixe, jamais sur le terrain ni sur les cotes.
+- **Rien ne change tant que `GC_ADSENSE_CLIENT` n'est pas posé** : aucun script de régie, aucun emplacement,
+  `/ads.txt` absent (404). La mention et la page légale, elles, sont là tout de suite.
+- **Variables Railway** : `GC_ADSENSE_CLIENT` (identifiant d'éditeur, `ca-pub-` + 16 chiffres : balise
+  `google-adsense-account` et script AdSense dans le `<head>`, `/ads.txt` = `google.com, pub-…, DIRECT,
+  f08c47fec0942fa0`) ; `GC_ADSENSE_SLOTS` (blocs d'annonces « display » créés dans AdSense, un par emplacement :
+  `half=…,home=…,page=…`) — un emplacement sans bloc n'affiche rien. Mentions légales : `GC_EDITEUR` (nom),
+  `GC_EDITEUR_ADRESSE` (adresse), `GC_CONTACT` (e-mail) ; sans elles, la page dit « not set ».
+- **Emplacements** (site, `adShow` / `adHTML` / `adPush`) : **accueil** (sous Power rankings / Top agents, au-dessus de
+  « What is Snapline? »), **bas des onglets** Schedule, Standings, Teams, History (un seul bloc, `page`) ; **mi-temps**
+  du grand écran (`BRK_SLOT.half`, écran complet seulement : ni les tuiles, ni les fins de quart-temps, ni le terrain
+  pendant le jeu). Taille fixe : 728×90 si la place le permet, sinon 320×100 (mobile, mi-temps) ; la place est réservée
+  avant l'arrivée de l'annonce (rien ne bouge pendant le direct). Libellé « Advertisement ». Aucun bloc dans Live
+  board pendant un match, le bulletin, My bets, Leagues, Settings. Un bloc n'est demandé qu'une fois par page (en
+  changeant d'onglet, il reste) ; la mi-temps en demande un à chaque écran de mi-temps.
+- **Mention et pages** : pied de page sur tous les onglets « **Play money · No real winnings · 18+** », lien « Rules,
+  privacy & legal », bouton « **Privacy choices** » (rouvre le message de consentement de Google ; seulement avec
+  AdSense) ; phrase 18+ et lien dans « What is Snapline? ». Page **`/legal`** (`static/legal.html`, anglais, thème clair
+  / sombre) : règles (argent fictif, 18+, aide : aideauxjoueurs.be / gokhulp.be), politique de confidentialité (ce que
+  le serveur garde : clé de joueur, compte et mot de passe haché scrypt, paris, équipe favorite, ligues, rappels,
+  journaux ; le stockage du navigateur ; publicité et consentement ; droits RGPD, APD), mentions légales (éditeur des
+  variables, hébergeur Railway). Ajoutée au plan du site.
+- **À faire par Guillaume dans AdSense** (une fois le compte ouvert) : ajouter le site `snapline.live` ; **Confidentialité
+  et messages → RGPD** : créer et publier le message de consentement (EEE, Royaume-Uni, Suisse) ; **Contrôle des
+  annonces → Catégories sensibles** : bloquer « Jeux d'argent et paris » (et, au choix, les autres catégories
+  sensibles) ; créer 3 blocs d'annonces « Display » à taille fixe (noms : `half`, `home`, `page`) et donner leurs
+  numéros (`data-ad-slot`). Google examine le site (de quelques jours à quelques semaines) ; le contenu « paris en argent
+  fictif » peut être refusé — la page `/legal` et la mention 18+ répondent aux questions habituelles.
+- **Tests** : `moteur/tests/test_publicites.py` (variables, `/ads.txt`, `/legal` échappée, plan du site),
+  `outils/site/test_publicites.js` (groupe site : deux serveurs, sans et avec AdSense ; script de Google remplacé par un
+  bouchon local ; emplacements par onglet, tailles, place réservée, mi-temps, mobile, mode sombre, `/legal`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -1118,7 +1155,8 @@ de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0
 en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueurs coupée : rosters de base chaque semaine,
 moteur V25) · `GC_DOMAINE` (domaine du site, ex. `snapline.live` : l'adresse `*.up.railway.app` y est redirigée,
 README section 39) · `GC_GOOGLE_VERIFY` (balise de vérification Google Search Console, facultative,
-README section 46).
+README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `GC_EDITEUR`,
+`GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47.
 
 ## Test
 
