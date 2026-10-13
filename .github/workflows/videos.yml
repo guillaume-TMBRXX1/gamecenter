@@ -1,9 +1,10 @@
 # Vidéos verticales pour les réseaux (bloc 2, étape 8) : MP4 1080×1920 + légende, à télécharger puis publier à la main
 # (TikTok, Reels, Shorts). Rien n'est ajouté au dépôt : les vidéos sont des « artifacts » de l'exécution (30 jours).
 # Tous les soirs à 22 h 30 UTC (00 h 30 l'été, 23 h 30 l'hiver à Bruxelles, la journée de matchs est finie) :
-#   l'action du jour ; le dimanche soir, en plus, le résumé du plus beau match de la semaine (2 à 3 min).
-# À la demande (onglet Actions → « Vidéos » → Run workflow) : action d'un jour, résumé d'un match, ou la plus belle
-#   action de toutes les semaines parmi les matchs terminés (« Best play so far », étape 8.2).
+#   l'action du jour ; le dimanche soir, en plus, le résumé court (≈ 60 s) du plus beau match de la semaine.
+# À la demande (onglet Actions → « Vidéos » → Run workflow) : action d'un jour, résumé court d'un match, résumé long
+#   (2 à 3 min), la plus belle action jusqu'ici (« Best play so far », étape 8.2) ou « What is Snapline? » (étape 8.3).
+# Tournage image par image à 60 images/s (étape 8.3) : ≈ 4-5 min par action, ≈ 15-25 min pour un résumé court.
 # Script : outils/video/faire_video.py (README section 46).
 name: Vidéos
 
@@ -13,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       type:
-        description: "action = action du jour · resume = résumé d'un match · meilleure = plus belle action jusqu'ici"
+        description: "action = action du jour · resume = résumé court · long = résumé long · meilleure = plus belle action · presentation = What is Snapline?"
         type: choice
-        options: [action, resume, meilleure]
+        options: [action, resume, long, meilleure, presentation]
         default: action
       jour:
         description: "Jour de l'action (AAAA-MM-JJ) ; vide = la journée qui vient de finir"
@@ -36,7 +37,7 @@ concurrency:
 jobs:
   videos:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: "gamecenter_serveur (1)"
@@ -75,7 +76,15 @@ jobs:
       - name: Plus belle action jusqu'ici
         if: contains(steps.quoi.outputs.liste, 'meilleure')
         run: python outils/video/faire_video.py action --meilleure --jour "${{ steps.quoi.outputs.jour }}" --sortie videos
-      - name: Résumé d'un match
+      - name: What is Snapline?
+        if: contains(steps.quoi.outputs.liste, 'presentation')
+        run: python outils/video/faire_video.py presentation --jour "${{ steps.quoi.outputs.jour }}" --sortie videos
+      - name: Résumé long d'un match
+        if: contains(steps.quoi.outputs.liste, 'long')
+        env:
+          MATCH: ${{ inputs.match }}
+        run: python outils/video/faire_video.py resume --long --jour "${{ steps.quoi.outputs.jour }}" ${MATCH:+--match "$MATCH"} --sortie videos
+      - name: Résumé court d'un match
         if: contains(steps.quoi.outputs.liste, 'resume')
         env:
           MATCH: ${{ inputs.match }}

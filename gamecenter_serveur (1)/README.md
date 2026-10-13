@@ -980,11 +980,13 @@ Search Console suffit).
   avec mots-dièse, prête à coller) et `.json` (ce qui a été choisi).
   ```
   python outils/video/faire_video.py action [--jour AAAA-MM-JJ]       # action du jour (défaut : la journée qui finit)
-  python outils/video/faire_video.py resume [--match w3-r91]          # résumé (défaut : le plus beau match de la semaine)
+  python outils/video/faire_video.py resume [--match w3-r91]          # résumé court ≈ 60 s (défaut : le plus beau match)
+  python outils/video/faire_video.py resume --long [--match w3-r91]   # résumé long, 2 à 3 min (à la demande seulement)
   python outils/video/faire_video.py action --meilleure               # la plus belle action jusqu'ici (matchs terminés)
+  python outils/video/faire_video.py presentation                     # « What is Snapline? » (≈ 20 s, 3 actions)
   ```
-  Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. ≈ 25 s de tournage pour une action,
-  ≈ 2 min 15 pour un résumé (le tournage se fait en temps réel).
+  Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. Tournage en local (4 cœurs) : ≈ 4 min
+  pour une action, ≈ 12-15 min pour un résumé court (sur GitHub, à 2 cœurs : compter ≈ 1,5×).
 - **Format TikTok (étape 8.2, 13/10)** : l'action du jour **s'ouvre sur l'action** (plus de carton fixe ; la 1re image,
   qui sert de couverture, montre déjà le terrain), avec l'**enjeu** en grand en haut (`choisir.enjeu` : « Tied 31–31 ·
   0:14 left », « AXM down 28–31 · 1:02 left », « Overtime · … », « 4th & 6 · own 35 », sinon score et horloge ; rien
@@ -998,10 +1000,29 @@ Search Console suffit).
   test le vérifie). **« Best play so far »** : `faire_video.py action --meilleure` — la plus belle action de toutes les
   semaines, **parmi les matchs terminés** (coup d'envoi + 2 h : la semaine en cours est calculée d'avance) ; dans le
   workflow, type `meilleure`.
+- **Qualité (étape 8.3, 13/10)** : avant, le navigateur était filmé en temps réel par son « screencast », en **432×768**
+  agrandi à 1080×1920, et le site baissait de lui-même la résolution du terrain (qualité adaptative : 2× → 1,5× → 1×)
+  parce que la machine sans carte graphique « ramait ». Désormais : **tournage image par image** — l'horloge de la page
+  est pilotée (`page.clock`, Playwright), elle avance de **1/60 s** entre deux images, quelle que soit la vitesse de la
+  machine (mouvement régulier, son calé à l'image près) ; Chromium dessine **nativement à × 2,5**
+  (`--force-device-scale-factor`) : images **1080×1920** sans agrandissement ; terrain dessiné à × 2,5 avec ses halos,
+  sans qualité adaptative (crochet de test `__gc.fx`, dans `serveur.py` : seulement avec `GC_TEST_HOOK=1`, le site
+  public ne change pas). Encodage H.264 High 4.2, **60 images/s**, `crf 17`, `preset slow`, `tune animation`.
+- **Résumé court (étape 8.3)** : `faire_video.py resume` (le défaut ; post épinglé n° 3) — « Game in 60 seconds » :
+  chaque touchdown (y compris sur retour), chaque perte de balle, les field goals des 2 dernières minutes et de la
+  prolongation, la dernière action ; d'abord les scores, au plus ≈ 55 s d'actions (10 actions), 6 au moins
+  (`choisir.resume_court`) ; s'ouvre sur la 1re action, le score en haut, sans carton de quart-temps ; carton final
+  « Final … » + snapline.live. Le **résumé long** (2 à 3 min) ne se fait plus qu'à la demande (`--long`, type `long`) :
+  les replays du site sont faits pour ça, les réseaux ne reçoivent que des formats courts (choix du 13/10).
+- **« What is Snapline? » (étape 8.3)** : `faire_video.py presentation` (post épinglé n° 1, ≈ 20 s) — trois actions de
+  trois matchs terminés (`choisir.trois_actions` : le plus beau touchdown, la plus belle perte de balle, le plus beau
+  4e essai tenté), une phrase en haut de chacune (« 24 teams. 24 AI coaches. », « Every game simulated live », « A full
+  season every week »), puis « Free to watch · snapline.live ».
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
-  dimanche, en plus, le résumé du plus beau match de la semaine. Les vidéos ne vont **pas** dans le dépôt : onglet
-  Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis publication à la main. À la
-  demande : Actions → « Vidéos » → *Run workflow* (type `action` ou `resume`, jour, match).
+  dimanche, en plus, le **résumé court** du plus beau match de la semaine (limite du job : 90 min). Les vidéos ne vont
+  **pas** dans le dépôt : onglet Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis
+  publication à la main. À la demande : Actions → « Vidéos » → *Run workflow* (type `action`, `resume`, `long`,
+  `meilleure` ou `presentation` ; jour, match).
 - **Référencement** : titre et description en anglais, adresse canonique `https://snapline.live/`, Open Graph et Twitter
   (aperçu des liens partagés, image `/og.png` 1200×630 faite par `outils/site/faire_og.js`), JSON-LD `WebSite`,
   `/robots.txt` (tout sauf `/api/`) et `/sitemap.xml`. Texte **« What is Snapline? »** en bas de l'accueil (lisible par
@@ -1018,7 +1039,7 @@ Search Console suffit).
   la variable Railway `GC_GOOGLE_VERIFY` (le serveur l'ajoute à la page).
 - **Tests** : `moteur/tests/test_videos.py` (notes, décision folle, fin de match, bandeaux, sons ; action du jour, plus
   beau match et résumé sur la dernière semaine ; étape 8.2 : enjeu, bascule, légendes, aucun mot de paris, « Best play
-  so far » sans match à venir), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
+  so far » sans match à venir ; étape 8.3 : résumé court, « What is Snapline? »), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
   du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
 
 ### 47. Publicités : Google AdSense, consentement, mentions et page légale (étape 7 — 13/10/2026)

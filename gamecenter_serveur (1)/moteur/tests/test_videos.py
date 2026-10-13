@@ -159,6 +159,8 @@ class TestSemaineReelle(unittest.TestCase):
         textes = [leg, str(top), str(seg)]
         g, seg, top, info, leg2 = V.plan_resume(self.doc, self.feeds)
         textes += [leg2, str(top), str(seg)]
+        g, seg, top, info, leg3 = V.plan_resume(self.doc, self.feeds, long=True)
+        textes += [leg3, str(top), str(seg)]
         for t in textes:
             self.assertIsNone(PARIS.search(t), PARIS.search(t))
 
@@ -176,6 +178,48 @@ class TestSemaineReelle(unittest.TestCase):
         g, seg, top, info, leg = V.plan_action(*C.charger_semaine(tout["dossier"]), None, tout)
         self.assertEqual(top["kicker"], "Best play so far")
         self.assertEqual(info["type"], "meilleure")
+
+    def test_resume_court(self):
+        """Étape 8.3 : résumé court ≤ ≈ 60 s, tous les scores s'ils tiennent (sinon le maximum d'actions), la dernière
+        action, l'ordre du match ; le plan s'ouvre sur une action (pas de carton) et finit sur le score final."""
+        for gid, F in list(self.feeds.items())[:40]:
+            idx = C.resume_court(F)
+            self.assertEqual(idx, sorted(idx))
+            self.assertIn(len(F["plays"]) - 1, idx)
+            n_max = int(C.COURT_MAX // C.COURT_ACTION)
+            self.assertLessEqual(len(idx), n_max)
+            scores = [i for i, P in enumerate(F["plays"]) if P.get("result") == "touchdown" or (P.get("kick_return") or {}).get("td")]
+            self.assertTrue(set(scores) <= set(idx) or len(idx) == n_max, gid)
+        g, seg, top, info, leg = V.plan_resume(self.doc, self.feeds)
+        self.assertEqual(seg[0]["type"], "play")
+        self.assertNotIn("quarter", [x.get("kind") for x in seg])
+        self.assertEqual(seg[-1]["type"], "card")
+        self.assertTrue(seg[-1]["kicker"].startswith("Final"))
+        self.assertEqual(top["kicker"], "Game in 60 seconds")
+        self.assertEqual(info["type"], "resume_court")
+        g, seg_long, top, info, leg = V.plan_resume(self.doc, self.feeds, long=True)
+        self.assertEqual(seg_long[0]["type"], "card")
+        self.assertGreater(len(seg_long), len(seg))
+
+    def test_presentation(self):
+        """« What is Snapline? » : trois actions de trois matchs différents, terminés ; aucun mot de paris."""
+        maintenant = datetime(2100, 1, 1, tzinfo=C.TZ)
+        choix = C.trois_actions(SEMAINES, maintenant)
+        self.assertEqual(len(choix), 3)
+        self.assertEqual(len({a["game"] for a in choix}), 3)
+        self.assertEqual(choix, C.trois_actions(SEMAINES, maintenant))          # déterministe
+        semaines = {a["dossier"]: C.charger_semaine(a["dossier"])[0] for a in choix}
+        top, seg, info, leg = V.plan_presentation(choix, semaines)
+        self.assertEqual([x["type"] for x in seg], ["play", "play", "play", "card"])
+        self.assertEqual([x["top"]["title"] for x in seg[:3]], V.PRESENTATION)
+        self.assertTrue(all(os.path.exists(x["feed"]) for x in seg[:3]))
+        self.assertEqual(seg[-1]["title"], "snapline.live")
+        for t in (leg, str(seg)):
+            self.assertIsNone(PARIS.search(t), PARIS.search(t))
+        ko = min(datetime.fromisoformat(g["kickoff"]) for g in self.doc["schedule"])
+        for a in C.trois_actions([SEMAINES[-1]], ko + C.FINI_APRES + timedelta(hours=3)):
+            g = next(x for x in self.doc["schedule"] if x["id"] == a["game"])
+            self.assertLessEqual(datetime.fromisoformat(g["kickoff"]) + C.FINI_APRES, ko + C.FINI_APRES + timedelta(hours=3))
 
     def test_semaine_du_jour(self):
         self.assertEqual(os.path.basename(V.semaine_du(self.jour)), os.path.basename(SEMAINES[-1]))
