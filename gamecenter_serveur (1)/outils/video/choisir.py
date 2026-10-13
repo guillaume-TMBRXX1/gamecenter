@@ -14,6 +14,8 @@ Tout se lit dans les GameFeed d'une semaine (data/weeks/week_*/games) :
   trois_actions(...)  : trois belles actions de genres et de matchs différents (« What is Snapline? », étape 8.3) ;
   joueur_de_la_semaine(...), champion(...) : le joueur de la semaine (score « fantasy ») et le champion de la Grand
                         Final, avec leurs plus belles actions (étape 8.6 a) ;
+  match_hors_norme(...), franchise(...) : le match hors norme de la semaine (record ou 100 points cumulés) et la
+                        franchise de la semaine (ordre fixe sur 24 semaines), étape 8.6 b ;
   enjeu(...), bascule(...) : le texte de l'accroche (score, temps, 4e essai) et la probabilité de victoire avant /
                         après, pour le haut de la vidéo (étape 8.2).
 Rien d'aléatoire : la même semaine donne toujours les mêmes vidéos.
@@ -298,6 +300,15 @@ def _termines(doc, maintenant):
     return [g for g in doc["schedule"] if datetime.fromisoformat(g["kickoff"]) + FINI_APRES <= maintenant]
 
 
+def _histoire_module():
+    import sys
+    racine = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    if racine not in sys.path:
+        sys.path.insert(0, racine)
+    from moteur import histoire
+    return histoire
+
+
 def _feuille(feed):
     """Statistiques par joueur d'un match : moteur/histoire.py (mêmes règles que le site et l'onglet History)."""
     import sys
@@ -402,4 +413,117 @@ def champion(dossier, maintenant, toutes=(), n_actions=4):
     cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
     return {"team": equipe, "opp": fin[autre], "final": fin["id"], "score": (fs[cote], fs[autre]),
             "bilan": {k: ligne.get(k, 0) for k in ("w", "l", "t")}, "titres": titres,
+            "actions": sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))}
+
+
+# ------------------------------------------------------------------ étape 8.6 b : match hors norme, franchise
+SEUIL_POINTS = 100        # un match hors norme sans record : 100 points cumulés ou plus
+RECORDS = (("total", "combined points"), ("pts", "points by one team"), ("margin", "point margin"))
+
+
+def _valeurs(g):
+    r = g.get("result") or {}
+    h, a = r.get("home", 0), r.get("away", 0)
+    return {"total": h + a, "pts": max(h, a), "margin": abs(h - a)}
+
+
+def match_hors_norme(dossier, maintenant, toutes=()):
+    """Le match hors norme de la semaine (matchs terminés) : un record de tous les temps battu au moment où il a été
+    joué (total des deux équipes, points d'une équipe, écart — dans cet ordre de priorité ; égaler ne suffit pas), sinon
+    le plus gros total s'il atteint SEUIL_POINTS. {"game", "kind", "label", "value", "previous" (record d'avant, None
+    sans record), "dossier", "result"} ou None si la semaine n'en a pas."""
+    tous = []
+    for d in sorted(set(toutes) | {dossier}):
+        with open(os.path.join(d, "week.json"), encoding="utf-8") as fh:
+            w = json.load(fh)
+        for g in _termines(w, maintenant):
+            if g.get("result"):
+                tous.append((g["kickoff"], g, os.path.basename(os.path.normpath(d))))
+    tous.sort(key=lambda x: (x[0], x[1]["id"]))
+    semaine = os.path.basename(os.path.normpath(dossier))
+    meilleur, choix = {k: None for k, _ in RECORDS}, None
+    for ko, g, nom in tous:
+        v = _valeurs(g)
+        if nom == semaine:
+            for rang, (k, label) in enumerate(RECORDS):
+                if meilleur[k] is not None and v[k] > meilleur[k]:
+                    c = {"game": g["id"], "kind": k, "label": label, "value": v[k], "previous": meilleur[k],
+                         "dossier": dossier, "result": g["result"], "rang": rang}
+                    if choix is None or (c["rang"], -c["value"]) < (choix["rang"], -choix["value"]):
+                        choix = c
+                    break
+        for k in meilleur:
+            meilleur[k] = v[k] if meilleur[k] is None else max(meilleur[k], v[k])
+    if choix is None:
+        gros = [(_valeurs(g)["total"], g) for ko, g, nom in tous if nom == semaine]
+        if gros:
+            total, g = max(gros, key=lambda x: (x[0], x[1]["id"]))
+            if total >= SEUIL_POINTS:
+                choix = {"game": g["id"], "kind": "total", "label": "combined points", "value": total,
+                         "previous": None, "dossier": dossier, "result": g["result"], "rang": 9}
+    return choix
+
+
+def actions_du_score(feed, n_max=8):
+    """Les actions qui ont fait le score (touchdowns, y compris sur retour, et field goals réussis) ; au plus n_max
+    (d'abord les touchdowns, puis les mieux notées), dans l'ordre du match."""
+    P = feed["plays"]
+    sc = [i for i, p in enumerate(P) if p.get("result") in ("touchdown", "field_goal_good") or (p.get("kick_return") or {}).get("td")]
+    garde = sorted(sc, key=lambda i: (P[i].get("result") != "touchdown" and not (P[i].get("kick_return") or {}).get("td"),
+                                       -interet(feed, i)[0], i))[:n_max]
+    return sorted(garde)
+
+
+def franchise_de_la_semaine(dossier, toutes, maintenant, n_actions=2):
+    """La franchise de la semaine : l'ordre est fixe (les 24 équipes par abréviation, une par semaine depuis la première
+    semaine enregistrée). {"team", "fiche" (week.json : nom, style, identité, coordinateurs, conférence, division),
+    "bilan" (histoire.py : saisons, w, l, t, playoffs, finales, titres), "legende" (meilleur joueur de son histoire
+    au score fantasy, saisons avec elle seulement), "actions" (ses plus belles actions de tous les temps, matchs
+    terminés)}."""
+    H = _histoire_module()
+    toutes = sorted(set(toutes) | {dossier}, key=lambda d: os.path.basename(os.path.normpath(d)))
+    docs = {}
+    for d in toutes:
+        with open(os.path.join(d, "week.json"), encoding="utf-8") as fh:
+            docs[d] = json.load(fh)
+    doc = docs[dossier]
+    equipes = sorted(doc["teams"])
+    debut = min(datetime.fromisoformat(w["week"]["start"]) for w in docs.values())
+    rang = ((datetime.fromisoformat(doc["week"]["start"]) - debut).days // 7) % len(equipes)
+    t = equipes[rang]
+    semaines, feeds_de = [], {}
+    for k, d in enumerate(toutes):
+        w, fd = charger_semaine(d)
+        feeds_de[d] = (w, fd)
+        jeux = _termines(w, maintenant)
+        semaines.append({"index": k + 1, "start": w["week"]["start"], "doc": w,
+                         "matchs": [(g, H.feuille_de_match(fd[g["id"]])) for g in jeux],
+                         "terminee": any(g["phase"] == "ai_bowl" for g in jeux)})
+    h = H.histoire(semaines)
+    bilan = next((f for f in h["franchises"] if f["team"] == t), {"team": t, "seasons": 0, "w": 0, "l": 0, "t": 0,
+                                                                     "playoffs": 0, "finals": 0, "titles": 0})
+    legende = None
+    for c in h["careers"].values():
+        avec = [x for x in c["seasons"] if x.get("team") == t]
+        if not avec:
+            continue
+        tot = {k: sum(x.get(k, 0) for x in avec) for k in avec[0] if isinstance(avec[0][k], (int, float)) and k != "week"}
+        q = dict(tot, id=c["id"], name=c["name"], pos=c["pos"], team=t, seasons=len(avec))
+        if legende is None or (score_fantasy(q), q["id"]) > (score_fantasy(legende), legende["id"]):
+            legende = q
+    cand = []
+    for d, (w, fd) in feeds_de.items():
+        for g in _termines(w, maintenant):
+            if t not in (g["home"], g["away"]):
+                continue
+            F, cote = fd[g["id"]], ("home" if g["home"] == t else "away")
+            for i, P in enumerate(F["plays"]):
+                r, gain = P.get("result"), P.get("gain") or 0
+                if (P.get("offense") == cote and (r == "touchdown" or (r in ("complete", "run") and gain >= 25))) or \
+                   (P.get("offense") != cote and r in ("interception", "fumble_lost")):
+                    n, why = interet(F, i)
+                    cand.append({"game": g["id"], "index": i, "note": n, "why": why, "play": P, "dossier": d,
+                                 "ko": g["kickoff"]})
+    cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
+    return {"team": t, "fiche": doc["teams"][t], "bilan": bilan, "legende": legende,
             "actions": sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))}

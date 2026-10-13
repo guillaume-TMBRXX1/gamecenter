@@ -14,7 +14,7 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.4 bis | Adresse visible dans les vidéos (badge « snapline.live », carton « Type it in your browser ») et commentaire à épingler dans le `.txt` | ✅ 13/10 |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
 | 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
-| 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | à faire |
+| 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | ✅ 13/10 |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») ; image de couverture `.jpg` | — |
 
 ## 1. Le compte
@@ -99,7 +99,11 @@ Ensuite, le rythme de la section 2.
 |---|---|---|---|---|---|---|---|
 | | | | | | | | |
 
-## 7. Autres formats à produire (demande du 13/10, étape 8.6)
+## 7. Autres formats (demande du 13/10, étape 8.6 — faits le 13/10 : semaine type ci-dessous)
+Semaine type des vidéos (workflow « Vidéos », 22 h 30 UTC) : **tous les jours** l'action du jour ; **mercredi** le
+match hors norme (s'il y en a un) ; **vendredi** la franchise de la semaine ; **dimanche** le résumé court, le champion
+de la Grand Final et le joueur de la semaine. À la demande : « Best play so far », « What is Snapline? », résumé long.
+
 En plus de l'action du jour et du résumé, des posts tirés des données du site (semaines, onglet History, fiches) :
 - **Joueur de la semaine** : les statistiques du meilleur joueur de la semaine (carte + ses plus belles actions).
 - **Champion** : la victoire d'une équipe en **Grand Final**, avec ses plus belles actions de la semaine.

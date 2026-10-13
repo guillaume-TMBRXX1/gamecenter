@@ -986,6 +986,8 @@ Search Console suffit).
   python outils/video/faire_video.py presentation                     # « What is Snapline? » (≈ 20 s, 3 actions)
   python outils/video/faire_video.py joueur [--semaine data/weeks/…]  # le joueur de la semaine (≈ 22 s)
   python outils/video/faire_video.py champion [--semaine …]            # le champion de la Grand Final (≈ 28 s)
+  python outils/video/faire_video.py chiffres [--semaine …]            # le match hors norme de la semaine (≈ 40 s)
+  python outils/video/faire_video.py franchise [--semaine …]           # la franchise de la semaine (≈ 25 s)
   ```
   Il faut Python (fastapi, uvicorn), Node + Playwright avec Chromium, et ffmpeg. Tournage en local (4 cœurs) : ≈ 4 min
   pour une action, ≈ 12-15 min pour un résumé court (sur GitHub, à 2 cœurs : compter ≈ 1,5×).
@@ -1034,12 +1036,24 @@ Search Console suffit).
   Final seulement : score de la finale, bilan de la saison régulière, titres de tous les temps, puis ses 4 plus belles
   actions des demi-finales et de la finale. Un match est « terminé » 1 h après son coup d'envoi (avant : 2 h ; la
   Grand Final du dimanche 22 h doit être finie au tournage de 22 h 30 UTC, même l'hiver).
+- **Match hors norme et franchise (étape 8.6 b, 13/10)** : `faire_video.py chiffres` (≈ 40 s) — le match de la semaine
+  (matchs terminés) qui bat un **record de tous les temps** au moment où il est joué (total des deux équipes, puis
+  points d'une équipe, puis écart ; égaler ne suffit pas), sinon le plus gros total s'il atteint **100 points**
+  (`choisir.match_hors_norme`, depuis les résultats du calendrier) ; carton du chiffre et du record d'avant, puis les
+  actions du score en rafale (touchdowns d'abord, 8 au plus), puis le score final. Pas de match hors norme : pas de
+  vidéo, sortie normale. `faire_video.py franchise` (≈ 25 s) — la franchise de la semaine, **ordre fixe** : les 24
+  équipes par abréviation, une par semaine depuis la première semaine enregistrée (`choisir.franchise_de_la_semaine`) ;
+  carton palmarès (saisons, bilan, titres, Grand Finals ; conférence, division, coordinateurs IA — le style et
+  l'identité de la bible sont en français, la vidéo en anglais ne les montre pas), carton du **joueur légendaire**
+  (meilleur score fantasy sur ses saisons avec elle, `moteur/histoire.py`), ses 2 plus belles actions de tous les
+  temps.
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
   dimanche, en plus, le **résumé court** du plus beau match de la semaine, le **champion** et le **joueur de la
-  semaine** (limite du job : 90 min). Les vidéos ne vont
+  semaine** ; le mercredi, le **match hors norme** (s'il y en a un) ; le vendredi, la **franchise** (limite du job :
+  90 min). Les vidéos ne vont
   **pas** dans le dépôt : onglet Actions → l'exécution → **Artifacts** → `videos-<jour>` (zip, gardé 30 jours), puis
   publication à la main. À la demande : Actions → « Vidéos » → *Run workflow* (type `action`, `resume`, `long`,
-  `meilleure`, `presentation`, `joueur` ou `champion` ; jour, match).
+  `meilleure`, `presentation`, `joueur`, `champion`, `chiffres` ou `franchise` ; jour, match).
 - **Référencement** : titre et description en anglais, adresse canonique `https://snapline.live/`, Open Graph et Twitter
   (aperçu des liens partagés, image `/og.png` 1200×630 faite par `outils/site/faire_og.js`), JSON-LD `WebSite`,
   `/robots.txt` (tout sauf `/api/`) et `/sitemap.xml`. Texte **« What is Snapline? »** en bas de l'accueil (lisible par
@@ -1057,7 +1071,8 @@ Search Console suffit).
 - **Tests** : `moteur/tests/test_videos.py` (notes, décision folle, fin de match, bandeaux, sons ; action du jour, plus
   beau match et résumé sur la dernière semaine ; étape 8.2 : enjeu, bascule, légendes, aucun mot de paris, « Best play
   so far » sans match à venir ; étape 8.3 : résumé court, « What is Snapline? » ; étape 8.6 a : score fantasy, joueur
-  de la semaine, champion après la finale seulement, titres), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
+  de la semaine, champion après la finale seulement, titres ; étape 8.6 b : record battu ou 100 points, franchise de la
+  semaine, joueur légendaire), `outils/site/test_visibilite.js` (groupe site : balises, robots, plan
   du site, image, texte d'accueil, Share sur téléphone et ordinateur, lien `?watch=`).
 
 ### 47. Publicités : Google AdSense, consentement, mentions et page légale (étape 7 — 13/10/2026)
