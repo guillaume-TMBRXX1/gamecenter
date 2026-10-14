@@ -1297,9 +1297,20 @@ def manifest():
 
 @app.get("/icons/{name}")
 def icons(name: str):
-    if name not in ("icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"):
+    # favicon.* : l'icône de l'onglet et de Google (dégradé du logo, outils/site/faire_favicon.js) ; icon-* : l'écran
+    # d'accueil du téléphone (bleu-vert)
+    if name not in ("icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "favicon.svg",
+                    "favicon-48.png", "favicon-96.png", "favicon-192.png"):
         raise HTTPException(404)
-    return FileResponse(os.path.join(HERE, "static", "icons", name), media_type="image/png",
+    return FileResponse(os.path.join(HERE, "static", "icons", name),
+                        media_type="image/svg+xml" if name.endswith(".svg") else "image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/favicon.ico")
+def favicon():
+    """L'icône demandée d'office par les navigateurs et les robots (Google) : PNG 16, 32 et 48 dans un .ico."""
+    return FileResponse(os.path.join(HERE, "static", "favicon.ico"), media_type="image/x-icon",
                         headers={"Cache-Control": "public, max-age=86400"})
 
 
