@@ -1252,7 +1252,7 @@ Feuille de route : « moteur plus intelligent », idée 3. Module `moteur/course
 - **Semaine du 19/10 produite** (notebook complet, copie de `data/`) : 30,4 min ; audit : 0 anomalie bloquante ;
   retransmission 18,6 min ; 5,71 yards / course ; 18 % de courses bloquées, 7,6 % de cutbacks.
 - **GameFeed** (additif) : `play.run` = {box, side, hole, read, contact, tackler, front, key_block}. **Site** :
-  « 8 in the box », « cutback », « bounced outside », « stuffed at the line » dans le play-by-play (cellule 427 comprise).
+  « 8 in the box », « cutback », « bounced outside », « stuffed at the line », « breaks a tackle at the line » dans le play-by-play (cellule 427 comprise) — la lecture affichée est réconciliée avec le gain final (une course « bloquée » qui gagne 4 yards ou plus a cassé un plaquage ; 2-3 yards : course « designed » ; un cutback ou rebond à moins de 2 yards : « designed »).
 
 ### Annexe — `.github/workflows/semaine.yml`
 

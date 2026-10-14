@@ -107,5 +107,13 @@ class TestQuatriemeEssai(unittest.TestCase):
             self.assertEqual(a["choix"], b["choix"], args)
 
 
+class TestTexte(unittest.TestCase):
+    def test_texte_wp(self):
+        self.assertEqual(vl.texte_wp("go", .554, "punt", .4954), "go 55% vs punt 50% win prob.")
+        self.assertEqual(vl.texte_wp("go", .926, "punt", .9294), "go 92.6% vs punt 92.9% win prob.")
+        self.assertEqual(vl.texte_wp("go", .9256, "punt", .9256), "go ≈ punt 93% win prob.")
+        self.assertEqual(vl.texte_wp("go", .0144, "field goal", .0006), "go 1% vs field goal <1% win prob.")
+
+
 if __name__ == "__main__":
     unittest.main()
