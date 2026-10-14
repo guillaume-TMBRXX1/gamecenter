@@ -3324,7 +3324,8 @@ function stepReplay(g,dt){
     if(g.pause<=0){
       if(g.brkEnter){ if(brkResume(g)) onCommit(g); else g.pause=0; }
       else if(g.status==='half'){ g.status='live'; onCommit(g); }
-      else if(g.status==='final'){ if(g.loop){ rpSeek(g,0); onCommit(g); } else g.paused=true; }
+      else if(g.status==='final'){ if(g.loop&&g!==modalGame){ rpSeek(g,0); onCommit(g); } else g.paused=true; }   /* in the big
+         screen a finished game stays on its final screen (result, stats) until the viewer leaves (14/10) */
     }
     return;
   }
@@ -4791,6 +4792,8 @@ function closeModal(keepFocus){
   const refresh=(WATCH_DIRTY||BOARD_PENDING)&&SEASON; WATCH_DIRTY=false; BOARD_PENDING=false;
   closePlayerCard();
   if(modalGame===replayGame) replayGame=null;
+  const g0=modalGame;   /* a looping board replay (Prime Time) left on its final screen: back to its loop on the board */
+  if(g0.loop&&g0.status==='final'&&g0.paused&&games.includes(g0)){ rpSeek(g0,0); rpAfterSeek(g0); g0.paused=false; }
   modalView.destroy(); views.splice(views.indexOf(modalView),1);
   modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow=''; document.body.classList.remove('gc-match');
   watchRemember(null);

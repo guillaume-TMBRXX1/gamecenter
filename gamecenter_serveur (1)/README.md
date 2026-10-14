@@ -1125,6 +1125,18 @@ Plan (compte, rythme, formats, mesure) : `programme/Promotion.md` à la racine d
 - **Photo de profil** : `outils/promotion/photo_profil.png` (1080×1080, le logo du site sur son dégradé ; le réseau
   l'affiche en rond). À refaire seulement si le logo change : `node outils/promotion/faire_profil.js` (Playwright).
 
+### 49. Fin de match dans le grand écran (14/10/2026)
+**Demande de Guillaume (14/10)** : une fois un match terminé dans le grand écran, en direct ou en replay, laisser le
+résultat et les statistiques jusqu'à ce que l'on quitte le grand écran ; ne pas relancer le replay.
+- **Constat** : le direct et les replays ouverts depuis le calendrier restaient déjà sur l'écran final (vérifié :
+  3 min en direct ; `test_pauses.js`). Seul le match **« Prime Time » de l'accueil** (replay en boucle sur sa tuile)
+  recommençait à zéro 12 s après le coup de sifflet final (`RP_FINAL`) quand il était ouvert en grand écran.
+- **Correctif** (`stepReplay`) : dans le grand écran, un match terminé reste sur son écran final (résultat, joueur du
+  match, statistiques), le replay s'arrête ; à la fermeture du grand écran (`closeModal`), la tuile Prime Time reprend
+  sa boucle au début. Le bouton lecture de l'écran final relance toujours le replay si on le demande. La cellule 427 du
+  notebook n'a pas de grand écran : rien n'y change.
+- **Test** : `outils/site/test_fin_de_match.js` (groupe site de `tests_navigateur.sh`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
