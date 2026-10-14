@@ -1352,6 +1352,12 @@ def api_teams_history():
 
 # ------------------------------------------------------------------ histoire, records, carrières (bloc 2, étape 5)
 _HIST, _HIST_LOCK = {}, threading.Lock()
+# première semaine comptée dans l'histoire (décision de Guillaume, 14/10) : la semaine 1 n'avait que 4 franchises, qui
+# auraient une saison de plus que les autres dans les franchises, records et carrières. GC_HIST_DEPUIS=1 : toutes.
+try:
+    HIST_DEPUIS = max(1, int(os.environ.get("GC_HIST_DEPUIS", "2")))
+except ValueError:
+    HIST_DEPUIS = 2
 
 
 def _feuille(w, gid):
@@ -1365,8 +1371,9 @@ def _feuille(w, gid):
 def league_history(t, finished_weeks=False):
     """Histoire de la ligue à l'instant t : semaines publiées, matchs TERMINÉS seulement (rien d'un match pas encore joué).
     finished_weeks : seulement les semaines dont la Grand Final est jouée (réglage « Hide scores » du site).
-    Mis en cache tant qu'aucun match ne se termine."""
-    ws = [w for w in sorted(load_weeks().values(), key=lambda w: w.monday) if w.open <= t]
+    À partir de la semaine HIST_DEPUIS. Mis en cache tant qu'aucun match ne se termine."""
+    ws = [w for w in sorted(load_weeks().values(), key=lambda w: w.monday)
+          if w.open <= t and w.doc["week"]["index"] >= HIST_DEPUIS]
     sem, cle = [], []
     for w in ws:
         fini = w.status(w.final, t) == "final"
@@ -1394,7 +1401,7 @@ def api_league_history(finished_weeks: int = 0):
     (voir /api/league/career/{id})."""
     t = now_ms()
     h = league_history(t, bool(finished_weeks))
-    return {"now": t, **{k: v for k, v in h.items() if k != "careers"}}
+    return {"now": t, "since_week": HIST_DEPUIS, **{k: v for k, v in h.items() if k != "careers"}}
 
 
 @app.get("/api/league/career/{pid}")
