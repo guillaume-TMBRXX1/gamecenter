@@ -362,7 +362,8 @@ def plan_chiffres(res, doc, feeds):
     jour = datetime.fromisoformat(C.jour_du_match(g)).strftime("%a %-d %b")
     chiffre = f"{res['value']} {res['label']}"
     score = f"{g['away']} {r['away']}–{r['home']} {g['home']}"
-    n_td = sum(1 for P in F["plays"] if P.get("result") == "touchdown" or (P.get("kick_return") or {}).get("td"))
+    n_td = sum(1 for P in F["plays"] if P.get("result") == "touchdown" or (P.get("kick_return") or {}).get("td")
+               or (P.get("punt_return") or {}).get("td"))
     stats = [{"v": res["value"], "l": res["label"].capitalize()}]
     if res["previous"] is not None:
         stats.append({"v": res["previous"], "l": "Previous record"})

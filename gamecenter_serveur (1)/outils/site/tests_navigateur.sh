@@ -71,6 +71,8 @@ if [ $SITE = 1 ]; then
   lancer "Site : scores des matchs terminés" node outils/site/test_bandeau.js
   lancer "Site : transformations après un touchdown" node outils/site/test_transformation.js
   lancer "Site : coups d'envoi et retours" node outils/site/test_retours.js
+  lancer "Site : punts et retours" node outils/site/test_punts.js
+  lancer "Site : jeu de course dessiné (bloc F)" node outils/site/test_courses.js
   lancer "Site : histoire, records, carrières" node outils/site/test_histoire.js
   lancer "Site : classement des joueurs (Ranking)" node outils/site/test_classement.js
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js

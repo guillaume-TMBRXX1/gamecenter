@@ -2365,7 +2365,7 @@ function callFromFeed(P){
   const c=P.call||{}, de=c.defense||{};
   /* engine block B: a scramble is a called pass the QB ran out of — aligned and drawn as a pass */
   return {type:(P.decision&&P.decision.action==='SCRAMBLE'&&c.type==='run')?'pass':c.type, playId:c.play_id||null, concept:c.concept||null, formation:c.formation||PLAY_FORMATION[c.play_id]||null,
-    def:{concept:de.concept||null, formation:de.formation||null}, route:c.route||null};
+    def:{concept:de.concept||null, formation:de.formation||null}, route:c.route||null, run:c.type==='run'&&P.run?P.run:null};
 }
 function demoCall(g){
   const pass=RNG()<g.pPass, id=pass?PASS_PLAYS[Math.floor(RNG()*PASS_PLAYS.length)]:RUN_PLAYS[Math.floor(RNG()*RUN_PLAYS.length)];
@@ -2402,6 +2402,17 @@ function defAlign(g,call,off){
   else { s9=[15,0]; s10=[7.5,strong*6.5]; }
   def[9]={x:L+d*s9[0], y:clamp(by+s9[1],3,50.3)}; def[10]={x:L+d*s10[0], y:clamp(by+s10[1],3,50.3)};
   for(let i=0;i<11;i++) if(!def[i]) def[i]={x:L+d*5, y:by};
+  /* engine block F (play.run.box): as many defenders in the box (within 7 yards of the line, between the tight ends)
+     as the engine counted — a safety comes down for an 8- or 9-man box, a linebacker backs out of a light one */
+  const want=call.type==='run'&&call.run?num(call.run.box,0):0;
+  if(want>=5&&want<=9){
+    const inBox=i=>(def[i].x-L)*d<7&&Math.abs(def[i].y-by)<=7.5;
+    let n=0; for(let i=0;i<11;i++) if(inBox(i)) n++;
+    for(const i of [10,9,8,5]){ if(n>=want) break; if(inBox(i)) continue;
+      const k=n-7; def[i]={x:L+d*(k>0?6.4:5.6), y:clamp(by+(k>0?-strong:strong)*(k>0?3.2:5.4),3,50.3)}; n++; }
+    for(const i of [8,5,4,10,9,6,7]){ if(n<=want) break; if(!inBox(i)||DF.dl.includes(i)) continue;
+      def[i]={x:L+d*9.5, y:clamp(by+(def[i].y<by?-1:1)*8.5,3,50.3)}; n--; }
+  }
   for(const p of def) p.x=clamp(p.x,0.5,119.5);
   return def;
 }
@@ -2731,12 +2742,25 @@ function planScrimmage(g,call,imp){
   for(const i of pullers){ const s=O[i]; off[i]=[[0,s.x,s.y],[0.14,s.x-d*1.2,s.y],[0.4,L-d*1.4,holeY+side*0.6],[0.6,L+d*1.2,holeY+side*1.2],[1,L+d*2.4,holeY+side*1.6]]; }
   off[6]= concept==='DRAW' ? [[0,qb.x,qb.y],[0.3,mesh.x,mesh.y-side*0.6],[0.45,mesh.x-d*0.4,mesh.y-side*2.4],[1,mesh.x-d*0.8,mesh.y-side*3.5]]
                            : [[0,qb.x,qb.y],[hU-0.02,mesh.x-d*0.3,mesh.y-side*0.6],[0.5,mesh.x-d*1.8,mesh.y-side*3.4],[1,mesh.x-d*2,mesh.y-side*4]];
-  const Fy=imp.endY!=null?clamp(imp.endY,1,52.3):clamp(holeY+rand(-4,4)*(Math.abs(total)>8?1.5:0.6),2,51.3);
+  const RF=imp.run||null, rd=RF&&RF.read;   /* engine block F (play.run): hole, the back's read, who brought him down */
+  const Fy=imp.endY!=null?clamp(imp.endY,1,52.3)
+    : rd==='cutback'?clamp(by-side*rand(2,5),2,51.3) : rd==='bounce'?clamp(holeY+side*rand(4,8),2,51.3)
+    : clamp(holeY+rand(-4,4)*(Math.abs(total)>8?1.5:0.6),2,51.3);
   const Fx=L+d*total, holeX=total<0.5?L-d*1.2:L-d*0.2;
   const rbPath = concept==='COUNTER'
     ? [[0,rb.x,rb.y],[0.1,rb.x-d*0.3,rb.y-side*1.4],[hU,mesh.x,mesh.y],[0.42,holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]]
     : [[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[Math.min(0.46,hU+0.2),holeX,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
   off[7]=rbPath;
+  /* block F: the back's read drawn — cutback (into the hole, then back across the grain), bounce (outside before
+     turning upfield), stuffed (met in the hole: he goes down there), broken tackle (contact at the line, a side step) */
+  const h1=Math.min(0.46,hU+0.2); let tc=0.88;
+  if(RF&&imp.target!==6&&![8,9,10,5].includes(imp.target)){
+    const pre=concept==='COUNTER'?[[0,rb.x,rb.y],[0.1,rb.x-d*0.3,rb.y-side*1.4],[hU,mesh.x,mesh.y]]:[[0,rb.x,rb.y],[hU,mesh.x,mesh.y]];   /* counter: his false step first */
+    if(rd==='cutback') off[7]=[...pre,[h1-0.04,L-d*0.7,holeY],[h1+0.08,L+d*0.5,lerp(holeY,Fy,0.55)],[0.88,Fx,Fy],[1,Fx,Fy]];
+    else if(rd==='bounce') off[7]=[...pre,[h1-0.04,L-d*0.9,holeY],[h1+0.1,L-d*0.3,clamp(holeY+side*6,2,51.3)],[0.88,Fx,Fy],[1,Fx,Fy]];
+    else if(rd==='stuffed'&&!imp.td){ tc=Math.min(0.64,h1+0.18); off[7]=[...pre,[h1,L-d*0.5,holeY],[tc,Fx,Fy],[1,Fx,Fy]]; }
+    else if(rd==='broken_tackle') off[7]=[...pre,[h1,L+d*0.2,holeY],[h1+0.07,L+d*1.0,clamp(holeY+side*1.6,2,51.3)],[0.88,Fx,Fy],[1,Fx,Fy]];
+  }
   if(call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY'||FB_FORMS.has(call.formation)){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
   for(const i of [8,9,10]){ if(off[i]) continue; const s=O[i], cb=i===8?D[6]:i===9?D[7]:(D[8]||D[6]); off[i]=[[0,s.x,s.y],[0.45,lerp(s.x,cb.x,.7),lerp(s.y,cb.y,.7)],[1,lerp(s.x,cb.x,.85)+d*1,lerp(s.y,cb.y,.85)]]; }
   { const s=O[5]; off[5]=[[0,s.x,s.y],[0.3,s.x+d*1.2,s.y-side*0.4],[1,s.x+d*2.2,s.y-side*0.6]]; }
@@ -2764,6 +2788,20 @@ function planScrimmage(g,call,imp){
     P.carrier=P.carrier.map(c=>c[3]===6?[c[0],c[1],c[2],7]:c);
   }
   P.wDef=[.35,.35,.35,.35,.8,.8,.6,.6,.8,.75,.75]; P.wOff=new Array(11).fill(0);
+  if(RF){
+    /* the hole: closed, the nearest lineman wins and sits in it; open, the two nearest are driven back */
+    const dl=DF.dl.filter(i=>D[i]).sort((a,b)=>Math.abs(D[a].y-holeY)-Math.abs(D[b].y-holeY));
+    if(RF.hole==='closed'&&dl.length){ const i=dl[0], s=D[i]; def[i]=[[0,s.x,s.y],[0.26,L-d*0.4,holeY+side*0.4],[1,L-d*0.2,holeY+side*0.6]]; }
+    else if(RF.hole==='open') for(const i of dl.slice(0,2)){ const s=D[i]; def[i]=[[0,s.x,s.y],[0.3,s.x+d*1.4,s.y-side*0.8],[1,s.x+d*2.6,s.y-side*1.6]]; }
+    /* the tackler: at the line, a linebacker or the secondary (play.run.contact); he makes the stop (red ring) */
+    if(!imp.td&&RF.contact){
+      const pool=RF.contact==='line'?DF.dl:RF.contact==='second level'?(DF.lb.length?DF.lb:[4,5]):[9,10,6,7];
+      const t0=Math.max(0.05,tc-0.3), ey=Fy+(Fy<by?0.5:-0.5);
+      let ti=null, bd=1e9; for(const i of pool){ if(!def[i]) continue; const q=kfAt(def[i],t0), dd=(q.x-Fx)**2+(q.y-Fy)**2; if(dd<bd){bd=dd;ti=i;} }
+      if(ti!=null){ def[ti]=kfCut(def[ti],t0,[[tc,Fx+d*0.7,ey],[1,Fx+d*0.7,ey]]); P.wDef[ti]=0; P.stop={i:ti,at:tc}; }
+    }
+    if(tc<0.88) P.pEnd=Math.min(P.pEnd,tc+0.04);
+  }
   P.spot={x:Fx,y:Fy}; P.gain=total; P.hole=holeY;
   return P;
 }
@@ -2800,6 +2838,50 @@ function addFumble(P,rec){
   P.spot={x:rec.x,y:rec.y}; P.fumble=true;
 }
 
+/* engine 12.2 sexdecies — punt with a return (play.punt_return): the ball comes down at the landing spot (C); then
+   - return: the returner (defense index 9) catches it and runs it back to the spot, the coverage closes on him;
+   - fair catch: he catches it where he stands, the coverage pulls up around him;
+   - downed / out of bounds / touchback: he lets it go, the ball rolls on (to the spot, the touchline or the end zone)
+     and a gunner (offense index 8 or 9) gets to it. A return touchdown ends in the kicking team's end zone. */
+function planPuntReturn(g,P,O,D,off,def,z,sx,sy){
+  const d=dirOf(g), L=g.los, PR=P.punt_return, res=PR.result||'return', pnt=O[6], from={x:pnt.x+d*1.4,y:pnt.y};
+  const S={x:clamp(sx,0.5,119.5),y:sy};
+  /* the catch point follows the feed's spot: a return starts `return` yards before it, a fair catch is made on it */
+  const cx=clamp(res==='return'?S.x+d*num(PR.return,0):res==='fair_catch'?S.x:L+d*num(PR.kick,45),0.5,119.5);
+  const C={x:cx, y: res==='out_of_bounds' ? (RNG()<.5?3.5:49.8) : clamp(MIDY+rand(-9,9),6,47)};
+  if(res==='out_of_bounds'){ S.y=C.y<MIDY?0.6:52.7; S.x=clamp(sx,0.5,119.5); }
+  if(res==='touchback'){ S.x=clamp(cx,0.5,119.5); S.y=C.y; }
+  if(res==='fair_catch'){ S.x=C.x; S.y=C.y; }
+  if(res==='downed'){ S.y=clamp(C.y+rand(-3,3),4,49.3); }
+  const ret=res==='return', run=ret?Math.abs(S.x-C.x):0, tc=0.5;
+  const dur=3.9+(ret?Math.min(2.6,run/14):res==='fair_catch'?0:0.5);
+  const sc=dur/3.9, t=u=>Math.min(1,u/sc);               /* times of the plain punt, on the longer clock */
+  for(let i=0;i<11;i++){
+    if(i===6) continue;
+    const s=O[i], k=(i===8||i===9)?0.92:(i<6||i===10)?0.6:0.72;
+    const T=ret||res==='fair_catch'?{x:S.x+d*2.5,y:S.y}:{x:S.x-d*1.2,y:S.y};
+    off[i]=[[0,s.x,s.y],[t(0.24),s.x+d*1.2,s.y],[1,lerp(s.x,T.x,k),lerp(s.y,T.y,k*0.5)]];
+  }
+  if(!ret&&res!=='fair_catch'&&res!=='touchback'){ const gi=O[8].y<O[9].y===(S.y<MIDY)?8:9, s=O[gi]; off[gi]=[[0,s.x,s.y],[t(0.24),s.x+d*1.2,s.y],[0.86,S.x-d*0.6,S.y],[1,S.x-d*0.4,S.y]]; }
+  off[6]=[[0,pnt.x,pnt.y],[t(0.16),pnt.x,pnt.y],[t(0.24),from.x,from.y],[1,from.x+d*2,from.y]];
+  for(let i=0;i<11;i++){
+    const s=D[i];
+    if(i===9) continue;
+    const k=ret?0.55:0.4;
+    def[i]=[[0,s.x,s.y],[t(0.24),s.x-d*1.1,s.y],[ret?tc:1,lerp(s.x,C.x,.35),lerp(s.y,C.y,.25)],...(ret?[[1,lerp(s.x,S.x,k)+d*1.5,lerp(s.y,S.y,k*0.6)]]:[])];
+  }
+  const r9=D[9], back=res==='fair_catch'||ret?C:{x:C.x-d*6,y:clamp(C.y+(C.y<MIDY?6:-6),4,49)};
+  def[9]= ret ? [[0,r9.x,r9.y],[t(0.4),C.x,C.y],[tc,C.x,C.y],[0.94,S.x,S.y],[1,S.x,S.y]]
+              : [[0,r9.x,r9.y],[t(0.45),back.x,back.y],[1,back.x,back.y]];
+  const t1=t(0.6), flight={t0:t(0.24),t1:ret?tc:t1,from,to:{x:C.x,y:C.y},peak:9};
+  const carrier=[[t(0.08),t(0.24),'off',6]];
+  let loose=null;
+  if(ret||res==='fair_catch') carrier.push([flight.t1,1,'def',9]);
+  else loose=[[flight.t1,C.x,C.y],[Math.min(1,flight.t1+0.22),S.x,S.y],[1,S.x,S.y]];
+  return {type:'kick',kind:'punt',kick:true,off,def,dur,elapsed:0,carrier,flight,loose,
+    pStart:flight.t1+0.02,pEnd:ret?0.94:0.96,wDef:ret?[.4,.4,.4,.4,.5,.5,.6,.6,.6,0,.6]:z.slice(),
+    wOff:ret?[.6,.6,.6,.6,.6,.7,0,.7,.9,.9,.7]:[.3,.3,.3,.3,.3,.45,0,.45,.8,.8,.45],oDef:offsets(),oOff:offsets(),spot:S,gain:+(P&&P.gain)||0};
+}
 /* Kicking plays (punt, kickoff, field goal). Unlike passes, kicks do lift. */
 function planKick(g,type,P){
   const O=g.off.map(p=>({x:p.x,y:p.y})), D=g.def.map(p=>({x:p.x,y:p.y})), off=[], def=[];
@@ -2828,6 +2910,7 @@ function planKick(g,type,P){
       wDef:[.5,.5,.6,.6,.7,.3,.7,.6,.6,.5,.5],wOff:z.slice(),oDef:offsets(),oOff:offsets(),spot:S,gain:+(P&&P.gain)||0};
   }
   const d=dirOf(g), L=g.los;
+  if(type==='punt'&&P&&P.punt_return) return planPuntReturn(g,P,O,D,off,def,z,sx,sy);
   if(type==='punt'){
     const pnt=O[6], S={x:clamp(sx,0.5,119.5),y:sy}, from={x:pnt.x+d*1.4,y:pnt.y};
     for(let i=0;i<11;i++){
@@ -3158,7 +3241,8 @@ function planFromFeed(g,P){
   const ey=g.latEngine&&P.spot?num(P.spot.y,null):null;
   const dk=P.decision||{}, cov=t==='pass'&&!scr?(dk.bust?'bust':dk.reception||null):null;   /* engine block C */
   const pd=!!(P.players&&P.players.defender&&P.players.defender.credit==='PASS_DEFENDED');
-  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,side:g.latEngine?(P.call.side||null):null,cov,pd});
+  const rs=P.run&&(P.run.side==='left'||P.run.side==='right')?(P.run.side==='left'?-1:1)*(P.offense==='home'?1:-1):null;   /* block F: the run's side */
+  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null});
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
@@ -3167,7 +3251,7 @@ function planFromFeed(g,P){
 }
 function rpKind(P){
   const r=P.result;
-  if(r==='touchdown') return 'td';
+  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)) return 'td';
   if(r==='field_goal_good'||r==='safety'||r==='pat_good'||r==='two_point_good') return 'score';
   if(r==='interception'||r==='fumble_lost'||r==='field_goal_missed'||r==='punt'||P.possession_change==='downs') return 'to';
   return 'play';
@@ -3230,7 +3314,12 @@ function rpChip(P){
     case 'pat_missed': return {t:'EXTRA POINT · NO GOOD',c:'bad'};
     case 'two_point_good': return {t:'2-PT CONVERSION',c:'td'};
     case 'two_point_failed': return {t:'2-PT TRY FAILED',c:'bad'};
-    case 'punt': return {t:'PUNT · '+Math.abs(gn)+' YDS',c:''};
+    case 'punt': { const pr=P.punt_return;   /* engine 12.2 sexdecies: punt with a return */
+      if(pr){ const y=num(pr.return,0);
+        if(pr.td) return {t:'PUNT RETURN TOUCHDOWN',c:'td'};
+        if(pr.result==='return') return y>=30?{t:'BIG RETURN · '+y+' YDS',c:'good'}:{t:'PUNT · RETURN '+y+' YDS',c:''};
+        return {t:'PUNT · '+({fair_catch:'FAIR CATCH',downed:'DOWNED',out_of_bounds:'OUT OF BOUNDS',touchback:'TOUCHBACK'}[pr.result]||Math.abs(gn)+' YDS'),c:''}; }
+      return {t:'PUNT · '+Math.abs(gn)+' YDS',c:''}; }
     case 'kickoff': { const kr=P.kick_return;   /* bloc 2: kickoff with a return */
       if(kr) return kr.touchback?{t:'TOUCHBACK',c:''}:num(kr.return,0)>=40?{t:'BIG RETURN · '+kr.return+' YDS',c:'good'}:{t:'KICKOFF · RETURN '+kr.return+' YDS',c:''};
       return {t:'KICKOFF · '+Math.abs(gn)+' YDS',c:''}; }
@@ -3295,7 +3384,7 @@ function rpResolve(g){
   g.feed.unshift(rpFeedItem(g,P)); while(g.feed.length>40) g.feed.pop();
   g.hs=A.score.home; g.as=A.score.away;
   g.chip=rpChip(P); g.lastText=String(P.text||'');
-  if(P.result==='touchdown') g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety'; else if(P.result==='two_point_good') g.tdFlash='Two points';
+  if(P.result==='touchdown'||(P.punt_return&&P.punt_return.td)) g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety'; else if(P.result==='two_point_good') g.tdFlash='Two points';
   if(P.result==='interception') g.toFlash='Interception'; else if(P.result==='fumble_lost') g.toFlash='Fumble';
   g.shake=shakeLevel(P.result,num(P.gain,0));
   g.clock=num(P.clock_end,g.clock);
@@ -3937,7 +4026,7 @@ function computeStats(g,n){
   const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
 }
 function computeStatsNow(g,n){
-  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0,kr:0,kry:0});
+  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0,kr:0,kry:0,pnr:0,pnry:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
@@ -3992,6 +4081,9 @@ function computeStatsNow(g,n){
     if(t==='kickoff'&&P.kick_return&&!P.kick_return.touchback){ const kr=P.kick_return, y=num(kr.return,0);   /* bloc 2: kick returns */
       S.kr++; S.kry+=y;
       if(car.id||car.name){ const b=who(o,car.id,car.name); b.kr=b.kr||{n:0,y:0,lng:0,td:0}; b.kr.n++; b.kr.y+=y; b.kr.lng=Math.max(b.kr.lng,y); if(kr.td) b.kr.td++; } }
+    if(t==='punt'&&P.punt_return&&P.punt_return.result==='return'){ const pr=P.punt_return, y=num(pr.return,0), rr=pr.returner||{};   /* 12.2 sexdecies: punt returns (receiving side) */
+      team[ds].pnr++; team[ds].pnry+=y;
+      if(rr.id||rr.name){ const b=who(ds,rr.id,rr.name); b.pnr=b.pnr||{n:0,y:0,lng:0,td:0}; b.pnr.n++; b.pnr.y+=y; b.pnr.lng=Math.max(b.pnr.lng,y); if(pr.td) b.pnr.td++; } }
     if(t==='kickoff') continue;
     if(!cur||cur.team!==o||cur.done){ cur={n:drives.length+1,team:o,q:P.quarter,clk:num(P.clock_start,0),start:num(P.los_x,60),plays:0,yds:0,time:0,result:null,done:false,rz:false}; drives.push(cur); }
     cur.time+=secs;
@@ -4050,7 +4142,7 @@ function renderStats(g){
       const rows=[
         ['Total yards',a.yds,h.yds,1],['Passing yards',a.passYds-a.sackYds,h.passYds-h.sackYds,1],['Completions / attempts',`${a.comp}/${a.passAtt}`,`${h.comp}/${h.passAtt}`],
         ['Passing touchdowns',a.passTd,h.passTd,1],['Rushing yards',a.rushYds,h.rushYds,1],['Rushing attempts',a.rushAtt,h.rushAtt,0],['Rushing touchdowns',a.rushTd,h.rushTd,1],
-        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],...(a.xpa+h.xpa+a.c2a+h.c2a?[['Extra points',`${a.xpm}/${a.xpa}`,`${h.xpm}/${h.xpa}`],['2-pt conversions',`${a.c2m}/${a.c2a}`,`${h.c2m}/${h.c2a}`]]:[]),...(a.kr+h.kr?[['Kick return yards',`${a.kry} (${a.kr})`,`${h.kry} (${h.kr})`]]:[]),
+        ['Yards per play',ypp(a),ypp(h),1],['First downs',a.fd,h.fd,1],['3rd down conversions',`${a.c3}/${a.d3} · ${pc(a.c3,a.d3)}`,`${h.c3}/${h.d3} · ${pc(h.c3,h.d3)}`,1,a.d3?a.c3/a.d3:0,h.d3?h.c3/h.d3:0],['4th down conversions',`${a.c4}/${a.d4}`,`${h.c4}/${h.d4}`],...(a.xpa+h.xpa+a.c2a+h.c2a?[['Extra points',`${a.xpm}/${a.xpa}`,`${h.xpm}/${h.xpa}`],['2-pt conversions',`${a.c2m}/${a.c2a}`,`${h.c2m}/${h.c2a}`]]:[]),...(a.kr+h.kr?[['Kick return yards',`${a.kry} (${a.kr})`,`${h.kry} (${h.kr})`]]:[]),...(a.pnr+h.pnr?[['Punt return yards',`${a.pnry} (${a.pnr})`,`${h.pnry} (${h.pnr})`]]:[]),
         ['Red zone (TD / trips)',`${a.rzTd}/${a.rz}`,`${h.rzTd}/${h.rz}`],['Sacked (yards lost)',`${a.sacks} (${a.sackYds})`,`${h.sacks} (${h.sackYds})`],
         ['Turnovers',a.ints+a.fum,h.ints+h.fum,-1],['Plays',a.plays,h.plays,0],['Time of possession',top(a),top(h),0,a.top,h.top]];
       /* engine decisions (blocks A-B): time to throw, pressure, scrambles */
@@ -4073,7 +4165,8 @@ function renderStats(g){
         const dfn=list.filter(p=>p.def).sort((a,b)=>(b.def.tk+2*b.def.sk+3*b.def.i+b.def.pd)-(a.def.tk+2*a.def.sk+3*a.def.i+a.def.pd)).map(p=>`<tr>${nm(p)}<td>${p.def.tk}</td><td>${p.def.sk}</td><td>${p.def.i}</td><td>${p.def.pd}</td></tr>`);
         const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${p.kick.xm||0}/${p.kick.xa||0}</td><td>${3*p.kick.m+(p.kick.xm||0)}</td></tr>`);
         const kret=list.filter(p=>p.kr).sort((a,b)=>b.kr.y-a.kr.y).map(p=>`<tr>${nm(p)}<td>${p.kr.n}</td><td>${p.kr.y}</td><td>${(p.kr.y/p.kr.n).toFixed(1)}</td><td>${p.kr.lng}</td><td>${p.kr.td}</td></tr>`);
-        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick)+tbl('Kick returns',['KR','YDS','AVG','LNG','TD'],kret);
+        const pret=list.filter(p=>p.pnr).sort((a,b)=>b.pnr.y-a.pnr.y).map(p=>`<tr>${nm(p)}<td>${p.pnr.n}</td><td>${p.pnr.y}</td><td>${(p.pnr.y/p.pnr.n).toFixed(1)}</td><td>${p.pnr.lng}</td><td>${p.pnr.td}</td></tr>`);
+        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick)+tbl('Kick returns',['KR','YDS','AVG','LNG','TD'],kret)+tbl('Punt returns',['PR','YDS','AVG','LNG','TD'],pret);
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -4287,7 +4380,7 @@ function slotMap(g){
   if(plan && pp.defender && pp.defender.name){
     const who=RD.find(r=>r.name===pp.defender.name);
     const idx= plan.int ? (plan.carrier.find(c=>c[2]==='def')||[])[3] : plan.sacker!=null ? plan.sacker
-             : (plan.stop && pp.defender.credit==='PASS_DEFENDED') ? plan.stop.i : null;
+             : (plan.stop && (pp.defender.credit==='PASS_DEFENDED' || (plan.type==='run' && pp.defender.credit==='TACKLE'))) ? plan.stop.i : null;   /* block F: the tackler */
     if(idx!=null) put(def,RD,idx,who);
   }
   const roles={off:OFF_ROLE.slice(), def:DEF_SLOT[df] ? DEF_SLOT[df].map(([p],i)=>(DEF_ROLE[df]||{})[i]||POS_NAME[p]) : []};
@@ -6498,7 +6591,16 @@ function playLine(g,P){
       else if(gain<=0) text=V([`Stuffed! ${def?sur(def)+' makes the stop':'No gain'}.`,`${sur(car)} is stopped ${gain<0?'behind the line':'for nothing'}.`]);
       else text=V([`${sur(car)} for ${yds(gain)}${fd?', first down':''}.`,`${sur(car)} up the middle, ${yds(gain)}${fd?'. First down':''}.`,`${sur(car)} picks up ${yds(gain)}${fd?' and the first down':''}.`]);
       break;
-    case 'punt': { const m=String(P.text).match(/(\d+) yds/); text=`${nick(off)} punt it away${m?', '+m[1]+' yards':''}.`; break; }
+    case 'punt': { const m=String(P.text).match(/(\d+) yds/), pr=P.punt_return, rt=pr&&pr.returner&&pr.returner.name;   /* 12.2 sexdecies */
+      if(pr&&pr.td){ prio=3; text=V([`Punt return touchdown! ${rt} goes ${yds(num(pr.return,0))}!`,`${rt} takes the punt all the way back! Touchdown ${nick(dfT)}!`])+' '+scoreLine(g); break; }
+      if(pr&&pr.result==='return'&&rt){ const y=num(pr.return,0);
+        if(y>=30){ prio=2; text=V([`${rt} breaks the punt return! ${yds(y)}!`,`What a return by ${rt} — ${yds(y)}!`]); }
+        else text=V([`${nick(off)} punt it away, ${sur(rt)} brings it back ${yds(y)}.`,`Punt fielded by ${sur(rt)}, returned ${yds(y)}.`]); break; }
+      if(pr&&pr.result==='fair_catch'){ text=V([`${nick(off)} punt it away${m?', '+m[1]+' yards':''}. Fair catch${rt?' '+sur(rt):''}.`,`High punt, and ${rt?sur(rt):'the returner'} calls for the fair catch.`]); break; }
+      if(pr&&pr.result==='downed'){ text=V([`${nick(off)} pin them deep — the punt is downed.`,`Great punt! The coverage downs it deep in ${nick(dfT)} territory.`]); break; }
+      if(pr&&pr.result==='out_of_bounds'){ text=V([`The punt rolls out of bounds.`,`${nick(off)} punt it out of bounds.`]); break; }
+      if(pr&&pr.result==='touchback'){ text=V([`The punt bounces into the end zone — touchback.`,`Too much on it: touchback, ${nick(dfT)} start at the 20.`]); break; }
+      text=`${nick(off)} punt it away${m?', '+m[1]+' yards':''}.`; break; }
     case 'kickoff': { const kr=P.kick_return;   /* bloc 2: the return is told (the opening kickoff stays silent: the intro speaks) */
       if(kr&&g.idx!==0){ if(kr.touchback) text=V([`Touchback. ${nick(off)} start at the 25.`,`Into the end zone, and that's a touchback.`]);
         else if(num(kr.return,0)>=40){ prio=2; text=V([`${car} breaks the return! ${yds(kr.return)}!`,`What a return by ${car} — ${yds(kr.return)}!`]); }
@@ -6597,7 +6699,7 @@ function audioResolve(g){
   if(g!==FOCUS||!g.cur) return;
   if(AM){ const h=g.hist||[]; AM.resolve(g,g.cur,h.length?h[h.length-1]:null,playLine(g,g.cur)); return; }
   const P=g.cur, r=P.result, gain=num(P.gain,0), st=P.after&&P.after.status;
-  if(r==='touchdown'){ sfx('horn'); sfx('roar',0,1,3.2); }
+  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)){ sfx('horn'); sfx('roar',0,1,3.2); }
   else if(r==='interception'||r==='fumble_lost'){ sfx('ooh'); sfx('roar',.5,.85,2.4); sfx('whistle',.9); }
   else if(r==='field_goal_good'){ sfx('roar',0,.7,2); }
   else if(r==='safety'){ sfx('hit',0,1.2); sfx('roar',.05,1,3); sfx('whistle',.6); }

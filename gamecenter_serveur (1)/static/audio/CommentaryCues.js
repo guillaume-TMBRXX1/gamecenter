@@ -41,7 +41,8 @@ function resolveCues(c,P,g){
       if(gain>=15) out.push({cue:'BIG_PLAY',tags:T.concat('run')});
       else if(gain<=0) out.push({cue:'RUN_STUFFED',tags:T});
       else out.push({cue:'RUN',tags:c.isFirstDown?T.concat('fd'):T}); break;
-    case 'punt': out.push({cue:'PUNT',tags:T}); break;
+    case 'punt': { const pr=P.punt_return;   /* 12.2 sexdecies : punt avec retour */
+      out.push(pr&&pr.td?{cue:'TOUCHDOWN',tags:[]}:pr&&pr.result==='return'&&(+pr.return||0)>=30?{cue:'KICK_RETURN_BIG',tags:[]}:{cue:'PUNT',tags:T}); } break;
     case 'kickoff': if(g&&g.idx!==0){ const kr=P.kick_return;   /* bloc 2 : coup d'envoi avec retour */
       out.push(kr&&kr.touchback?{cue:'TOUCHBACK',tags:[]}:kr&&(+kr.return||0)>=40?{cue:'KICK_RETURN_BIG',tags:[]}:{cue:'KICKOFF',tags:T}); } break;
   }
