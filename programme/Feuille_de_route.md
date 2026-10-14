@@ -832,7 +832,12 @@ période ; correctif du « jouer » systématique de la fin de période pour l'�
 interrupteurs **allumés** ; cotes en direct ré-ajustées (13.1) et 13.4 ✅ ; semaine du 19/10 produite (29,5 min) et
 auditée (0 anomalie bloquante). **À surveiller le 17/10** : premier samedi avec l'horloge réelle (temps du calcul,
 audit, durée des retransmissions sur le site, commentaire : aucune cue pour genou / spike / temps mort, sous-titres
-seulement). **Suite proposée** : idée 3, bloc F (intelligence du jeu de course).
+seulement).
+
+**Idée 3 — bloc F, intelligence du jeu de course** (« passe à l'étape 3 », 14/10) : ✅ codé et allumé
+(`moteur/course.py`, cellule 12.2 quindecies, README section 54) — boîte, côté choisi, duels de ligne, trou, lecture
+du porteur, plaqueur ; calibration et 13.4 ✅ ; équilibre 39,8 – 59,8 % ; semaine du 19/10 produite (30,4 min) et
+auditée. PR séparée, après la fusion de celle de l'horloge. **Suite proposée** : idée 4 (checks avant le snap).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).

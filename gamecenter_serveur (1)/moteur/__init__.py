@@ -40,6 +40,9 @@ Horloge réelle et valeur des décisions (12.2 quaterdecies, coupées par défau
     horloge             temps entre les actions (huddle, tempo), arrêts, temps morts, avertissement des 2 minutes,
                         genou, spike, fire drill
     valeur              points attendus, probabilité de victoire, décision du 4e essai (identité du coordinateur)
+
+Bloc F — intelligence du jeu de course (12.2 quindecies) :
+    course              boîte, point d'attaque, duels de ligne, trou, lecture du porteur (cutback, rebond), contact
 """
 from .aleatoire import flux
 from .progressions import progression

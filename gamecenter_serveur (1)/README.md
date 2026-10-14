@@ -1229,6 +1229,31 @@ quart-temps (900).
   de la semaine 1). 279 matchs, quarts de 15 min, retransmission 18,7 min en moyenne (14,8 – 23,8), 57,1 points ;
   par match : 1,8 genou, 0,6 spike, 6,2 temps morts, 4e essais 3,5 joués / 1,8 field goal / 5,0 punts.
 
+### 54. Bloc F — intelligence du jeu de course (notebook 12.2 quindecies, 14/10/2026 — allumé)
+Feuille de route : « moteur plus intelligent », idée 3. Module `moteur/course.py` (tests `test_course.py`), cellule
+**12.2 quindecies** ; interrupteur `GC_BLOC_F=0` : moteur d'avant à l'identique (contrôlé).
+- **Constat** (552 matchs, 28 711 courses, horloge réelle) : la course était résolue au niveau de l'équipe ; contre
+  BOX_STACK 2,5 yards et 33 % de courses bloquées, contre tout le reste ≈ 6,7 yards (± 2 yards de l'intention
+  défensive) ; inside 5,3 · gap 5,7 · outside 5,4 ; un WR sur jet sweep courait comme le RB1 ; ni les lignes au point
+  d'attaque, ni le profil du porteur ne pesaient.
+- **Ce que fait le bloc F** : boîte (5-9 défenseurs : formation, appel, paquet, front) ; côté choisi par l'attaque (le
+  meilleur duel, 65 %) ; duels de ligne au point d'attaque par rapport à la moyenne de chaque ligne ; front contre la
+  classe de course ; trou ouvert / étroit / fermé ; lecture du porteur (cutback, rebond, bloqué) ; contact (plaqueur
+  crédité = défenseur au contact, yards après contact) ; RB2 contre RB1. **Profils, jamais niveaux** : le niveau est dans
+  les notes d'unité du tirage du moteur (une première version comptait la puissance et le tackling en absolu : MNL
+  montait à 76 % de victoires).
+- **Mesures** (mêmes graines) : contre BOX_STACK 2,5 → 4,1 yards, contre Cover 3 6,7 → 5,9 ; boîte de 6 → 8 :
+  6,6 → 4,6 ; 3e et 11+ : 7,3 → 5,9 ; courses bloquées 16 % → 15 %, 10+ 20 % → 19 % ; trou ouvert 6,9 · fermé 4,5
+  (cutback 6,6 · bloqué 2,8). Calibration (1 104 matchs, contre le moteur sans bloc F) : tout dans les tolérances
+  (yards / course + 0,04, points + 0,02). Équilibre (4 416 matchs) : 39,8 – 59,8 % (sans : 40,1 – 56,4 %).
+  Calcul : + 5 % par match.
+- **Cotes en direct** : 13.4 trouvait les outsiders trop payés (− 15 %, extrêmes ± 0,037 : moins de retournements) ;
+  `LIVE_*` ré-ajustés pour « horloge + bloc F » (13.1) : ✅ extrêmes ± 0,023, écart moyen 0,011, outsiders − 4,6 %.
+- **Semaine du 19/10 produite** (notebook complet, copie de `data/`) : 30,4 min ; audit : 0 anomalie bloquante ;
+  retransmission 18,6 min ; 5,71 yards / course ; 18 % de courses bloquées, 7,6 % de cutbacks.
+- **GameFeed** (additif) : `play.run` = {box, side, hole, read, contact, tackler, front, key_block}. **Site** :
+  « 8 in the box », « cutback », « bounced outside », « stuffed at the line » dans le play-by-play (cellule 427 comprise).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

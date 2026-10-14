@@ -262,6 +262,35 @@ l'identique (contrôlé). Situation du match (menée : la prudence s'efface au f
 d'avant ; dernières secondes, menée : fin de période). Mesures : README du serveur, section 53. Tests :
 `test_horloge.py`, `test_valeur.py`.
 
+## Bloc F — intelligence du jeu de course (notebook 12.2 quindecies, 14/10/2026, allumé)
+
+Constat (552 matchs, 28 711 courses, horloge réelle) : la course était résolue au niveau de l'équipe, le porteur désigné
+après coup ; effet « boîte » en tout ou rien (contre BOX_STACK 2,5 yards et 33 % de courses bloquées, contre le reste
+≈ 6,7 yards) ; le concept ne rencontrait pas la défense ; ni les lignes au point d'attaque ni le profil du porteur ne
+pesaient (régression : effets nuls ou de mauvais signe).
+
+```
+snap (12.2 decies) ── formation défensive, appel, paquet, front retenus
+   ▼
+tirage du moteur (simulate_run, unités) · concept · front / motion (extension) · intention défensive NEUTRE (même tirage)
+   ▼
+porteur désigné ── course.boite(...)            défenseurs dans la boîte (5-9) : formation, appel, paquet, front
+   │               course.courir(...)           côté choisi (meilleurs duels, 65 %) · duels au point d'attaque (par
+   │                                            rapport à la moyenne de chaque ligne) · chapeaux non bloqués · front
+   │                                            contre la classe · trou ouvert / étroit / fermé · lecture (cutback,
+   │                                            rebond, bloqué) · contact (plaqueur, yards après contact) · RB2 contre RB1
+   ▼
+yards + ajustement (flux « course », arrondi sans biais) · plaqueur crédité = défenseur au contact
+```
+
+| Fichier | Rôle |
+|---|---|
+| `course.py` | `boite`, `choisir_cote`, `courir` (état de la course et ajustement), `entier` ; tables `BOITE`, `POINT`, `FRONT_CLASSE` ; poids `K_TROU`, `K_PORTEUR`, `K_CONTACT`, `K_VITESSE`, `LECTURE` ; `CALIBRATION` (moyenne de la ligue gardée). **Tout est un profil, jamais un niveau** : le niveau des joueurs est déjà dans les notes d'unité du tirage du moteur (duels par rapport à la moyenne de chaque ligne ; vision, puissance, vitesse du porteur par rapport à sa note globale ; plaqueur et safety par rapport à la moyenne de leur défense) |
+
+Interrupteur du notebook : `RUN_IQ_ENABLED` (`GC_BLOC_F=0` : moteur d'avant à l'identique, contrôlé). GameFeed :
+`play.run` (box, side, hole, read, contact, tackler, front, key_block). Mesures : README du serveur, section 54. Tests :
+`test_course.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
