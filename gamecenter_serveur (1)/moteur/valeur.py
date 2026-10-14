@@ -36,8 +36,10 @@ CONVERSION = {1: .67, 2: .60, 3: .565, 4: .555, 5: .54, 6: .50, 7: .44, 8: .41, 
 # gain moyen quand l'essai est converti (mesuré)
 GAIN_CONVERTI = {1: 7.8, 2: 8.3, 3: 9.1, 4: 11.3, 5: 11.6, 6: 11.9, 7: 13.2, 8: 14.5, 9: 15.3, 10: 15.9, 11: 16.3,
                  12: 16.6, 13: 17.9, 14: 18.6, 15: 21.5}
-# punt : yards nets (de la ligne de scrimmage au départ de l'adversaire) selon la distance de l'en-but (mesuré)
-PUNT_NET = {30: 14.0, 35: 20.2, 40: 27.9, 45: 34.6, 50: 40.9, 55: 44.3, 60: 45.1}
+# punt : yards nets (de la ligne de scrimmage au départ de l'adversaire) selon la distance de l'en-but — mesuré sur le
+# punt avec retour (moteur/punt.py, punter / retourneur / couverture moyens, 14/10/2026 ; avant : 14,0 · 20,2 · 27,9 ·
+# 34,6 · 40,9 · 44,3 · 45,1 de 30 à 60 yards, sans retour)
+PUNT_NET = {30: 19.0, 35: 24.5, 40: 28.4, 45: 33.2, 50: 38.2, 55: 42.5, 60: 43.8, 65: 43.0, 70: 42.5}
 DEPART_APRES_SCORE = 75          # en-but de l'équipe qui reçoit le coup d'envoi (touchback aux 25)
 VALEUR_TD = 6.94                 # 6 + point après touchdown (≈ 94 %)
 SIGMA = 13.2                     # écart-type de la marge sur un match entier (mesuré)

@@ -33,6 +33,11 @@ FINI_APRES = timedelta(hours=1)   # un match est terminé 1 h après son coup d'
                                   # la Grand Final du dimanche 22 h, Bruxelles, est finie au tournage de 22 h 30 UTC l'hiver)
 
 
+
+def _retour_td(p):
+    """Touchdown sur retour : coup d'envoi (bloc 2) ou punt (12.2 sexdecies)."""
+    return bool((p.get("kick_return") or {}).get("td") or (p.get("punt_return") or {}).get("td"))
+
 def charger_semaine(dossier):
     with open(os.path.join(dossier, "week.json"), encoding="utf-8") as fh:
         doc = json.load(fh)
@@ -67,6 +72,8 @@ def interet(feed, i):
     conv = P.get("conversion") or {}
     if t == "kickoff" and kr.get("td"):
         note += 30; raisons.append("kick return touchdown")
+    elif t == "punt" and (P.get("punt_return") or {}).get("td"):
+        note += 30; raisons.append("punt return touchdown")
     elif r == "touchdown":
         note += 15; raisons.append("touchdown")
     if r in ("interception", "fumble_lost"):
@@ -155,7 +162,7 @@ def resume(feed, cible=150.0):
     oblig = set()
     for i, p in enumerate(P):
         r = p.get("result")
-        if r in ("touchdown", "field_goal_good", "safety", "interception", "fumble_lost") or (p.get("kick_return") or {}).get("td"):
+        if r in ("touchdown", "field_goal_good", "safety", "interception", "fumble_lost") or _retour_td(p):
             oblig.add(i)
     oblig.add(len(P) - 1)
     n_max = int(RESUME_MAX // DUREE_ACTION)
@@ -243,9 +250,9 @@ def resume_court(feed):
     n_max = int(COURT_MAX // COURT_ACTION)
     dernier = len(P) - 1
     oblig = [i for i, p in enumerate(P)
-             if p.get("result") in ("touchdown", "interception", "fumble_lost") or (p.get("kick_return") or {}).get("td")
+             if p.get("result") in ("touchdown", "interception", "fumble_lost") or _retour_td(p)
              or (p.get("result") == "field_goal_good" and _fin_de_match(p))]
-    marque = lambda i: P[i].get("result") in ("touchdown", "field_goal_good") or (P[i].get("kick_return") or {}).get("td")
+    marque = lambda i: P[i].get("result") in ("touchdown", "field_goal_good") or _retour_td(P[i])
     choisis = {dernier} | set(sorted((i for i in oblig if i != dernier),                  # les scores d'abord : le score
                                      key=lambda i: (not marque(i), -interet(feed, i)[0], i))[:n_max - 1])   # en haut se suit
     if len(choisis) < 6:
@@ -406,7 +413,7 @@ def champion(dossier, maintenant, toutes=(), n_actions=4):
             r, gain = P.get("result"), P.get("gain") or 0
             pour = P.get("offense") == cote_g and (r == "touchdown" or (r in ("complete", "run") and gain >= 25))
             contre = P.get("offense") != cote_g and r in ("interception", "fumble_lost")
-            if pour or contre or ((P.get("kick_return") or {}).get("td") and P.get("offense") != cote_g):
+            if pour or contre or (_retour_td(P) and P.get("offense") != cote_g):
                 n, why = interet(G, i)
                 cand.append({"game": g["id"], "index": i, "note": n, "why": why, "play": P, "dossier": dossier,
                              "ko": g["kickoff"]})
@@ -468,8 +475,8 @@ def actions_du_score(feed, n_max=8):
     """Les actions qui ont fait le score (touchdowns, y compris sur retour, et field goals réussis) ; au plus n_max
     (d'abord les touchdowns, puis les mieux notées), dans l'ordre du match."""
     P = feed["plays"]
-    sc = [i for i, p in enumerate(P) if p.get("result") in ("touchdown", "field_goal_good") or (p.get("kick_return") or {}).get("td")]
-    garde = sorted(sc, key=lambda i: (P[i].get("result") != "touchdown" and not (P[i].get("kick_return") or {}).get("td"),
+    sc = [i for i, p in enumerate(P) if p.get("result") in ("touchdown", "field_goal_good") or _retour_td(p)]
+    garde = sorted(sc, key=lambda i: (P[i].get("result") != "touchdown" and not _retour_td(P[i]),
                                        -interet(feed, i)[0], i))[:n_max]
     return sorted(garde)
 

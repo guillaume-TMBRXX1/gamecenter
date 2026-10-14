@@ -73,7 +73,8 @@ function mapResolve(g,P,wpBefore){
     case 'pat_missed': ev.push('EXTRA_POINT_MISS'); break;
     case 'two_point_good': ev.push('TWO_POINT_GOOD'); break;
     case 'two_point_failed': ev.push('TWO_POINT_FAIL'); break;
-    case 'punt': ev.push('PUNT'); break;
+    case 'punt': ev.push('PUNT'); { const pr=P.punt_return;   /* 12.2 sexdecies : punt avec retour */
+      if(pr&&pr.td) ev.push('TOUCHDOWN'); else if(pr&&pr.result==='return'&&(+pr.return||0)>=30) ev.push('KICK_RETURN_BIG'); } break;
     case 'kickoff': ev.push('KICKOFF'); { const kr=P.kick_return;   /* bloc 2 : coup d'envoi avec retour */
       if(kr&&kr.touchback) ev.push('TOUCHBACK'); else if(kr&&(+kr.return||0)>=40) ev.push('KICK_RETURN_BIG'); } break;
     case 'incomplete': ev.push('INCOMPLETE'); break;
