@@ -1148,6 +1148,22 @@ Cloudflare Web Analytics ne pose **aucun cookie** et n'identifie pas les visiteu
 - La page `/legal` décrit ces statistiques (section *Audience statistics* et *Services we use*).
 - Tests : `moteur/tests/test_publicites.py` (`test_statistiques_cloudflare`).
 
+### 51. Onglet « Ranking » : classement des joueurs de la semaine, poste par poste (14/10/2026)
+Demande de Guillaume (14/10) : le classement de la fiche joueur (« Season rank ») pour tous les postes, sur la semaine en
+cours seulement (History › Records garde toutes les semaines).
+- **Site** : bouton **Ranking** dans la barre latérale (sous Standings ; « Ranking » dans la recherche sur mobile). Un
+  onglet par poste — QB, RB, WR, TE, EDGE, DT, LB, CB, S, K — classé dans la statistique du poste : yards à la passe (QB),
+  à la course (RB), en réception (WR, TE), sacks (EDGE, DT), plaquages (LB, CB, S), field goals réussis (K). Colonnes
+  utiles du poste ; un joueur qui a joué sans rien dans la statistique clé est en bas, sans rang (« — »). Un clic sur
+  une ligne ouvre la fiche joueur.
+- **Mise à jour** : match par match, dès qu'un match se termine (pas seulement à 22h15) ; calcul dans la page, depuis
+  les GameFeed déjà chargés (`seasonAgg`, comme « Season leaders »), rien de nouveau côté serveur.
+- **Fiche joueur** : « Season rank » compte maintenant **parmi les joueurs du même poste** (avant : tous postes
+  confondus, p. ex. des QB et des WR dans les yards à la course), pour donner le même rang que l'onglet ; les kickers ont
+  aussi le leur (field goals).
+- **Tests** : `outils/site/test_classement.js` (groupe site : barre latérale, onglets, rangs et stat clé décroissante,
+  meilleur QB = leader de History calculé par le serveur, fiche joueur au même rang, recherche, mobile 390 px).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

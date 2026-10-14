@@ -796,6 +796,9 @@
   .view-head{display:flex;flex-direction:column;gap:8px}
   .view-head h2{font-size:clamp(26px,3vw,36px)}
   .view-head .seg{align-self:flex-start}
+  .seg.rk-pos{flex-wrap:wrap;max-width:100%}
+  .tst.rk-t tbody tr{cursor:pointer} .tst.rk-t tbody tr:hover th,.tst.rk-t tbody tr:hover td{background:var(--l1)}
+  .tst.rk-t thead th.lead{color:var(--ink)} .tst.rk-t thead th.tl{text-align:left} .tst.rk-t td.rk{width:36px}
   .sch{padding:8px 18px 14px}
   .sch-day+.sch-day{margin-top:8px}
   .sch-h{margin:14px 0 4px;font:700 italic 13px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
@@ -1963,6 +1966,9 @@
     <button class="rail-btn" type="button" data-view="standings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 16.5V21M7 4h10v5a5 5 0 01-10 0zM17 5.5h2.5v1.5a3 3 0 01-3 3M7 5.5H4.5v1.5a3 3 0 003 3"/></svg>Standings
     </button>
+    <button class="rail-btn" type="button" data-view="ranking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17M5 20.5v-6h4.5v6M9.5 20.5V9.5h5v11M14.5 20.5v-8H19v8"/><path d="M12 3.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 5.6l2-.3z"/></svg>Ranking
+    </button>
     <button class="rail-btn" type="button" data-view="teams">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/></svg>Teams
     </button>
@@ -2051,6 +2057,7 @@
     </div>
     <section class="view" id="viewSchedule" hidden aria-label="Schedule"></section>
     <section class="view" id="viewStandings" hidden aria-label="Standings"></section>
+    <section class="view" id="viewRanking" hidden aria-label="Ranking"></section>
     <section class="view" id="viewTeams" hidden aria-label="Teams"></section>
     <section class="view" id="viewMyteam" hidden aria-label="My team"></section>
     <section class="view" id="viewHistory" hidden aria-label="History"></section>
@@ -4390,7 +4397,7 @@ function bindPlayerPick(view){
   f.addEventListener('mouseleave',()=>{ view.hover=null; });
 }
 document.addEventListener('click',e=>{ if(!pcard) return; if(e.target.closest('.pcard')&&!e.target.closest('[data-pclose]')) return; closePlayerCard(); });
-['viewTeams','viewMyteam'].forEach(id=>{ const v=document.getElementById(id); if(!v) return;
+['viewTeams','viewMyteam','viewRanking'].forEach(id=>{ const v=document.getElementById(id); if(!v) return;
   v.addEventListener('click',e=>{ const r=e.target.closest('tr[data-pl]'); if(!r||e.target.closest('button,a')) return; e.stopPropagation(); openRosterCard(r.dataset.pt,r.dataset.pl,e.clientX,e.clientY); });
   v.addEventListener('keydown',e=>{ const r=e.target.closest&&e.target.closest('tr[data-pl]'); if(!r||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); const b=r.getBoundingClientRect(); openRosterCard(r.dataset.pt,r.dataset.pl,b.left+Math.min(220,b.width/2),b.top+b.height/2); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImmediatePropagation(); closePlayerCard(); } },true);
@@ -4911,6 +4918,7 @@ document.addEventListener('click',e=>{
   if(!t.closest('#clockPop')){ const cp=document.getElementById('clockPop'); if(cp&&!cp.hidden) cp.hidden=true; }
   if(SEASON&&settingsClick(t)) return;
   const vg=t.closest('[data-view-go]'); if(vg){ closeDrawer(); setView(vg.dataset.viewGo); return; }
+  const rkp=t.closest('[data-rkpos]'); if(rkp){ RK_POS_SEL=rkp.dataset.rkpos; renderView(true); return; }
   const sf=t.closest('[data-schf]'); if(sf){ SCH_FILTER=sf.dataset.schf; renderView(true); return; }
   const hb=t.closest('[data-hist],[data-histrec]'); if(hb){ if(hb.dataset.hist) HIST_TAB=hb.dataset.hist; else HIST_REC=hb.dataset.histrec; renderView(true); return; }
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
@@ -5045,24 +5053,26 @@ function seasonAgg(t){
     const G=gameStats(g);
     for(const side of ['home','away']) for(const p of Object.values(G.st.pl[side])){
       if(!p.id) continue;
-      const q=P[p.id]||(P[p.id]={id:p.id,name:p.name,pos:p.pos,team:G[side],gp:new Set(),pass:{},rush:{},rec:{},def:{}});
+      const q=P[p.id]||(P[p.id]={id:p.id,name:p.name,pos:p.pos,team:G[side],gp:new Set(),pass:{},rush:{},rec:{},def:{},kick:{}});
       q.gp.add(g.id);
-      for(const k of ['pass','rush','rec','def']) if(p[k]) for(const s in p[k]) if(s!=='lng') add(q[k],s,p[k][s]);
+      for(const k of ['pass','rush','rec','def','kick']) if(p[k]) for(const s in p[k]) if(s!=='lng') add(q[k],s,p[k][s]);
     }
   }
   _agg={key,players:P,finals:fin.length};
   return _agg;
 }
 const RANK_CAT={QB:['pass','y','Passing yards'],RB:['rush','y','Rushing yards'],WR:['rec','y','Receiving yards'],TE:['rec','y','Receiving yards'],
-  EDGE:['def','sk','Sacks'],DT:['def','sk','Sacks'],LB:['def','tk','Tackles'],CB:['def','tk','Tackles'],S:['def','tk','Tackles']};
+  EDGE:['def','sk','Sacks'],DT:['def','sk','Sacks'],LB:['def','tk','Tackles'],CB:['def','tk','Tackles'],S:['def','tk','Tackles'],K:['kick','m','Field goals']};
 function catRanking(grp,key,t){ const P=seasonAgg(t).players; return Object.values(P).filter(p=>(p[grp][key]||0)>0).sort((a,b)=>b[grp][key]-a[grp][key]||a.name.localeCompare(b.name)); }
-/* Player card: season rank in the stat that matters for the position (games played so far) */
+/* the week's ranking at one position, in its key stat (RANK_CAT): the Ranking tab and the player card share it */
+function posRanking(pos,t){ const c=RANK_CAT[pos]; return c?catRanking(c[0],c[1],t).filter(p=>p.pos===pos):[]; }
+/* Player card: season rank in the stat that matters for the position, among players at that position (games played so far) */
 function seasonRankFor(pl){
   if(!SEASON||!pl) return null;
   const c=RANK_CAT[pl.pos]; if(!c) return null;
-  const list=catRanking(c[0],c[1],nowMs()), i=list.findIndex(p=>p.id===pl.id);
+  const list=posRanking(pl.pos,nowMs()), i=list.findIndex(p=>p.id===pl.id);
   if(i<0) return {label:c[2],text:'no stats yet this week'};
-  return {label:c[2],text:`#${i+1} of ${list.length} · ${list[i][c[0]][c[1]]}`};
+  return {label:`${c[2]} · ${pl.pos}`,text:`#${i+1} of ${list.length} · ${list[i][c[0]][c[1]]}`};
 }
 function recordOf(a,t){ const r=standingsAt(t).table.find(x=>x.team===a); return r?`${r.w}-${r.l}${r.t?'-'+r.t:''}`:''; }
 
@@ -5254,23 +5264,54 @@ let VIEW='live', SCH_FILTER='all', TEAM_SEL=null, PL_FOCUS=null;
 function setView(v){
   if(v==='leagues'&&VIEW!=='leagues'){ LG.at=0; LG.data={}; }   /* fresh list and leaderboard each time the tab opens */
   VIEW=v;
-  for(const k of ['live','schedule','standings','teams','myteam','history','leagues','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  for(const k of ['live','schedule','standings','ranking','teams','myteam','history','leagues','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
   if(typeof adsForView==='function'&&ADS) adsForView(v);
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   renderView(true);
   window.scrollTo({top:0});
 }
 function renderView(force){
-  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewTeams','viewMyteam','viewHistory','viewLeagues','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
+  if(!SEASON){ if(VIEW!=='live') ['viewSchedule','viewStandings','viewRanking','viewTeams','viewMyteam','viewHistory','viewLeagues','viewBets','viewSettings'].forEach(id=>{ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML='<div class="card"><p class="st-empty"><b>No week loaded</b>Build the page with a week export (notebook section 14) to see the schedule, standings and team pages.</p></div>'; }); return; }
   const t=nowMs();
   if(VIEW==='schedule') renderSchedule(t);
   else if(VIEW==='standings') renderStandings(t);
+  else if(VIEW==='ranking') renderRanking(t);
   else if(VIEW==='teams') renderTeams(t);
   else if(VIEW==='myteam') renderMyteam(t);
   else if(VIEW==='history') renderHistory(t);
   else if(VIEW==='leagues') renderLeagues(t);
   else if(VIEW==='bets') renderBets(t);
   else if(VIEW==='settings') renderSettings(force);
+}
+/* ---------- Ranking: this week's players, position by position, game by game as each one ends ----------
+   Same numbers as « Season rank » on the player card (posRanking); History › Records keeps every week. */
+let RK_POS_SEL='QB';
+const RK_POS=['QB','RB','WR','TE','EDGE','DT','LB','CB','S','K'];
+const RK_COLS=(()=>{ const v=(g,k)=>p=>p[g][k]||0, ma=(g,m,a)=>p=>`${p[g][m]||0}/${p[g][a]||0}`, avg=(g,y,n)=>p=>p[g][n]?(p[g][y]/p[g][n]).toFixed(1):'—';
+  const rec=[['Rec',v('rec','r')],['Tgt',v('rec','t')],['Yds',v('rec','y'),1],['Avg',avg('rec','y','r')],['TD',v('rec','td')]];
+  const front=[['Sck',v('def','sk'),1],['Tkl',v('def','tk')],['FF',v('def','ff')],['PD',v('def','pd')],['INT',v('def','i')]];
+  const back=[['Tkl',v('def','tk'),1],['Sck',v('def','sk')],['INT',v('def','i')],['PD',v('def','pd')],['FF',v('def','ff')]];
+  return {QB:[['C/A',ma('pass','c','a')],['Yds',v('pass','y'),1],['TD',v('pass','td')],['INT',v('pass','i')],['Sck',v('pass','sk')],['Rush',v('rush','y')]],
+    RB:[['Car',v('rush','c')],['Yds',v('rush','y'),1],['Avg',avg('rush','y','c')],['TD',v('rush','td')],['Rec',v('rec','r')],['RecY',v('rec','y')]],
+    WR:rec,TE:rec,EDGE:front,DT:front,LB:back,CB:back,S:back,
+    K:[['FGM',v('kick','m'),1],['FGA',v('kick','a')],['XP',ma('kick','xm','xa')]]}; })();
+function renderRanking(t){
+  const el=document.getElementById('viewRanking'); if(!el) return;
+  const A=seasonAgg(t), pos=RK_POS_SEL, c=RANK_CAT[pos], cols=RK_COLS[pos];
+  const key='rk|'+SW.week.index+'|'+pos+'|'+A.finals;
+  if(el._k===key) return; el._k=key;
+  const ranked=posRanking(pos,t), ids=new Set(ranked.map(p=>p.id));
+  const rest=Object.values(A.players).filter(p=>p.pos===pos&&!ids.has(p.id)).sort((a,b)=>b.gp.size-a.gp.size||a.name.localeCompare(b.name));
+  const row=(p,i)=>`<tr data-pl="${esc(p.id)}" data-pt="${esc(p.team)}" tabindex="0" class="pl-hit"><td class="rk${i===0?' top':''}">${i<0?'—':i+1}</td>
+    <th scope="row"><span class="badge">${esc(TEAMS[p.team]?TEAMS[p.team].abbr:p.team)}</span>${esc(p.name)}</th><td>${p.gp.size}</td>${cols.map(([,f,k])=>`<td class="${k?'lead':''}">${f(p)}</td>`).join('')}</tr>`;
+  const rows=ranked.map((p,i)=>row(p,i)).join('')+rest.map(p=>row(p,-1)).join('');
+  const nG=SCHED.length;
+  el.innerHTML=`<div class="view-head"><h2>Ranking</h2><p class="eyebrow">Week ${SW.week.index} only · players ranked position by position · updated as each game ends (${A.finals} of ${nG} games final) · all weeks together are in History › Records</p>
+    <div class="seg rk-pos" role="tablist" aria-label="Position">${RK_POS.map(k=>`<button type="button" role="tab" data-rkpos="${k}" aria-selected="${pos===k}" title="${esc(POS_NAME[k]||k)}">${k}</button>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h3>${esc(POS_NAME[pos]||pos)}s · ${esc(c[2])}</h3></div>
+    ${rows?`<div class="st-scroll"><table class="tst stand rk-t"><thead><tr><th scope="col">#</th><th scope="col" class="tl">Player</th><th scope="col" title="Games played">G</th>${cols.map(([l,,k])=>`<th scope="col"${k?' class="lead"':''}>${l}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="np-note">Ranked by ${esc(c[2].toLowerCase())} · ${ranked.length} ranked player${ranked.length===1?'':'s'}${rest.length?` · — = played, none yet`:''} · tap a player for his card.</p>`
+    :'<p class="st-empty"><b>No stats yet this week</b>The ranking fills in as soon as the first games are final.</p>'}</div>`;
 }
 function statusCell(g,t){
   const st=gStatus(g,t), sc=scoreAt(g,t);
@@ -7046,7 +7087,7 @@ const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLo
 const POS_LONG={QB:'Quarterback',RB:'Running back',WR:'Wide receiver',TE:'Tight end',OL:'Offensive line',OT:'Tackle',OG:'Guard',C:'Center',DL:'Defensive line',DE:'Defensive end',DT:'Defensive tackle',EDGE:'Edge',LB:'Linebacker',CB:'Cornerback',S:'Safety',K:'Kicker',P:'Punter'};
 function searchIndex(){
   const it=[]; const add=(g,o)=>it.push(Object.assign({g,keys:[o.title].concat(o.alt||[]).map(fold)},o));
-  for(const [v,l,alt] of [['live','Live board',['scores','games now','tableau']],['schedule','Schedule',['calendar','fixtures','results','calendrier']],['standings','Standings',['ranking','table','playoffs','futures','classement']],
+  for(const [v,l,alt] of [['live','Live board',['scores','games now','tableau']],['schedule','Schedule',['calendar','fixtures','results','calendrier']],['standings','Standings',['table','playoffs','futures','classement']],['ranking','Ranking',['players','leaders','stats','top','classement joueurs','meilleurs joueurs']],
                          ['teams','Teams',['franchises','rosters','équipes']],['myteam','My team',['favourite','favorite','my franchise','mon équipe','équipe favorite']],['history','History',['records','career','champions','hall of fame','histoire','palmarès','carrière']],['leagues','Leagues',['private league','friends','invite','join','ligue','amis']],['bets','My bets',['wallet','history','leaderboard','cash out','combo','paris']],['settings','Settings',['account','sign in','sound','theme','réglages']]])
     add('Pages',{kind:'view',view:v,title:l,sub:'Page',alt});
   if(SEASON&&SW&&SW.teams){
