@@ -128,10 +128,20 @@ class TestGenouSpike(unittest.TestCase):
         # avec 3 temps morts adverses : seulement 3 × 2 s
         self.assertFalse(hz.genou(4, 40, 1, 3, 70, 3, k))
         self.assertTrue(hz.genou(4, 6, 1, 3, 70, 3, k))
-        # menée ou à égalité : jamais ; 4e essai : jamais ; prolongation : jamais
-        self.assertFalse(hz.genou(4, 20, 1, 0, 70, 0, k))
+        # menée : jamais (à égalité : seulement dans les 20 dernières secondes, voir test_genou_a_egalite) ;
+        # 4e essai : jamais ; prolongation : jamais
+        self.assertFalse(hz.genou(4, 20, 1, -1, 70, 0, k))
+        self.assertFalse(hz.genou(4, 45, 1, 0, 70, 0, k))
         self.assertFalse(hz.genou(4, 20, 4, 3, 70, 0, k))
         self.assertFalse(hz.genou(5, 20, 1, 3, 70, 0, k))
+
+    def test_genou_a_egalite(self):
+        # Q4 à égalité, dans son camp, 15 s : genou ; trop de temps, trop près ou au 4e essai : on joue
+        self.assertTrue(hz.genou(4, 15, 1, 0, 70, 1, 1.0))
+        self.assertFalse(hz.genou(4, 40, 1, 0, 70, 1, 1.0))
+        self.assertFalse(hz.genou(4, 15, 1, 0, 45, 1, 1.0))
+        self.assertFalse(hz.genou(4, 15, 4, 0, 70, 1, 1.0))
+        self.assertFalse(hz.genou(4, 15, 1, -3, 70, 1, 1.0))        # menée : jamais
 
     def test_genou_fin_de_q2(self):
         self.assertTrue(hz.genou(2, 20, 1, 0, 80, 3, 1.0))             # dans son camp, 20 s

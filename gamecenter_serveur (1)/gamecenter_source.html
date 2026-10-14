@@ -298,6 +298,16 @@
   .bug .poss.on{opacity:1}
   .bug .meta{grid-column:1/-1;display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;border-top:1px solid var(--line);background:rgba(5,6,13,.6);font:500 10.5px/1 var(--f-mono);color:var(--ink-2);white-space:nowrap}
   .bug .meta .spot{display:none;color:var(--ink-3)}
+  /* play clock (40 s) next to the game clock, and the timeouts left under each team (14/10/2026) */
+  .bug .meta .pclk{min-width:2.4em;padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--ink-3);font:700 10.5px/1 var(--f-mono);text-align:center}
+  .bug .meta .pclk:empty{display:none}
+  .bug .meta .pclk.run{color:var(--ink);background:rgba(46,230,255,.12)}
+  .bug .meta .pclk.low{color:#ff6b6b;background:rgba(255,60,60,.16)}
+  .bug .abbr:has(.tos:not(:empty)){display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+  .bug .tos{display:flex;gap:2px;margin-top:2px}
+  .bug .tos:empty{display:none}
+  .bug .tos i{width:7px;height:2px;border-radius:1px;background:rgba(255,255,255,.18)}
+  .bug .tos i.on{background:var(--amber,#ffc94a)}
   .bug .meta .dd{color:var(--cyan);font:700 italic 11px/1 var(--f-display);letter-spacing:.08em;margin-left:auto;padding-left:6px}
   @container (min-width:560px){
     .bug{left:12px;bottom:12px}
@@ -3356,8 +3366,19 @@ function rpEnter(g,k,hard){
     g.off=f.off.map(p=>({x:p.x,y:p.y})); g.def=f.def.map(p=>({x:p.x,y:p.y})); g.lastPoss=g.poss;
   }
   setupFormationSlide(g,f);
-  g.phase='presnap'; g.t=0; g.dur=hard?1.0:withSeed(g.seed+':d:'+P.seq,()=>rand(1.3,1.8));
+  g.phase='presnap'; g.t=0; g.dur=P.show?num(P.show.pre,1.2):hard?1.0:withSeed(g.seed+':d:'+P.seq,()=>rand(1.3,1.8));
   g.plan=null; g.snapped=false;
+  g.tos=rpTimeouts(g,k);
+  if(P.show&&P.show.to&&!hard){ const t=P.show.to==='home'?g.home:g.away; g.chip={t:'TIMEOUT · '+((TEAMS[t]||{}).abbr||t),c:''}; showChip(g); }
+}
+/* timeouts left before play k (engine's real clock: play.clock.timeouts after each play; 3 each at the half and in
+   overtime) */
+function rpTimeouts(g,k){
+  const q=num(g.plays[k]&&g.plays[k].quarter,1);
+  for(let j=k-1;j>=0;j--){ const P=g.plays[j], c=P.clock;
+    if(num(P.quarter,1)<3&&q>=3||num(P.quarter,1)<5&&q>=5) break;
+    if(c&&c.timeouts) return {home:num(c.timeouts.home,3),away:num(c.timeouts.away,3)}; }
+  return g.plays.some(P=>P.clock&&P.clock.timeouts)?{home:3,away:3}:null;
 }
 /* Rebuild everything the page shows from the feed alone, up to (not including) play k */
 function rpSeek(g,k){
@@ -3376,7 +3397,7 @@ function rpSnap(g){
   const P=g.cur;
   g.plan=withSeed(g.seed+':p:'+P.seq,()=>planFromFeed(g,P));
   g.plan.elapsed=Math.max(0,num(P.clock_start,0)-num(P.clock_end,0));
-  g.phase='play'; g.t=0; g.dur=g.plan.dur; g.trail=[]; g.tracks=null; g.tt=0; g.snapped=true;
+  g.phase='play'; g.t=0; g.dur=P.show?num(P.show.act,g.plan.dur):g.plan.dur; g.trail=[]; g.tracks=null; g.tt=0; g.snapped=true;
 }
 function rpResolve(g){
   const P=g.cur, A=P.after;
@@ -3444,7 +3465,7 @@ function stepReplay(g,dt){
     const u=clamp(g.t/g.dur,0,1);
     playUpdate(g,u);
     if(!REDUCED && g.t-g.tt>0.04){ g.trail.push({x:g.ball.x,y:g.ball.y}); recordTracks(g); g.tt=g.t; if(g.trail.length>160) g.trail.shift(); }
-    if(u>=1){ g.phase='post'; g.t=0; g.dur=RP_POST; rpResolve(g); onResolve(g); }
+    if(u>=1){ g.phase='post'; g.t=0; g.dur=g.cur&&g.cur.show?num(g.cur.show.post,RP_POST):RP_POST; rpResolve(g); onResolve(g); }
   } else if(g.phase==='post'){
     if(g.t>=g.dur){ if(g.growing&&g.idx>=g.plays.length-1&&!(g.cur&&g.cur.after&&g.cur.after.status==='final')&&!(brkOn(g)&&brkKind(g.cur))) return; rpCommit(g); onCommit(g); }
   }
@@ -3612,9 +3633,9 @@ function recRank(g,abbr){
 function bugHTML(g){
   const A=TEAMS[g.away], H=TEAMS[g.home], id=g.id, ra=recRank(g,g.away), rh=recRank(g,g.home);
   return `<div class="bug">
-    <div class="bt"><i class="poss" data-g="${id}" data-f="possA" title="Possession"></i><span class="abbr">${A.abbr}${ra?`<small class="rec">${ra}</small>`:''}</span><b class="sc" data-g="${id}" data-f="as">${g.spoiler?MINUS:g.as}</b></div>
-    <div class="bt"><i class="poss" data-g="${id}" data-f="possH" title="Possession"></i><span class="abbr">${H.abbr}${rh?`<small class="rec">${rh}</small>`:''}</span><b class="sc" data-g="${id}" data-f="hs">${g.spoiler?MINUS:g.hs}</b></div>
-    <div class="meta"><span data-g="${id}" data-f="q"></span><span data-g="${id}" data-f="clk"></span><span class="spot" data-g="${id}" data-f="spot"></span><span class="dd" data-g="${id}" data-f="dd"></span></div>
+    <div class="bt"><i class="poss" data-g="${id}" data-f="possA" title="Possession"></i><span class="abbr">${A.abbr}${ra?`<small class="rec">${ra}</small>`:''}<span class="tos" data-g="${id}" data-f="toA"></span></span><b class="sc" data-g="${id}" data-f="as">${g.spoiler?MINUS:g.as}</b></div>
+    <div class="bt"><i class="poss" data-g="${id}" data-f="possH" title="Possession"></i><span class="abbr">${H.abbr}${rh?`<small class="rec">${rh}</small>`:''}<span class="tos" data-g="${id}" data-f="toH"></span></span><b class="sc" data-g="${id}" data-f="hs">${g.spoiler?MINUS:g.hs}</b></div>
+    <div class="meta"><span data-g="${id}" data-f="q"></span><span data-g="${id}" data-f="clk"></span><span class="pclk" data-g="${id}" data-f="pc" title="Play clock"></span><span class="spot" data-g="${id}" data-f="spot"></span><span class="dd" data-g="${id}" data-f="dd"></span></div>
   </div>`;
 }
 function fieldHTML(g,cls,hit){
@@ -3814,7 +3835,23 @@ function toast(msg){ const t=document.getElementById('toast'); t.classList.remov
 /* ---------------- game UI ---------------- */
 /*@ui-start*/
 function qLabel(g){ return g.status==='final'?'FINAL':g.status==='half'?'HALF':g.brk&&g.brk.kind==='q'?'END '+qName(g.brk.q):qName(g.q); }
-function clkDisp(g){ if(g.status!=='live') return ''; let c=g.clock; if(g.phase==='play'&&g.plan) c-=g.plan.elapsed*clamp(g.t/g.dur,0,1); return clockStr(c); }
+function clkDisp(g){ if(g.status!=='live') return ''; return clockStr(clockNow(g)); }
+/* the game clock as it runs on screen. With play.show (14/10/2026): before the snap it runs down from show.c0 to the
+   snap (clock_start) when the engine's clock was running, then during the play by show.pt; stopped clock: it waits */
+function clockNow(g){
+  const P=g.cur, S=P&&P.show, u=g.dur?clamp(g.t/g.dur,0,1):1;
+  if(!S){ let c=g.clock; if(g.phase==='play'&&g.plan) c-=g.plan.elapsed*u; return c; }
+  const c1=num(P.clock_start,g.clock), c0=num(S.c0,c1), pt=num(S.pt,0);
+  if(g.phase==='presnap') return c0+(c1-c0)*u;
+  if(g.phase==='play') return c1-pt*u;
+  return c1-pt;
+}
+/* the 40-second play clock (play.show.pc = [start, at the snap]): it runs before the snap, then shows what was left */
+function playClockNow(g){
+  const P=g.cur, S=P&&P.show, pc=S&&S.pc; if(!pc||g.status!=='live') return null;
+  if(g.phase==='presnap'){ const u=g.dur?clamp(g.t/g.dur,0,1):1; return Math.max(0,Math.ceil(pc[0]-(pc[0]-pc[1])*u)); }
+  return pc[1];
+}
 /* perf: write to the DOM only when the value really changes — the HUD is refreshed 4x a second and every
    write (even of the same text) costs a style pass and wakes the team-colour observer */
 function setTxt(el,v){ if(el.textContent!==v) el.textContent=v; }
@@ -3828,6 +3865,9 @@ function updateGameUI(g){
       case 'q': setTxt(el,qLabel(g)); break;
       case 'brk': renderBrk(g,el); break;
       case 'clk': setTxt(el,clkDisp(g)); break;
+      case 'pc': { const v=playClockNow(g), t=v==null?'':':'+(v<10?'0':'')+v; setTxt(el,t); el.classList.toggle('low',v!=null&&v<=5); el.classList.toggle('run',g.phase==='presnap'); break; }
+      case 'toA': case 'toH': { const n=g.tos?g.tos[el.dataset.f==='toA'?'away':'home']:null, v=n==null?'':String(n);
+        if(el._v!==v){ el._v=v; el.innerHTML=n==null?'':[0,1,2].map(i=>`<i class="${i<n?'on':''}"></i>`).join(''); el.title=n==null?'':`${n} timeout${n===1?'':'s'} left`; } break; }
       case 'dd': setTxt(el,g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g))); break;
       case 'third': renderThird(g,el); break;
       case 'spot': setTxt(el,g.status==='live'?'Ball on '+spotLabel(g,g.los):''); break;
@@ -5065,10 +5105,13 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(pcard) closePl
    every game starts at its real kickoff (Europe/Brussels) and is replayed play by play in real time.
    Before / after the week, the clock runs in preview mode from a moment the viewer picks. */
 const PLAY_SEC=6.5;
+/* a play's time on screen: play.show.sec (continuous game clock, engine moteur/ecran.py, 14/10/2026), else PLAY_SEC
+   (games computed before) — the same rule as serveur.py (play_sec) */
+const psec=P=>{ const s=P&&P.show&&P.show.sec; return typeof s==='number'&&s>0?s:PLAY_SEC; };
 const TZ='Europe/Brussels';
 const SW=SEASON?SEASON.week:null;
 const SCHED=SEASON?SW.schedule.map(g=>{ const f=SEASON.feeds[g.id]; const ko=Date.parse(g.kickoff);
-  const n=g.n!=null?g.n:f.plays.length, end=g.end_ms!=null?g.end_ms:(SERVER?Infinity:ko+(n*PLAY_SEC+tlOf(f).total)*1000);
+  const n=g.n!=null?g.n:f.plays.length, end=g.end_ms!=null?g.end_ms:(SERVER?Infinity:ko+tlOf(f).end*1000);
   return Object.assign({},g,{ko,n,end}); }):[];
 const SCHED_BY={}; SCHED.forEach(g=>SCHED_BY[g.id]=g);
 const NSLOTS=Math.max(0,...SCHED.filter(g=>g.phase==='regular').map(g=>g.slot)); /* 18 créneaux à 4 équipes, 14 à 8 (étape 6) */
@@ -5091,21 +5134,22 @@ function revealed(g,t){
   if(g.phase==='semifinal') return t>=LOCK;
   return SCHED.every(x=>x.phase!=='semifinal'||gStatus(x,t)==='final');
 }
-/* Presentation timeline (broadcast breaks, see BRK_SEC): play k starts at ko + (k·PLAY_SEC + the breaks after plays
-   0..k-1) s — the same rule as serveur.py (revealed_plays). Kept per feed, rebuilt only when plays are added. */
+/* Presentation timeline (broadcast breaks, see BRK_SEC): play k starts at ko + (the screen time of plays 0..k-1 +
+   the breaks after them) s and lasts psec — the same rule as serveur.py (play_ends). Kept per feed, rebuilt only when
+   plays are added. */
 const _tl=new WeakMap();
 function tlOf(f){ const P=f.plays, m=_tl.get(f); if(m&&m.P===P&&m.n===P.length) return m;
-  const st=new Array(P.length), bk=new Array(P.length); let off=0;
-  for(let i=0;i<P.length;i++){ st[i]=i*PLAY_SEC+off; const b=brkKind(P[i]); bk[i]=b; if(b) off+=BRK_SEC[b]; }
-  const r={P,n:P.length,st,bk,total:off}; _tl.set(f,r); return r; }
+  const st=new Array(P.length), du=new Array(P.length), bk=new Array(P.length); let off=0, t=0;
+  for(let i=0;i<P.length;i++){ st[i]=t; du[i]=psec(P[i]); t+=du[i]; const b=brkKind(P[i]); bk[i]=b; if(b){ off+=BRK_SEC[b]; t+=BRK_SEC[b]; } }
+  const r={P,n:P.length,st,du,bk,total:off,end:t}; _tl.set(f,r); return r; }
 /* where the broadcast of game s is at t: done = plays already over; brk = the break running after play done-1 and
    its end (ms), or null */
 function timelineAt(s,t){
   const L=tlOf(SEASON.feeds[s.id]), e=(t-s.ko)/1000;
   if(e<0||!L.n) return {done:0,brk:null,end:0};
   let lo=0, hi=L.n-1; while(lo<hi){ const m=(lo+hi+1)>>1; if(L.st[m]<=e) lo=m; else hi=m-1; }
-  if(e<L.st[lo]+PLAY_SEC) return {done:lo,brk:null,end:0};
-  const b=L.bk[lo], end=b?s.ko+(L.st[lo]+PLAY_SEC+BRK_SEC[b])*1000:0;
+  if(e<L.st[lo]+L.du[lo]) return {done:lo,brk:null,end:0};
+  const b=L.bk[lo], end=b?s.ko+(L.st[lo]+L.du[lo]+BRK_SEC[b])*1000:0;
   return {done:lo+1,brk:b&&t<end?b:null,end:b&&t<end?end:0};
 }
 function playIndexAt(g,t){ return clamp(timelineAt(g,t).done,0,g.n-1); }
@@ -5115,13 +5159,13 @@ function scoreAt(g,t){
   if(s==='final') return f.plays[f.plays.length-1].after.score;
   const k=Math.min(timelineAt(g,t).done,f.plays.length); return k>0?f.plays[k-1].after.score:{home:0,away:0};
 }
-/* a live board reaching a break: it lasts until the broadcast resumes (the server sends the next play one PLAY_SEC
-   after it starts), so the board stays in step with the clock without playing faster afterwards */
+/* a live board reaching a break: it lasts until the broadcast resumes (the server sends the next play once its screen
+   time is over), so the board stays in step with the clock without playing faster afterwards */
 function liveBreakLeft(g,d){
   const s=g.sched; if(!s||g.mode!=='live'||!SEASON) return d;
   const L=tlOf(SEASON.feeds[s.id]), j=g.idx; if(j>=L.n||!L.bk[j]) return d;
-  const end=s.ko+(L.st[j]+PLAY_SEC+BRK_SEC[L.bk[j]]+(SERVER?PLAY_SEC:0))*1000;
-  return clamp((end-nowMs())/1000,0,d+PLAY_SEC);
+  const nx=j+1<L.n?L.du[j+1]:PLAY_SEC, end=s.ko+(L.st[j]+L.du[j]+BRK_SEC[L.bk[j]]+(SERVER?nx:0))*1000;
+  return clamp((end-nowMs())/1000,0,d+nx);
 }
 /* put a live board where the broadcast is: on the play being shown, or in the break that is running */
 function liveSeek(g,t){
@@ -5799,11 +5843,11 @@ function renderClock(){
 }
 function openClockPanel(){
   const p=document.getElementById('clockPop');
-  if(SERVER){ p.innerHTML=`<span class="label">Server time · Brussels</span><p class="np-note">This page is connected to the GameCenter server: every game plays live, one play every ${PLAY_SEC} s, and new plays arrive as they happen. Nothing that has not happened yet is sent to your browser.</p>`; p.hidden=!p.hidden; return; }
+  if(SERVER){ p.innerHTML=`<span class="label">Server time · Brussels</span><p class="np-note">This page is connected to the GameCenter server: every game plays live, the game clock running as on TV, and new plays arrive as they happen. Nothing that has not happened yet is sent to your browser.</p>`; p.hidden=!p.hidden; return; }
   const real=Date.now(), realIn=real>=W_FIRST-24*3600e3&&real<=W_END;
   p.innerHTML=`<span class="label">Jump to a moment of the week</span>${clockPresets().map(([l,ms])=>`<button type="button" class="ghost cp" data-clock="${ms}">${esc(l)}</button>`).join('')}
     <button type="button" class="ghost cp" data-clock="real"${realIn?'':' disabled'}>Real time${realIn?'':' · this week has not started yet'}</button>
-    <p class="np-note">Games play in real time: about ${Math.round(SCHED[0].n*PLAY_SEC/60)} minutes each. Preview time keeps running from the moment you pick.</p>`;
+    <p class="np-note">Games play in real time: about ${Math.round(tlOf(SEASON.feeds[SCHED[0].id]).end/60)} minutes each. Preview time keeps running from the moment you pick.</p>`;
   p.hidden=!p.hidden;
 }
 function setClock(v){

@@ -23,6 +23,7 @@ Une action commencée avant 0:00 va au bout (comme dans le moteur) : tant qu'il 
 Paramètres mesurés sur 160 matchs des franchises (V27) : temps par action, touchdown / perte de balle / gain moyen par
 zone (5 yards) et par type d'action. Tout est déterministe (aucun tirage) : même état -> même décision.
 """
+from moteur import field_goal as _fg
 from functools import lru_cache
 
 VERSION = "fin-de-periode-1"
@@ -51,10 +52,8 @@ ZONES = {
 
 
 def probabilite_fg(distance, special_teams_rating=75.0):
-    """Même barème que calculate_field_goal_probability (notebook, 07) : distance + notes des équipes spéciales."""
-    base = (0.98 if distance <= 30 else 0.92 if distance <= 40 else 0.80 if distance <= 50 else 0.65 if distance <= 60
-            else 0.45 if distance <= 70 else 0.15)
-    return round(max(0.01, min(0.99, base + (special_teams_rating - 75) / 100)), 4)
+    """Barème des field goals des franchises (moteur/field_goal.py : celui du moteur jusqu'à 60 yards, réaliste au-delà)."""
+    return _fg.probabilite(distance, special_teams_rating)
 
 
 def _action(en_but, ecart_unites):
