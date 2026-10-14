@@ -137,6 +137,7 @@ class TestGenouSpike(unittest.TestCase):
         self.assertTrue(hz.genou(2, 20, 1, 0, 80, 3, 1.0))             # dans son camp, 20 s
         self.assertFalse(hz.genou(2, 20, 1, 0, 30, 3, 1.0))            # à portée : il joue (ou tire)
         self.assertFalse(hz.genou(2, 90, 1, 0, 80, 3, 1.0))
+        self.assertFalse(hz.genou(2, 20, 4, 0, 96, 3, 1.0))            # 4e essai : jamais (ballon rendu)
 
     def test_spike(self):
         self.assertTrue(hz.spike(4, 40, 1, -3, 40, False, 0, 1.0))

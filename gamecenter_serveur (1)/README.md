@@ -1179,11 +1179,12 @@ autres — titres, bilans de franchise, records et carrières en étaient fauss�
 - **Tests** : `outils/site/test_histoire.js` (une saison par semaine à partir de la 2, aucun record, titre ni ligne de
   carrière de la semaine 1, en-tête).
 
-### 53. Horloge réelle et valeur des décisions (notebook 12.2 quaterdecies, 14/10/2026 — coupées, à décider)
+### 53. Horloge réelle et valeur des décisions (notebook 12.2 quaterdecies, 14/10/2026 — allumées)
 Feuille de route : « moteur plus intelligent », idées 1 et 2. Modules `moteur/horloge.py` et `moteur/valeur.py` (tests
-`test_horloge.py`, `test_valeur.py`), cellule **12.2 quaterdecies** du notebook. **Interrupteurs coupés par défaut**
-(`GC_HORLOGE=1`, `GC_VALEUR=1`, `GC_QUART` = longueur du quart-temps, 900 par défaut avec l'horloge) : le calcul du
-samedi est inchangé (contrôlé dans la cellule) tant que Guillaume n'a pas choisi la durée des retransmissions.
+`test_horloge.py`, `test_valeur.py`), cellule **12.2 quaterdecies** du notebook. **Décision de Guillaume (14/10)** :
+quarts-temps de 15 min, retransmission ≈ 18 min, 4e essai tel quel mais réaliste selon la situation du match.
+**Allumés** ; `GC_HORLOGE=0` / `GC_VALEUR=0` : moteur d'avant à l'identique (contrôlé) ; `GC_QUART` : longueur du
+quart-temps (900).
 - **Horloge réelle** : l'horloge tourne entre les actions (huddle 36 s, hurry-up 16 s, tuer l'horloge 40 s, ± le tempo du
   coordinateur) ; elle s'arrête sur une passe incomplète, un changement de possession, une sortie du terrain dans les
   2 dernières minutes du Q2 et les 5 dernières du Q4, l'avertissement des 2 minutes, un temps mort ; temps morts (3 par
@@ -1192,7 +1193,11 @@ samedi est inchangé (contrôlé dans la cellule) tant que Guillaume n'a pas cho
   l'action qui précède : le GameFeed garde une horloge continue (audit inchangé).
 - **Valeur des décisions** : points attendus et probabilité de victoire mesurés sur 597 matchs du moteur ; 4e essai
   (jouer / field goal / punt) partout sur le terrain, au meilleur choix à un biais d'identité près (agressivité du
-  coordinateur, prudence dans son camp). Match plié : règle d'avant ; fin de période (section 22) prioritaire.
+  coordinateur, prudence dans son camp). **Situation du match** : menée, l'équipe perd sa prudence au fil du dernier
+  quart-temps (en prolongation, aucune) ; l'équipe qui a déjà gagné garde la règle d'avant (garbage time) ; dans les
+  dernières secondes, l'équipe menée suit la fin de période (section 22, action par action : « il faut un touchdown ») ;
+  un field goal choisi par la fin de période est gardé. Correctif : la fin de période jouait tous les 4e essais d'une
+  équipe qui mène (elle ne voit pas le ballon rendu) — c'est maintenant la valeur qui décide.
 - **GameFeed** (additif) : `play.clock` (`runoff`, `stop`, `timeout`, `oob`, `timeouts`), `play.fourth_down` (`choice`,
   `model`, `wp`, `conversion`, `bias`, `reason`), `call.play_id` `KNEEL` / `SPIKE`, `game.clock_model`. **Site** :
   « goes for it on 4th (…) », « timeout VEC », « two-minute warning » dans le play-by-play (`rpClockNote`, cellule 427
@@ -1215,8 +1220,7 @@ samedi est inchangé (contrôlé dans la cellule) tant que Guillaume n'a pas cho
   Molette de la durée : huddle 28 s -> 154 actions, 20,9 min, 59 points ; 36 s -> 18,4 min ; 46 s -> 114 actions,
   15,8 min, 44 points. Variante écartée : l'horloge réelle dans des quarts de 3 min (× 0,2) -> 80 actions, 11,5 min,
   31 points (toutes les stats et les records d'un match baissent de 40 %).
-- **Avant d'allumer** : choix de la durée (Guillaume) ; vérification des cotes en direct 13.4 (garde-fou 4 : le modèle lit
-  la part du temps restant, mais la fin de match change) ; semaine re-produite et auditée ; temps du samedi.
+- **Contrôles avant l'allumage** : voir « Allumage » ci-dessous.
 
 ### Annexe — `.github/workflows/semaine.yml`
 

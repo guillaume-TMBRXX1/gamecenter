@@ -80,8 +80,24 @@ class TestQuatriemeEssai(unittest.TestCase):
         self.assertNotIn("FG", d["wp"])
 
     def test_match_plie(self):
+        # gagné : le coordinateur garde sa règle (garbage time) ; perdu : on tente sa chance, même le plus prudent
         self.assertIsNone(q4(80, 2, 24, 4, 400, quart_secondes=900))
-        self.assertIsNone(q4(80, 2, -28, 4, 200, quart_secondes=900))
+        self.assertIsNone(q4(60, 2, 14, 4, 90, quart_secondes=900))
+        self.assertEqual(q4(58, 10, -27, 4, 210, quart_secondes=900, agressivite=0.0)["choix"], "JOUER")
+
+    def test_situation(self):
+        # menée en fin de match : la prudence d'identité s'efface — même le plus prudent joue
+        self.assertEqual(q4(60, 2, -2, 4, 90, quart_secondes=900, agressivite=0.0)["choix"], "JOUER")
+        self.assertEqual(q4(60, 6, -14, 4, 180, quart_secondes=900, agressivite=0.0)["choix"], "JOUER")
+        # même situation au 1er quart-temps : le prudent punte
+        self.assertEqual(q4(60, 2, -2, 1, 600, quart_secondes=900, agressivite=0.0)["choix"], "PUNT")
+        # mène de 2 à 1:30, 4e et 6 aux 30 adverses : les 3 points (sauf le plus agressif)
+        self.assertEqual(q4(30, 6, 2, 4, 90, quart_secondes=900, agressivite=0.5)["choix"], "FG")
+        # fin de Q2 dans ses 4 : punt, jamais un 4e et 9 joué
+        for a in (0.0, 1.0):
+            self.assertEqual(q4(96, 9, 1, 2, 25, quart_secondes=900, agressivite=a)["choix"], "PUNT")
+        # prolongation, menée de 3 (dernière possession) : on joue le 4e et 4 au milieu du terrain
+        self.assertEqual(q4(50, 4, -3, 5, 400, quart_secondes=900, agressivite=0.0)["choix"], "JOUER")
 
     def test_echelle_du_quart(self):
         # même situation (même part du match) avec des quarts-temps de 3 et de 15 minutes : même décision

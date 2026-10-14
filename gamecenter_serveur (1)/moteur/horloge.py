@@ -135,6 +135,8 @@ def genou(quart, secondes, essai, ecart_attaque, en_but, temps_morts_defense, k,
         capacite = n * DUREE_GENOU + (n - stops) * _s(ENTRE_MAX, k)
         return secondes <= capacite
     if quart == 2:
+        if essai == 4 and secondes > DUREE_GENOU:
+            return False                                       # au 4e essai, un genou rendrait le ballon : punt
         return ecart_attaque >= -3 and en_but >= GENOU_Q2_EN_BUT and secondes <= max(_s(GENOU_Q2, k), duree_action)
     return False
 

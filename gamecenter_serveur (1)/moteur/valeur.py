@@ -19,7 +19,8 @@ Ce module donne une VALEUR à chaque option, partout sur le terrain et à tout m
       agressif, depuis ses réglages du 4e essai) déplace la frontière de BIAIS points, et la prudence grandit dans son
       propre camp (PRUDENCE_CAMP). Les écarts de WP sont convertis
       en points (pente de la WP au score actuel) pour que le biais ait le même sens au 1er quart-temps et à la fin.
-      Match plié (pente presque nulle) : None — le coordinateur garde sa règle habituelle (garbage time).
+      Match gagné (pente presque nulle, attaque qui mène) : None — le coordinateur garde sa règle (garbage time).
+      Menée, l'équipe perd sa prudence au fil du dernier quart-temps : il faut tenter sa chance.
 Déterministe (aucun tirage). Même état -> même décision.
 """
 import math
@@ -180,7 +181,8 @@ def options_4e(en_but, a_gagner, ecart, part, k=1.0, secondes_mi_temps=None, spe
 def quatrieme_essai(en_but, a_gagner, ecart, quart, secondes, quart_secondes=180, special_teams_rating=75.0,
                     ecart_unites=0.0, agressivite=0.5, fg_max=65, duree_action=6):
     """Décision du 4e essai : {"choix": "JOUER" | "FG" | "PUNT", "wp": {…}, "ep": {…}, "p": {…}, "raison", …}, ou None
-    quand le match est plié (le coordinateur garde sa règle).
+    quand l'attaque a déjà gagné (le coordinateur garde sa règle). Menée, la prudence d'identité s'efface au fil du
+    dernier quart-temps (en prolongation, menée = dernière possession : plus aucune prudence).
 
     en_but : yards jusqu'à l'en-but adverse ; ecart : attaque − défense ; quart : 1-4 (5+ : prolongation) ;
     secondes : secondes restantes dans le quart-temps ; quart_secondes : longueur d'un quart-temps du match ;
@@ -201,13 +203,19 @@ def quatrieme_essai(en_but, a_gagner, ecart, quart, secondes, quart_secondes=180
     pente = _densite(mu / sd) / sd
     biais = agressivite_biais(agressivite)
     prudence = PRUDENCE_CAMP * max(0.0, en_but - 50) / 50
-    if pente < PENTE_MIN:
-        return None
+    if pente < PENTE_MIN and ecart >= 0:
+        return None                                       # match gagné (ou nul et sans enjeu) : règle du coordinateur
+    if ecart < 0:
+        # menée, la prudence s'efface quand le temps file : entière jusqu'au dernier quart-temps, nulle à la fin
+        urgence = 0.0 if quart >= 5 else max(0.0, min(1.0, part * 4))
+        biais, prudence = biais * urgence, prudence * urgence
+    pente = max(pente, 1e-12)
     def score(opt):
         wp, ep, _ = opts[opt]
         v = wp / pente                                    # en points
         return v + (biais - prudence if opt == "JOUER" else 0.0)
-    choix = max(sorted(opts), key=score)
+    menee = ecart < 0
+    choix = max(sorted(opts), key=lambda o: (round(score(o), 9), menee and o == "JOUER"))   # menée : à égalité, jouer
     kick = max((o for o in opts if o != "JOUER"), key=lambda o: opts[o][0])
     wp_j, ep_j, p_j = opts["JOUER"]
     wp_k, ep_k, _ = opts[kick]
