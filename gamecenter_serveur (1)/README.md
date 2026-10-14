@@ -1179,6 +1179,56 @@ autres — titres, bilans de franchise, records et carrières en étaient fauss�
 - **Tests** : `outils/site/test_histoire.js` (une saison par semaine à partir de la 2, aucun record, titre ni ligne de
   carrière de la semaine 1, en-tête).
 
+### 53. Horloge réelle et valeur des décisions (notebook 12.2 quaterdecies, 14/10/2026 — allumées)
+Feuille de route : « moteur plus intelligent », idées 1 et 2. Modules `moteur/horloge.py` et `moteur/valeur.py` (tests
+`test_horloge.py`, `test_valeur.py`), cellule **12.2 quaterdecies** du notebook. **Décision de Guillaume (14/10)** :
+quarts-temps de 15 min, retransmission ≈ 18 min, 4e essai tel quel mais réaliste selon la situation du match.
+**Allumés** ; `GC_HORLOGE=0` / `GC_VALEUR=0` : moteur d'avant à l'identique (contrôlé) ; `GC_QUART` : longueur du
+quart-temps (900).
+- **Horloge réelle** : l'horloge tourne entre les actions (huddle 36 s, hurry-up 16 s, tuer l'horloge 40 s, ± le tempo du
+  coordinateur) ; elle s'arrête sur une passe incomplète, un changement de possession, une sortie du terrain dans les
+  2 dernières minutes du Q2 et les 5 dernières du Q4, l'avertissement des 2 minutes, un temps mort ; temps morts (3 par
+  mi-temps) de l'équipe menée et de l'attaque en fin de Q2 ; genou (victory formation, fin de Q2 dans son camp) ; spike ;
+  « fire drill » (l'unité de field goal entre en courant). Le temps entre deux actions est compté dans la durée de
+  l'action qui précède : le GameFeed garde une horloge continue (audit inchangé).
+- **Valeur des décisions** : points attendus et probabilité de victoire mesurés sur 597 matchs du moteur ; 4e essai
+  (jouer / field goal / punt) partout sur le terrain, au meilleur choix à un biais d'identité près (agressivité du
+  coordinateur, prudence dans son camp). **Situation du match** : menée, l'équipe perd sa prudence au fil du dernier
+  quart-temps (en prolongation, aucune) ; l'équipe qui a déjà gagné garde la règle d'avant (garbage time) ; dans les
+  dernières secondes, l'équipe menée suit la fin de période (section 22, action par action : « il faut un touchdown ») ;
+  un field goal choisi par la fin de période est gardé. Correctif : la fin de période jouait tous les 4e essais d'une
+  équipe qui mène (elle ne voit pas le ballon rendu) — c'est maintenant la valeur qui décide.
+- **GameFeed** (additif) : `play.clock` (`runoff`, `stop`, `timeout`, `oob`, `timeouts`), `play.fourth_down` (`choice`,
+  `model`, `wp`, `conversion`, `bias`, `reason`), `call.play_id` `KNEEL` / `SPIKE`, `game.clock_model`. **Site** :
+  « goes for it on 4th (…) », « timeout VEC », « two-minute warning » dans le play-by-play (`rpClockNote`, cellule 427
+  comprise). Le site lit déjà la longueur du quart-temps dans le GameFeed (`quarter_seconds`).
+- **Mesures** (552 à 1 104 matchs, 24 franchises ; retransmission = actions × 6,5 s + pauses) :
+
+  | | Moteur actuel (quarts de 3 min) | Horloge réelle + valeur (quarts de 15 min) |
+  |---|---|---|
+  | Actions offensives · points · drives | 130,6 · 54,2 · 22,6 | 134,2 · 54,9 · 23,1 |
+  | Retransmission moyenne (5 % – 95 %) | 18,1 min (15,6 – 20,7) | 18,4 min (15,9 – 21,4) |
+  | Genoux · spikes · temps morts / match | 0 · 0 · 0 | 1,9 · 0,5 · 6,5 |
+  | Q4, attaque qui tue l'horloge : passes | 44 % | 38 % |
+  | 4e et 1 entre ses 30 et le milieu : joués | 42 % | 44 % (AEG 6 % … GMB 100 % sur 4e et 1-3) |
+  | 4e et 4-6 entre les 35 et les 10 adverses : joués | 18 % | 47 % |
+  | Dernière action d'un Q2 / Q4 à portée : field goal | 75 / 266 | 75 / 239 |
+  | Calcul | 229 ms / match | 251 ms / match (+ 10 %) |
+
+  Calibration (1 104 matchs, tolérances de `rapport_calibration.py`) contre le moteur actuel : tout dans les tolérances
+  sauf yards / course − 0,22 (± 0,2) — les genoux comptent comme des courses de − 1 yard ; hors genoux − 0,02.
+  Molette de la durée : huddle 28 s -> 154 actions, 20,9 min, 59 points ; 36 s -> 18,4 min ; 46 s -> 114 actions,
+  15,8 min, 44 points. Variante écartée : l'horloge réelle dans des quarts de 3 min (× 0,2) -> 80 actions, 11,5 min,
+  31 points (toutes les stats et les records d'un match baissent de 40 %).
+- **Cotes en direct (13.4, garde-fou 4)** : avec les paramètres V21, la fin de match gérée faisait mentir le modèle
+  (extrêmes ± 0,071, outsiders en direct + 31 %). Même modèle, paramètres `LIVE_*` ré-ajustés quand l'horloge est
+  allumée (13.1 ; maximum de vraisemblance sur 1 433 matchs, graines 3 100 000 +) : 13.4 (graines 4 000 000 +, 50
+  simulations par affiche) ✅ extrêmes ± 0,023, écart moyen 0,028, outsiders + 1,2 % (90 % : − 8,7 % à + 12,1 %).
+- **Semaine du 19/10 produite** (`generer_semaine.py`, notebook complet, sur une copie de `data/`) en **29,5 min** (machine
+  de 4 cœurs ; étape 6 : 32 min) ; `audit_moteur.py` : **0 anomalie bloquante** (alertes : seulement celles, déjà connues,
+  de la semaine 1). 279 matchs, quarts de 15 min, retransmission 18,7 min en moyenne (14,8 – 23,8), 57,1 points ;
+  par match : 1,8 genou, 0,6 spike, 6,2 temps morts, 4e essais 3,5 joués / 1,8 field goal / 5,0 punts.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

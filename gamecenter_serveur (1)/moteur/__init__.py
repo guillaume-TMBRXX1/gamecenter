@@ -35,6 +35,11 @@ Bloc E — progression des joueurs :
     developpement       notes de base / actuelle / forme, potentiel, rythme de développement, âge (une année = 4
                         semaines), expérience (bonus d'intelligence des blocs B et C) ; évolution par attribut ;
                         anti-inflation (moyenne par unité, plafonds, écart d'équipe borné) ; état persistant (JSON)
+
+Horloge réelle et valeur des décisions (12.2 quaterdecies, coupées par défaut) :
+    horloge             temps entre les actions (huddle, tempo), arrêts, temps morts, avertissement des 2 minutes,
+                        genou, spike, fire drill
+    valeur              points attendus, probabilité de victoire, décision du 4e essai (identité du coordinateur)
 """
 from .aleatoire import flux
 from .progressions import progression

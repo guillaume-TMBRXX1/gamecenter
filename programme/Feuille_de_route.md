@@ -33,6 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; suite : idée 3 (bloc F, course) | notebook (+ modules) + site |
 
 ---
 
@@ -809,6 +810,29 @@ musique, premiers posts, mesure, tableau du bilan du lundi). Une étape = une PR
   fantasy) et champion de la Grand Final, produits le dimanche · 8.6 b ✅ match hors norme (record battu ou 100 points
   cumulés, le mercredi) et franchise de la semaine (ordre fixe, le vendredi ; `Promotion.md` section 7). Plus tard, à décider : commentaire et sous-titres
   incrustés, image de couverture.
+
+## 9 — Moteur plus intelligent (14/10/2026)
+
+Idées proposées le 14/10 (dans l'ordre recommandé) : (1) modèle de valeur commun (points attendus, probabilité de
+victoire) pour les décisions ; (2) horloge réelle ; (3) bloc F, intelligence du jeu de course ; (4) checks avant le snap
+(audibles) ; (5) appel de jeu qui apprend et reste imprévisible ; (6) mémoire d'une semaine à l'autre (scouting depuis les
+GameFeeds) ; (7) pénalités, rotations, blessures, décisions d'équipes spéciales. **Guillaume : « commence par 1 et 2 »**,
+en voyant ensemble la durée des matchs.
+
+**Fait (PR « Horloge réelle et valeur des décisions »)** : `moteur/horloge.py`, `moteur/valeur.py`, cellule 12.2
+quaterdecies, notes du play-by-play — interrupteurs **coupés** (le samedi ne change pas). Mesures : README du serveur,
+section 53. Avec des quarts-temps de 15 min et un huddle de 36 s, la retransmission moyenne reste à ≈ 18 min
+(18,4 contre 18,1) ; le huddle règle la durée (28 s : 20,9 min · 46 s : 15,8 min) ; l'horloge dans des quarts de 3 min
+réduirait tout de 40 % (11,5 min, 31 points).
+
+**Décision de Guillaume (14/10)** : quarts-temps de 15 min, retransmission ≈ 18 min ; 4e essai gardé tel quel, mais
+réaliste selon la situation (menée / large avance, quart-temps, temps restant, identité). Fait : grille situationnelle
+(menée : la prudence s'efface au fil du dernier quart-temps ; gagné : règle d'avant ; dernières secondes, menée : fin de
+période ; correctif du « jouer » systématique de la fin de période pour l'équipe qui mène ; pas de genou au 4e essai) ;
+interrupteurs **allumés** ; cotes en direct ré-ajustées (13.1) et 13.4 ✅ ; semaine du 19/10 produite (29,5 min) et
+auditée (0 anomalie bloquante). **À surveiller le 17/10** : premier samedi avec l'horloge réelle (temps du calcul,
+audit, durée des retransmissions sur le site, commentaire : aucune cue pour genou / spike / temps mort, sous-titres
+seulement). **Suite proposée** : idée 3, bloc F (intelligence du jeu de course).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
