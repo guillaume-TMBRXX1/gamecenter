@@ -13,7 +13,8 @@ const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')
 let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c) fail++; };
 
 const weeks=fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort();
-const DOCS=weeks.map(w=>JSON.parse(fs.readFileSync(path.join(WEEKS,w,'week.json'),'utf8')));
+const ALL=weeks.map(w=>JSON.parse(fs.readFileSync(path.join(WEEKS,w,'week.json'),'utf8')));
+const DOCS=ALL.filter(d=>d.week.index>=2);   /* l'histoire part de la semaine 2 (semaine 1 : 4 franchises seulement) */
 const W=DOCS[DOCS.length-1];
 const ko0=Math.min(...W.schedule.map(g=>Date.parse(g.kickoff)));
 const AT=new Date(ko0+2*3600e3+5*60e3).toISOString();
@@ -38,7 +39,11 @@ const ouvrir=async p=>{ await p.click('.rail-btn[data-view="history"]'); await p
     const H=await get('/league/history'), S=H.seasons, cur=S[S.length-1];
     const delta=await get('/delta'), st={}; for(const g of delta.state.schedule) st[g.id]=g.status;
     console.log('   saisons :',JSON.stringify(S.map(s=>[s.week,s.complete,s.games,s.champion])));
-    check(S.length===DOCS.length,`une saison par semaine (${S.length})`);
+    check(S.length===DOCS.length,`une saison par semaine à partir de la semaine 2 (${S.length})`);
+    const w1=[...Object.values(H.records.game.players),...Object.values(H.records.game.teams),...Object.values(H.records.season.players),...Object.values(H.records.season.teams)].flat().filter(x=>x.week<2);
+    check(H.since_week===2&&S.every(s=>s.week>=2)&&w1.length===0,'semaine 1 exclue : ni saison ni record (since_week = 2)');
+    const w1t=ALL.filter(d=>d.week.index<2).reduce((a,d)=>a+(d.champion?1:0),0);
+    check(w1t===0||H.franchises.reduce((a,f)=>a+f.title_weeks.filter(w=>w<2).length,0)===0,'semaine 1 exclue : aucun titre de la semaine 1 dans Franchises');
     check(S.slice(0,-1).every((s,i)=>s.complete&&s.champion===DOCS[i].champion&&s.runner_up===DOCS[i].runner_up),'semaines terminées : champion et finaliste = week.json');
     const nFin=Object.values(st).filter(x=>x==='final').length;
     check(!cur.complete&&cur.champion===null&&cur.games===nFin&&nFin>0&&nFin<cur.games_total,`semaine en cours : pas de champion, ${cur.games} matchs terminés (serveur : ${nFin})`);
@@ -78,7 +83,9 @@ const ouvrir=async p=>{ await p.click('.rail-btn[data-view="history"]'); await p
     console.log('   carrière :',qb.name,card.rows,'lignes ·',card.txt.slice(0,160));
     check(card.rows===C.seasons.length+(C.seasons.length>1?1:0)&&(C.seasons.length<2||card.tot),`Career : une ligne par semaine (${C.seasons.length}) et le total`);
     check(card.txt.includes(`#${C.ranks.pyd[0]} of ${C.ranks.pyd[1]}`)&&card.txt.includes(String(C.total.pyd)),`Career : rang de toujours #${C.ranks.pyd[0]} · ${C.total.pyd} yards`);
+    check(C.seasons.every(x=>x.week>=2),`Career : rien de la semaine 1 (semaines ${C.seasons.map(x=>x.week).join(', ')})`);
     await p.keyboard.press('Escape');
+    check(/counted from week 2 \(week 1 had only 4 franchises\)/.test(await p.$eval('#viewHistory .eyebrow',e=>e.textContent).catch(()=>'')),'History : « counted from week 2 » dans l\'en-tête');
 
     /* ---- Hide scores : semaines terminées seulement ---- */
     await p.click('.rail-btn[data-view="settings"]'); await p.waitForSelector('[data-set="spoil"]'); await p.click('[data-set="spoil"]'); await p.waitForTimeout(300);

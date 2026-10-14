@@ -5463,6 +5463,8 @@ async function setFavTeam(team){
    Hide scores on (Settings): only the weeks whose Grand Final is played. */
 let LGH=null, HIST_K='', HIST_TAB='seasons', HIST_REC='game', HIST_LOAD=false, CAREER={}, CAREER_K='';
 const HIST_LEAD=[['pyd','Pass yds'],['ryd','Rush yds'],['yd','Rec yds'],['sk','Sacks'],['tk','Tackles'],['int','INT']];
+/* History starts at the server's first counted week (week 2: week 1 had only 4 franchises) */
+function histSince(){ return LGH&&LGH.since_week>1?`from week ${LGH.since_week}`:'all weeks'; }
 function histParam(){ return SET.spoil?'?finished_weeks=1':''; }
 function histKey(t){ return SET.spoil?'s':'a|'+SCHED.filter(g=>gStatus(g,t)==='final').length; }
 function tName(a){ return TEAMS[a]?TEAMS[a].name:a; }
@@ -5489,7 +5491,7 @@ function histFranchisesHTML(){
   const pct=f=>{ const n=f.w+f.l+f.t; return n?((f.w+f.t/2)/n).toFixed(3):'—'; };
   const rows=LGH.franchises.map(f=>`<tr><th scope="row"><span class="badge">${esc(f.team)}</span> ${esc(tName(f.team))}</th><td class="${f.titles?'lead':''}">${f.titles}${f.title_weeks.length?` <small>(${f.title_weeks.map(w=>'W'+w).join(', ')})</small>`:''}</td><td>${f.finals}</td><td>${f.playoffs}</td><td>${f.seasons}</td><td>${f.w}-${f.l}${f.t?'-'+f.t:''}</td><td>${pct(f)}</td><td>${f.pf}</td><td>${f.pa}</td></tr>`).join('');
   return `<div class="card"><div class="st-scroll"><table class="tst stand"><thead><tr><th scope="col">Team</th><th>Titles</th><th>Finals</th><th>Playoffs</th><th>Seasons</th><th>W-L-T</th><th>Pct</th><th>PF</th><th>PA</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="np-note">All weeks · regular-season record · Playoffs = semi-final appearances · a title is the Grand Final.</p></div>`;
+    <p class="np-note">${histSince()[0].toUpperCase()+histSince().slice(1)} · regular-season record · Playoffs = semi-final appearances · a title is the Grand Final.</p></div>`;
 }
 function recCtx(x,kind){
   const ph=x.phase&&x.phase!=='regular'?' · '+(PHASE[x.phase]||x.phase):'';
@@ -5509,11 +5511,11 @@ function histRecordsHTML(){
   if(k==='career') cards=Object.keys(R.career).map(c=>recCard(L[c],R.career[c],'career',10)).join('');
   else { const B=R[k], TL=k==='season'?{pts:'Points in a season',wins:'Wins in a season'}:{};
     cards=Object.keys(B.players).map(c=>recCard(L[c],B.players[c],k,5)).join('')+Object.keys(B.teams).map(c=>recCard(TL[c]||L[c],B.teams[c],k,5,true)).join(''); }
-  return sub+`<div class="rc-grid">${cards}</div><p class="np-note">${k==='game'?'Playoffs included · extra points and kick returns count from the week of 19 October 2026 (when they joined the engine).':k==='season'?'One week is one season, playoffs included.':'All weeks, playoffs included. A rookie who takes a retired player’s roster spot starts his own career.'}</p>`;
+  return sub+`<div class="rc-grid">${cards}</div><p class="np-note">${k==='game'?'Playoffs included · extra points and kick returns count from the week of 19 October 2026 (when they joined the engine).':k==='season'?'One week is one season, playoffs included.':`${histSince()[0].toUpperCase()+histSince().slice(1)}, playoffs included. A rookie who takes a retired player’s roster spot starts his own career.`}</p>`;
 }
 function renderHistory(t){
   const el=document.getElementById('viewHistory'); if(!el) return;
-  const head=`<div class="view-head"><h2>History</h2><p class="eyebrow">Every week is a full season · champions, franchises, records and careers · ${SET.spoil?'<b>Hide scores is on</b>: a week counts once its Grand Final is played':'this week counts game by game, as each one ends'}</p>
+  const head=`<div class="view-head"><h2>History</h2><p class="eyebrow">Every week is a full season · champions, franchises, records and careers${LGH&&LGH.since_week>1?` · counted from week ${LGH.since_week} (week 1 had only 4 franchises)`:''} · ${SET.spoil?'<b>Hide scores is on</b>: a week counts once its Grand Final is played':'this week counts game by game, as each one ends'}</p>
     <div class="seg" role="tablist" aria-label="History">${[['seasons','Seasons'],['franchises','Franchises'],['records','Records']].map(([k,l])=>`<button type="button" role="tab" data-hist="${k}" aria-selected="${HIST_TAB===k}">${l}</button>`).join('')}</div></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>League history is built on the server from every week played.</p></div>'; return; }
   loadHistory(t);

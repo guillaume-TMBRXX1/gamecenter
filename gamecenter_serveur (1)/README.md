@@ -897,7 +897,8 @@ créés = débranchés), la page reste lourde.
 
 ### 43. Histoire de la ligue, records et stats de carrière (bloc 2, étape 5 — 12/10/2026)
 **Décisions de Guillaume (12/10)** : onglet « History » à part ; la semaine en cours compte match par match (« Hide
-scores » : seulement les semaines terminées) ; la semaine 1 (4 franchises) est incluse ; transformations et retours
+scores » : seulement les semaines terminées) ; la semaine 1 (4 franchises) est incluse (**changé le 14/10 : History
+part de la semaine 2, section 52**) ; transformations et retours
 comptent depuis qu'ils existent (semaine du 19/10), sans revenir sur les saisons précédentes.
 - **Rien ne change dans le moteur ni dans le calcul du samedi** : tout se calcule sur le serveur à partir des semaines déjà
   enregistrées (`moteur/histoire.py`, bibliothèque standard ; l'image Docker copie maintenant `moteur/`). Chaque semaine
@@ -1164,6 +1165,20 @@ cours seulement (History › Records garde toutes les semaines).
 - **Tests** : `outils/site/test_classement.js` (groupe site : barre latérale, onglets, rangs et stat clé décroissante,
   meilleur QB = leader de History calculé par le serveur, fiche joueur au même rang, recherche, mobile 390 px).
 
+### 52. History part de la semaine 2 (14/10/2026)
+Demande de Guillaume (14/10) : la semaine 1 n'avait que 4 franchises, qui ont donc joué une saison de plus que les 20
+autres — titres, bilans de franchise, records et carrières en étaient faussés.
+- **Serveur** : `league_history` (`serveur.py`) ne prend que les semaines d'index ≥ `HIST_DEPUIS` (variable
+  `GC_HIST_DEPUIS`, **défaut 2** ; `1` pour tout reprendre). Tout ce qui est calculé à partir de plusieurs semaines suit :
+  Seasons, Franchises (titres, finales, bilans de toujours), Records (un match, une saison, carrière) et la section
+  Career de la fiche joueur (lignes, total, rang de toujours). `/api/league/history` renvoie `since_week`.
+- Rien n'est supprimé : `data/weeks/week_2026-09-28` reste sur le disque, la semaine 1 n'est simplement plus comptée.
+- Ranking, Season leaders et « Season rank » de la fiche joueur ne portaient déjà que sur la semaine en cours.
+- **Site** : l'en-tête de History dit « counted from week 2 (week 1 had only 4 franchises) » ; les notes « All weeks »
+  deviennent « From week 2 ».
+- **Tests** : `outils/site/test_histoire.js` (une saison par semaine à partir de la 2, aucun record, titre ni ligne de
+  carrière de la semaine 1, en-tête).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -1277,7 +1292,8 @@ en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueu
 moteur V25) · `GC_DOMAINE` (domaine du site, ex. `snapline.live` : l'adresse `*.up.railway.app` y est redirigée,
 README section 39) · `GC_GOOGLE_VERIFY` (balise de vérification Google Search Console, facultative,
 README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `GC_CF_ANALYTICS` (jeton Cloudflare Web Analytics,
-statistiques d'audience, README section 50) · `GC_EDITEUR`,
+statistiques d'audience, README section 50) · `GC_HIST_DEPUIS` (première semaine comptée dans History, défaut 2,
+README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47.
 
 ## Test
