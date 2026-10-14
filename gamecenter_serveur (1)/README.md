@@ -1059,6 +1059,13 @@ Search Console suffit).
   `/robots.txt` (tout sauf `/api/`) et `/sitemap.xml`. Texte **« What is Snapline? »** en bas de l'accueil (lisible par
   les moteurs). Bouton **Share** sur le grand écran d'un match de la saison : feuille de partage du téléphone, sinon le
   lien `/?watch=<match>` est copié (il rouvre ce match).
+- **Icône de l'onglet et de Google (favicon, 14/10)** : le logo sur son **dégradé** (celui de l'en-tête, de `/og.png`
+  et de TikTok), déclaré dans la page d'accueil et `/legal` (`<link rel="icon">` : `/favicon.ico` 16-32-48,
+  `/icons/favicon.svg`, `/icons/favicon-192.png`), fait par `node outils/site/faire_favicon.js` (à relancer seulement
+  si le logo change). L'icône de l'**écran d'accueil** du téléphone (`icon-180/192/512`, manifeste) reste **bleu-vert**
+  (choix du 14/10). Google remplace son globe après un nouveau passage : Search Console → *Inspection de l'URL* →
+  `https://snapline.live/` → *Demander l'indexation* (quelques jours, parfois quelques semaines). Test :
+  `moteur/tests/test_favicon.py`.
 - **Google Search Console** (à faire une fois, par Guillaume) :
   1. search.google.com/search-console → *Ajouter une propriété* → **Domaine** → `snapline.live` ; Google donne un
      enregistrement `google-site-verification=…`.
