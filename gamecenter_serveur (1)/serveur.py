@@ -761,6 +761,8 @@ def page():
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
+    if CF_ANALYTICS:                                 # statistiques d'audience : rien sans GC_CF_ANALYTICS
+        s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
     if ADS_CLIENT:                                   # publicités (bloc 2 bis) : rien sans GC_ADSENSE_CLIENT
         s = s.replace("</title>", '</title>\n<meta name="google-adsense-account" content="' + ADS_CLIENT + '">\n'
                       '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS_CLIENT
@@ -793,6 +795,21 @@ def _ads_slots(v):
     return out
 
 
+# Statistiques d'audience : Cloudflare Web Analytics (sans cookies, sans identifiant de visiteur : pas de consentement
+# à demander). GC_CF_ANALYTICS = jeton du site (Cloudflare → Analytics & Logs → Web Analytics → Add a site → JS snippet,
+# la valeur « token ») : sans lui, aucun script. Le script est aussi posé sur /legal pour compter cette page.
+def _cf_token(v):
+    v = (v or "").strip()
+    return v if re.fullmatch(r"[0-9a-f]{32}", v) else ""
+
+
+def _cf_beacon(token):
+    return ("<script defer src=\"https://static.cloudflareinsights.com/beacon.min.js\" "
+            "data-cf-beacon='{\"token\": \"" + token + "\"}'></script>")
+
+
+CF_ANALYTICS = _cf_token(os.environ.get("GC_CF_ANALYTICS"))
+
 ADS_CLIENT = _ads_client(os.environ.get("GC_ADSENSE_CLIENT"))
 ADS_SLOTS = _ads_slots(os.environ.get("GC_ADSENSE_SLOTS")) if ADS_CLIENT else {}
 
@@ -817,6 +834,8 @@ def legal():
     s = (s.replace("__EDITEUR__", val("GC_EDITEUR")).replace("__ADRESSE__", val("GC_EDITEUR_ADRESSE"))
          .replace("__CONTACT__", f'<a href="mailto:{html.escape(contact, quote=True)}">{html.escape(contact)}</a>' if contact else "<i>not set</i>")
          .replace("__ADS__", "on" if ADS_CLIENT else "off"))
+    if CF_ANALYTICS:
+        s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-cache"})
 
 

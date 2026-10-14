@@ -1137,6 +1137,17 @@ résultat et les statistiques jusqu'à ce que l'on quitte le grand écran ; ne p
   notebook n'a pas de grand écran : rien n'y change.
 - **Test** : `outils/site/test_fin_de_match.js` (groupe site de `tests_navigateur.sh`).
 
+### 50. Statistiques d'audience : Cloudflare Web Analytics (14/10/2026)
+Pour mesurer l'audience réelle (visiteurs uniques, pays, pages, sources) avant de décider des offres payantes.
+Cloudflare Web Analytics ne pose **aucun cookie** et n'identifie pas les visiteurs : pas de consentement à demander.
+- **Rien ne change tant que `GC_CF_ANALYTICS` n'est pas posé.** Avec lui, le script
+  `static.cloudflareinsights.com/beacon.min.js` est ajouté dans le `<head>` de `/` et de `/legal`.
+- **Obtenir le jeton** : dash.cloudflare.com → *Analytics & Logs* → *Web Analytics* → *Add a site* → `snapline.live` →
+  choisir l'installation par **JS snippet** (pas l'injection automatique, pour ne pas compter deux fois) → copier la
+  valeur `token` (32 caractères hexadécimaux) → variable Railway `GC_CF_ANALYTICS`. Un jeton mal formé est ignoré.
+- La page `/legal` décrit ces statistiques (section *Audience statistics* et *Services we use*).
+- Tests : `moteur/tests/test_publicites.py` (`test_statistiques_cloudflare`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -1249,7 +1260,8 @@ de passe du bloc A coupées, moteur V21 ; allumées par défaut) · `GC_BLOC_B=0
 en match du bloc D coupés : moteur V24) · `GC_BLOC_E=0` (progression des joueurs coupée : rosters de base chaque semaine,
 moteur V25) · `GC_DOMAINE` (domaine du site, ex. `snapline.live` : l'adresse `*.up.railway.app` y est redirigée,
 README section 39) · `GC_GOOGLE_VERIFY` (balise de vérification Google Search Console, facultative,
-README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `GC_EDITEUR`,
+README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `GC_CF_ANALYTICS` (jeton Cloudflare Web Analytics,
+statistiques d'audience, README section 50) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47.
 
 ## Test
