@@ -87,7 +87,7 @@ for _k in range(_P["candidates"]):
             "two_minute": sum(1 for p in _pl if (p.get("clock") or {}).get("stop") == "avertissement des 2 minutes"),
             "kneels": sum(1 for p in _pl if (p.get("call") or {}).get("play_id") == "KNEEL"),
             "spikes": sum(1 for p in _pl if (p.get("call") or {}).get("play_id") == "SPIKE"),
-            "kick_returns": sum(1 for p in _pl if (p.get("kick_return") or {}).get("retour")),
+            "kick_returns": sum(1 for p in _pl if (p.get("kick_return") or {}).get("return")),
             "cutbacks": sum(1 for p in _pl if (p.get("run") or {}).get("read") in ("cutback", "bounce")),
             "stuffed": sum(1 for p in _pl if (p.get("run") or {}).get("read") == "stuffed"),
             "heavy_box": sum(1 for p in _pl if ((p.get("run") or {}).get("box") or 0) >= 8)}
