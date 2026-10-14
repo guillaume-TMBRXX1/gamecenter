@@ -1220,7 +1220,10 @@ quart-temps (900).
   Molette de la durée : huddle 28 s -> 154 actions, 20,9 min, 59 points ; 36 s -> 18,4 min ; 46 s -> 114 actions,
   15,8 min, 44 points. Variante écartée : l'horloge réelle dans des quarts de 3 min (× 0,2) -> 80 actions, 11,5 min,
   31 points (toutes les stats et les records d'un match baissent de 40 %).
-- **Contrôles avant l'allumage** : voir « Allumage » ci-dessous.
+- **Cotes en direct (13.4, garde-fou 4)** : avec les paramètres V21, la fin de match gérée faisait mentir le modèle
+  (extrêmes ± 0,071, outsiders en direct + 31 %). Même modèle, paramètres `LIVE_*` ré-ajustés quand l'horloge est
+  allumée (13.1 ; maximum de vraisemblance sur 1 433 matchs, graines 3 100 000 +) : 13.4 (graines 4 000 000 +, 50
+  simulations par affiche) ✅ extrêmes ± 0,023, écart moyen 0,028, outsiders + 1,2 % (90 % : − 8,7 % à + 12,1 %).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
