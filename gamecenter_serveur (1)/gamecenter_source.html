@@ -3207,7 +3207,13 @@ function rpClockNote(P,g){ const c=P.clock_decision; let s='';
   const k=P.clock; if(k&&k.timeout){ const t=g&&(k.timeout==='home'?g.home:g.away); s+=' · timeout '+esc(String((t&&typeof TEAMS!=='undefined'&&TEAMS[t]&&TEAMS[t].abbr)||t||k.timeout)); }
   else if(k&&k.stop==='avertissement des 2 minutes') s+=' · two-minute warning';
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+/* block F (engine 12.2 quindecies, play.run): defenders in the box, how the back read the hole */
+function rpRunNote(P){ const r=P.run; if(!r) return ''; let s='';
+  const b=num(r.box,7); if(b>=8||b<=5) s+=' · '+b+' in the box';
+  if(r.read==='cutback') s+=' · cutback'; else if(r.read==='bounce') s+=' · bounced outside';
+  else if(r.read==='stuffed') s+=' · stuffed at the line';
+  return s; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
