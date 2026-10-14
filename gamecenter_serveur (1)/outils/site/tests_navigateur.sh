@@ -66,6 +66,7 @@ SEM=(); [ "$SEMAINES" != 0 ] && SEM=(--semaines "$SEMAINES")
 if [ $SITE = 1 ]; then
   lancer "Audio : AudioEventMapper" node outils/audio/test_mapper_v01.js data/weeks
   lancer "Site : pauses de retransmission" node outils/site/test_pauses.js
+  lancer "Site : fin de match dans le grand écran" node outils/site/test_fin_de_match.js
   lancer "Site : recherche" node outils/site/test_recherche.js data/weeks 8108
   lancer "Site : scores des matchs terminés" node outils/site/test_bandeau.js
   lancer "Site : transformations après un touchdown" node outils/site/test_transformation.js
