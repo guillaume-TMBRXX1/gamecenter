@@ -3211,7 +3211,7 @@ function rpClockNote(P,g){ const c=P.clock_decision; let s='';
 function rpRunNote(P){ const r=P.run; if(!r) return ''; let s='';
   const b=num(r.box,7); if(b>=8||b<=5) s+=' · '+b+' in the box';
   if(r.read==='cutback') s+=' · cutback'; else if(r.read==='bounce') s+=' · bounced outside';
-  else if(r.read==='stuffed') s+=' · stuffed at the line';
+  else if(r.read==='stuffed') s+=' · stuffed at the line'; else if(r.read==='broken_tackle') s+=' · breaks a tackle at the line';
   return s; }
 function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;

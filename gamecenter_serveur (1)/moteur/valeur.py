@@ -178,6 +178,23 @@ def options_4e(en_but, a_gagner, ecart, part, k=1.0, secondes_mi_temps=None, spe
     return out
 
 
+def pourcent(x, d=0):
+    """Probabilité lisible : « <1% » / « >99% » aux extrémités."""
+    if x < 0.005:
+        return "<1%"
+    if x > 0.995:
+        return ">99%"
+    return f"{x:.{d}%}"
+
+
+def texte_wp(a, wp_a, b, wp_b):
+    """« go 55% vs punt 50% win prob. » ; une décimale si l'arrondi les confond, « ≈ » s'ils sont à égalité."""
+    for d in (0, 1):
+        if pourcent(wp_a, d) != pourcent(wp_b, d):
+            return f"{a} {pourcent(wp_a, d)} vs {b} {pourcent(wp_b, d)} win prob."
+    return f"{a} ≈ {b} {pourcent(wp_a)} win prob."
+
+
 def quatrieme_essai(en_but, a_gagner, ecart, quart, secondes, quart_secondes=180, special_teams_rating=75.0,
                     ecart_unites=0.0, agressivite=0.5, fg_max=65, duree_action=6):
     """Décision du 4e essai : {"choix": "JOUER" | "FG" | "PUNT", "wp": {…}, "ep": {…}, "p": {…}, "raison", …}, ou None
@@ -220,7 +237,7 @@ def quatrieme_essai(en_but, a_gagner, ecart, quart, secondes, quart_secondes=180
     wp_j, ep_j, p_j = opts["JOUER"]
     wp_k, ep_k, _ = opts[kick]
     nom = {"JOUER": "go", "FG": "field goal", "PUNT": "punt"}
-    detail = f"{nom['JOUER']} {wp_j:.0%} vs {nom[kick]} {wp_k:.0%} win prob."
+    detail = texte_wp(nom["JOUER"], wp_j, nom[kick], wp_k)
     if choix == "JOUER":
         raison = f"{p_j:.0%} to convert · " + detail
     else:

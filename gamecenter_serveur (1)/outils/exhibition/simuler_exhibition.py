@@ -15,7 +15,9 @@ une cellule ajoutée à la volée qui :
      QB (lectures au-delà de la première, passes sous pression, scrambles, throwaways, sacks « ballon gardé »), duels
      receveur / défenseur (réceptions disputées réussies, ballons défendus, coverage busts), safety, ajustements en
      direct, score serré, concepts variés ; depuis V27 : nouvelles formations, motions, lectures RPO et option, défense
-     déguisée (pression présentée, coquille qui tourne) ;
+     déguisée (pression présentée, coquille qui tourne) ; depuis le 14/10 : horloge réelle (temps morts, avertissement
+     des 2 minutes, genou, spike), 4e essais joués par la valeur, retours de coup d'envoi, lectures de course du bloc F
+     (cutback, rebond, bloqué, boîte chargée) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -78,7 +80,17 @@ for _k in range(_P["candidates"]):
             # V29 : le défenseur qui arrête l'action (cercle rouge sur le terrain) — sacks, passes défendues, interceptions
             "sacks": sum(1 for p in _pl if p.get("result") == "sack"),
             "passes_defended": sum(1 for p in _pl if ((p.get("players") or {}).get("defender") or {}).get("credit") == "PASS_DEFENDED"),
-            "interceptions": sum(1 for p in _pl if p.get("result") == "interception")}
+            "interceptions": sum(1 for p in _pl if p.get("result") == "interception"),
+            # 14/10 : horloge réelle et valeur des décisions (12.2 quaterdecies), bloc F (12.2 quindecies), retours
+            "fourth_go": sum(1 for p in _pl if (p.get("fourth_down") or {}).get("choice") == "go"),
+            "timeouts": sum(1 for p in _pl if (p.get("clock") or {}).get("timeout")),
+            "two_minute": sum(1 for p in _pl if (p.get("clock") or {}).get("stop") == "avertissement des 2 minutes"),
+            "kneels": sum(1 for p in _pl if (p.get("call") or {}).get("play_id") == "KNEEL"),
+            "spikes": sum(1 for p in _pl if (p.get("call") or {}).get("play_id") == "SPIKE"),
+            "kick_returns": sum(1 for p in _pl if (p.get("kick_return") or {}).get("return")),
+            "cutbacks": sum(1 for p in _pl if (p.get("run") or {}).get("read") in ("cutback", "bounce")),
+            "stuffed": sum(1 for p in _pl if (p.get("run") or {}).get("read") == "stuffed"),
+            "heavy_box": sum(1 for p in _pl if ((p.get("run") or {}).get("box") or 0) >= 8)}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -87,7 +99,10 @@ for _k in range(_P["candidates"]):
               + 2 * min(_dec["bracket_throws"], 4)
               + 3 * min(_dec["xp_formations"], 12) + min(_dec["motions"], 12) + 4 * min(_dec["rpo"], 4)
               + 6 * min(_dec["rpo_throws"], 2) + 4 * min(_dec["options"], 4) + 2 * min(_dec["disguised"], 6)
-              + 5 * min(_dec["sacks"], 5) + 5 * min(_dec["passes_defended"], 5) + 8 * min(_dec["interceptions"], 2))
+              + 5 * min(_dec["sacks"], 5) + 5 * min(_dec["passes_defended"], 5) + 8 * min(_dec["interceptions"], 2)
+              + 8 * min(_dec["fourth_go"], 4) + 6 * min(_dec["timeouts"], 4) + 6 * min(_dec["two_minute"], 2)
+              + 10 * min(_dec["kneels"], 1) + 10 * min(_dec["spikes"], 1) + 4 * min(_dec["kick_returns"], 4)
+              + 4 * min(_dec["cutbacks"], 5) + 3 * min(_dec["stuffed"], 4) + min(_dec["heavy_box"], 8))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
@@ -112,7 +127,7 @@ def main():
     ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Notebook V29 · 8 franchises · red ring on the defender who stops the play")
+    ap.add_argument("--titre", default="Real game clock (15-min quarters) · 4th downs by win probability · run game (block F)")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")
