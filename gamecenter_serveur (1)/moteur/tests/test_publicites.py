@@ -30,10 +30,12 @@ class Req:
 class TestPublicites(unittest.TestCase):
     def setUp(self):
         self.avant = (serveur.ADS_CLIENT, serveur.ADS_SLOTS)
+        self.avant_cf = serveur.CF_ANALYTICS
         self.env = {k: os.environ.get(k) for k in ("GC_EDITEUR", "GC_EDITEUR_ADRESSE", "GC_CONTACT")}
 
     def tearDown(self):
         serveur.ADS_CLIENT, serveur.ADS_SLOTS = self.avant
+        serveur.CF_ANALYTICS = self.avant_cf
         for k, v in self.env.items():
             if v is None:
                 os.environ.pop(k, None)
@@ -47,6 +49,19 @@ class TestPublicites(unittest.TestCase):
         self.assertEqual(serveur._ads_slots("half=1234567, home = 7654321,page=x,autre=1234567,page=99"),
                          {"half": "1234567", "home": "7654321"})
         self.assertEqual(serveur._ads_slots(""), {})
+
+    def test_statistiques_cloudflare(self):
+        jeton = "0123456789abcdef0123456789abcdef"
+        self.assertEqual(serveur._cf_token(" " + jeton + " "), jeton)
+        for faux in ("", "0123", jeton.upper(), jeton[:-1] + '"', jeton + "'><script>"):
+            self.assertEqual(serveur._cf_token(faux), "", faux)
+        serveur.CF_ANALYTICS = ""
+        self.assertNotIn("cloudflareinsights", serveur.legal().body.decode())
+        serveur.CF_ANALYTICS = jeton
+        s = serveur.legal().body.decode()
+        self.assertIn('static.cloudflareinsights.com/beacon.min.js', s)
+        self.assertIn('data-cf-beacon=\'{"token": "' + jeton + '"}\'', s)
+        self.assertIn("Cloudflare Web Analytics", s)
 
     def test_ads_txt(self):
         serveur.ADS_CLIENT = ""
