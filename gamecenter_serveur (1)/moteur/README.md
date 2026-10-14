@@ -233,6 +233,33 @@ contre le moteur (points réellement marqués depuis les mêmes situations). Tem
 n'écoule pas l'horloge entre deux actions (`TEMPS_ENTRE_ACTIONS = 0`). Déterministe. Interrupteur du notebook :
 `FIN_PERIODE_ENABLED` (`GC_FIN_PERIODE=0` : moteur V27). Tests : `test_fin_de_periode.py`.
 
+## Horloge réelle et valeur des décisions (notebook 12.2 quaterdecies, 14/10/2026 — coupées)
+
+Constat (semaine du 12/10, 279 matchs) : 0 s entre deux actions (tuer l'horloge ne tuait presque rien : 53 % de passes
+pour l'équipe qui mène dans la dernière minute ; ni genou, ni spike, ni temps mort utile) et un 4e essai à deux seuils
+fixes (4e et 1 entre ses 30 et le milieu de terrain joué 20 % du temps).
+
+```
+snap ── fin_de_periode (12.2 undecies, en secondes ÉQUIVALENTES)      field goal / jouer dans les dernières secondes
+   │    horloge.avant_snap(...)                                       genou (victory formation) · spike
+   │    valeur.quatrieme_essai(...)                                   4e essai : jouer / field goal / punt (WP + identité)
+   ▼
+action (moteur, inchangé)
+   ▼
+horloge.apres_action(...)  ->  temps jusqu'au snap suivant           arrêt (incomplète, possession, sortie en fin de
+                                (ajouté à la durée de l'action)      mi-temps, 2 minutes, temps mort, spike, fire drill)
+                                                                     ou huddle selon le tempo (normal / hurry / clock)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `horloge.py` | `EtatHorloge` (temps morts par mi-temps, horloge arrêtée), `apres_action` (temps entre les actions ; sortie du terrain dans le flux « horloge »), `avant_snap` / `genou` / `spike`, `veut_arreter` (qui pose un temps mort), `veut_les_points` (fire drill), `secondes_equivalentes` (réglages en secondes de V21 et de la fin de période, mesurés sans temps entre les actions). Durées à l'échelle NFL (quart de 900 s), × `echelle(quart_secondes)` |
+| `valeur.py` | `points_attendus` (1er essai, mesuré sur 597 matchs du moteur), `probabilite_victoire` (marge finale ~ normale, écart-type 13,2 × part restante^0,38, mesuré), `conversion`, `depart_apres_punt`, `options_4e`, `quatrieme_essai` (meilleure WP, convertie en points pour le biais d'identité : `BIAIS` selon l'agressivité du coordinateur, `PRUDENCE_CAMP` dans son camp ; match plié : None) |
+
+Interrupteurs du notebook : `HORLOGE_ENABLED` (`GC_HORLOGE=1`, quart-temps `GC_QUART`, 900 par défaut) et
+`VALEUR_ENABLED` (`GC_VALEUR=1`), **coupés** : moteur d'avant à l'identique (contrôlé). Mesures et décision à prendre
+(durée des retransmissions) : README du serveur, section 53. Tests : `test_horloge.py`, `test_valeur.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
