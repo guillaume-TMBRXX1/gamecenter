@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | **codé, coupé** (12.2 quaterdecies, `GC_HORLOGE` / `GC_VALEUR`) — **à décider avec Guillaume : durée des retransmissions** (README section 53) ; puis 13.4, semaine re-produite, allumage | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; suite : idée 3 (bloc F, course) | notebook (+ modules) + site |
 
 ---
 
@@ -825,10 +825,14 @@ section 53. Avec des quarts-temps de 15 min et un huddle de 36 s, la retransmiss
 (18,4 contre 18,1) ; le huddle règle la durée (28 s : 20,9 min · 46 s : 15,8 min) ; l'horloge dans des quarts de 3 min
 réduirait tout de 40 % (11,5 min, 31 points).
 
-**À décider (Guillaume)** : (a) quarts-temps de 15 min (horloge NFL à l'écran) et durée moyenne visée (≈ 18 min
-recommandé : rien ne change pour le calendrier ni les stats) ; (b) agressivité au 4e essai (aujourd'hui : 4e et 4-6
-entre les 35 et les 10 adverses joué 47 % contre 18 %, identités de 6 % à 100 %). **Ensuite** : 13.4 (cotes en direct),
-semaine re-produite et auditée, temps du samedi, allumage par défaut.
+**Décision de Guillaume (14/10)** : quarts-temps de 15 min, retransmission ≈ 18 min ; 4e essai gardé tel quel, mais
+réaliste selon la situation (menée / large avance, quart-temps, temps restant, identité). Fait : grille situationnelle
+(menée : la prudence s'efface au fil du dernier quart-temps ; gagné : règle d'avant ; dernières secondes, menée : fin de
+période ; correctif du « jouer » systématique de la fin de période pour l'équipe qui mène ; pas de genou au 4e essai) ;
+interrupteurs **allumés** ; cotes en direct ré-ajustées (13.1) et 13.4 ✅ ; semaine du 19/10 produite (29,5 min) et
+auditée (0 anomalie bloquante). **À surveiller le 17/10** : premier samedi avec l'horloge réelle (temps du calcul,
+audit, durée des retransmissions sur le site, commentaire : aucune cue pour genou / spike / temps mort, sous-titres
+seulement). **Suite proposée** : idée 3, bloc F (intelligence du jeu de course).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).

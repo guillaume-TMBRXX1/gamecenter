@@ -1224,6 +1224,10 @@ quart-temps (900).
   (extrêmes ± 0,071, outsiders en direct + 31 %). Même modèle, paramètres `LIVE_*` ré-ajustés quand l'horloge est
   allumée (13.1 ; maximum de vraisemblance sur 1 433 matchs, graines 3 100 000 +) : 13.4 (graines 4 000 000 +, 50
   simulations par affiche) ✅ extrêmes ± 0,023, écart moyen 0,028, outsiders + 1,2 % (90 % : − 8,7 % à + 12,1 %).
+- **Semaine du 19/10 produite** (`generer_semaine.py`, notebook complet, sur une copie de `data/`) en **29,5 min** (machine
+  de 4 cœurs ; étape 6 : 32 min) ; `audit_moteur.py` : **0 anomalie bloquante** (alertes : seulement celles, déjà connues,
+  de la semaine 1). 279 matchs, quarts de 15 min, retransmission 18,7 min en moyenne (14,8 – 23,8), 57,1 points ;
+  par match : 1,8 genou, 0,6 spike, 6,2 temps morts, 4e essais 3,5 joués / 1,8 field goal / 5,0 punts.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
