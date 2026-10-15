@@ -23,6 +23,7 @@ Ce module donne une VALEUR à chaque option, partout sur le terrain et à tout m
       Menée, l'équipe perd sa prudence au fil du dernier quart-temps : il faut tenter sa chance.
 Déterministe (aucun tirage). Même état -> même décision.
 """
+from moteur import field_goal as _fg
 import math
 
 VERSION = "valeur-1"
@@ -78,10 +79,8 @@ def conversion(a_gagner, ecart_unites=0.0):
 
 
 def probabilite_fg(distance, special_teams_rating=75.0):
-    """Même barème que le moteur (calculate_field_goal_probability, notebook 07 ; fin_de_periode)."""
-    base = (0.98 if distance <= 30 else 0.92 if distance <= 40 else 0.80 if distance <= 50 else 0.65 if distance <= 60
-            else 0.45 if distance <= 70 else 0.15)
-    return round(max(0.01, min(0.99, base + (special_teams_rating - 75) / 100)), 4)
+    """Barème des field goals des franchises (moteur/field_goal.py : celui du moteur jusqu'à 60 yards, réaliste au-delà)."""
+    return _fg.probabilite(distance, special_teams_rating)
 
 
 def depart_apres_punt(en_but):

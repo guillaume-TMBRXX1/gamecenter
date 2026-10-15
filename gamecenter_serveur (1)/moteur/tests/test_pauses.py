@@ -121,21 +121,31 @@ class TestParite(unittest.TestCase):
             self.assertEqual({"q": int(m.group(1)), "half": int(m.group(2))}, serveur.BREAK_SEC)
         code = "\n".join([
             "const num=(v,f)=>(typeof v==='number'&&isFinite(v))?v:f; const PLAY_SEC=6.5;",
+            h[h.index("const psec="):h.index("\n", h.index("const psec="))],
             m.group(0),
             h[h.index("function brkKind(P)"):h.index("/* breaks are for the match itself")],
             h[h.index("const _tl=new WeakMap();"):h.index("/* where the broadcast of game s is at t")],
             "const fs=require('fs'); const out={};",
             "for(const p of process.argv.slice(2)){ const f=JSON.parse(fs.readFileSync(p)); const L=tlOf(f);",
-            "  out[p]={ends:L.st.map(x=>x+PLAY_SEC),total:L.total,bk:L.bk}; }",
+            "  out[p]={ends:L.st.map((x,i)=>x+L.du[i]),total:L.total,bk:L.bk}; }",
             "process.stdout.write(JSON.stringify(out));",
         ])
         files = [os.path.join(w, "games", f) for w in SEMAINES for f in sorted(os.listdir(os.path.join(w, "games")))][:120]
+        # un match avec play.show (horloge continue, moteur/ecran.py, 14/10/2026) : temps d'écran variable par action
+        from moteur import ecran
+        F = json.load(open(files[0], encoding="utf-8"))
+        for pl, c in zip(F["plays"], ecran.chronologie(F["plays"])):
+            pl["show"] = c
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fs:
+            json.dump(F, fs)
+        files.append(fs.name)
         with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as fh:
             fh.write(code)
         try:
             res = json.loads(subprocess.run(["node", fh.name, *files], capture_output=True, text=True, check=True).stdout)
         finally:
             os.unlink(fh.name)
+        self.addCleanup(os.unlink, fs.name)
         for p in files:
             P = json.load(open(p, encoding="utf-8"))["plays"]
             if serveur is not None:

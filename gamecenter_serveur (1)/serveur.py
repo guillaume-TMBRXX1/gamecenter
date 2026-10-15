@@ -45,15 +45,23 @@ def break_kind(p):
     return None
 
 
+def play_sec(p):
+    """Durée d'une action à l'écran : play.show.sec (horloge continue, moteur/ecran.py, 14/10/2026), sinon PLAY_SEC
+    (matchs calculés avant)."""
+    s = (p.get("show") or {}).get("sec")
+    return float(s) if isinstance(s, (int, float)) and s > 0 else PLAY_SEC
+
+
 def play_ends(plays):
-    """Fin (s après le coup d'envoi) de chaque action à l'écran : l'action i commence à i·PLAY_SEC + les pauses qui
-    suivent les actions 0..i-1 et dure PLAY_SEC. Croissant : révélées à l'instant t = bisect(ends, t)."""
-    ends, off = [], 0.0
-    for i, p in enumerate(plays):
-        ends.append(i * PLAY_SEC + off + PLAY_SEC)
+    """Fin (s après le coup d'envoi) de chaque action à l'écran : l'action i commence après les actions 0..i-1 (chacune
+    play_sec) et les pauses qui les suivent. Croissant : révélées à l'instant t = bisect(ends, t)."""
+    ends, t = [], 0.0
+    for p in plays:
+        t += play_sec(p)
+        ends.append(t)
         b = break_kind(p)
         if b:
-            off += BREAK_SEC[b]
+            t += BREAK_SEC[b]
     return ends
 
 

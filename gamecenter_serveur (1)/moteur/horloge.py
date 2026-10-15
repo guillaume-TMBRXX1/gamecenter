@@ -61,6 +61,8 @@ EN_BUT_Q2 = 65                 # … si elle est à 65 yards de l'en-but au plus
 SPIKE_FIN = 60                 # spike dans la dernière minute
 GENOU_Q2 = 40                  # Q2 : genou dans son camp quand il reste moins de 40 s
 GENOU_Q2_EN_BUT = 60           # … à 60 yards de l'en-but au moins
+GENOU_EGALITE = 20             # Q4 à égalité, dans son camp, moins de 20 s : genou (le nul ou la prolongation) plutôt
+GENOU_EGALITE_EN_BUT = 60      # qu'une action désespérée ou un field goal hors de portée (14/10/2026)
 FEU = 18                       # « fire drill » : sans temps mort, l'unité de field goal entre en courant si l'horloge
 RESTE_FEU = 3                  # allait s'écouler (au moins 18 s) ; elle tire avec 3 s au chrono
 EN_BUT_FG = 47                 # à portée : field goal de 64 yards au plus (fin_de_periode.DISTANCE_MAX)
@@ -123,7 +125,12 @@ def veut_arreter(equipe_attaque, attaque, quart, secondes, ecart_attaque, en_but
 
 def genou(quart, secondes, essai, ecart_attaque, en_but, temps_morts_defense, k, duree_action=5):
     """L'attaque pose-t-elle le genou ? (victory formation, ou fin de Q2 dans son camp)."""
-    if secondes <= 0 or ecart_attaque <= 0 and quart != 2:
+    if secondes <= 0:
+        return False
+    if (quart == 4 and ecart_attaque == 0 and essai < 4 and en_but >= GENOU_EGALITE_EN_BUT
+            and secondes <= _s(GENOU_EGALITE, k)):
+        return True                                            # égalité, loin de l'en-but, quelques secondes
+    if ecart_attaque <= 0 and quart != 2:
         return False
     if quart == 4 or quart >= 5:
         if quart >= 5:

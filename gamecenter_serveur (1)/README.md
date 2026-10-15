@@ -1254,6 +1254,44 @@ Feuille de route : « moteur plus intelligent », idée 3. Module `moteur/course
 - **GameFeed** (additif) : `play.run` = {box, side, hole, read, contact, tackler, front, key_block}. **Site** :
   « 8 in the box », « cutback », « bounced outside », « stuffed at the line », « breaks a tackle at the line » dans le play-by-play (cellule 427 comprise) — la lecture affichée est réconciliée avec le gain final (une course « bloquée » qui gagne 4 yards ou plus a cassé un plaquage ; 2-3 yards : course « designed » ; un cutback ou rebond à moins de 2 yards : « designed »).
 
+### 55. Punts avec retour, course dessinée, horloge continue, fin de match (14-15/10/2026)
+Retours de Guillaume sur l'exhibition GMB–MNL du 14/10 : retours de punt absents, course pas dessinée, horloge illisible
+(« on ne s'y retrouve pas »), field goals de 63-64 yards à la suite en fin de match.
+- **Punt avec retour** (module `moteur/punt.py`, tests `test_punt.py`, notebook **12.2 sexdecies**, `GC_PUNT=0` : moteur
+  d'avant) : longueur selon le punter (≈ 46,5 yards bruts, ≈ 42 nets) ; près du terrain adverse, punt de précision vers la
+  ligne des 10 ; touchback, fair catch, ballon arrêté par la couverture, sortie, ou retour du retourneur (le plus rapide
+  des WR2, WR3, RB2) contre les équipes spéciales ; touchdown sur retour (6 points, transformation du receveur, puis son
+  coup d'envoi). 400 matchs : 2 010 punts — retours 40 %, fair catches 32 %, arrêtés 13 %, sorties 10 %, touchbacks 5 %,
+  3 touchdowns. `valeur.PUNT_NET` (4e essai) mesuré sur ce punt. 11.1 garde `points_against` / `same_offense_next`.
+  GameFeed : `play.punt_return = {kick, landing, result, return, td, catch, pinned, returner}` ; touchdown sur retour :
+  résultat `punt`, 6 points au receveur, `try_follows`. Site : animation (le retourneur attrape et remonte, fair catch,
+  rebond et gunner), bannières, Match centre (« Punt return yards », tableau « Punt returns »), commentaire, sons. Audit et
+  vidéos : touchdown sur retour de punt.
+- **Course dessinée** (bloc F) : le placement latéral (11.6) suit le côté du bloc F (cutback : de l'autre côté ; rebond :
+  près de la touche) ; le site place au snap autant de défenseurs dans la boîte que le moteur, ouvre ou ferme le trou,
+  dessine la lecture du porteur (cutback, rebond, bloqué, plaquage cassé) et met l'anneau rouge sur le plaqueur du bon
+  niveau (ligne, linebackers, secondaire).
+- **Horloge continue** (module `moteur/ecran.py`, tests `test_ecran.py`, notebook **12.2 octodecies**, `GC_ECRAN=0`) :
+  chaque action a son temps d'écran — avant le snap, le chrono des 40 s utilisé, accéléré 26 fois (l'horloge du match
+  tourne avec lui si elle tournait) ; l'action (animations × 0,8) ; l'après. ≈ 15 min par match, pauses comprises (avant
+  ≈ 18,5). GameFeed : `play.show = {sec, pre, act, post, c0, pt, pc, to}`, `game.broadcast`. Serveur (`play_sec`) et site
+  (`psec`, `tlOf`) révèlent chaque action à la fin de son temps d'écran ; sans `play.show` : 6,5 s comme avant. Site :
+  horloge qui s'écoule en continu (arrêtée sur incomplète, sortie, changement de possession, temps mort), **chrono des
+  40 s** à côté (25 après un temps mort, un changement de possession ou un quart-temps ; rouge sous 5 s : ce qu'il reste au
+  snap dit si l'équipe a pressé ou tué le temps), **temps morts restants** sous chaque équipe, bannière TIMEOUT.
+- **Fin de match** : `moteur/field_goal.py` (partagé par le moteur des franchises — 12.2 septendecies —, `fin_de_periode`
+  et `valeur`) : jusqu'à 60 yards inchangé ; au-delà 40 % à 61 yards puis − 6 points par yard, 2 % après 67 (avant : 45 %
+  jusqu'à 70 yards) ; `horloge.genou` : à égalité au Q4, dans son camp, moins de 20 s : genou.
+- **FRG** (décision de Guillaume du 15/10) : lignes offensive et défensive 87 → 86 (59,6 % de victoires sur 736 matchs →
+  58,4 %).
+- **Tests 12.3 / 13.2** : chaque affiche a ses propres graines (`_balance_seed`) — les 4 mêmes graines pour les 552
+  affiches valaient 4 tirages (une même graine donne des matchs semblables quelle que soit l'affiche : 64,8 points par
+  match pour la graine 50 003, 52,5 pour la 50 000) ; sur main, 13.2 échouait (over 57,1 %).
+- **Cotes en direct** (13.1) : `LIVE_HOME` (1 point d'avantage du terrain qui s'efface avec le temps : la valeur de la
+  possession pesait d'emblée contre le domicile, qui ne reçoit pas le coup d'envoi) et `LIVE_*` ré-ajustés sur 1 433
+  matchs : 13.4 passe (écart moyen 0,035 → 0,020 sur son échantillon).
+- **Tests navigateur** : `test_punts.js`, `test_courses.js`, `test_horloge.js` (groupe site).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
