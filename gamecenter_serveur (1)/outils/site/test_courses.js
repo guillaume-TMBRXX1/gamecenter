@@ -85,7 +85,8 @@ async function server(){
     const C=R.out.filter(o=>o.box!=null&&o.carrier7);
     console.log(`   ${C.length} courses du porteur dessinées (sur ${K.length})`);
     check(C.length>=Math.min(10,K.length),'les courses sont jouées');
-    const boxKo=C.filter(o=>o.box!==o.run.box);
+    const boxKo=C.filter(o=>o.box!==o.run.box&&!((F.plays[o.seq-1].call.defense||{}).presented));   /* a disguised look (mug, rotation) shows more before the snap: intended */
+    if(boxKo.length) console.log('   boîte :',JSON.stringify(boxKo.map(o=>({seq:o.seq,box:o.box,want:o.run.box,def:(F.plays[o.seq-1].call.defense||{})}))));
     check(!boxKo.length,`défenseurs dans la boîte au snap = moteur`+(boxKo.length?` : ${boxKo.length} écarts (ex. ${boxKo[0].box} ≠ ${boxKo[0].run.box})`:''));
     const sideKo=C.filter(o=>{ const d=F.plays[o.seq-1].offense==='home'?1:-1, want=(o.run.side==='left'?-1:1)*d; return o.side!==want; });
     check(sideKo.length<=Math.ceil(C.length*0.05),`le trou est du côté choisi (gauche / droite de l'attaque) : ${C.length-sideKo.length} / ${C.length}`);
