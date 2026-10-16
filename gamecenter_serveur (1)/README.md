@@ -1357,6 +1357,8 @@ l'exhibition, un receveur attrapait le ballon au milieu du terrain et piquait à
 - **Site** : décompte du temps mort lu dans `show.tl` ; `test_horloge.js` (ecran-3) : l'horloge n'accélère pas trop
   (médiane ≤ 2,2 s de match par seconde, aucun pas au-delà de 3,2), chrono de 10 s, « TO :15 », sorties sur la touche,
   match rejoué en moins de 25 min.
+- **Exhibition** `exh-v39-gmb-mnl` (remplace `exh-v38`) : MNL 27 @ GMB 27, 159 actions, 8 sorties du terrain, 6 temps
+  morts ; 20 min à l'écran (pauses comprises).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
