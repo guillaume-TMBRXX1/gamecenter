@@ -44,11 +44,13 @@ TEMPS_MORTS_PROLONGATION = 2
 ENTRE = {"normal": 36, "hurry": 16, "clock": 40}
 ENTRE_MAX = 40                 # horloge de jeu : 40 s (genou : la défense ne peut rien sans temps mort)
 # format TEMPS RÉEL (15/10/2026, Guillaume : quarts-temps de 4 min joués en temps réel, chrono d'avant-snap de 10 s au
-# plus) : quart-temps de QUART_TEMPS_REEL s ou moins -> le temps entre deux actions est lu en secondes réelles, sur un
-# chrono de AVANT_SNAP_REEL s (normal 9 s, hurry-up 4 s, tuer l'horloge 10 s) au lieu d'être ramené à l'échelle
+# plus) : quart-temps de QUART_TEMPS_REEL s ou moins -> le temps entre deux actions est lu en secondes de chrono
+# d'avant-snap (AVANT_SNAP_REEL s) au lieu d'être ramené à l'échelle. 16/10/2026 (Guillaume) : secondes RESTANTES au snap
+# — ≈ 7 en situation classique, 8, 9 ou 10 en hurry-up (no huddle), 0 ou 1 pour tuer l'horloge : secondes UTILISÉES
+# tirées dans le flux « chrono » (CHRONO_UTILISE ; 15/10 : 9 / 4 / 10 fixes)
 QUART_TEMPS_REEL = 300
 AVANT_SNAP_REEL = 10
-ENTRE_REEL = {"normal": 9, "hurry": 4, "clock": 10}
+CHRONO_UTILISE = {"normal": (2, 3, 3, 4), "hurry": (0, 1, 2), "clock": (9, 10)}
 TEMPO_PAR_POINT = 3            # identité : `tempo` du coordinateur (−1 rapide … +1 lent) -> ± 3 s
 SORTIE_ARRETE_TOUJOURS = True  # 15/10/2026 (Guillaume) : une sortie du terrain arrête toujours l'horloge
 REPART_SORTIE = 0.45           # sortie du terrain hors fin de mi-temps : part du temps normal qui s'écoule encore
@@ -57,7 +59,12 @@ DUREE_SPIKE = 1                # secondes d'un spike
 
 # probabilité qu'une action finisse hors du terrain (course / passe complétée) ; + PRESSE_SORTIE en hurry-up
 # (routes vers la touche, porteur qui sort volontairement)
-SORTIE = {"RUN": 0.10, "PASS": 0.24}      # 15/10/2026 : 0,08 / 0,16 avant — le receveur cherche la touche
+# 16/10/2026 (Guillaume) : seulement une passe vers un receveur extérieur (WR1 / WR2, sauf route vers l'intérieur) ou une
+# route vers l'extérieur, et une course vers l'extérieur (sweep, toss, outside zone) — jamais un receveur attrapé au
+# milieu du terrain qui pique à 90° vers la touche ; ces actions-là sortent plus souvent
+SORTIE = {"RUN": 0.30, "PASS": 0.40}
+COURSES_EXTERIEURES = ("OUTSIDE_RUN", "POWER_TOSS", "COUNTER_SWEEP", "JET_SWEEP", "TOSS", "SWEEP", "STRETCH",
+                       "OUTSIDE_ZONE", "END_AROUND", "REVERSE", "SPEED_OPTION", "PITCH")
 SORTIE_PRESSE = 0.14
 
 # fenêtres de fin de match (s, échelle NFL)
@@ -193,6 +200,21 @@ def continue_drive(action):
     return True
 
 
+def vers_la_touche(action):
+    """L'action peut-elle finir hors du terrain ? Passe vers un receveur extérieur (WR1 / WR2) sur une route qui ne
+    rentre pas, ou route vers l'extérieur ; course vers l'extérieur (concept, ou rebond du bloc F)."""
+    if action.get("play_type") == "PASS":
+        d = action.get("route_direction")
+        if d == "OUTSIDE":
+            return True
+        cle = str(action.get("carrier_id") or "").rsplit("_", 1)[-1]
+        return cle in ("WR1", "WR2") and d in ("VERTICAL", None) and action.get("play_concept") != "SCREEN"
+    if action.get("play_type") == "RUN":
+        r = action.get("run") or {}
+        return action.get("play_concept") in COURSES_EXTERIEURES or r.get("read") == "bounce"
+    return False
+
+
 def apres_action(etat, action, secondes_apres, ecart_attaque, mode=None, tempo=0, graine=None, numero=0,
                  secondes_avant=None):
     """Temps qui s'écoule entre la fin de `action` et le snap suivant.
@@ -232,14 +254,22 @@ def apres_action(etat, action, secondes_apres, ecart_attaque, mode=None, tempo=0
         return res
     # sortie du terrain (course, passe complétée, scramble) : flux dédié
     reel = etat.quart_secondes <= QUART_TEMPS_REEL
-    entre = (ENTRE_REEL if reel else ENTRE).get(mode or "normal", (ENTRE_REEL if reel else ENTRE)["normal"])
-    if mode not in ("hurry", "clock"):
-        entre += TEMPO_PAR_POINT * float(tempo or 0) * (AVANT_SNAP_REEL / ENTRE_MAX if reel else 1)
+    if reel:
+        c = aleatoire.flux("chrono", graine, numero)
+        entre = c.choice(CHRONO_UTILISE.get(mode or "normal", CHRONO_UTILISE["normal"]))
+        if mode not in ("hurry", "clock"):
+            entre += round(float(tempo or 0))                   # identité : −1 rapide … +1 lent
+    else:
+        entre = ENTRE.get(mode or "normal", ENTRE["normal"])
+        if mode not in ("hurry", "clock"):
+            entre += TEMPO_PAR_POINT * float(tempo or 0)
     if pid == "KNEEL":
         entre = AVANT_SNAP_REEL if reel else ENTRE_MAX
     elif action.get("outcome") in ("RUN", "PASS_COMPLETE"):
         rng = aleatoire.flux("horloge", graine, numero)
         p = SORTIE.get(action.get("play_type"), 0.1) + (SORTIE_PRESSE if mode == "hurry" else 0.0)
+        if not vers_la_touche(action):
+            p = 0.0
         if mode == "clock":
             p *= 0.3                                          # le porteur reste dans le terrain
         if rng.random() < p:
@@ -251,7 +281,7 @@ def apres_action(etat, action, secondes_apres, ecart_attaque, mode=None, tempo=0
                 return res
             entre *= REPART_SORTIE
     # au plus le chrono d'avant-snap (40 s à l'échelle ; temps réel : 10 s)
-    runoff = max(1, min(int(round(entre)), AVANT_SNAP_REEL)) if reel else min(_s(entre, k), int(ENTRE_MAX * k))
+    runoff = max(0, min(int(round(entre)), AVANT_SNAP_REEL)) if reel else min(_s(entre, k), int(ENTRE_MAX * k))
     # l'horloge passe sous 2:00 pendant le huddle : elle s'arrête à 2:00
     if q in (2, 4) and secondes_apres > w and secondes_apres - runoff < w:
         res.update(runoff=secondes_apres - w, stop="avertissement des 2 minutes")

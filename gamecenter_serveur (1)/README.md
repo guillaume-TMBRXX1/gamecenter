@@ -1331,6 +1331,35 @@ moins de points, pauses de 10 s entre les quarts-temps et de 40 s à la mi-temps
 - **Exhibition** `exh-v38-gmb-mnl` (remplace `exh-v37`) : MNL 22 @ GMB 19, 121 actions, 11 sorties du terrain, 2 temps
   morts, 2 genoux, 6 4es essais joués ; 25 min à l'écran (pauses comprises).
 
+### 57. Rythme rapide : chrono d'avant-snap 7 / 8-10 / 0-1 s, sorties vers l'extérieur, ≈ 20 min (16/10/2026)
+Retour de Guillaume sur l'exhibition en temps réel (section 56) : « les actions sont trop lentes ». Pas besoin de temps
+réel : une dynamique rapide et nerveuse (le rythme des matchs de la semaine), ≈ 20 min par match et jamais plus de 25 ;
+on garde le chrono d'avant-snap, les temps morts et l'horloge qui tourne sauf cas particuliers, sans qu'elle accélère
+trop. Chrono au snap : ≈ 7 s restantes en situation classique, 8, 9 ou 10 en hurry-up (no huddle), 1 ou 0 pour tuer
+l'horloge. Sorties du terrain : seulement quand le QB lance vers un receveur extérieur (ou près de la touche) — dans
+l'exhibition, un receveur attrapait le ballon au milieu du terrain et piquait à 90° vers la touche.
+- **Moteur** (`moteur/horloge.py`, quarts-temps de 240 s inchangés) : secondes de chrono utilisées entre deux actions,
+  tirées dans le flux « chrono » : **2-4** en situation classique (≈ 7 restantes), **0-2** en hurry-up, **9-10** pour
+  tuer l'horloge, 10 au genou ; l'horloge du match tourne d'autant. **Sortie du terrain** (`horloge.vers_la_touche`) :
+  passe vers un receveur extérieur (WR1 / WR2) sur une route qui ne rentre pas, route vers l'extérieur (out, corner,
+  flag, flat…), course vers l'extérieur (sweep, toss, outside zone, rebond du bloc F) — 40 % de ces passes complétées
+  et 30 % de ces courses sortent ; jamais un slant, un drag, un receveur du slot au milieu, une course intérieure.
+  ≈ 153 actions et ≈ 54 points par match (≈ 140 actions, quarts de 3 min, pour les matchs de la semaine du 12/10 ;
+  ≈ 115 et ≈ 42 en temps réel), ≈ 7 sorties du terrain et ≈ 4 temps morts par match.
+- **Retransmission** (`moteur/ecran.py` **ecran-3**) : avant le snap, le chrono (et l'horloge du match quand elle
+  tourne) descend **1,1 fois plus vite** que le temps réel, au moins 1,2 s ; horloge arrêtée : le chrono seul, au rythme
+  de l'équipe (1, 3 ou 9 s utilisées) ; temps mort : décompte de **15 s montré en 4 s** ; l'action (≈ 3,3 s une course,
+  3,8 une passe, ± 10-15 % selon son temps de jeu) écoule le temps de jeu — en médiane l'horloge perd ≈ 1,2 s par
+  seconde d'écran quand elle tourne ; 0,8 s après l'action, 2 s après un score ou une perte de balle. **≈ 20 min par
+  match** (120 matchs : 20,0 en moyenne, de 16,9 à 24,5), **plafond 24 min 30** pauses comprises (au-delà, seuls les
+  temps horloge arrêtée sont raccourcis). GameFeed : `play.show` = `{sec, pre, act, post, c0, pt, pc, to, tw, tl}`
+  (`tl` : secondes de temps mort affichées).
+- **Site** : décompte du temps mort lu dans `show.tl` ; `test_horloge.js` (ecran-3) : l'horloge n'accélère pas trop
+  (médiane ≤ 2,2 s de match par seconde, aucun pas au-delà de 3,2), chrono de 10 s, « TO :15 », sorties sur la touche,
+  match rejoué en moins de 25 min.
+- **Exhibition** `exh-v39-gmb-mnl` (remplace `exh-v38`) : MNL 27 @ GMB 27, 159 actions, 8 sorties du terrain, 6 temps
+  morts ; 20 min à l'écran (pauses comprises).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

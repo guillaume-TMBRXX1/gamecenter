@@ -34,13 +34,21 @@ class TestArrets(unittest.TestCase):
     def test_horloge_qui_tourne(self):
         # Q1, course dans le terrain : 36 s, ou 0 si le porteur sort du terrain (tirage du flux dédié)
         vus = {hz.apres_action(etat(), action(), 600, 0, graine=1, numero=n)["runoff"] for n in range(200)}
-        self.assertEqual(vus, {0, 36})
+        self.assertEqual(vus, {36})                            # course intérieure : jamais hors du terrain
+        sweep = {hz.apres_action(etat(), action(play_concept="OUTSIDE_RUN"), 600, 0, graine=1, numero=n)["runoff"]
+                 for n in range(200)}
+        self.assertEqual(sweep, {0, 36})
 
     def test_quarts_de_4_minutes(self):
-        # 15/10/2026 : quarts-temps de 4 min, 10 s au plus entre deux actions (le chrono d'avant-snap)
-        vus = {hz.apres_action(etat(240), action(), 150, 0, graine=1, numero=n, mode=m)["runoff"]
-               for n in range(100) for m in ("normal", "hurry", "clock")}
-        self.assertEqual(vus, {0, 4, 9, 10})                  # 0 : sortie du terrain
+        # quarts-temps de 4 min, chrono d'avant-snap de 10 s (16/10/2026) : secondes utilisées avant le snap —
+        # classique 2-4 (≈ 7 restantes), hurry-up 0-2 (8 à 10 restantes), tuer l'horloge 9-10 (1 ou 0 restante)
+        vus = {}
+        for m in ("normal", "hurry", "clock"):
+            vus[m] = [hz.apres_action(etat(240), action(), 150, 0, graine=1, numero=n, mode=m)["runoff"] for n in range(200)]
+        self.assertEqual(set(vus["normal"]), {2, 3, 4})
+        self.assertAlmostEqual(sum(vus["normal"]) / 200, 3, delta=0.2)
+        self.assertEqual(set(vus["hurry"]), {0, 1, 2})
+        self.assertEqual(set(vus["clock"]), {9, 10})
 
     def test_tempo(self):
         r = lambda **k: hz.apres_action(etat(), action(), 600, 0, graine=None, numero=0, **k)
@@ -60,7 +68,7 @@ class TestArrets(unittest.TestCase):
         a = action(outcome="SACK", play_type="PASS", yards_gained=-6)
         self.assertEqual(hz.apres_action(etat(900), a, 600, 0)["runoff"], 36)
         self.assertEqual(hz.apres_action(etat(450), a, 300, 0)["runoff"], 18)
-        self.assertEqual(hz.apres_action(etat(240), a, 120, 0)["runoff"], 9)      # temps réel : secondes réelles
+        self.assertIn(hz.apres_action(etat(240), a, 120, 0)["runoff"], (2, 3, 4))   # chrono de 10 s : ≈ 7 restantes
 
     def test_fin_du_quart(self):
         a = action(outcome="SACK", play_type="PASS", yards_gained=-6)
@@ -81,14 +89,29 @@ class TestArrets(unittest.TestCase):
 
     def test_sortie_du_terrain(self):
         # une sortie du terrain arrête l'horloge, à tout moment du match (15/10/2026)
-        st4 = {hz.apres_action(etat(), action(quarter=4, play_type="PASS", outcome="PASS_COMPLETE"), 90, 5,
+        ext = dict(play_type="PASS", outcome="PASS_COMPLETE", carrier_id="AAA_WR1", route_direction="VERTICAL")
+        st4 = {hz.apres_action(etat(), action(quarter=4, **ext), 90, 5,
                                graine=7, numero=n)["stop"] for n in range(300)}
         self.assertIn("sortie du terrain", st4)
-        r1 = [hz.apres_action(etat(), action(play_type="PASS", outcome="PASS_COMPLETE"), 600, 0, graine=7, numero=n)
-              for n in range(300)]
+        r1 = [hz.apres_action(etat(), action(**ext), 600, 0, graine=7, numero=n) for n in range(300)]
         sorties = [r for r in r1 if r["oob"]]
         self.assertTrue(sorties)
         self.assertTrue(all((r["runoff"], r["stop"]) == (0, "sortie du terrain") for r in sorties))
+
+    def test_sortie_seulement_vers_l_exterieur(self):
+        # 16/10/2026 : un receveur attrapé au milieu (slant, drag, receveur du slot) ne sort pas ; un receveur
+        # extérieur sur une route verticale, une route vers l'extérieur, une course vers l'extérieur peuvent sortir
+        def sorties(**kw):
+            a = action(**kw)
+            return sum(hz.apres_action(etat(), a, 600, 0, graine=7, numero=n)["oob"] for n in range(300))
+        comp = dict(play_type="PASS", outcome="PASS_COMPLETE")
+        self.assertEqual(sorties(carrier_id="A_WR1", route_direction="INSIDE", **comp), 0)
+        self.assertEqual(sorties(carrier_id="A_WR3", route_direction="HORIZONTAL", **comp), 0)
+        self.assertEqual(sorties(carrier_id="A_TE", route_direction="VERTICAL", **comp), 0)
+        self.assertEqual(sorties(play_concept="POWER"), 0)
+        self.assertGreater(sorties(carrier_id="A_WR2", route_direction="VERTICAL", **comp), 60)
+        self.assertGreater(sorties(carrier_id="A_RB", route_direction="OUTSIDE", **comp), 60)
+        self.assertGreater(sorties(play_concept="POWER_TOSS"), 40)
 
     def test_deterministe(self):
         a = action(play_type="PASS", outcome="PASS_COMPLETE")
