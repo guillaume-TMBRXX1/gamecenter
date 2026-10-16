@@ -1302,7 +1302,10 @@ moins de points, pauses de 10 s entre les quarts-temps et de 40 s à la mi-temps
 - **Format** : quarts-temps de **240 s** (`GC_QUART`, 12.2 quaterdecies ; 900 avant). Le **changement de format** se voit
   dans les chiffres de la ligue : ≈ 114 actions par match (coups d’envoi et transformations compris ; ≈ 160 avant),
   ≈ 40 points (≈ 55 avant), ≈ 11 sorties du terrain et ≈ 5 temps morts par match. Les cotes (13.1-13.4), l'équilibre
-  (12.3) et les contrôles passent sans réglage : ils se calibrent sur les matchs du moteur.
+  (12.3) et les contrôles passent sans réglage : ils se calibrent sur les matchs du moteur. Exécution complète du
+  notebook (15/10) : équilibre 39,1 – 58,2 % de victoires sur 2 208 matchs ; 13.4 : écart moyen 0,018 sur 929 matchs ;
+  12.2 octodecies (96 matchs) : 25,2 min à l'écran en moyenne (22,6 – 28,0), 115 actions, chrono à 3,4 s au snap en
+  moyenne, 4,5 temps morts par match ; semaine 1 exportée et validée (279 GameFeed).
 - **Moteur** (`moteur/horloge.py`, format temps réel dès qu'un quart-temps fait 300 s ou moins) : entre deux actions,
   l'horloge tourne de **9 s** en rythme normal, **4 s** en hurry-up, **10 s** pour tuer l'horloge (et au genou) — jamais
   plus que le chrono de 10 s ; une **sortie du terrain arrête toujours l'horloge** (avant : seulement dans les 2
