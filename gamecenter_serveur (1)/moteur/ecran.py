@@ -16,6 +16,9 @@ ecran-3, pour chaque action (calculé à l'export du GameFeed, lu par le serveur
                   TEMPS_MORT s, puis le chrono ;
   l'action      : l'animation (un peu plus rapide qu'en ecran-2) ; l'horloge s'écoule du temps de jeu pendant ce temps ;
   après         : APRES s (APRES_SCORE après un score ou une perte de balle).
+Checks avant le snap (play.presnap, 16/10/2026) : l'audible coûte des secondes de chrono (horloge qui tourne : déjà dans
+le temps couru par le moteur ; horloge arrêtée : ajoutées au chrono utilisé) ; une motion, un audible ou une défense qui
+se décale gardent au moins AVANT_CHECK s d'écran avant le snap, le temps de les voir.
 Coups d'envoi, transformations : pas de chrono, horloge arrêtée.
 Durée garantie : pauses de retransmission comprises (PAUSES : 10 s entre deux quarts-temps, 40 s à la mi-temps), un
 match ne dépasse pas BUDGET s ; au-delà, les temps où l'horloge est arrêtée et qui ne sont pas fixés par la règle
@@ -29,6 +32,8 @@ TEMPS_MORT_AFFICHE = 15  # décompte d'un temps mort (s affichées)…
 TEMPS_MORT = 4.0        # … montré en TEMPS_MORT s d'écran
 VITESSE = 1.1           # secondes de chrono (et d'horloge qui tourne) par seconde d'écran, avant le snap
 AVANT_MIN = 1.2         # le temps que les joueurs se replacent (au moins)
+AVANT_CHECK = 2.6       # … au moins, quand l'avant-snap montre quelque chose : motion, audible du QB, défense qui se
+                        # décale (checks avant le snap, moteur/presnap.py) — l'horloge descend alors plus lentement
 # horloge arrêtée : chrono utilisé avant le snap selon le rythme de l'attaque (secondes restantes : 9, 7, 1)
 UTILISE_ARRETE = {"presse": 1, "normal": 3, "tue": 9}
 AVANT_SPECIAL = {"kickoff": 2.0, "extra_point": 1.5, "two_point": 1.8}
@@ -41,7 +46,7 @@ APRES = 0.8              # pause après l'action
 APRES_SCORE = 2.0        # … après un score ou une perte de balle
 PAUSES = {"q": 10, "half": 40}            # serveur.BREAK_SEC
 BUDGET = 24 * 60 + 30                     # durée maximale d'un match à l'écran, pauses comprises (< 25 min)
-MINIMUM = {"utilise": 0.6, "special": 1.0, "apres": 0.3, "score": 1.0}
+MINIMUM = {"utilise": 0.6, "check": 1.8, "special": 1.0, "apres": 0.3, "score": 1.0}
 
 
 def _naturelle(p):
@@ -140,18 +145,21 @@ def _lignes(plays):
         tw = TEMPS_MORT if to else 0
         t = c.get("type")
         special = t in ("kickoff", "extra_point", "two_point") or p.get("conversion")
+        ps = p.get("presnap") or {}
+        montre = bool(ps) and bool(ps.get("audible") or ps.get("motion_response") or ps.get("motion"))
+        amin = AVANT_CHECK if montre else AVANT_MIN
         souple, chrono, pc = {}, 0.0, None
         if special:
             souple["special"] = (AVANT_SPECIAL.get(t, AVANT_SPECIAL["extra_point"]) + couru / VITESSE, MINIMUM["special"])
         elif tourne:
             utilise = min(couru, CHRONO)
             pc = [CHRONO, CHRONO - utilise]
-            chrono = round(max(AVANT_MIN, utilise / VITESSE), 2)     # l'horloge du match descend avec le chrono
+            chrono = round(max(amin, utilise / VITESSE), 2)          # l'horloge du match descend avec le chrono
         else:
             chrono = round(couru / VITESSE, 2)                       # l'horloge a couru puis s'est arrêtée
-            utilise = min(UTILISE_ARRETE[_rythme(p, prev)], CHRONO)
+            utilise = min(UTILISE_ARRETE[_rythme(p, prev)] + int(ps.get("sec") or 0), CHRONO - 1)   # + l'audible
             pc = [CHRONO, CHRONO - utilise]
-            souple["utilise"] = (max(AVANT_MIN, utilise / VITESSE), MINIMUM["utilise"])
+            souple["utilise"] = (max(amin, utilise / VITESSE), MINIMUM["check"] if montre else MINIMUM["utilise"])
         nat = _naturelle(p)
         f = min(max(pt / PT_MOYEN, ETIREMENT[0]), ETIREMENT[1]) if pt > 0 and t in ("run", "pass") else 1.0
         act = round(nat * f, 2)

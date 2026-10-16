@@ -113,6 +113,19 @@ class TestArrets(unittest.TestCase):
         self.assertGreater(sorties(carrier_id="A_RB", route_direction="OUTSIDE", **comp), 60)
         self.assertGreater(sorties(play_concept="POWER_TOSS"), 40)
 
+    def test_course_qui_sort_a_eu_le_temps(self):
+        # 16/10/2026 : une course arrêtée près de la ligne ne sort pas (la touche est à ≈ 20 yards de la hash mark) ;
+        # un cutback rentre ; un rebond du bloc F sort dès 2 yards
+        def sorties(**kw):
+            a = action(**kw)
+            return sum(hz.apres_action(etat(), a, 600, 0, graine=7, numero=n)["oob"] for n in range(300))
+        self.assertEqual(sorties(play_concept="OUTSIDE_RUN", yards_gained=-2), 0)
+        self.assertEqual(sorties(play_concept="OUTSIDE_RUN", yards_gained=2), 0)
+        self.assertGreater(sorties(play_concept="OUTSIDE_RUN", yards_gained=3), 40)
+        self.assertEqual(sorties(play_concept="OUTSIDE_RUN", yards_gained=9, run={"read": "cutback"}), 0)
+        self.assertGreater(sorties(play_concept="POWER", yards_gained=2, run={"read": "bounce"}), 40)
+        self.assertEqual(sorties(play_concept="POWER", yards_gained=1, run={"read": "bounce"}), 0)
+
     def test_deterministe(self):
         a = action(play_type="PASS", outcome="PASS_COMPLETE")
         self.assertEqual([hz.apres_action(etat(), a, 600, 0, graine=3, numero=n) for n in range(50)],

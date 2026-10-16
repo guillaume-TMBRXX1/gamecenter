@@ -66,6 +66,9 @@ SORTIE = {"RUN": 0.30, "PASS": 0.40}
 COURSES_EXTERIEURES = ("OUTSIDE_RUN", "POWER_TOSS", "COUNTER_SWEEP", "JET_SWEEP", "TOSS", "SWEEP", "STRETCH",
                        "OUTSIDE_ZONE", "END_AROUND", "REVERSE", "SPEED_OPTION", "PITCH")
 SORTIE_PRESSE = 0.14
+# une course ne sort que si le porteur a eu le temps d'aller jusqu'à la touche (≈ 20 yards depuis la hash mark) :
+# un gain d'au moins SORTIE_GAIN yards (rebond du bloc F : SORTIE_GAIN_REBOND) ; jamais un cutback (il rentre)
+SORTIE_GAIN, SORTIE_GAIN_REBOND = 3, 2
 
 # fenêtres de fin de match (s, échelle NFL)
 FIN_MATCH = 150                # Q4 : l'équipe menée pose ses temps morts dans les 2:30 dernières
@@ -202,7 +205,8 @@ def continue_drive(action):
 
 def vers_la_touche(action):
     """L'action peut-elle finir hors du terrain ? Passe vers un receveur extérieur (WR1 / WR2) sur une route qui ne
-    rentre pas, ou route vers l'extérieur ; course vers l'extérieur (concept, ou rebond du bloc F)."""
+    rentre pas, ou route vers l'extérieur ; course vers l'extérieur (concept, ou rebond du bloc F) avec assez de gain
+    pour atteindre la touche (16/10/2026 : une course bloquée à la ligne ne « sortait » plus 25 yards plus loin)."""
     if action.get("play_type") == "PASS":
         d = action.get("route_direction")
         if d == "OUTSIDE":
@@ -211,7 +215,12 @@ def vers_la_touche(action):
         return cle in ("WR1", "WR2") and d in ("VERTICAL", None) and action.get("play_concept") != "SCREEN"
     if action.get("play_type") == "RUN":
         r = action.get("run") or {}
-        return action.get("play_concept") in COURSES_EXTERIEURES or r.get("read") == "bounce"
+        if r.get("read") == "cutback":
+            return False
+        gain = int(action.get("yards_gained") or 0)
+        if r.get("read") == "bounce":
+            return gain >= SORTIE_GAIN_REBOND
+        return action.get("play_concept") in COURSES_EXTERIEURES and gain >= SORTIE_GAIN
     return False
 
 

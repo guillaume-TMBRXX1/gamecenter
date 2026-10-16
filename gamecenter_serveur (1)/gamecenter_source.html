@@ -2376,7 +2376,8 @@ function callFromFeed(P){
   const c=P.call||{}, de=c.defense||{};
   /* engine block B: a scramble is a called pass the QB ran out of — aligned and drawn as a pass */
   return {type:(P.decision&&P.decision.action==='SCRAMBLE'&&c.type==='run')?'pass':c.type, playId:c.play_id||null, concept:c.concept||null, formation:c.formation||PLAY_FORMATION[c.play_id]||null,
-    def:{concept:de.concept||null, formation:de.formation||null}, route:c.route||null, run:c.type==='run'&&P.run?P.run:null};
+    def:{concept:de.concept||null, formation:de.formation||null}, route:c.route||null, run:c.type==='run'&&P.run?P.run:null,
+    presnap:P.presnap&&typeof P.presnap==='object'?P.presnap:null};
 }
 function demoCall(g){
   const pass=RNG()<g.pPass, id=pass?PASS_PLAYS[Math.floor(RNG()*PASS_PLAYS.length)]:RUN_PLAYS[Math.floor(RNG()*RUN_PLAYS.length)];
@@ -2411,11 +2412,14 @@ function defAlign(g,call,off){
   else if(dc==='COVER_4'){ s9=[11.5,-6.5]; s10=[11.5,6.5]; }
   else if(dc==='BOX_STACK'){ s9=[8,-5]; s10=[8,5]; }
   else { s9=[15,0]; s10=[7.5,strong*6.5]; }
+  const ps=call.presnap;   /* pre-snap checks (engine 12.2 novodecies, play.presnap): what the defense shows first */
+  if(call.psShow&&ps&&((ps.shell_shown==='2-high'&&ps.shell_real!=='2-high')||ps.motion_response==='roll')){ s9=[12.5,-7]; s10=[12.5,7]; }
   def[9]={x:L+d*s9[0], y:clamp(by+s9[1],3,50.3)}; def[10]={x:L+d*s10[0], y:clamp(by+s10[1],3,50.3)};
   for(let i=0;i<11;i++) if(!def[i]) def[i]={x:L+d*5, y:by};
   /* engine block F (play.run.box): as many defenders in the box (within 7 yards of the line, between the tight ends)
      as the engine counted — a safety comes down for an 8- or 9-man box, a linebacker backs out of a light one */
-  const want=call.type==='run'&&call.run?num(call.run.box,0):0;
+  const want=call.psShow&&ps ? num(ps.motion_response==='roll'?ps.box_real-1:ps.box_shown,0)
+    : ps&&ps.box_real ? num(ps.box_real,0) : call.type==='run'&&call.run?num(call.run.box,0):0;
   if(want>=5&&want<=9){
     const inBox=i=>(def[i].x-L)*d<7&&Math.abs(def[i].y-by)<=7.5;
     let n=0; for(let i=0;i<11;i++) if(inBox(i)) n++;
@@ -2465,10 +2469,51 @@ function setupFormationSlide(g,F){
   const srcO = swapped ? g.def : g.off, srcD = swapped ? g.off : g.def;
   g.prevOff=srcO.map(p=>({x:p.x,y:p.y})); g.prevDef=srcD.map(p=>({x:p.x,y:p.y}));
   g.off=g.prevOff.map(p=>({x:p.x,y:p.y})); g.def=g.prevDef.map(p=>({x:p.x,y:p.y}));
-  g.fOff=f.off; g.fDef=f.def; g.lastPoss=g.poss;
+  g.fOff=f.off; g.fDef=f.def; g.lastPoss=g.poss; g.ps=null;
   g.ball={x:g.los,y:g.bally,h:0}; g.carrier=null; g.trail=[]; g.tracks=null;
 }
+/* pre-snap checks (engine 12.2 novodecies, play.presnap): the defense shows a look (a disguise: a safety that will
+   rotate down, linebackers walked up in the A gaps) and shifts to what it really plays just before the snap; a man in
+   motion crosses the formation and the defense answers (a safety rolls toward him, a defender travels with him in
+   man, or the zone passes him off); the QB checks out of the play — "CHECK" over his head (16/10/2026) */
+const PS_MOTION_FROM={jet:'mirror',across:'mirror',trade:'mirror',orbit:'orbit',return:'return'};
+function psPlan(g,F){
+  const call=g.call, ps=call&&call.presnap;
+  if(!ps||g.special) return null;
+  const d=dirOf(g), by=g.bally, L=g.los, out={ps,shown:null,mIdx:null,mFrom:null,mVia:null,lock:null,lockFrom:null,bump:[]};
+  const disguised=ps.box_shown!==ps.box_real||ps.shell_shown!==ps.shell_real||ps.motion_response==='roll';
+  if(disguised) out.shown=defAlign(g,Object.assign({},call,{psShow:true}),F.off);
+  const kind=PS_MOTION_FROM[ps.motion];
+  if(kind){
+    const i=ps.motion==='trade'?5:(FB_FORMS.has(call.formation)||call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY')?9:10;
+    const e=F.off[i], side=e.y<by?-1:1;
+    let y0=by-(e.y-by); if(Math.abs(e.y-by)<3) y0=by-side*8;
+    if(kind==='return') y0=e.y+side*7;
+    out.mIdx=i; out.mFrom={x:e.x, y:clamp(y0,2,51.3)};
+    if(kind==='orbit') out.mVia={x:L-d*6.5, y:by};
+    if(ps.motion_response==='lock'){   /* the defender over him travels with him */
+      let best=null, bd=1e9; const D=out.shown||F.def;
+      for(const k of [6,7,8,5]){ const q=D[k]; if(!q) continue; const dd=(q.y-e.y)**2+(q.x-e.x)**2; if(dd<bd){bd=dd;best=k;} }
+      if(best!=null){ out.lock=best; out.lockFrom={x:F.def[best].x, y:clamp(F.def[best].y+(out.mFrom.y-e.y),2,51.3)}; }
+    } else if(ps.motion_response==='bump'){ for(const k of [6,7,8,9,10]) if(F.def[k]) out.bump.push(k); }
+  }
+  return out;
+}
+/* where the pre-snap slide goes first: the defense's look, the man in motion on his starting side */
+function psStart(g){
+  const P=g.ps;
+  if(P.shown) g.psShown=P.shown; else g.psShown=null;
+  g.psOff=g.fOff.map((p,i)=>i===P.mIdx?P.mFrom:p);
+  g.psDef=(P.shown||g.fDef).map((p,i)=>i===P.lock?P.lockFrom:p);
+}
+/* timeline of the pre-snap (seconds before the snap) */
+function psWindows(g){
+  const P=g.ps, D=g.dur||1, chk=!!P.ps.audible;
+  const mEnd=Math.max(1.2, chk?D-1.45:D-0.45), mStart=Math.min(0.9,mEnd-0.5);
+  return {mStart,mEnd,cStart:Math.max(0.6,D-1.45),cEnd:D-0.15,rStart:Math.max(mEnd-0.1,D-0.55),rEnd:D};
+}
 function presnapUpdate(g){
+  if(g.ps&&!g.special&&!REDUCED){ psUpdate(g); return; }
   const u = REDUCED?1:ease(clamp(g.t/0.9,0,1));
   for(let i=0;i<11;i++){
     const a=g.prevOff[i], b=g.fOff[i]; g.off[i]={x:lerp(a.x,b.x,u), y:lerp(a.y,b.y,u)};
@@ -2478,6 +2523,41 @@ function presnapUpdate(g){
   g.ball.x=g.los; g.ball.y=g.bally; g.ball.h=0; g.carrier=null;
   g.focusX = g.special==='kickoff' ? g.los+g.kd*14 : g.los+dirOf(g)*6;
   g.focusY = g.bally;
+}
+function psUpdate(g){
+  const P=g.ps, W=psWindows(g), t=g.t, u0=ease(clamp(t/0.9,0,1));
+  const um=ease(clamp((t-W.mStart)/Math.max(0.2,W.mEnd-W.mStart),0,1));          /* motion */
+  const roll=P.ps.motion_response==='roll';
+  const ur=roll?um:ease(clamp((t-W.rStart)/Math.max(0.2,W.rEnd-W.rStart),0,1));  /* the defense shifts to its real look */
+  for(let i=0;i<11;i++){
+    const a=g.prevOff[i], b=g.psOff[i], f=g.fOff[i];
+    let p={x:lerp(a.x,b.x,u0), y:lerp(a.y,b.y,u0)};
+    if(i===P.mIdx){
+      if(P.mVia&&um<0.5){ const v=um*2; p={x:lerp(b.x,P.mVia.x,v), y:lerp(b.y,P.mVia.y,v)}; }
+      else if(P.mVia){ const v=(um-0.5)*2; p={x:lerp(P.mVia.x,f.x,v), y:lerp(P.mVia.y,f.y,v)}; }
+      else p={x:lerp(p.x,f.x,um), y:lerp(p.y,f.y,um)};
+    }
+    g.off[i]=p;
+    const c=g.prevDef[i], sh=g.psDef[i], e=g.fDef[i];
+    let q={x:lerp(c.x,sh.x,u0), y:lerp(c.y,sh.y,u0)};
+    if(i===P.lock) q={x:lerp(q.x,e.x,um), y:lerp(q.y,e.y,um)};
+    else q={x:lerp(q.x,e.x,ur), y:lerp(q.y,e.y,ur)};
+    if(P.bump.includes(i)&&P.mIdx!=null){ const k=Math.sin(Math.PI*um)*1.2, dir=g.fOff[P.mIdx].y>P.mFrom.y?1:-1; q={x:q.x,y:q.y+dir*k}; }
+    const jig=Math.sin(t*2.2+i*1.7)*0.14*u0;
+    g.def[i]={x:q.x,y:q.y+jig};
+  }
+  g.ball.x=g.los; g.ball.y=g.bally; g.ball.h=0; g.carrier=null;
+  g.focusX=g.los+dirOf(g)*6; g.focusY=g.bally;
+}
+/* the QB's check: "CHECK" over his head while he changes the play (and the shown look, once seen through) */
+function psBubble(g){
+  if(g.phase!=='presnap'||!g.ps||g.special) return null;
+  const P=g.ps.ps;
+  if(!P.audible) return null;
+  const W=psWindows(g);
+  if(!REDUCED&&(g.t<W.cStart||g.t>W.cEnd)) return null;
+  const to=P.to&&P.to.type==='run'?'RUN':'PASS';
+  return {i:6, text:'CHECK · '+to, pulse:REDUCED?0:Math.sin((g.t-W.cStart)*9)};
 }
 function kfAt(kf,t){
   const n=kf.length;
@@ -2748,8 +2828,12 @@ function planScrimmage(g,call,imp){
 
   /* ---------------- runs ---------------- */
   const concept=RUN_SHAPE[call.concept]||call.concept||'INSIDE_RUN', te=O[5].y>=by?1:-1;
-  const side = imp.side===1||imp.side===-1 ? imp.side : concept==='POWER' ? te : concept==='COUNTER' ? te : (RNG()<.5?-1:1);
-  const holeY = by+side*(concept==='INSIDE_RUN'||concept==='DRAW'||concept==='TRAP'||concept==='READ_OPTION'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):concept==='JET_SWEEP'?rand(9,13):rand(3,4.6));
+  /* a run that goes out of bounds heads for that touchline from the start: it bends outside out of the backfield
+     (16/10/2026 — it used to come out of the middle and cut 90 degrees to the sideline) */
+  const oobRun = !!imp.oob && imp.endY!=null;
+  const side = oobRun ? (imp.endY<by?-1:1) : imp.side===1||imp.side===-1 ? imp.side : concept==='POWER' ? te : concept==='COUNTER' ? te : (RNG()<.5?-1:1);
+  const hOff = concept==='INSIDE_RUN'||concept==='DRAW'||concept==='TRAP'||concept==='READ_OPTION'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):concept==='JET_SWEEP'?rand(9,13):rand(3,4.6);
+  const holeY = by+side*(oobRun ? Math.max(hOff, Math.abs(imp.endY-by)*0.45) : hOff);
   const qb=O[6], rb=O[7], shot=(qb.x-L)*-d>2.5;
   const mesh= concept==='DRAW' ? {x:L-d*6.2,y:by+side*0.6} : shot ? {x:qb.x+d*0.3,y:by+(rb.y>by?0.9:-0.9)} : {x:L-d*4,y:by+side*0.8};
   const hU = concept==='DRAW'?0.36:concept==='COUNTER'?0.26:0.2;
@@ -2778,6 +2862,10 @@ function planScrimmage(g,call,imp){
     else if(rd==='bounce') off[7]=[...pre,[h1-0.04,L-d*0.9,holeY],[h1+0.1,L-d*0.3,clamp(holeY+side*6,2,51.3)],[0.88,Fx,Fy],[1,Fx,Fy]];
     else if(rd==='stuffed'&&!imp.td){ tc=Math.min(0.64,h1+0.18); off[7]=[...pre,[h1,L-d*0.5,holeY],[tc,Fx,Fy],[1,Fx,Fy]]; }
     else if(rd==='broken_tackle') off[7]=[...pre,[h1,L+d*0.2,holeY],[h1+0.07,L+d*1.0,clamp(holeY+side*1.6,2,51.3)],[0.88,Fx,Fy],[1,Fx,Fy]];
+  }
+  if(oobRun&&imp.target!==6&&![8,9,10,5].includes(imp.target)){   /* out of bounds: outside, then up the sideline, then over it */
+    const pre=concept==='COUNTER'?[[0,rb.x,rb.y],[0.1,rb.x-d*0.3,rb.y-side*1.4],[hU,mesh.x,mesh.y]]:[[0,rb.x,rb.y],[hU,mesh.x,mesh.y]];
+    off[7]=[...pre,[h1,L-d*0.4,holeY],[0.72,L+d*Math.max(0.6,total*0.65),Fy-side*2.4],[0.88,Fx,Fy],[1,Fx,Fy]];
   }
   if(call.formation==='I_FORM'||call.formation==='JUMBO'||call.formation==='HEAVY'||FB_FORMS.has(call.formation)){ const fb=O[10]; off[10]=[[0,fb.x,fb.y],[0.3,L-d*0.2,holeY],[0.55,L+d*2.2,holeY+side*0.8],[1,L+d*2.8,holeY+side]]; }
   for(const i of [8,9,10]){ if(off[i]) continue; const s=O[i], cb=i===8?D[6]:i===9?D[7]:(D[8]||D[6]); off[i]=[[0,s.x,s.y],[0.45,lerp(s.x,cb.x,.7),lerp(s.y,cb.y,.7)],[1,lerp(s.x,cb.x,.85)+d*1,lerp(s.y,cb.y,.85)]]; }
@@ -3317,7 +3405,22 @@ function rpRunNote(P){ const r=P.run; if(!r) return ''; let s='';
   if(r.read==='cutback') s+=' · cutback'; else if(r.read==='bounce') s+=' · bounced outside';
   else if(r.read==='stuffed') s+=' · stuffed at the line'; else if(r.read==='broken_tackle') s+=' · breaks a tackle at the line';
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+/* pre-snap checks (engine 12.2 novodecies, play.presnap): the QB's audible, a disguise that fooled him, how the
+   defense answered the motion */
+function rpPresnapNote(P,g){ const c=P.presnap; if(!c||typeof c!=='object') return ''; let s='';
+  const dAbbr=g&&(P.offense==='home'?g.away:g.home), dName=esc(String((dAbbr&&typeof TEAMS!=='undefined'&&TEAMS[dAbbr]&&TEAMS[dAbbr].abbr)||dAbbr||'the defense'));
+  const mo=c.motion?esc(String(c.motion))+' motion':'motion';
+  if(c.motion_response==='roll') s+=' · '+dName+' rolls a safety with the '+mo;
+  else if(c.motion_response==='lock') s+=' · a defender travels with the '+mo+' (man)';
+  else if(c.motion_response==='bump') s+=' · the zone passes off the '+mo;
+  const qb=esc(String(c.qb||'the QB')), shown=num(c.box_shown,7), real=num(c.box_real,7), read=num(c.box_read,real);
+  if(c.audible){
+    const to=c.to&&c.to.type==='run'?'a run':'a pass';
+    s+=' · audible: '+qb+' sees '+read+' in the box and checks to '+to;
+    if(c.fooled==='wrong_check') s+=' — fooled: the defense showed '+shown+' and played '+real;
+  } else if(c.fooled==='missed_check') s+=' · disguised: the defense showed '+shown+' in the box and played '+real;
+  return s; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
@@ -3371,12 +3474,13 @@ function rpEnter(g,k,hard){
     if(g.special){ g.call=null; return specialFormation(g,g.special,P); }
     g.call=callFromFeed(P); g.call.flip=RNG()<.5;
     const sd=g.latEngine?engineFlip(P,g.call):null; if(sd!=null) g.call.flip=sd;
-    return formationPos(g,g.call);
+    const F=formationPos(g,g.call); F.ps=psPlan(g,F); return F;
   });
   if(hard || g.off.length!==11 || Math.abs(g.los-num(prevLos,g.los))>32){
     g.off=f.off.map(p=>({x:p.x,y:p.y})); g.def=f.def.map(p=>({x:p.x,y:p.y})); g.lastPoss=g.poss;
   }
   setupFormationSlide(g,f);
+  g.ps=f.ps||null; if(g.ps) psStart(g);
   g.phase='presnap'; g.t=0; g.dur=P.show?num(P.show.pre,1.2):hard?1.0:withSeed(g.seed+':d:'+P.seq,()=>rand(1.3,1.8));
   g.plan=null; g.snapped=false;
   g.tos=rpTimeouts(g,k);
@@ -4840,6 +4944,25 @@ class FieldView{
           c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill(); c.stroke();
           c.fillStyle=FIELD.ink; c.fillText(tag,px,ty+0.5); c.restore(); }
       }
+    }
+    // pre-snap motion: a dashed trail behind the man in motion (engine 12.2 novodecies)
+    if(g.phase==='presnap'&&g.ps&&g.ps.mIdx!=null&&!g.special&&!REDUCED&&g.off[g.ps.mIdx]){
+      const W=psWindows(g), m=g.off[g.ps.mIdx];
+      if(g.t>W.mStart){ c.save(); c.strokeStyle=hexA(daOff(g),.75); c.lineWidth=Math.max(1.2,s*0.14); c.lineCap='round';
+        c.setLineDash([Math.max(3,s*0.55),Math.max(3,s*0.45)]); c.beginPath(); const a0=g.ps.mFrom, v=g.ps.mVia;
+        c.moveTo(X(a0.x),Y(a0.y)); if(v&&g.t>(W.mStart+W.mEnd)/2) c.lineTo(X(v.x),Y(v.y)); c.lineTo(X(m.x),Y(m.y)); c.stroke(); c.restore(); }
+    }
+    // pre-snap check: the QB changes the play (engine 12.2 novodecies)
+    const bub=typeof psBubble==='function'?psBubble(g):null;
+    if(bub&&g.off[bub.i]){
+      const p=g.off[bub.i], px=X(p.x), py=Y(p.y), col=daOff(g), tf=Math.max(10,Math.round(s*0.95));
+      c.save(); c.lineWidth=Math.max(1.4,s*0.16); c.strokeStyle=col; c.shadowColor=col; c.shadowBlur=FX_GLOW?10:0;
+      c.beginPath(); c.arc(px,py,r+Math.max(3,s*0.45)+Math.max(0,bub.pulse)*Math.max(1.5,s*0.25),0,Math.PI*2); c.stroke();
+      c.shadowBlur=0; c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+      const tw=c.measureText(bub.text).width+tf*1.2, th=tf*1.75, ty=py-r-th*0.5-Math.max(6,s*0.6);
+      c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill();
+      c.beginPath(); c.moveTo(px-th*0.22,ty+th/2-1); c.lineTo(px,ty+th/2+th*0.3); c.lineTo(px+th*0.22,ty+th/2-1); c.fill();
+      c.fillStyle=FIELD.bg; c.fillText(bub.text,px,ty+0.5); c.restore();
     }
     // ball: ice-white capsule, lifted when in the air
     const b=g.ball, bx=X(b.x), by=Y(b.y);
