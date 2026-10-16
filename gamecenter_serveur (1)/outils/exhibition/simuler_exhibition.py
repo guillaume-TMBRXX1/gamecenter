@@ -94,7 +94,9 @@ for _k in range(_P["candidates"]):
             # 14/10 : punts avec retour (12.2 sexdecies)
             "punt_returns": sum(1 for p in _pl if (p.get("punt_return") or {}).get("result") == "return"),
             "punt_other": len({(p.get("punt_return") or {}).get("result") for p in _pl if p.get("punt_return")} - {"return"}),
-            "punt_td": sum(1 for p in _pl if (p.get("punt_return") or {}).get("td"))}
+            "punt_td": sum(1 for p in _pl if (p.get("punt_return") or {}).get("td")),
+            # 15/10 : temps réel — sorties du terrain (le receveur file vers la touche, l'horloge s'arrête)
+            "out_of_bounds": sum(1 for p in _pl if (p.get("clock") or {}).get("oob") and p.get("result") in ("complete", "run"))}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -107,7 +109,8 @@ for _k in range(_P["candidates"]):
               + 8 * min(_dec["fourth_go"], 4) + 6 * min(_dec["timeouts"], 4) + 6 * min(_dec["two_minute"], 2)
               + 10 * min(_dec["kneels"], 1) + 10 * min(_dec["spikes"], 1) + 4 * min(_dec["kick_returns"], 4)
               + 4 * min(_dec["cutbacks"], 5) + 3 * min(_dec["stuffed"], 4) + min(_dec["heavy_box"], 8)
-              + 6 * min(_dec["punt_returns"], 3) + 6 * min(_dec["punt_other"], 3) + 25 * min(_dec["punt_td"], 1))
+              + 6 * min(_dec["punt_returns"], 3) + 6 * min(_dec["punt_other"], 3) + 25 * min(_dec["punt_td"], 1)
+              + 4 * min(_dec["out_of_bounds"], 8))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
@@ -132,7 +135,7 @@ def main():
     ap.add_argument("--candidats", type=int, default=40); ap.add_argument("--id", default=None)
     ap.add_argument("--notebook", default=os.path.join(ROOT, "NFL_Sim_GameCenter.ipynb"))
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--titre", default="Real game clock (15-min quarters) · 4th downs by win probability · run game drawn (block F) · punt returns")
+    ap.add_argument("--titre", default="Real time: 4-min quarters, 10-s play clock, 15-s timeouts · out of bounds stops the clock · 4th downs by win probability · run game drawn · punt returns")
     ap.add_argument("--sans-decisions", action="store_true",
                     help="moteur V21 : décisions de passe du bloc A coupées (ENGINE INTELLIGENCE, allumées par défaut)")
     ap.add_argument("--remplace", default=None, help="id d'une exhibition à retirer (index + fichier)")

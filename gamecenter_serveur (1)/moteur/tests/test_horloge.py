@@ -32,10 +32,15 @@ class TestArrets(unittest.TestCase):
             self.assertEqual((r["runoff"], r["stop"]), (0, "changement de possession"), a)
 
     def test_horloge_qui_tourne(self):
-        # Q1, course dans le terrain : 36 s (± sortie du terrain, tirage du flux dédié)
+        # Q1, course dans le terrain : 36 s, ou 0 si le porteur sort du terrain (tirage du flux dédié)
         vus = {hz.apres_action(etat(), action(), 600, 0, graine=1, numero=n)["runoff"] for n in range(200)}
-        self.assertIn(36, vus)
-        self.assertTrue(all(0 < v <= 36 for v in vus))
+        self.assertEqual(vus, {0, 36})
+
+    def test_quarts_de_4_minutes(self):
+        # 15/10/2026 : quarts-temps de 4 min, 10 s au plus entre deux actions (le chrono d'avant-snap)
+        vus = {hz.apres_action(etat(240), action(), 150, 0, graine=1, numero=n, mode=m)["runoff"]
+               for n in range(100) for m in ("normal", "hurry", "clock")}
+        self.assertEqual(vus, {0, 4, 9, 10})                  # 0 : sortie du terrain
 
     def test_tempo(self):
         r = lambda **k: hz.apres_action(etat(), action(), 600, 0, graine=None, numero=0, **k)
@@ -54,7 +59,8 @@ class TestArrets(unittest.TestCase):
     def test_echelle(self):
         a = action(outcome="SACK", play_type="PASS", yards_gained=-6)
         self.assertEqual(hz.apres_action(etat(900), a, 600, 0)["runoff"], 36)
-        self.assertEqual(hz.apres_action(etat(180), a, 120, 0)["runoff"], 7)
+        self.assertEqual(hz.apres_action(etat(450), a, 300, 0)["runoff"], 18)
+        self.assertEqual(hz.apres_action(etat(240), a, 120, 0)["runoff"], 9)      # temps réel : secondes réelles
 
     def test_fin_du_quart(self):
         a = action(outcome="SACK", play_type="PASS", yards_gained=-6)
@@ -74,7 +80,7 @@ class TestArrets(unittest.TestCase):
         self.assertNotEqual(r["stop"], "avertissement des 2 minutes")
 
     def test_sortie_du_terrain(self):
-        # Q4, 1:30 : une sortie arrête l'horloge ; Q1 : elle ne l'arrête qu'un moment
+        # une sortie du terrain arrête l'horloge, à tout moment du match (15/10/2026)
         st4 = {hz.apres_action(etat(), action(quarter=4, play_type="PASS", outcome="PASS_COMPLETE"), 90, 5,
                                graine=7, numero=n)["stop"] for n in range(300)}
         self.assertIn("sortie du terrain", st4)
@@ -82,7 +88,7 @@ class TestArrets(unittest.TestCase):
               for n in range(300)]
         sorties = [r for r in r1 if r["oob"]]
         self.assertTrue(sorties)
-        self.assertTrue(all(0 < r["runoff"] < 36 for r in sorties))
+        self.assertTrue(all((r["runoff"], r["stop"]) == (0, "sortie du terrain") for r in sorties))
 
     def test_deterministe(self):
         a = action(play_type="PASS", outcome="PASS_COMPLETE")
