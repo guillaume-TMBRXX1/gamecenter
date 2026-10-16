@@ -291,6 +291,30 @@ Interrupteur du notebook : `RUN_IQ_ENABLED` (`GC_BLOC_F=0` : moteur d'avant à l
 `play.run` (box, side, hole, read, contact, tackler, front, key_block). Mesures : README du serveur, section 54. Tests :
 `test_course.py`.
 
+## Checks avant le snap (étape 4 « moteur plus intelligent », notebook 12.2 novodecies, 16/10/2026)
+
+```
+appel du huddle + défense (12.2 decies : paquet, front, motion)
+   │  réponse à la motion (profil de la défense) : roll (+1 dans la boîte, la coquille se dévoile) · lock (homme : le
+   │                                               défenseur suit) · bump (zone : rien ne se dévoile)
+   │  ce que la défense MONTRE : « 2-high rotating » → un défenseur de moins dans la boîte · « mug » → un ou deux de plus
+   │  lecture du QB : voit au travers (awareness, coverage reading − déguisement ; roll / lock : tout se voit)
+   │  audible : boîte lue ≥ 8 contre une course → passe rapide ; ≤ 6 contre une passe (≤ 6 yards) → course intérieure ;
+   │           fréquence = identité de la franchise (liberté, penchant) × awareness ; même formation si possible
+   │  trompé : mauvais audible / audible manqué (le même tirage avec la vraie boîte)
+   ▼
+bloc F (boîte réelle) ou passe décidée (vu au travers : moitié moins d'erreurs dues au déguisement) ;
+chrono d'avant-snap : 2 s par audible (+1 après une réponse à une motion), 1 s au moins au snap
+```
+
+| Fichier | Rôle |
+|---|---|
+| `presnap.py` | `check` (réponse à la motion, lecture, audible, trompé), `boite_montree`, `coquilles`, `regard`, `p_voir`, `p_audible`, `vers_quoi` (situations : tuer l'horloge, goal line, hurry-up, 15 dernières secondes), `cout` ; tables `LIBERTE` (identité offensive), `REPONSE` (identité défensive), `PRESENTATION`. Flux `presnap`, `presnap-def`, `presnap-jeu`. **Un profil, pas un niveau** : aucun yard ajouté — le gain d'un bon audible et le coût d'un mauvais viennent du moteur (bloc F, déguisement de la lecture) |
+
+Interrupteur du notebook : `PRESNAP_ENABLED` (`GC_PRESNAP=0` : moteur d'avant à l'identique, contrôlé). GameFeed :
+`play.presnap` (look, box_shown, box_real, box_read, shell_shown, shell_real, read, audible, from, to, fooled, motion,
+motion_response, sec, clock, qb). Mesures : README du serveur, section 58. Tests : `test_presnap.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
