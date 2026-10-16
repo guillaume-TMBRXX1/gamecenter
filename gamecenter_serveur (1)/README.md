@@ -1325,6 +1325,8 @@ moins de points, pauses de 10 s entre les quarts-temps et de 40 s à la mi-temps
 - **Site** : horloge et chrono à 1 s par seconde, « TO :15 » à la place du chrono pendant un temps mort (jaune), chrono en
   rouge sous 3 s. Test navigateur `test_horloge.js` : horloge à 1 s par seconde quand elle tourne, chrono de 10 s,
   décompte de temps mort, sorties sur la touche, match rejoué en moins de 30 min.
+- **Exhibition** `exh-v38-gmb-mnl` (remplace `exh-v37`) : MNL 22 @ GMB 19, 121 actions, 11 sorties du terrain, 2 temps
+  morts, 2 genoux, 6 4es essais joués ; 25 min à l'écran (pauses comprises).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
