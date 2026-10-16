@@ -3871,10 +3871,10 @@ function playClockNow(g){
   if(g.phase==='presnap'){ const tw=num(S.tw,0), u=g.dur>tw?clamp((g.t-tw)/(g.dur-tw),0,1):1; return Math.max(0,Math.ceil(pc[0]-(pc[0]-pc[1])*u-1e-9)); }
   return pc[1];
 }
-/* seconds left in a timeout (real time: 15 s, show.tw), else null */
+/* seconds left in a timeout (show.tw seconds on screen; show.tl seconds shown — ecran-3: 15 s shown in 4 s), else null */
 function timeoutNow(g){
-  const S=g.cur&&g.cur.show, tw=S?num(S.tw,0):0;
-  return g.status==='live'&&g.phase==='presnap'&&tw>0&&g.t<tw?Math.ceil(tw-g.t-1e-9):null;
+  const S=g.cur&&g.cur.show, tw=S?num(S.tw,0):0, tl=S?num(S.tl,tw):0;
+  return g.status==='live'&&g.phase==='presnap'&&tw>0&&g.t<tw?Math.ceil(tl*(1-g.t/tw)-1e-9):null;
 }
 /* perf: write to the DOM only when the value really changes — the HUD is refreshed 4x a second and every
    write (even of the same text) costs a style pass and wakes the team-colour observer */

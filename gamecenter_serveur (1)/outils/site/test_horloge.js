@@ -1,4 +1,5 @@
-// Horloge en temps réel, chrono des 10 s, temps morts de 15 s (moteur/ecran.py ecran-2, 15/10/2026 ; ecran-1 : 14/10)
+// Horloge, chrono d'avant-snap de 10 s, temps morts (moteur/ecran.py ecran-3 du 16/10/2026 : rythme rapide, < 25 min ;
+// ecran-2 du 15/10 : temps réel ; ecran-1 : 14/10)
 // — test navigateur (Playwright, crochet de test).
 //   node outils/site/test_horloge.js [GameFeed avec l'horloge réelle]     (depuis « gamecenter_serveur (1) »)
 // Rejoue en temps simulé, sur le grand écran, un match de l'horloge réelle (par défaut : la dernière exhibition dont les
@@ -82,7 +83,15 @@ async function server(){
     const nTo=F.plays.filter(P=>P.show.to).length;
     check(R.chips.length===nTo,`temps morts : bannière TIMEOUT (${R.chips.length} / ${nTo})`);
     check(R.tos.every(x=>x.on===x.want),'temps morts restants sous l\'équipe = moteur'+(R.tos.length?` (ex. ${R.tos[0].side} ${R.tos[0].on})`:''));
-    const rt=F.plays.every(P=>P.show.rt===1);
+    const rt=F.plays.every(P=>P.show.rt===1), v3=((F.game||{}).broadcast||{}).version==='ecran-3';
+    if(v3){   /* ecran-3 (16/10/2026): fast rhythm, the clock may run faster than real time but not too fast */
+      check(R.tos.length>0&&R.tos.every(x=>/^TO :1[45]$/.test(x.pc||'')),`temps mort : décompte de 15 s à la place du chrono (${R.tos.map(x=>x.pc).slice(0,3).join(', ')})`);
+      const fast=R.rates.filter(r=>r>3.2), med=R.rates.slice().sort((a,b)=>a-b)[R.rates.length>>1];
+      check(R.rates.length>500&&!fast.length&&med<=2.2,`l'horloge n'accélère pas trop : ${med.toFixed(2)} s de match par seconde (médiane), ${fast.length} pas au-delà de 3,2`);
+      check(F.plays.every(P=>!P.show.pc||P.show.pc[0]===10),'chrono d\'avant-snap de 10 s');
+      const ob=R.ends.filter(e=>e.oob), out=ob.filter(e=>e.y<0.8||e.y>52.5);
+      check(ob.length>0&&out.length>=Math.ceil(ob.length*0.8),`sortie du terrain : le porteur / receveur finit sur la touche (${out.length} / ${ob.length})`);
+    }
     if(rt){
       check(R.tos.length>0&&R.tos.every(x=>/^TO :1[45]$/.test(x.pc||'')),`temps mort : décompte de 15 s à la place du chrono (${R.tos.map(x=>x.pc).slice(0,3).join(', ')})`);
       /* a step that ends a run of the clock (the play's time is up, the snap) loses less: at most one per phase */
@@ -96,6 +105,7 @@ async function server(){
     console.log(`    rejoué en ${(rejoue/60).toFixed(2)} min (attendu ${((want+brk)/60).toFixed(2)} min, écran final compris)`);
     check(Math.abs(rejoue-(want+brk))<=30,'durée rejouée = temps d\'écran + pauses');
     if(rt) check(rejoue<30*60,'match rejoué en moins de 30 min');
+    if(v3) check(rejoue<25*60,'match rejoué en moins de 25 min');
     check(R.status==='final','match rejoué jusqu\'au bout');
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs[0]:''));
   }finally{ await b.close(); srv.kill(); }
