@@ -1292,6 +1292,40 @@ Retours de Guillaume sur l'exhibition GMB–MNL du 14/10 : retours de punt absen
   matchs : 13.4 passe (écart moyen 0,035 → 0,020 sur son échantillon).
 - **Tests navigateur** : `test_punts.js`, `test_courses.js`, `test_horloge.js` (groupe site).
 
+### 56. Match en temps réel : quarts-temps de 4 min, chrono de 10 s, temps morts de 15 s (15/10/2026)
+Retour de Guillaume sur l'exhibition GMB–MNL (section 55) : « les actions vont trop vite. L'horloge doit s'écouler
+normalement et en temps réel » — 4 quarts-temps de 4 min, délai d'avant-snap de 10 s au plus, 3 temps morts de 15 s par
+équipe et par mi-temps, moins de 30 min par match ; l'horloge s'arrête sur une passe incomplète, une sortie du terrain,
+un temps mort, un changement de phase et les cas particuliers, et tourne sinon ; les receveurs ne sortaient jamais du
+terrain (« il retourne toujours vers l'intérieur »). Choix de Guillaume : moins d'actions (≈ 100 au lieu de ≈ 160) et
+moins de points, pauses de 10 s entre les quarts-temps et de 40 s à la mi-temps (inchangées).
+- **Format** : quarts-temps de **240 s** (`GC_QUART`, 12.2 quaterdecies ; 900 avant). Le **changement de format** se voit
+  dans les chiffres de la ligue : ≈ 114 actions par match (coups d’envoi et transformations compris ; ≈ 160 avant),
+  ≈ 40 points (≈ 55 avant), ≈ 11 sorties du terrain et ≈ 5 temps morts par match. Les cotes (13.1-13.4), l'équilibre
+  (12.3) et les contrôles passent sans réglage : ils se calibrent sur les matchs du moteur.
+- **Moteur** (`moteur/horloge.py`, format temps réel dès qu'un quart-temps fait 300 s ou moins) : entre deux actions,
+  l'horloge tourne de **9 s** en rythme normal, **4 s** en hurry-up, **10 s** pour tuer l'horloge (et au genou) — jamais
+  plus que le chrono de 10 s ; une **sortie du terrain arrête toujours l'horloge** (avant : seulement dans les 2
+  dernières minutes du Q2 et les 5 dernières du Q4) ; receveurs et porteurs cherchent davantage la touche (24 % des
+  passes complétées, 10 % des courses ; 16 % / 8 % avant). Avertissement des 2 minutes à 32 s du terme (à l'échelle),
+  fire drill, genou, spike : inchangés.
+- **Retransmission** (`moteur/ecran.py` **ecran-2**, 12.2 octodecies) : **une seconde d'écran = une seconde de match**.
+  Avant le snap, l'horloge (si elle tournait) et le chrono des 10 s descendent ensemble ; horloge arrêtée : le chrono
+  seul, au rythme de l'attaque (5 s utilisées en rythme normal, 3 pressée, 8 qui tue le temps) ; temps mort : **15 s de
+  décompte**, puis le chrono ; pendant l'action, l'horloge s'écoule du temps de jeu du moteur, au rythme réel (si
+  l'action dure plus que l'animation, elle continue juste après) ; pause après l'action seulement horloge arrêtée (3 s
+  après un score ou une perte de balle). **Durée garantie ≤ 28 min**, pauses comprises (≈ 25 min en moyenne, de 22 à
+  28) : au-delà, seuls les temps horloge arrêtée qui ne sont pas fixés par la règle (chrono utilisé, pauses, mise en
+  place des coups de pied) sont raccourcis ; l'horloge et les temps morts restent en temps réel. Les coups d'envoi
+  restent espacés de 30 min. GameFeed : `play.show` gagne `tw` (secondes de temps mort) et `rt` (temps réel).
+- **Sortie du terrain** : l'action finit **sur la touche** (12.2 octodecies : `end_y` à 0,6 yard de la ligne, mêmes
+  tirages du placement latéral ; le ballon suivant part de la hash mark de ce côté). Site : le porteur ou le receveur file
+  vers la touche et la franchit, bannière « +7 PASS · OUT OF BOUNDS » ; dans le terrain, le receveur ne revient plus vers
+  l'intérieur que d'un yard (plus sur une longue course après la réception).
+- **Site** : horloge et chrono à 1 s par seconde, « TO :15 » à la place du chrono pendant un temps mort (jaune), chrono en
+  rouge sous 3 s. Test navigateur `test_horloge.js` : horloge à 1 s par seconde quand elle tourne, chrono de 10 s,
+  décompte de temps mort, sorties sur la touche, match rejoué en moins de 30 min.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
