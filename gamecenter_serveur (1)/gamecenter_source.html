@@ -298,11 +298,12 @@
   .bug .poss.on{opacity:1}
   .bug .meta{grid-column:1/-1;display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;border-top:1px solid var(--line);background:rgba(5,6,13,.6);font:500 10.5px/1 var(--f-mono);color:var(--ink-2);white-space:nowrap}
   .bug .meta .spot{display:none;color:var(--ink-3)}
-  /* play clock (40 s) next to the game clock, and the timeouts left under each team (14/10/2026) */
+  /* play clock (40 s; 10 s in real time, 15/10/2026) next to the game clock, and the timeouts left under each team (14/10/2026) */
   .bug .meta .pclk{min-width:2.4em;padding:2px 5px;border-radius:4px;background:color-mix(in srgb,var(--ink-3) 14%,transparent);color:var(--ink-2);font:700 10.5px/1 var(--f-mono);text-align:center}
   .bug .meta .pclk:empty{display:none}
   .bug .meta .pclk.run{color:var(--ink);background:color-mix(in srgb,var(--cyan) 22%,transparent)}
   .bug .meta .pclk.low{color:#e23b3b;background:rgba(255,60,60,.18)}
+  .bug .meta .pclk.to{color:#1a1200;background:#f2c94c}
   .bug .abbr:has(.tos:not(:empty)){display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.05}
   .bug .tos{display:flex;gap:2px;margin-top:2px}
   .bug .tos:empty{display:none}
@@ -2710,8 +2711,15 @@ function planScrimmage(g,call,imp){
         }
       }
       if(imp.kind==='comp'){
-        const Fy=imp.endY!=null?clamp(imp.endY,1,52.3):clamp(C.y+(total-(C.x-L)*d>6?rand(-5,5):rand(-2,2)),2,51.3), Fx=L+d*total;
-        off[tIdx]=kfCut(off[tIdx],uc,[[0.93,Fx,Fy],[1,Fx,Fy]]);
+        let Fy=imp.endY!=null?(imp.oob?imp.endY:clamp(imp.endY,1,52.3)):clamp(C.y+(total-(C.x-L)*d>6?rand(-5,5):rand(-2,2)),2,51.3);
+        const Fx=L+d*total;
+        /* after the catch the receiver keeps to his side of the field: he does not cut back inside by more than a few
+           yards (more on a long run after the catch); out of bounds (real clock): he heads for the touchline and steps
+           over it (15/10/2026) */
+        if(!imp.oob&&imp.endY!=null){ const sd=C.y<MIDY?-1:1, yac=Math.max(0,total-(C.x-L)*d), lim=0.8+0.2*yac;
+          if((C.y-Fy)*sd>lim) Fy=clamp(C.y-sd*lim,1,52.3); }
+        off[tIdx]=imp.oob?kfCut(off[tIdx],uc,[[0.88,Fx-d*0.4,Fy<MIDY?0.6:52.7],[0.95,Fx,Fy],[1,Fx+d*0.3,Fy]])
+                         :kfCut(off[tIdx],uc,[[0.93,Fx,Fy],[1,Fx,Fy]]);
         P.carrier.push([uc,1,'off',tIdx]); P.pStart=uc+0.02; P.pEnd=0.93; P.spot={x:Fx,y:Fy}; P.gain=(Fx-L)*d;
         P.wDef=[.25,.25,.25,.25,.7,.7,.75,.75,.7,.8,.8];
       } else if(imp.kind==='inc'){
@@ -2753,7 +2761,7 @@ function planScrimmage(g,call,imp){
   off[6]= concept==='DRAW' ? [[0,qb.x,qb.y],[0.3,mesh.x,mesh.y-side*0.6],[0.45,mesh.x-d*0.4,mesh.y-side*2.4],[1,mesh.x-d*0.8,mesh.y-side*3.5]]
                            : [[0,qb.x,qb.y],[hU-0.02,mesh.x-d*0.3,mesh.y-side*0.6],[0.5,mesh.x-d*1.8,mesh.y-side*3.4],[1,mesh.x-d*2,mesh.y-side*4]];
   const RF=imp.run||null, rd=RF&&RF.read;   /* engine block F (play.run): hole, the back's read, who brought him down */
-  const Fy=imp.endY!=null?clamp(imp.endY,1,52.3)
+  const Fy=imp.endY!=null?(imp.oob?imp.endY:clamp(imp.endY,1,52.3))
     : rd==='cutback'?clamp(by-side*rand(2,5),2,51.3) : rd==='bounce'?clamp(holeY+side*rand(4,8),2,51.3)
     : clamp(holeY+rand(-4,4)*(Math.abs(total)>8?1.5:0.6),2,51.3);
   const Fx=L+d*total, holeX=total<0.5?L-d*1.2:L-d*0.2;
@@ -3248,11 +3256,13 @@ function planFromFeed(g,P){
   const call=g.call||callFromFeed(P);
   const scr=P.decision&&P.decision.action==='SCRAMBLE'&&t==='run';
   const kind= scr ? 'scramble' : t!=='pass' ? 'run' : r==='incomplete'?'inc' : r==='sack'?'sack' : r==='interception'?'int' : 'comp';
-  const ey=g.latEngine&&P.spot?num(P.spot.y,null):null;
+  const oob=!!(P.clock&&P.clock.oob)&&(kind==='comp'||kind==='run'||kind==='scramble')&&r!=='touchdown';   /* real clock: out of bounds */
+  let ey=g.latEngine&&P.spot?num(P.spot.y,null):null;
+  if(oob) ey=(ey!=null?ey:num(P.ball_y,MIDY))<MIDY?-0.5:53.8;     /* he goes out: over the touchline (15/10/2026) */
   const dk=P.decision||{}, cov=t==='pass'&&!scr?(dk.bust?'bust':dk.reception||null):null;   /* engine block C */
   const pd=!!(P.players&&P.players.defender&&P.players.defender.credit==='PASS_DEFENDED');
   const rs=P.run&&(P.run.side==='left'||P.run.side==='right')?(P.run.side==='left'?-1:1)*(P.offense==='home'?1:-1):null;   /* block F: the run's side */
-  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null});
+  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,oob,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null});
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
@@ -3336,8 +3346,9 @@ function rpChip(P){
     case 'incomplete': return {t:'INCOMPLETE',c:'bad'};
     case 'sack': return {t:'SACK '+MINUS+Math.abs(gn),c:'bad'};
   }
-  if(/1st down/i.test(P.text||'')) return {t:sg+' · 1ST DOWN',c:'good'};
-  return {t:sg+(r==='run'?' RUN':' PASS'),c:gn<0?'bad':''};
+  const ob=P.clock&&P.clock.oob&&(r==='complete'||r==='run')?' · OUT OF BOUNDS':'';   /* real clock: the clock stops */
+  if(/1st down/i.test(P.text||'')) return {t:sg+' · 1ST DOWN'+ob,c:'good'};
+  return {t:sg+(r==='run'?' RUN':' PASS')+ob,c:gn<0?'bad':''};
 }
 /* Engine lateral placement (notebook 11.6): call.side = side of the play (-1 top touchline, +1 bottom).
    Returns the formation flip that puts the targeted receiver (pass) or the strong side (run) there. */
@@ -3837,20 +3848,33 @@ function toast(msg){ const t=document.getElementById('toast'); t.classList.remov
 function qLabel(g){ return g.status==='final'?'FINAL':g.status==='half'?'HALF':g.brk&&g.brk.kind==='q'?'END '+qName(g.brk.q):qName(g.q); }
 function clkDisp(g){ if(g.status!=='live') return ''; return clockStr(clockNow(g)); }
 /* the game clock as it runs on screen. With play.show (14/10/2026): before the snap it runs down from show.c0 to the
-   snap (clock_start) when the engine's clock was running, then during the play by show.pt; stopped clock: it waits */
+   snap (clock_start) when the engine's clock was running, then during the play by show.pt; stopped clock: it waits.
+   Real time (show.rt, moteur/ecran.py ecran-2, 15/10/2026): one second of clock per second on screen — before the snap
+   from c0 until clock_start, from the snap for pt seconds (on into the post-play when the play outlasts its animation) */
 function clockNow(g){
   const P=g.cur, S=P&&P.show, u=g.dur?clamp(g.t/g.dur,0,1):1;
   if(!S){ let c=g.clock; if(g.phase==='play'&&g.plan) c-=g.plan.elapsed*u; return c; }
   const c1=num(P.clock_start,g.clock), c0=num(S.c0,c1), pt=num(S.pt,0);
+  if(S.rt){
+    if(g.phase==='presnap') return Math.max(c1,c0-g.t);
+    if(g.phase==='play') return c1-Math.min(g.t,pt);
+    return c1-Math.min(num(S.act,0)+g.t,pt);
+  }
   if(g.phase==='presnap') return c0+(c1-c0)*u;
   if(g.phase==='play') return c1-pt*u;
   return c1-pt;
 }
-/* the 40-second play clock (play.show.pc = [start, at the snap]): it runs before the snap, then shows what was left */
+/* the play clock (play.show.pc = [start, at the snap] — 40 s, 10 s in real time): it runs before the snap, then shows
+   what was left; during a timeout (show.tw seconds at the start of the pre-snap) it waits */
 function playClockNow(g){
   const P=g.cur, S=P&&P.show, pc=S&&S.pc; if(!pc||g.status!=='live') return null;
-  if(g.phase==='presnap'){ const u=g.dur?clamp(g.t/g.dur,0,1):1; return Math.max(0,Math.ceil(pc[0]-(pc[0]-pc[1])*u)); }
+  if(g.phase==='presnap'){ const tw=num(S.tw,0), u=g.dur>tw?clamp((g.t-tw)/(g.dur-tw),0,1):1; return Math.max(0,Math.ceil(pc[0]-(pc[0]-pc[1])*u-1e-9)); }
   return pc[1];
+}
+/* seconds left in a timeout (real time: 15 s, show.tw), else null */
+function timeoutNow(g){
+  const S=g.cur&&g.cur.show, tw=S?num(S.tw,0):0;
+  return g.status==='live'&&g.phase==='presnap'&&tw>0&&g.t<tw?Math.ceil(tw-g.t-1e-9):null;
 }
 /* perf: write to the DOM only when the value really changes — the HUD is refreshed 4x a second and every
    write (even of the same text) costs a style pass and wakes the team-colour observer */
@@ -3865,7 +3889,9 @@ function updateGameUI(g){
       case 'q': setTxt(el,qLabel(g)); break;
       case 'brk': renderBrk(g,el); break;
       case 'clk': setTxt(el,clkDisp(g)); break;
-      case 'pc': { const v=playClockNow(g), t=v==null?'':':'+(v<10?'0':'')+v; setTxt(el,t); el.classList.toggle('low',v!=null&&v<=5); el.classList.toggle('run',g.phase==='presnap'); break; }
+      case 'pc': { const w=timeoutNow(g), v=w!=null?w:playClockNow(g), t=v==null?'':(w!=null?'TO :':':')+(v<10?'0':'')+v, S=g.cur&&g.cur.show;
+        setTxt(el,t); el.classList.toggle('to',w!=null); el.classList.toggle('low',w==null&&v!=null&&v<=(S&&S.pc&&S.pc[0]>=40?5:3)); el.classList.toggle('run',w==null&&g.phase==='presnap');
+        el.title=w!=null?'Timeout':'Play clock'; break; }
       case 'toA': case 'toH': { const n=g.tos?g.tos[el.dataset.f==='toA'?'away':'home']:null, v=n==null?'':String(n);
         if(el._v!==v){ el._v=v; el.innerHTML=n==null?'':[0,1,2].map(i=>`<i class="${i<n?'on':''}"></i>`).join(''); el.title=n==null?'':`${n} timeout${n===1?'':'s'} left`; } break; }
       case 'dd': setTxt(el,g.status!=='live'?'':(g.special==='kickoff'?'KICKOFF':ddStr(g))); break;

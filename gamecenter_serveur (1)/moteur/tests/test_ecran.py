@@ -17,46 +17,57 @@ def jeu(seq, q, c0, c1, runoff=0, t="run", timeout=None, offense="home", score=(
 
 class TestChronologie(unittest.TestCase):
     def test_horloge_qui_tourne(self):
-        # action 1 : 5 s de jeu puis 36 s avant le snap suivant ; action 2 : l'horloge part de 859 et descend à 823
-        C = ec.chronologie([jeu(1, 1, 900, 859, runoff=36), jeu(2, 1, 859, 850, runoff=0, t="pass", result="incomplete")])
-        self.assertEqual((C[0]["pt"], C[1]["c0"], C[1]["pc"]), (5, 895, [40, 4]))
-        self.assertEqual(C[1]["pt"], 9)
-        self.assertAlmostEqual(C[1]["pre"], ec.AVANT_MIN + 36 / ec.VITESSE, places=2)
+        # action 1 : 5 s de jeu puis 7 s avant le snap suivant ; action 2 : l'horloge part de 235 et descend à 228
+        C = ec.chronologie([jeu(1, 1, 240, 228, runoff=7), jeu(2, 1, 228, 222, t="pass", result="incomplete")])
+        self.assertEqual((C[0]["pt"], C[1]["c0"], C[1]["pc"]), (5, 235, [10, 3]))
+        self.assertEqual(C[1]["pre"], 7)                                   # temps réel : 7 s d'écran
+        self.assertEqual(C[0]["post"], 1.0 * 0 + max(0, 5 - C[0]["act"]))  # pas de pause, le chrono repart aussitôt
+        self.assertEqual(C[1]["pt"], 6)
+
+    def test_une_seconde_par_seconde(self):
+        # horloge qui tourne d'un snap à l'autre : l'écran dure exactement le temps de match écoulé
+        P = [jeu(i, 1, 240 - 12 * i, 228 - 12 * i, runoff=7) for i in range(15)]
+        C = ec.chronologie(P)
+        for i in range(1, 14):
+            self.assertAlmostEqual(C[i]["act"] + C[i]["post"] + C[i + 1]["pre"], 12, places=1)
 
     def test_horloge_arretee_rythme(self):
         # passe incomplète : l'horloge ne tourne pas avant le snap, le chrono au rythme de l'équipe
-        normal = ec.chronologie([jeu(1, 1, 600, 594, result="incomplete"), jeu(2, 1, 594, 590)])[1]
-        self.assertEqual((normal["c0"], normal["pc"]), (594, [40, 40 - ec.UTILISE_ARRETE["normal"]]))
+        normal = ec.chronologie([jeu(1, 1, 200, 194, result="incomplete"), jeu(2, 1, 194, 190)])[1]
+        self.assertEqual((normal["c0"], normal["pc"]), (194, [10, 10 - ec.UTILISE_ARRETE["normal"]]))
         presse = ec.chronologie([jeu(1, 4, 90, 84, result="incomplete", score=(0, 7)),
                                  jeu(2, 4, 84, 80, score=(0, 7))])[1]
-        self.assertEqual(presse["pc"], [40, 40 - ec.UTILISE_ARRETE["presse"]])
-        tue = ec.chronologie([jeu(1, 4, 200, 194, result="incomplete", score=(14, 0)),
-                              jeu(2, 4, 194, 190, score=(14, 0))])[1]
-        self.assertEqual(tue["pc"], [40, 40 - ec.UTILISE_ARRETE["tue"]])
+        self.assertEqual(presse["pc"], [10, 10 - ec.UTILISE_ARRETE["presse"]])
+        tue = ec.chronologie([jeu(1, 4, 100, 94, result="incomplete", score=(14, 0)),
+                              jeu(2, 4, 94, 90, score=(14, 0))])[1]
+        self.assertEqual(tue["pc"], [10, 10 - ec.UTILISE_ARRETE["tue"]])
         self.assertLess(presse["pre"], normal["pre"])
         self.assertLess(normal["pre"], tue["pre"])
 
     def test_temps_mort(self):
-        C = ec.chronologie([jeu(1, 4, 100, 95, timeout="away"), jeu(2, 4, 95, 90)])
-        self.assertEqual((C[1]["to"], C[1]["pc"][0]), ("away", ec.CHRONO_COURT))
-        self.assertGreaterEqual(C[1]["pre"], ec.AVANT_MIN + ec.TEMPS_MORT)
+        C = ec.chronologie([jeu(1, 3, 100, 95, timeout="away"), jeu(2, 3, 95, 90)])
+        self.assertEqual((C[1]["to"], C[1]["tw"], C[1]["pc"][0]), ("away", 15, 10))
+        self.assertEqual(C[1]["pre"], 15 + ec.UTILISE_ARRETE["normal"])
+        self.assertEqual(C[0]["post"], ec.APRES)
 
     def test_speciales_et_score(self):
-        C = ec.chronologie([jeu(1, 1, 300, 290, result="touchdown"),
-                            jeu(2, 1, 290, 290, t="extra_point", result="pat_good", conversion={"choice": "extra_point"}),
-                            jeu(3, 1, 290, 290, t="kickoff", result="kickoff", kick_return={"touchback": False, "return": 36})])
-        self.assertEqual(C[0]["post"], ec.APRES_SCORE)
+        C = ec.chronologie([jeu(1, 1, 200, 190, result="touchdown"),
+                            jeu(2, 1, 190, 190, t="extra_point", result="pat_good", conversion={"choice": "extra_point"}),
+                            jeu(3, 1, 190, 190, t="kickoff", result="kickoff", kick_return={"touchback": False, "return": 36})])
+        self.assertEqual(C[0]["post"], ec.APRES_SCORE + max(0, 10 - C[0]["act"]))
         self.assertIsNone(C[1]["pc"])
         self.assertIsNone(C[2]["pc"])
-        self.assertGreater(C[2]["act"], ec.ACTION["kickoff"] * ec.FACTEUR)
+        self.assertGreater(C[2]["act"], ec.ACTION["kickoff"])
 
     def test_nouveau_quart(self):
-        C = ec.chronologie([jeu(1, 1, 5, 0, runoff=3), jeu(2, 2, 900, 894)])
-        self.assertEqual((C[1]["c0"], C[1]["pc"][0]), (900, ec.CHRONO_COURT))
+        C = ec.chronologie([jeu(1, 1, 5, 0, runoff=3), jeu(2, 2, 240, 234)])
+        self.assertEqual((C[1]["c0"], C[1]["pc"]), (240, [10, 10 - ec.UTILISE_ARRETE["normal"]]))
+        self.assertEqual(C[0]["post"], ec.APRES)                       # fin du quart : l'horloge ne tourne plus
 
     def test_somme(self):
-        C = ec.chronologie([jeu(i, 1, 900 - 10 * i, 890 - 10 * i, runoff=5) for i in range(20)])
+        C = ec.chronologie([jeu(i, 1, 240 - 10 * i, 230 - 10 * i, runoff=5) for i in range(20)])
         self.assertTrue(all(abs(c["sec"] - c["pre"] - c["act"] - c["post"]) < 0.02 for c in C))
+        self.assertTrue(all(c["pc"] is None or 0 <= c["pc"][1] <= c["pc"][0] == ec.CHRONO for c in C))
 
 
 class TestServeur(unittest.TestCase):
