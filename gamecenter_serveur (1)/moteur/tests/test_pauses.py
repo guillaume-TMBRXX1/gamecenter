@@ -70,20 +70,21 @@ class TestServeur(unittest.TestCase):
         self.assertTrue(30 <= serveur.BREAK_SEC["half"] <= 45)
 
     def test_ligne_de_temps(self):
-        """Fin du match = n·6,5 s + les pauses ; l'action qui termine la mi-temps est révélée AVANT la pause, la
-        suivante 40 s plus tard ; pendant la pause, rien de nouveau."""
+        """Fin du match = temps d'écran des actions (play.show.sec, sinon 6,5 s) + les pauses ; l'action qui termine la
+        mi-temps est révélée AVANT la pause, la suivante 40 s (+ son temps d'écran) plus tard ; pendant la pause, rien de
+        nouveau."""
         w = serveur.Week(SEMAINES[-1])
         g = w.reg[0]
         P = w.feeds[g["id"]]["plays"]
         tot = sum(serveur.BREAK_SEC[serveur.break_kind(p)] for p in P if serveur.break_kind(p))
-        self.assertEqual(g["end"], g["ko"] + int((len(P) * serveur.PLAY_SEC + tot) * 1000))
+        self.assertAlmostEqual(g["end"], g["ko"] + int((sum(serveur.play_sec(p) for p in P) + tot) * 1000), delta=1)
         h = next(i for i, p in enumerate(P) if serveur.break_kind(p) == "half")
         fin_h = g["ko"] + g["ends"][h] * 1000              # l'action h finit son temps d'écran
         self.assertEqual(w.revealed_plays(g, fin_h - 1), h)
         self.assertEqual(w.revealed_plays(g, fin_h), h + 1)
         for dt in (1000, 20000, 39000):                    # pause : toujours h + 1 actions révélées
             self.assertEqual(w.revealed_plays(g, fin_h + dt), h + 1)
-        reprise = fin_h + (serveur.BREAK_SEC["half"] + serveur.PLAY_SEC) * 1000
+        reprise = fin_h + (serveur.BREAK_SEC["half"] + serveur.play_sec(P[h + 1])) * 1000
         self.assertEqual(w.revealed_plays(g, reprise - 1), h + 1)
         self.assertEqual(w.revealed_plays(g, reprise), h + 2)
         self.assertEqual(w.revealed_plays(g, g["end"]), len(P))
@@ -91,13 +92,17 @@ class TestServeur(unittest.TestCase):
         self.assertEqual(w.status(g, g["end"]), "final")
 
     def test_sans_pause_identique(self):
-        """Avant la première fin de quart-temps, la ligne de temps est celle d'avant (une action toutes les 6,5 s)."""
+        """Avant la première fin de quart-temps, aucune pause : chaque action dure son temps d'écran (play.show.sec,
+        sinon 6,5 s) et l'action k est révélée à la fin de ses k premières."""
         w = serveur.Week(SEMAINES[-1])
         g = w.reg[1]
-        q1 = next(i for i, p in enumerate(w.feeds[g["id"]]["plays"]) if serveur.break_kind(p))
+        P = w.feeds[g["id"]]["plays"]
+        q1 = next(i for i, p in enumerate(P) if serveur.break_kind(p))
+        debut = 0.0
         for k in range(0, q1 + 1):
-            t = g["ko"] + int(k * serveur.PLAY_SEC * 1000) + 3000
+            t = g["ko"] + int((debut + serveur.play_sec(P[k]) / 2) * 1000)     # au milieu de l'action k
             self.assertEqual(w.revealed_plays(g, t), k)
+            debut += serveur.play_sec(P[k])
 
     def test_actions_inchangees(self):
         """Les pauses n'ajoutent ni ne modifient aucune action : le flux public est une tranche du flux du moteur."""

@@ -89,20 +89,60 @@ def iso_ms(s):
 
 
 # ------------------------------------------------------------------ semaines
+# GameFeed en mémoire (17/10/2026 : Railway, 1 Go, tombait en « out of memory » — toutes les semaines gardaient leurs
+# 279 GameFeed en objets Python, ≈ 700 Mo dès la 4e semaine) : ceux de la semaine en cours restent en mémoire (le direct
+# les lit toutes les 3 s) ; ceux des autres semaines sont relus à la demande (replay, feuilles de match de l'histoire,
+# mises en cache à part) et gardés dans un petit cache des FEEDS_CACHE derniers.
+try:
+    FEEDS_CACHE = max(1, int(os.environ.get("GC_FEEDS_CACHE", "40")))
+except ValueError:
+    FEEDS_CACHE = 40
+_FEEDS_LRU, _FEEDS_LOCK = {}, threading.Lock()      # (dossier, id) -> GameFeed ; ordre d'insertion = ancienneté
+_PINNED = {"week": None}                            # la semaine en cours (current_week)
+
+
+def _read_feed(path):
+    with open(path, encoding="utf-8") as fh:
+        f = json.load(fh)
+    f["game"].pop("player_stats", None)
+    return f
+
+
+class _FeedsView:
+    def __init__(self, w):
+        self.w = w
+
+    def __getitem__(self, gid):
+        return self.w.feed(gid)
+
+    def __contains__(self, gid):
+        return gid in self.w._files
+
+    def __iter__(self):
+        return iter(self.w._files)
+
+    def __len__(self):
+        return len(self.w._files)
+
+    def keys(self):
+        return self.w._files.keys()
+
+
 class Week:
     def __init__(self, folder):
         self.folder = folder
         with open(os.path.join(folder, "week.json"), encoding="utf-8") as fh:
             self.doc = json.load(fh)
         self.start = self.doc["week"]["start"]
-        self.feeds, self.sched = {}, []
+        self.sched, self._files, self._feeds = [], {}, {}
         for g in self.doc["schedule"]:
-            with open(os.path.join(folder, g["feed"]), encoding="utf-8") as fh:
-                f = json.load(fh)
-            f["game"].pop("player_stats", None)
-            self.feeds[g["id"]] = f
+            self._files[g["id"]] = os.path.join(folder, g["feed"])
+            f = _read_feed(self._files[g["id"]])         # lu une fois pour le calendrier, puis libéré
             ko = iso_ms(g["kickoff"]); n = len(f["plays"]); ends = play_ends(f["plays"])
-            self.sched.append(dict(g, ko=ko, n=n, ends=ends, end=ko + int((ends[-1] if ends else 0) * 1000)))
+            # fin arrondie à la ms supérieure : à l'instant de la fin, la dernière action est révélée (temps d'écran
+            # fractionnaires, play.show)
+            self.sched.append(dict(g, ko=ko, n=n, ends=ends, end=ko + math.ceil((ends[-1] if ends else 0) * 1000)))
+            del f
         self.by = {g["id"]: g for g in self.sched}
         self.lock = iso_ms(self.doc["week"]["standings_locked_at"])
         mon = datetime.fromisoformat(self.start).replace(tzinfo=TZ)
@@ -113,6 +153,30 @@ class Week:
         self.nslots = max(g["slot"] for g in self.reg)          # 18 créneaux à 4 équipes, 14 à 8 (étape 6)
         self.semis = [g for g in self.sched if g["phase"] == "semifinal"]
         self.final = next(g for g in self.sched if g["phase"] == "ai_bowl")
+
+    @property
+    def feeds(self):
+        """Compatibilité (tests, outils) : w.feeds[id] = w.feed(id)."""
+        return _FeedsView(self)
+
+    def feed(self, gid):
+        """Le GameFeed d'un match : en mémoire pour la semaine en cours, sinon relu (petit cache commun)."""
+        if _PINNED["week"] is self:
+            f = self._feeds.get(gid)
+            if f is None:
+                f = self._feeds[gid] = _read_feed(self._files[gid])
+            return f
+        if self._feeds:
+            self._feeds = {}                         # n'est plus la semaine en cours : libérée
+        key = (self.folder, gid)
+        with _FEEDS_LOCK:
+            f = _FEEDS_LRU.pop(key, None)
+            if f is None:
+                f = _read_feed(self._files[gid])
+            _FEEDS_LRU[key] = f
+            while len(_FEEDS_LRU) > FEEDS_CACHE:
+                _FEEDS_LRU.pop(next(iter(_FEEDS_LRU)))
+        return f
 
     # ---- ce qui est connu à l'instant t ----
     def status(self, g, t):
@@ -154,7 +218,7 @@ class Week:
         return out
 
     def public_feed(self, g, t, upto=None):
-        f = self.feeds[g["id"]]
+        f = self.feed(g["id"])
         known = self.teams_known(g, t)
         game = {k: v for k, v in f["game"].items() if k not in ("final_score", "overtime", "seed")}
         if self.status(g, t) == "final":
@@ -208,7 +272,7 @@ class Week:
         if t < self.open: q["locked"] = "opens"; return q
         if st == "final": q["locked"] = "final"; return q
         if not self.teams_known(g, t): q["locked"] = "seeds"; return q
-        f = self.feeds[g["id"]]
+        f = self.feed(g["id"])
         r = self.revealed_plays(g, t)
         if st == "upcoming" or r == 0:
             o = f["game"].get("pregame_odds") or {}
@@ -349,10 +413,13 @@ def current_week(t=None):
     if not ws:
         return None
     live = [w for w in ws if w.open <= t < w.reset]
-    if live:
-        return live[-1]
     past = [w for w in ws if w.open <= t]
-    return past[-1] if past else ws[0]
+    w = live[-1] if live else past[-1] if past else ws[0]
+    if t >= now_ms() - 60_000 and _PINNED["week"] is not w:   # l'heure réelle : la semaine en cours est épinglée,
+        old, _PINNED["week"] = _PINNED["week"], w                 # celle d'avant libère ses GameFeed
+        if old is not None:
+            old._feeds = {}
+    return w
 
 
 def _init_clock():
@@ -890,7 +957,7 @@ def api_delta(have: str = ""):
         r = w.revealed_plays(g, t) if w.teams_known(g, t) else 0
         h = got.get(g["id"], 0)
         if r > h:
-            plays[g["id"]] = {"from": h, "plays": w.feeds[g["id"]]["plays"][h:r]}
+            plays[g["id"]] = {"from": h, "plays": w.feed(g["id"])["plays"][h:r]}
     st = w.public_state(t)
     st.pop("teams", None)
     # le navigateur ne lit « games » que pour les affiches de playoffs dont les équipes étaient cachées : les rosters des
@@ -1372,7 +1439,7 @@ def _feuille(w, gid):
     """Feuille de match d'un match (moteur/histoire.py), calculée une fois par match."""
     fm = w.__dict__.setdefault("feuilles", {})
     if gid not in fm:
-        fm[gid] = _histoire.feuille_de_match(w.feeds[gid])
+        fm[gid] = _histoire.feuille_de_match(w.feed(gid))
     return fm[gid]
 
 
