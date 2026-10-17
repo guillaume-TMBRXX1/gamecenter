@@ -2,7 +2,7 @@
 # punts avec retour, checks avant le snap, retransmission ; notes des joueurs et staffs de la dernière semaine de
 # data/weeks), à charger sur le site : tuile Exhibition ->
 # « Watch the match » -> bouton « Load GameFeed ». Rien n'est ajouté au dépôt : les fichiers sont dans l'artefact
-# « gamefeeds-exhibition » de l'exécution (Actions -> cette exécution -> Artifacts). ≈ 15 min
+# « gamefeeds-exhibition » de l'exécution (Actions -> cette exécution -> Artifacts). ≈ 15 min pour « tous »
 # (chargement du moteur ≈ 8-10 min, puis ≈ 5 s par match).
 name: GameFeeds d'exhibition
 
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       matchs:
-        description: "Affiches « VIS@DOM,… » ou « tous » (56 affiches à 8 équipes)"
+        description: "Affiches « VIS@DOM,… » ou « tous » (552 affiches à 24 équipes)"
         default: "tous"
       par_affiche:
         description: "Matchs par affiche"

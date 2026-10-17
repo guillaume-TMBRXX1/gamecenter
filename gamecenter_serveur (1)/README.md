@@ -353,8 +353,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (« Fin de programme ») et `outils/moteur/rapport_validation_complete.json`.
 - Corrigé : l'ordre d'affichage de deux ajustements défensifs V21 simultanés dépendait du hachage de Python (GameFeed
   non reproductible octet par octet ; jeu inchangé).
-- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : 12 GameFeeds du moteur V26 (notes et staffs de
-  la dernière semaine) dans un artefact, à charger sur le site (« Load GameFeed »).
+- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : GameFeeds du moteur complet (notes et staffs de
+  la dernière semaine ; depuis le 17/10/2026 jusqu'à la dernière cellule 12.2, voir section 59) dans un artefact, à
+  charger sur le site (« Load GameFeed »).
 
 ### 21. Extension du playbook V0.1 (notebook V27, 06/10/2026, allumée)
 
