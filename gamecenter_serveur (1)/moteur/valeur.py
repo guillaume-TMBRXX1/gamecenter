@@ -54,9 +54,6 @@ BIAIS = (-4.0, -0.5)             # points : agressivité 0 (prudent) … 1 (agre
                                  # 4es essais joués (semaine du 19/10), trop ; (-4 ; -0,5) et 2,5 ci-dessous -> 17 %
 PRUDENCE_CAMP = 2.5              # points de plus exigés pour jouer depuis sa ligne de but (0 au milieu du terrain) :
                                  # un échec dans son camp se paie (et se voit) plus qu'ailleurs
-AUDACE_OUTSIDER = (2.0, 10.0)    # 17/10/2026 : l'équipe aux unités plus faibles (ecart_unites < 0) retrouve de l'audace,
-                                 # jusqu'à 2 points pour 10 points d'écart et plus — sans elle, la prudence de toute la
-                                 # ligue faisait perdre les outsiders (SPK, jeune : 45 % -> 36 % de victoires en 12.3)
 PENTE_MIN = 0.001                # WP par point : en dessous, le match est plié -> comparaison des points attendus
 
 
@@ -223,7 +220,7 @@ def quatrieme_essai(en_but, a_gagner, ecart, quart, secondes, quart_secondes=180
     # pente de la WP (par point) : conversion des écarts de WP en points, pour le biais d'identité
     mu, sd = _loi(ecart, part, 0.0, avantage)
     pente = _densite(mu / sd) / sd
-    biais = agressivite_biais(agressivite) + AUDACE_OUTSIDER[0] * min(1.0, max(0.0, -ecart_unites) / AUDACE_OUTSIDER[1])
+    biais = agressivite_biais(agressivite)
     prudence = PRUDENCE_CAMP * max(0.0, en_but - 50) / 50
     if pente < PENTE_MIN and ecart >= 0:
         return None                                       # match gagné (ou nul et sans enjeu) : règle du coordinateur
