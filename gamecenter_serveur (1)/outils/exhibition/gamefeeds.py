@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""GameFeed.json de matchs joués par le moteur courant du notebook (V26 : blocs A-B-C-D-E), à charger dans le site
+"""GameFeed.json de matchs joués par le moteur courant du notebook (tout le moteur, comme la semaine : blocs A-F,
+horloge réelle, punts avec retour, fin de match, checks avant le snap, retransmission), à charger dans le site
 (bouton « Load GameFeed » du lecteur de replay, tuile Exhibition).
 
-Rapide : charge le notebook sans Jupyter jusqu'à 12.2 nonies (comme outils/moteur/rapport_calibration.py), sans le
-test d'équilibre ni les cotes (≈ 1-2 min). Les feeds n'ont donc pas les cotes du moteur (simuler_exhibition.py les a).
+Charge le notebook sans Jupyter jusqu'à la dernière cellule 12.2 avant le test d'équilibre 12.3 (comme
+outils/moteur/rapport_calibration.py), sans le test d'équilibre ni les cotes (≈ 8-10 min). Les feeds n'ont donc pas
+les cotes du moteur (simuler_exhibition.py les a). Avant le 17/10/2026, le chargement s'arrêtait à 12.2 undecies :
+les feeds n'avaient ni l'horloge réelle, ni le bloc F, ni les audibles.
 Comme la semaine suivante (15.1) et simuler_exhibition.py : staffs ajustés (staffs_next_week) et notes des joueurs
 (bloc E : players_next_week, amorce depuis les stats sinon) de la dernière semaine de data/weeks.
 
     python3 outils/exhibition/gamefeeds.py --matchs "MNL@VEC,CTX@AEG" --par-affiche 2 --sortie /tmp/feeds
-    python3 outils/exhibition/gamefeeds.py --matchs tous --par-affiche 1      # toutes les affiches (56 à 8 équipes)
+    python3 outils/exhibition/gamefeeds.py --matchs tous --par-affiche 1      # toutes les affiches (552 à 24 équipes)
     python3 outils/exhibition/gamefeeds.py --base                             # notes de base (sans semaine précédente)
 """
-import argparse, ast, glob, json, os, sys
+import argparse, ast, glob, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -32,17 +35,36 @@ def _staffs(ns):
     raise SystemExit("apply_staff_snapshots introuvable")
 
 
+def derniere_cellule_moteur():
+    """En-tête de la dernière cellule de code avant 12.3 (le moteur complet, quelle que soit la cellule ajoutée)."""
+    nb = json.load(open(rc.NOTEBOOK, encoding="utf-8"))
+    tete = None
+    for c in nb["cells"]:
+        src = "".join(c["source"])
+        if c["cell_type"] != "code":
+            continue
+        if "— 12.3 —" in src[:400]:
+            break
+        m = re.search(r"— (12\.2 [a-z]+) —", src[:400])
+        if m:
+            tete = m.group(1)
+    if not tete:
+        raise SystemExit("cellules 12.2 introuvables")
+    return tete
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--matchs", default="tous", help="« VIS@DOM,… » ou « tous » (toutes les affiches : 56 à 8 équipes)")
+    ap.add_argument("--matchs", default="tous", help="« VIS@DOM,… » ou « tous » (toutes les affiches : 552 à 24 équipes)")
     ap.add_argument("--par-affiche", type=int, default=1)
     ap.add_argument("--graine", type=int, default=9_500_000, help="hors saison, hors cotes")
     ap.add_argument("--data", default=os.path.join(ROOT, "data"))
     ap.add_argument("--base", action="store_true", help="staffs et notes de départ (ignore data/weeks)")
     ap.add_argument("--sortie", default="gamefeeds")
     a = ap.parse_args()
-    ns, t = rc.charger(decisions=True, bloc_b=True, bloc_c=True, bloc_d=True, bloc_e=True)
-    print(f"notebook chargé en {t:.0f} s · blocs B {ns['QB_IQ_ENABLED']} C {ns['PLAYER_IQ_ENABLED']} "
+    tete = derniere_cellule_moteur()
+    ns, t = rc.charger(jusqua=tete, decisions=True, bloc_b=True, bloc_c=True, bloc_d=True, bloc_e=True)
+    print(f"notebook chargé jusqu'à {tete} en {t:.0f} s · blocs B {ns['QB_IQ_ENABLED']} C {ns['PLAYER_IQ_ENABLED']} "
           f"D {ns['GAMEPLAN_ENABLED']} E {ns['PROGRESSION_ENABLED']}")
     weeks = [] if a.base else sorted(glob.glob(os.path.join(a.data, "weeks", "week_*", "week.json")))
     prev = json.load(open(weeks[-1], encoding="utf-8")) if weeks else None
@@ -63,7 +85,7 @@ def main():
         for k in range(a.par_affiche):
             seed = a.graine + 100 * i + k
             g = ns["franchise_game"](home, away, seed=seed)
-            gid = f"v26-{away.lower()}-at-{home.lower()}-{seed}"
+            gid = f"exh-{away.lower()}-at-{home.lower()}-{seed}"
             feed = ns["export_gamefeed"](g, game_id=gid, featured=False, season=season, week="Exhibition")
             err = ns["validate_gamefeed"](feed, g)
             assert not err, err[:3]

@@ -353,8 +353,9 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (« Fin de programme ») et `outils/moteur/rapport_validation_complete.json`.
 - Corrigé : l'ordre d'affichage de deux ajustements défensifs V21 simultanés dépendait du hachage de Python (GameFeed
   non reproductible octet par octet ; jeu inchangé).
-- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : 12 GameFeeds du moteur V26 (notes et staffs de
-  la dernière semaine) dans un artefact, à charger sur le site (« Load GameFeed »).
+- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : GameFeeds du moteur complet (notes et staffs de
+  la dernière semaine ; depuis le 17/10/2026 jusqu'à la dernière cellule 12.2, voir section 59) dans un artefact, à
+  charger sur le site (« Load GameFeed »).
 
 ### 21. Extension du playbook V0.1 (notebook V27, 06/10/2026, allumée)
 
@@ -1420,6 +1421,47 @@ check du QB et la motion doivent se voir sur le terrain.
 - **Exhibition** `exh-v40-gmb-mnl` (remplace `exh-v39`) : MNL 31 @ GMB 37, 164 actions, **9 audibles** (dont un passe →
   course : EMPTY_SHORT_OUT → EMPTY_QB_DRAW contre une boîte de 6), 10 motions et 3 réponses (roll, lock, bump), 11 sorties
   du terrain ; 21,8 min à l'écran (pauses comprises).
+
+### 59. 4e essai plus prudent ; GameFeeds d'exhibition au moteur complet (17/10/2026)
+**Demande de Guillaume (17/10)** : les franchises tentent trop souvent le 4e essai au lieu de punter — « les équipes
+doivent être vraiment plus prudentes, on doit largement baisser ces pourcentages » ; réglage à appliquer avant de
+régénérer la semaine du 19/10.
+- **Constat** (semaine du 19/10, valeur-1) : **35 %** des 4es essais joués (3,3 par match) — dans son camp 24 %, du
+  milieu aux 35 adverses 44 %, des 35 aux 20 45 %, zone rouge 58 % ; 4e et 1 80 %, 4e et 4-6 44 % ; équipes de BST 7 %
+  à GMB 73 %. La conversion mesurée suit bien la table `CONVERSION` (le moteur convertit vraiment ≈ 55 % des 4e et
+  4-6) : la prudence doit venir du coordinateur, pas du calcul.
+- **Réglage** (`moteur/valeur.py`, `valeur-2`) : biais d'identité `BIAIS` (−2,5 ; +0,5) -> **(−5 ; +0,5)** points
+  (prudent -> agressif) et `PRUDENCE_CAMP` 1,5 -> **3** points. L'agressif garde son audace (GMB joue toujours 2 4es
+  essais sur 3), le coordinateur moyen punte le 4e et 1 dans son camp et prend les 3 points près de l'en-but ; menée en
+  fin de match, la prudence s'efface toujours (test `test_prudence`). Essais (200 matchs, puis le test d'équilibre 12.3
+  rejoué avec ses graines, 2 208 matchs) :
+
+  | Réglage (BIAIS ; camp) | 4es joués | 12.3 : min – max |
+  |---|---|---|
+  | (−2,5 ; +0,5) ; 1,5 — avant | 35 % | — |
+  | (−4 ; −0,5) ; 2,5 | 16 % | **35,9 % SPK** – 60,9 % CTD ❌ |
+  | (−4 ; 0) ; 3 | 18 % | 36,4 % SPK – 60,3 % CTD |
+  | (−6 ; +0,5) ; 2,5 | 15 % | **34,8 % SPK** – 59,0 % CTD ❌ |
+  | **(−5 ; +0,5) ; 3 — retenu** | **17 %** | **37,2 % SPK – 59,8 % CTD** |
+
+  Écarté : une audace des outsiders (l'équipe aux unités plus faibles retrouve jusqu'à 2-4 points) — elle n'aide pas
+  SPK (34,8 – 40,2 %) et fait remonter les 4es essais (22-27 %) et BST (63-65 %). SPK (jeune, notes de départ plus
+  basses) est la franchise que la prudence de toute la ligue coûte le plus : 45 % -> 37 % en 12.3 (sa progression du
+  bloc E la fait remonter au fil des semaines).
+- **Semaine du 19/10 régénérée** (`generer_semaine.py --lundi 2026-10-19`, notebook complet, sur une copie de `data/`)
+  en 33,7 min ; `audit_moteur.py` : 0 anomalie bloquante (alertes déjà connues). 279 matchs : **16 % des 4es essais
+  joués** (1,5 par match, avant 3,3), field goals 2,4 par match (1,7), punts 5,5 (4,4) ; 53,5 points par match (57,1) ;
+  équipes de GRZ 2 % à GMB 68 %.
+- **Contrôles** (exécution complète avec contrôles, 61 min sur 4 cœurs, aucun échec) : équilibre 12.3 sur 2 208 matchs
+  **37,2 % (SPK) – 59,8 % (CTD)** (avant : 39,7 – 59,5) ; 13.2 ✅ (Brier 0,2464) ; **13.4 ✅ sans recalibrage** (extrêmes
+  ± 0,010, écart moyen 0,016, outsiders − 12,0 %) ; 377 tests unitaires.
+- **GameFeeds d'exhibition** (`outils/exhibition/gamefeeds.py`, action « GameFeeds d'exhibition ») : le chargement
+  s'arrêtait à 12.2 undecies — les feeds n'avaient ni l'horloge réelle, ni le bloc F, ni les punts avec retour, ni la
+  fin de match, ni les checks avant le snap, ni la retransmission (`play.show`). Il va maintenant jusqu'à la dernière
+  cellule 12.2 avant 12.3 (aujourd'hui 12.2 octodecies, trouvée toute seule : une nouvelle cellule du moteur sera
+  prise sans retoucher le script). Les feeds partent des notes et staffs de la dernière semaine de `data/weeks` : ce
+  sont des matchs du moteur à jour, hors calendrier. Action GitHub : 552 affiches en ≈ 13 min, artefact
+  « gamefeeds-exhibition ».
 
 ### Annexe — `.github/workflows/semaine.yml`
 
