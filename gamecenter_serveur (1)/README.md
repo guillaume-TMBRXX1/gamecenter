@@ -1452,7 +1452,9 @@ régénérer la semaine du 19/10.
   en 33,7 min ; `audit_moteur.py` : 0 anomalie bloquante (alertes déjà connues). 279 matchs : **16 % des 4es essais
   joués** (1,5 par match, avant 3,3), field goals 2,4 par match (1,7), punts 5,5 (4,4) ; 53,5 points par match (57,1) ;
   équipes de GRZ 2 % à GMB 68 %.
-- **Contrôles** : RESULTATS_CONTROLES
+- **Contrôles** (exécution complète avec contrôles, 61 min sur 4 cœurs, aucun échec) : équilibre 12.3 sur 2 208 matchs
+  **37,2 % (SPK) – 59,8 % (CTD)** (avant : 39,7 – 59,5) ; 13.2 ✅ (Brier 0,2464) ; **13.4 ✅ sans recalibrage** (extrêmes
+  ± 0,010, écart moyen 0,016, outsiders − 12,0 %) ; 377 tests unitaires.
 - **GameFeeds d'exhibition** (`outils/exhibition/gamefeeds.py`, action « GameFeeds d'exhibition ») : le chargement
   s'arrêtait à 12.2 undecies — les feeds n'avaient ni l'horloge réelle, ni le bloc F, ni les punts avec retour, ni la
   fin de match, ni les checks avant le snap, ni la retransmission (`play.show`). Il va maintenant jusqu'à la dernière
