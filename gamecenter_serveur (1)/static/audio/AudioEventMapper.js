@@ -29,6 +29,7 @@ function base(g,P,phase){
   const pl=P.players||{};
   return { gameId:g.id, seq:P.seq, phase, mode:g.mode||'replay', speed:num(g.speed,1),
     result:P.result, callType:P.call&&P.call.type, gain:num(P.gain,0), status:P.after&&P.after.status,
+    returnTd:!!(P.punt_return&&P.punt_return.td),   /* 12.2 sexdecies : touchdown sur retour de punt (résultat « punt ») */
     quarter:q, timeRemaining:tr, offense:off, defense:def, team:off==='home'?'HOME':'AWAY',
     score:{home:score.home,away:score.away}, scoreBefore:{home:before.home,away:before.away},
     down:P.down, toGo:P.to_go, goalDist, isRedZone:goalDist<=20, isLateGame:late, isOvertime:q>4,
