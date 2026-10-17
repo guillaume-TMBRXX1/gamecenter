@@ -2507,10 +2507,10 @@ function psStart(g){
   g.psDef=(P.shown||g.fDef).map((p,i)=>i===P.lock?P.lockFrom:p);
 }
 /* timeline of the pre-snap (seconds before the snap) */
-function psWindows(g){
-  const P=g.ps, D=g.dur||1, chk=!!P.ps.audible;
-  const mEnd=Math.max(1.2, chk?D-1.45:D-0.45), mStart=Math.min(0.9,mEnd-0.5);
-  return {mStart,mEnd,cStart:Math.max(0.6,D-1.45),cEnd:D-0.15,rStart:Math.max(mEnd-0.1,D-0.55),rEnd:D};
+function psWindows(g){   /* the slide, the motion, the QB's check, the defense's shift — the shift always ends at the snap */
+  const P=g.ps, D=g.dur||1, chk=!!P.ps.audible, sEnd=Math.min(0.9,D*0.45);
+  const rStart=Math.max(sEnd,D-0.55), mStart=sEnd, mEnd=Math.min(rStart,Math.max(mStart+0.4, chk?D-1.45:D-0.45));
+  return {sEnd,mStart,mEnd,cStart:Math.max(sEnd,D-1.45),cEnd:D-0.15,rStart,rEnd:D};
 }
 function presnapUpdate(g){
   if(g.ps&&!g.special&&!REDUCED){ psUpdate(g); return; }
@@ -2525,10 +2525,10 @@ function presnapUpdate(g){
   g.focusY = g.bally;
 }
 function psUpdate(g){
-  const P=g.ps, W=psWindows(g), t=g.t, u0=ease(clamp(t/0.9,0,1));
-  const um=ease(clamp((t-W.mStart)/Math.max(0.2,W.mEnd-W.mStart),0,1));          /* motion */
+  const P=g.ps, W=psWindows(g), t=g.t, u0=ease(clamp(t/W.sEnd,0,1));
+  const um=ease(clamp((t-W.mStart)/Math.max(0.05,W.mEnd-W.mStart),0,1));         /* motion */
   const roll=P.ps.motion_response==='roll';
-  const ur=roll?um:ease(clamp((t-W.rStart)/Math.max(0.2,W.rEnd-W.rStart),0,1));  /* the defense shifts to its real look */
+  const ur=roll?um:ease(clamp((t-W.rStart)/Math.max(0.05,W.rEnd-W.rStart),0,1)); /* the defense shifts to its real look */
   for(let i=0;i<11;i++){
     const a=g.prevOff[i], b=g.psOff[i], f=g.fOff[i];
     let p={x:lerp(a.x,b.x,u0), y:lerp(a.y,b.y,u0)};

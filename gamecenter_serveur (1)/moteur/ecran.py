@@ -17,8 +17,8 @@ ecran-3, pour chaque action (calculé à l'export du GameFeed, lu par le serveur
   l'action      : l'animation (un peu plus rapide qu'en ecran-2) ; l'horloge s'écoule du temps de jeu pendant ce temps ;
   après         : APRES s (APRES_SCORE après un score ou une perte de balle).
 Checks avant le snap (play.presnap, 16/10/2026) : l'audible coûte des secondes de chrono (horloge qui tourne : déjà dans
-le temps couru par le moteur ; horloge arrêtée : ajoutées au chrono utilisé) ; une motion, un audible ou une défense qui
-se décale gardent au moins AVANT_CHECK s d'écran avant le snap, le temps de les voir.
+le temps couru par le moteur ; horloge arrêtée : ajoutées au chrono utilisé) ; une motion, un audible ou une réponse à la
+motion gardent au moins AVANT_CHECK s d'écran avant le snap, une défense qui se déguise AVANT_DEGUISE s, le temps de les voir.
 Coups d'envoi, transformations : pas de chrono, horloge arrêtée.
 Durée garantie : pauses de retransmission comprises (PAUSES : 10 s entre deux quarts-temps, 40 s à la mi-temps), un
 match ne dépasse pas BUDGET s ; au-delà, les temps où l'horloge est arrêtée et qui ne sont pas fixés par la règle
@@ -34,6 +34,7 @@ VITESSE = 1.1           # secondes de chrono (et d'horloge qui tourne) par secon
 AVANT_MIN = 1.2         # le temps que les joueurs se replacent (au moins)
 AVANT_CHECK = 2.6       # … au moins, quand l'avant-snap montre quelque chose : motion, audible du QB, défense qui se
                         # décale (checks avant le snap, moteur/presnap.py) — l'horloge descend alors plus lentement
+AVANT_DEGUISE = 2.0     # … quand seule la défense se déguise (le temps de montrer sa boîte puis de se décaler au snap)
 # horloge arrêtée : chrono utilisé avant le snap selon le rythme de l'attaque (secondes restantes : 9, 7, 1)
 UTILISE_ARRETE = {"presse": 1, "normal": 3, "tue": 9}
 AVANT_SPECIAL = {"kickoff": 2.0, "extra_point": 1.5, "two_point": 1.8}
@@ -147,7 +148,9 @@ def _lignes(plays):
         special = t in ("kickoff", "extra_point", "two_point") or p.get("conversion")
         ps = p.get("presnap") or {}
         montre = bool(ps) and bool(ps.get("audible") or ps.get("motion_response") or ps.get("motion"))
-        amin = AVANT_CHECK if montre else AVANT_MIN
+        deguise = bool(ps) and (ps.get("box_shown") != ps.get("box_real") or ps.get("shell_shown") != ps.get("shell_real"))
+        amin = AVANT_CHECK if montre else AVANT_DEGUISE if deguise else AVANT_MIN
+        montre = montre or deguise
         souple, chrono, pc = {}, 0.0, None
         if special:
             souple["special"] = (AVANT_SPECIAL.get(t, AVANT_SPECIAL["extra_point"]) + couru / VITESSE, MINIMUM["special"])
