@@ -61,6 +61,13 @@ class TestQuatriemeEssai(unittest.TestCase):
         # 4e et 8 aux 30 adverses : field goal sauf pour le plus agressif
         self.assertEqual(q4(30, 8, 0, 1, 700, quart_secondes=900, agressivite=0.5)["choix"], "FG")
 
+    def test_prudence(self):
+        # 17/10/2026 (35 % des 4es essais joués, trop) : à 0-0, un coordinateur moyen punte le 4e et 1 dans son camp et
+        # prend les 3 points au 4e et 2 aux 8 adverses ; seul l'agressif joue
+        for args in ((60, 1, 0, 1, 600), (8, 2, 0, 2, 500)):
+            self.assertNotEqual(q4(*args, quart_secondes=900, agressivite=0.59)["choix"], "JOUER", args)
+            self.assertEqual(q4(*args, quart_secondes=900, agressivite=1.0)["choix"], "JOUER", args)
+
     def test_bon_sens(self):
         # 4e et 15 dans son camp, 0-0 : punt pour tout le monde
         for a in (0.0, 0.5, 1.0):

@@ -50,9 +50,10 @@ AVANTAGE_PAR_POINT = 0.5         # marge attendue par point d'écart des unités
 TEMPS_DRIVE = (20, 1.6)          # s (échelle NFL) : temps pour aller marquer depuis `en_but` (20 + 1,6 s par yard)
 QUART_NFL = 900
 P_FG_MIN = 0.20                  # en dessous, le field goal n'est pas une option
-BIAIS = (-4.0, -0.5)             # points : agressivité 0 (prudent) … 1 (agressif). 17/10/2026 : (-2,5 ; 0,5) -> 35 % des
-                                 # 4es essais joués (semaine du 19/10), trop ; (-4 ; -0,5) et 2,5 ci-dessous -> 17 %
-PRUDENCE_CAMP = 2.5              # points de plus exigés pour jouer depuis sa ligne de but (0 au milieu du terrain) :
+BIAIS = (-5.0, 0.5)              # points : agressivité 0 (prudent) … 1 (agressif). 17/10/2026 : (-2,5 ; 0,5) et 1,5
+                                 # ci-dessous -> 35 % des 4es essais joués (semaine du 19/10), trop ; (-5 ; 0,5) et 3 -> 17 %
+                                 # (12.3 : 37,2 % SPK – 59,8 % CTD ; GMB joue toujours 2 4es essais sur 3)
+PRUDENCE_CAMP = 3.0              # points de plus exigés pour jouer depuis sa ligne de but (0 au milieu du terrain) :
                                  # un échec dans son camp se paie (et se voit) plus qu'ailleurs
 PENTE_MIN = 0.001                # WP par point : en dessous, le match est plié -> comparaison des points attendus
 
