@@ -135,7 +135,7 @@ class Direct(Base):
         # pendant une pause, rien de nouveau : l'action suivante attend la fin de la pause
         i = next(i for i, p in enumerate(plays) if serveur.break_kind(p))
         pause = serveur.BREAK_SEC[serveur.break_kind(plays[i])]
-        self.assertAlmostEqual(g["ends"][i + 1] - g["ends"][i], serveur.PLAY_SEC + pause)
+        self.assertAlmostEqual(g["ends"][i + 1] - g["ends"][i], serveur.play_sec(plays[i + 1]) + pause)
         # /api/delta pendant le match : exactement les actions révélées, rien au-delà, pas de score final
         t = g["ko"] + int(g["ends"][40] * 1000) + 1500
         a_l_heure(t)
