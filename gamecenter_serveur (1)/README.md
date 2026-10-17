@@ -1360,6 +1360,67 @@ l'exhibition, un receveur attrapait le ballon au milieu du terrain et piquait à
 - **Exhibition** `exh-v39-gmb-mnl` (remplace `exh-v38`) : MNL 27 @ GMB 27, 159 actions, 8 sorties du terrain, 6 temps
   morts ; 20 min à l'écran (pauses comprises).
 
+### 58. Checks avant le snap : le QB lit la défense, la défense répond aux motions (notebook 12.2 novodecies, 16/10/2026 — allumés)
+Feuille de route : « moteur plus intelligent », étape 4. Module `moteur/presnap.py` (tests `test_presnap.py`), cellule
+**12.2 novodecies** (avant la retransmission 12.2 octodecies) ; interrupteur `GC_PRESNAP=0` : moteur d'avant à
+l'identique (contrôlé). **Décisions de Guillaume (16/10)** : allumé par défaut ; la fréquence des audibles est d'abord
+l'identité de la franchise (haute pour certaines, basse pour celles qui jouent leur jeu), 4-8 par match comme socle ; le
+check du QB et la motion doivent se voir sur le terrain.
+- **Avant** : le jeu appelé dans le huddle était joué quoi que montre la défense ; les déguisements de l'extension
+  (`presente`, `deguisement`, 12.2 decies) ne trompaient que la lecture du QB après le snap ; une motion n'appelait
+  aucune réponse.
+- **Réponse à la motion** (profil défensif, flux `presnap-def`) : **roll** (un safety tourne vers la motion : un défenseur
+  de plus dans la boîte de la course, la coquille se dévoile), **lock** (homme : le défenseur suit, le QB sait que c'est
+  de l'homme), **bump** (zone : on se passe le joueur, la motion ne dévoile plus rien et donne moitié moins de
+  séparation en homme).
+- **Lecture du QB** : la défense montre une boîte et une coquille ; un paquet déguisé ment (« 2-high rotating » : un
+  défenseur de moins, le safety descend au snap ; « mug » : un ou deux de plus, ils reculent au snap). Le QB voit au
+  travers selon son **awareness** et sa **lecture de couverture** (bloc B), moins le déguisement (réduit par la motion et
+  le shift) ; roll / lock lui dévoilent tout. Vu au travers : moitié moins d'erreurs de lecture dues au déguisement
+  après le snap.
+- **Audible** (flux `presnap`, `presnap-jeu`) : course contre une boîte lue de 8 ou plus → passe rapide ; passe contre
+  une boîte lue de 6 ou moins, à 6 yards ou moins → course intérieure ; même formation dans 97 % des cas. Jamais en
+  tuant l'horloge (course → passe), en hurry-up (passe → course), sur 3e / 4e et 1 ou à la goal line, dans les 15
+  dernières secondes, sur un RPO ou une option. **Fréquence** = liberté laissée au QB par l'identité (`LIBERTE` : de
+  MNL / FRG « on joue notre jeu » à PLS, AXM, CTD, ZPH, APX) × penchant (course / passe) × awareness du QB.
+  **Trompé** : il a lu la boîte montrée — mauvais audible (`wrong_check`) ou audible manqué (`missed_check`).
+  **Aucun yard ajouté** : un bon audible paie par le moteur (bloc F : une course contre 8-9 rapporte 3,9-5,2 yards,
+  contre 5-6 7,0-7,2 ; une passe ≈ 6,3 quelle que soit la boîte), un mauvais coûte de même.
+- **Chrono** : un audible coûte **2 s** du chrono d'avant-snap (**+1** si la défense a répondu à une motion) ; l'horloge
+  du match tourne d'autant quand elle tournait (le temps est compté dans l'action précédente : horloge continue) ; il
+  reste toujours 1 s au snap ; une attaque qui tue l'horloge ne paie rien ; jamais à travers l'avertissement des 2
+  minutes. Retransmission (`ecran.py`) : horloge arrêtée, les secondes s'ajoutent au chrono utilisé ; un avant-snap qui
+  montre quelque chose (motion, audible, défense qui se décale) dure au moins 2,6 s à l'écran.
+- **GameFeed** (additif) : `play.presnap = {look, box_shown, box_real, box_read, shell_shown, shell_real, read, audible,
+  from, to, same_formation, fooled, motion, motion_response, sec, clock, qb}` (seulement quand il y a quelque chose à
+  raconter) ; `game.presnap_model`. **Site** : sur le terrain, la défense montre sa boîte et sa coquille puis se décale
+  jusqu'à la vraie au snap ; le joueur en motion traverse la formation (trace pointillée), un défenseur le suit (lock),
+  la zone se décale (bump), un safety tourne (roll) ; « CHECK · RUN / PASS » au-dessus du QB quand il change le jeu.
+  Play-by-play : « audible: … sees 8 in the box and checks to a pass », « — fooled: the defense showed 9 and played 7 »,
+  « disguised: the defense showed 7 in the box and played 8 », « … rolls a safety with the jet motion ». Test
+  navigateur `test_audibles.js` (groupe site) ; cellule 427 synchronisée.
+- **Sortie du terrain d'une course** (point en suspens) : une course bloquée à la ligne ou à 1-2 yards « sortait » 25
+  yards plus loin (le porteur partait du trou, au centre, et filait vers la touche). `horloge.vers_la_touche` : une course
+  ne sort qu'avec 3 yards de gain (rebond : 2), jamais sur un cutback ; site : une course qui sort part vers la touche dès
+  le trou, remonte le long de la ligne et la franchit.
+- **Mesures** (552 matchs, mêmes graines, check coupé → allumé) : points 56,4 → 56,5, actions 126,3 → 126,1 (aucune force
+  ajoutée) ; **6,0 audibles par match** (83 % vers la passe, 97 % dans la même formation) ; trompés 0,65 par match
+  (mauvais audible 0,27, audible manqué 0,38) ; réponses aux motions 2,7 par match (roll 1,0, bump 1,1, lock 0,5) ;
+  yards par course 5,89 → 6,08 (+ 0,19, tolérance ± 0,2) et **part des passes 60,5 → 63,6 %** (+ 3,1 points, au-delà de
+  la tolérance indicative de ± 2) : c'est l'effet voulu — des courses appelées contre une boîte chargée deviennent des
+  passes ; à rééquilibrer (plus d'audibles vers la course) si Guillaume le souhaite. Calcul : ≈ + 3 % par match pour le
+  check lui-même (les passes en plus coûtent davantage).
+- **Semaine du 19/10 produite** (notebook complet, copie de `data/`) en **32,8 min** (bloc F : 30,4 ; limite GitHub 75) ;
+  `audit_moteur.py` : **0 anomalie bloquante, 0 alerte** (279 matchs, 57,1 points, 154 actions) ; **5,75 audibles par
+  match** (de 0 à 20), de 0,8 % des snaps (MNL) et 1,0 % (FRG) à 7,7 % (PLS, CTD) et 9,2 % (APX) ; retransmission 20,4 min
+  (17,1 – 24,5) ; 6,8 sorties du terrain par match.
+- **Contrôles** (exécution complète avec contrôles, 75 min sur 4 cœurs, aucun échec) : équilibre 12.3 sur 2 208 matchs
+  **39,7 % (CMT) – 59,5 % (BST)** (bloc F : 39,8 – 59,8) ; 13.2 ✅ (Brier 0,2466, biais − 0,8 %) ; **13.4 ✅ sans
+  recalibrage** (extrêmes ± 0,022, écart moyen 0,015, outsiders − 11,9 %).
+- **Exhibition** `exh-v40-gmb-mnl` (remplace `exh-v39`) : MNL 31 @ GMB 37, 164 actions, **9 audibles** (dont un passe →
+  course : EMPTY_SHORT_OUT → EMPTY_QB_DRAW contre une boîte de 6), 10 motions et 3 réponses (roll, lock, bump), 11 sorties
+  du terrain ; 21,8 min à l'écran (pauses comprises).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
