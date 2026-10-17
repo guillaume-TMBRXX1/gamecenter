@@ -17,7 +17,8 @@ une cellule ajoutée à la volée qui :
      direct, score serré, concepts variés ; depuis V27 : nouvelles formations, motions, lectures RPO et option, défense
      déguisée (pression présentée, coquille qui tourne) ; depuis le 14/10 : horloge réelle (temps morts, avertissement
      des 2 minutes, genou, spike), 4e essais joués par la valeur, retours de coup d'envoi, lectures de course du bloc F
-     (cutback, rebond, bloqué, boîte chargée) ;
+     (cutback, rebond, bloqué, boîte chargée) ; depuis le 16/10 : checks avant le snap (audibles du QB, déguisements qui
+     le trompent, réponses de la défense aux motions) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -96,7 +97,12 @@ for _k in range(_P["candidates"]):
             "punt_other": len({(p.get("punt_return") or {}).get("result") for p in _pl if p.get("punt_return")} - {"return"}),
             "punt_td": sum(1 for p in _pl if (p.get("punt_return") or {}).get("td")),
             # 15/10 : temps réel — sorties du terrain (le receveur file vers la touche, l'horloge s'arrête)
-            "out_of_bounds": sum(1 for p in _pl if (p.get("clock") or {}).get("oob") and p.get("result") in ("complete", "run"))}
+            "out_of_bounds": sum(1 for p in _pl if (p.get("clock") or {}).get("oob") and p.get("result") in ("complete", "run")),
+            # 16/10 : checks avant le snap (12.2 novodecies) — audibles, déguisements qui trompent le QB, réponses aux motions
+            "audibles": sum(1 for p in _pl if (p.get("presnap") or {}).get("audible")),
+            "audibles_to_run": sum(1 for p in _pl if ((p.get("presnap") or {}).get("to") or {}).get("type") == "run"),
+            "fooled": sum(1 for p in _pl if (p.get("presnap") or {}).get("fooled")),
+            "motion_responses": len({(p.get("presnap") or {}).get("motion_response") for p in _pl} - {None})}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -110,7 +116,9 @@ for _k in range(_P["candidates"]):
               + 10 * min(_dec["kneels"], 1) + 10 * min(_dec["spikes"], 1) + 4 * min(_dec["kick_returns"], 4)
               + 4 * min(_dec["cutbacks"], 5) + 3 * min(_dec["stuffed"], 4) + min(_dec["heavy_box"], 8)
               + 6 * min(_dec["punt_returns"], 3) + 6 * min(_dec["punt_other"], 3) + 25 * min(_dec["punt_td"], 1)
-              + 4 * min(_dec["out_of_bounds"], 8))
+              + 4 * min(_dec["out_of_bounds"], 8)
+              + 15 * min(_dec["audibles"], 8) + 30 * min(_dec["audibles_to_run"], 2) + 25 * min(_dec["fooled"], 2)
+              + 25 * _dec["motion_responses"])
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
