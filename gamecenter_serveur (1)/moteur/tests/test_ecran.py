@@ -73,6 +73,13 @@ class TestChronologie(unittest.TestCase):
         self.assertLessEqual(sum(c["sec"] for c in ec.chronologie(P)) + ec.pauses(P), ec.BUDGET + 1)
 
 
+try:                                     # le calcul de la semaine n'installe pas fastapi (requirements-semaine.txt)
+    import fastapi                       # noqa: F401
+except ImportError:
+    fastapi = None
+
+
+@unittest.skipUnless(fastapi is not None, "serveur.py non importable (fastapi absent)")
 class TestServeur(unittest.TestCase):
     def test_play_ends(self):
         import serveur
