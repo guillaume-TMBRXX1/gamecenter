@@ -294,7 +294,8 @@ class TestSemaineReelle(unittest.TestCase):
             idx = [x["index"] for x in seg if x["type"] == "play"]
             self.assertEqual(idx, sorted(idx))
             self.assertTrue(all(feeds[r["game"]]["plays"][i]["result"] in ("touchdown", "field_goal_good")
-                                or (feeds[r["game"]]["plays"][i].get("kick_return") or {}).get("td") for i in idx))
+                                or (feeds[r["game"]]["plays"][i].get("kick_return") or {}).get("td")
+                                or (feeds[r["game"]]["plays"][i].get("punt_return") or {}).get("td") for i in idx))   # 18/10 : retour de punt TD (semaine du 19/10)
             for t in (leg, str(seg)):
                 self.assertIsNone(PARIS.search(t), PARIS.search(t))
         ko = min(datetime.fromisoformat(g["kickoff"]) for g in json.load(open(os.path.join(d, "week.json")))["schedule"])
