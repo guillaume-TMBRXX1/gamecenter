@@ -578,24 +578,37 @@
   .feed li.k-adj .ftext{font-style:italic;color:var(--ink-3)}
   .np-note{font-size:11px;color:var(--ink-3);margin:10px 0 0}
 
-  /* ---------- Big screen, theater mode ---------- */
-  .modal.theater{padding:0}
-  body.gc-match>.app{visibility:hidden}   /* Bigger field couvre tout l'écran : le site derrière n'est plus dessiné (mémoire graphique libérée) */
-  .modal.theater .m-panel,:root .modal.theater .m-panel{width:100%;height:100%;max-height:100%;border-radius:0;background:var(--bg)}
+  /* ---------- Big screen, "Bigger field" = full screen (19/10/2026) ----------
+     Only the match is left: the field with its score bug, clock, timeouts, LIVE / REPLAY pill, down and distance,
+     the red 3rd / 4th down frame and its banner, the play chip and the "On air" commentary. No play-by-play, no
+     side panels. The exit button (and the replay controls) float over the field and fade away after 2.5 s without
+     a touch. A phone held upright turns the match sideways (landscape); the browser's real full screen is used
+     where it exists (and the screen locked in landscape on Android). */
+  .modal.theater{padding:0;background:#05070c}
+  body.gc-match>.app{visibility:hidden}   /* the site behind is no longer drawn (graphics memory released) */
+  .modal.theater .m-panel,:root .modal.theater .m-panel{position:fixed;inset:0;width:100%;height:100%;max-height:100%;border-radius:0;
+    background:#05070c;padding:0;overflow:hidden;display:block;box-shadow:none;border:0}
   .m-head .m-theater{margin-left:auto}
   .m-head .m-theater+.icon-btn{margin-left:0}
-  @media (min-width:900px){
-    .modal.theater .m-body{grid-template-columns:minmax(0,1fr) minmax(300px,24vw);grid-auto-flow:row dense}
-    .modal.theater .m-main{display:contents}
-    .modal.theater .m-main>.field{grid-column:1;grid-row:1;aspect-ratio:auto;height:min(74vh,58vw)}
-    .modal.theater .m-main>div:not(.panel):not(.field){grid-column:1;grid-row:2}
-    .modal.theater .m-main>.panel{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;min-height:0}
-    .modal.theater .m-main>.panel .feed{max-height:none;flex:1 1 0;min-height:0}
-    .modal.theater .m-side{grid-column:1 / -1;grid-row:3;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px}
-  }
-  @media (max-width:899px){
-    .modal.theater .m-body{grid-template-columns:minmax(0,1fr)}
-    .modal.theater .m-main>.field{aspect-ratio:auto;height:min(62vh,120vw)}
+  .modal.theater .m-head{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));
+    right:auto;margin:0;padding:0;border:0;background:none;gap:8px;transition:opacity .3s}
+  .modal.theater .m-head>*:not(.m-theater){display:none}
+  .modal.theater .m-head .m-theater{width:44px;height:44px;background:rgba(10,12,20,.72);color:#fff;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
+  .modal.theater .m-body{display:block;position:absolute;inset:0;padding:0;margin:0}
+  .modal.theater .m-main{display:block;position:absolute;inset:0}
+  .modal.theater .m-main>.field{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;margin:0}
+  .modal.theater .m-main>.panel,.modal.theater .m-side,.modal.theater .m-lower,.modal.theater .rp-call{display:none}
+  /* replay controls: bottom right, beside the score bug (never over it) */
+  .modal.theater .m-main>div:not(.panel):not(.field){position:absolute;z-index:55;right:calc(12px + env(safe-area-inset-right,0px));
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(760px,calc(100% - 330px));padding:8px 12px;border-radius:14px;
+    background:rgba(10,12,20,.78);backdrop-filter:blur(6px);transition:opacity .3s}
+  .modal.theater:not(.fs-ui) .m-head,.modal.theater:not(.fs-ui) .m-main>div:not(.panel):not(.field){opacity:0;pointer-events:none}
+  .modal.theater .onair{position:absolute}
+  .modal.theater .third{top:calc(70px + env(safe-area-inset-top,0px))}   /* the 3rd / 4th down banner sits under the commentary */
+  @media (orientation:portrait) and (max-width:899px){
+    /* phone held upright: the match is turned sideways and fills the screen */
+    .modal.theater .m-panel,:root .modal.theater .m-panel{inset:auto;top:0;left:0;width:100dvh;height:100vw;transform-origin:0 0;
+      transform:translateX(100vw) rotate(90deg)}
   }
 
   /* ---------- Replay: an engine match played back from a GameFeed ---------- */
@@ -4682,7 +4695,12 @@ function rosterCardHTML(abbr,pid){
 }
 function openRosterCard(abbr,pid,cx,cy){ const h=rosterCardHTML(abbr,pid); if(h) showCardEl(h,cx,cy,null); }
 /* nearest player dot to a click, through the field's 3D tilt */
+/* full screen on a phone held upright: the match is turned a quarter turn (CSS rotate(90deg)); a point of the screen
+   is brought back into the match's own frame before it is compared with the players */
+function fsTurned(view){ return !!(view&&view.wrap&&view.wrap.closest('.modal.theater')&&window.matchMedia
+  &&window.matchMedia('(orientation:portrait) and (max-width:899px)').matches); }
 function pickPlayer(view,cx,cy){
+  if(fsTurned(view)){ const x=cx; cx=cy; cy=window.innerWidth-x; }
   const g=view.g; let best=null, bd=34;
   for(const side of ['off','def']) (side==='off'?g.off:g.def).forEach((p,i)=>{ if(!p) return; const q=view.project(p.x,p.y); const d=Math.hypot(q.x-cx,q.y-cy); if(d<bd){ bd=d; best={side,idx:i}; } });
   return best;
@@ -4753,7 +4771,8 @@ class FieldView{
     const M=new DOMMatrix(getComputedStyle(c).transform), ox=this.cw/2, oy=this.ch/2;
     const p=M.transformPoint(new DOMPoint(this.X(x)-ox,this.Y(y)-oy,0,1));
     const px=c.offsetLeft+ox+p.x/p.w, py=c.offsetTop+oy+p.y/p.w, pz=p.z/p.w;
-    const d=parseFloat(this.wrap.style.perspective)||1e6, r=this.wrap.getBoundingClientRect(), vx=this.wrap.clientWidth/2, vy=this.wrap.clientHeight/2, f=d/(d-pz);
+    const d=parseFloat(this.wrap.style.perspective)||1e6, vx=this.wrap.clientWidth/2, vy=this.wrap.clientHeight/2, f=d/(d-pz);
+    const r=fsTurned(this)?{left:0,top:0}:this.wrap.getBoundingClientRect();   /* match turned sideways: its own frame (see pickPlayer) */
     return {x:r.left+vx+(px-vx)*f, y:r.top+vy+(py-vy)*f};
   }
   destroy(){ if(this.ro) this.ro.disconnect(); if(this.io) this.io.disconnect(); if(this.onR) window.removeEventListener('resize',this.onR);
@@ -5032,7 +5051,7 @@ function openModal(id){
       ${teamKeyHTML(g)}
       ${rv?`<button type="button" class="rp-load" data-rp="load" data-rpg="${g.id}" title="Replay another engine match (a GameFeed .json file from section 11.4 of the notebook)">${ICON.upload}Load GameFeed</button>`:''}
       ${shareId(g)?`<button class="icon-btn m-share" type="button" data-share="${esc(shareId(g))}" aria-label="Share this game" title="Share this game">${ICON.share}</button>`:''}
-      <button class="icon-btn m-theater" type="button" data-theater aria-pressed="${theaterOn()}" aria-label="${theaterOn()?'Back to the standard view':'Bigger field: score, play calls and commentary on top, stats below'}" title="${theaterOn()?'Standard view':'Bigger field'}">${theaterOn()?THEATER_OUT:THEATER_IN}</button>
+      <button class="icon-btn m-theater" type="button" data-theater aria-pressed="${theaterOn()}" aria-label="${theaterOn()?'Back to the standard view':'Bigger field: the match full screen'}" title="${theaterOn()?'Standard view':'Bigger field'}">${theaterOn()?THEATER_OUT:THEATER_IN}</button>
       <button class="icon-btn" type="button" data-close aria-label="Close board">${ICON.x}</button>
     </header>
     <div class="m-body">
@@ -5050,6 +5069,7 @@ function openModal(id){
   </div>`;
   modal.classList.toggle('theater',theaterOn());
   document.body.classList.toggle('gc-match',theaterOn());
+  fsAirHome(theaterOn()); if(theaterOn()) fsWake();
   modal.hidden=false; document.body.style.overflow='hidden';
   modalView=new FieldView(modal.querySelector('.field'),g,70,1.4); views.push(modalView); bindPlayerPick(modalView);
   refreshOddsUI(g); syncPressed(); updateGameUI(g); renderFeed(g); renderWP(g); renderPower(g); renderStats(g);
@@ -5057,17 +5077,34 @@ function openModal(id){
   modal.querySelector('[data-close]').focus();
   if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
 }
-/* Big screen, "theater": a bigger field with the score, the play calls and the commentary on top; win probability,
-   prices and stats move below. Remembered on this device. */
+/* Big screen, "Bigger field" (theater): the match full screen (19/10/2026, see the CSS). Remembered on this device. */
 const THEATER_IN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
 const THEATER_OUT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
 let THEATER=null;
 function theaterOn(){ if(THEATER===null){ try{ THEATER=localStorage.getItem('gc-theater-v1')==='1'; }catch(e){ THEATER=false; } } return THEATER; }
-function toggleTheater(){
+/* full screen: the browser's own where it exists (a key or a gesture can leave it: back to the standard view),
+   and the "On air" commentary moves into the match (it turns with it on a phone held upright) */
+function fsEnter(){ const d=document.documentElement;
+  try{ const r=d.requestFullscreen?d.requestFullscreen({navigationUI:'hide'}):d.webkitRequestFullscreen?d.webkitRequestFullscreen():null;
+    if(r&&r.then) r.then(()=>{ try{ const o=screen.orientation; if(o&&o.lock) o.lock('landscape').catch(()=>{}); }catch(e){} }).catch(()=>{}); }catch(e){} }
+function fsLeave(){ try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  else if(document.webkitFullscreenElement&&document.webkitExitFullscreen) document.webkitExitFullscreen(); }catch(e){}
+  try{ const o=screen.orientation; if(o&&o.unlock) o.unlock(); }catch(e){} }
+function fsAirHome(on){ const a=document.getElementById('onAir'), p=modal.querySelector('.m-panel'); if(!a) return;
+  if(on&&p){ if(a.parentNode!==p) p.appendChild(a); } else if(a.parentNode!==document.body) document.body.appendChild(a); }
+let FS_UI=0;
+function fsWake(){ if(!modal.classList.contains('theater')) return; modal.classList.add('fs-ui'); clearTimeout(FS_UI);
+  FS_UI=setTimeout(()=>modal.classList.remove('fs-ui'),2500); }
+['pointermove','pointerdown','touchstart','keydown'].forEach(t=>modal.addEventListener(t,fsWake,{passive:true}));
+['fullscreenchange','webkitfullscreenchange'].forEach(t=>document.addEventListener(t,()=>{
+  if(!(document.fullscreenElement||document.webkitFullscreenElement)&&THEATER&&modalGame) toggleTheater(true); }));
+function toggleTheater(fromBrowser){
   THEATER=!theaterOn(); try{ localStorage.setItem('gc-theater-v1',THEATER?'1':'0'); }catch(e){}
   modal.classList.toggle('theater',THEATER); document.body.classList.toggle('gc-match',THEATER&&!!modalGame);
+  if(THEATER){ if(fromBrowser!==true) fsEnter(); fsWake(); } else if(fromBrowser!==true) fsLeave();
+  fsAirHome(THEATER&&!!modalGame);
   const b=modal.querySelector('[data-theater]'); if(b){ b.setAttribute('aria-pressed',String(THEATER)); b.innerHTML=THEATER?THEATER_OUT:THEATER_IN;
-    b.title=THEATER?'Standard view':'Bigger field'; b.setAttribute('aria-label',THEATER?'Back to the standard view':'Bigger field: score, play calls and commentary on top, stats below'); }
+    b.title=THEATER?'Standard view':'Bigger field'; b.setAttribute('aria-label',THEATER?'Back to the standard view':'Bigger field: the match full screen'); }
   if(modalView) modalView.resize();
   if(window.GC_DIAG) window.GC_DIAG('theater');
 }
@@ -5118,6 +5155,7 @@ function closeModal(keepFocus){
   const g0=modalGame;   /* a looping board replay (Prime Time) left on its final screen: back to its loop on the board */
   if(g0.loop&&g0.status==='final'&&g0.paused&&games.includes(g0)){ rpSeek(g0,0); rpAfterSeek(g0); g0.paused=false; }
   modalView.destroy(); views.splice(views.indexOf(modalView),1);
+  fsAirHome(false); if(THEATER) fsLeave();
   modalView=null; modalGame=null; modal.hidden=true; modal.innerHTML=''; document.body.style.overflow=''; document.body.classList.remove('gc-match');
   watchRemember(null);
   if(NEW_WEEK){ location.reload(); return; }              /* the new week waited for the big screen to close */

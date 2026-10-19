@@ -1488,6 +1488,26 @@ down suivant là où il a été récupéré.
   12.2 vicies ✅ (25 matchs : défense 53 %) ; équilibre 12.3 **39,4 % (SPK) – 60,9 % (CPH)** ; 13.2 ✅ (Brier 0,2442) ;
   **13.4 ✅ sans recalibrage** (extrêmes ± 0,026, écart moyen 0,029, outsiders − 20,4 %) ; 377 tests unitaires.
 
+### 61. « Bigger field » : le match en plein écran (19/10/2026)
+**Demande de Guillaume (19/10)**, rendus validés sur captures avant la modification : « Bigger field » ne doit pas
+juste agrandir un peu le terrain mais mettre le match en plein écran — on ne voit que le déroulé du match, sans le
+play-by-play ; même chose sur mobile, à l'horizontale. Les commandes du replay apparaissent au toucher ; le bandeau du
+3e / 4e essai se range sous « On air ».
+- **Avant** : un terrain plus grand, le play-by-play à droite, probabilité de victoire, cotes et stats en dessous.
+- **Maintenant** : le terrain prend tout l'écran (fond sombre, plus de titre, de play-by-play, de panneaux ni de stats).
+  Restent sur le terrain : le tableau de score (scores, temps morts, quart, horloge, chrono d'avant-snap, ballon, down &
+  distance), l'indicateur LIVE / REPLAY, « On air » et le commentaire écrit (déplacé dans le match), l'encadré rouge et
+  le bandeau du 3e / 4e essai (sous « On air »), la puce de l'action, TOUCHDOWN / INTERCEPTION, l'écran final.
+  Le bouton de sortie (en haut à gauche) et, sur un replay, les commandes (en bas à droite, jamais sur le tableau de
+  score) apparaissent au toucher ou à la souris et s'effacent après 2,5 s. Le vrai plein écran du navigateur est
+  demandé (Échap ou le geste du système : retour à la vue normale) et, sur Android, l'écran est verrouillé en paysage.
+  **Téléphone tenu droit** (iPhone : pas de plein écran ni de verrouillage dans Safari) : le match est tourné d'un
+  quart de tour et remplit l'écran ; un toucher sur un joueur est ramené dans le repère du match (`fsTurned`,
+  `pickPlayer`) et ouvre toujours sa fiche. Le choix reste mémorisé sur l'appareil (`gc-theater-v1`).
+- Site seulement (le notebook n'a pas de « Bigger field » ; cellule 427 : la sélection d'un joueur suit le site).
+  Test navigateur `outils/site/test_plein_ecran.js` (groupe site) : ordinateur 1440 × 900, téléphone tenu droit
+  390 × 844 et en paysage 844 × 390.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
