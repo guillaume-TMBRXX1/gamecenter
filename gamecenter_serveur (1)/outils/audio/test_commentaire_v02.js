@@ -5,7 +5,7 @@
 // 1. couverture : chaque moment commenté par la page (ligne écrite) a une prise enregistrée
 // 2. variantes : pas deux fois de suite la même prise pour un même cue dans un match (cues à 2 prises ou plus ; une cue
 //    à une seule prise se répète forcément : listée « à enrichir », sans échec)
-// 3. direct : 25 s de match à l'antenne → des prises jouées, pas d'erreur
+// 3. direct : 25 s d'un match réel rejoué depuis le coup d'envoi → des prises jouées, pas d'erreur
 // 4. repli : fichiers inaccessibles → la voix de l'appareil prend le relais (log 'voice' fallback)
 // 5. priorité : une ligne de priorité 3 coupe la prise en cours
 // Matchs envoyés à la page par lots, attente du crochet de test (outils/audio/commun.js).
@@ -60,7 +60,11 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
     check(errs.length===0,'aucune erreur JS'); await p.close(); }
   // 3 + 5
   { const {p,errs}=await open(false);
-    await p.locator('.tile.feat .field-hit').first().click(); await p.waitForTimeout(25000);
+    /* 19/10/2026 : un match réel rejoué depuis le coup d'envoi, plus le match à l'antenne à l'heure du test — en pause de
+       retransmission, à la mi-temps ou sur l'écran final, ses phrases n'ont pas de prise enregistrée (voix de l'appareil,
+       0 prise : échec selon l'heure, CI de la PR #93 à 18:06 UTC). */
+    const F=feeds.find(f=>f.plays&&f.plays.length>60)||feeds[0];
+    await p.evaluate(F=>{ window.__gc.audio.log.length=0; window.__gc.openReplayFeed(F); },F); await p.waitForTimeout(25000);
     const r=await p.evaluate(()=>{ const L=window.__gc.audio.log, M=window.__gc.audio.manager(); return {clips:L.filter(e=>e.kind==='clip').length,fallback:L.filter(e=>e.kind==='voice').length,says:L.filter(e=>e.kind==='say').length,cache:M.assets.stats(),sample:L.filter(e=>e.kind==='clip').slice(-4).map(e=>e.name)}; });
     console.log('3. direct 25 s', JSON.stringify(r));
     check(r.clips>0,'des prises enregistrées jouées en direct'); check(r.cache.bytes<=r.cache.budget,'cache décodé sous le budget mémoire');
