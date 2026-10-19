@@ -604,6 +604,7 @@
     background:rgba(10,12,20,.78);backdrop-filter:blur(6px);transition:opacity .3s}
   .modal.theater:not(.fs-ui) .m-head,.modal.theater:not(.fs-ui) .m-main>div:not(.panel):not(.field){opacity:0;pointer-events:none}
   .modal.theater .onair{position:absolute}
+  .modal.theater .field>.chip-play{left:calc(66px + env(safe-area-inset-left,0px))}   /* clear of the exit button */
   .modal.theater .third{top:calc(70px + env(safe-area-inset-top,0px))}   /* the 3rd / 4th down banner sits under the commentary */
   @media (orientation:portrait) and (max-width:899px){
     /* phone held upright: the match is turned sideways and fills the screen */
@@ -4566,6 +4567,60 @@ const DEF_SLOT={
 };
 const DEF_ROLE={NICKEL:{8:'Nickel back'},DIME:{8:'Nickel back',5:'Dime back'},'3_4':{3:'Outside linebacker',8:'Outside linebacker'},GOAL_LINE:{4:'Defensive end',5:'Defensive end'}};
 function teamRoster(g,side){ return ((((g.gf||{}).game||{})[side])||{}).roster||[]; }
+/* Name tags on the big screen (19/10/2026). Before the snap, once the formation is set: number and name under the
+   receivers, the tight end and the running back for 1.8 s (gone before the snap, under the QB's CHECK bubble).
+   During the play: the name follows the ball carrier from the handoff or the catch. After the play: the ball
+   carrier with his gain, and the defender who made the play (TACKLE, SACK, INT, PASS DEFENDED) in the defense's
+   pink. Returns [{side, idx, text, sub, kind: 'roster' | 'ball' | 'def', a}] (a: opacity). */
+const NAME_SKILL=[5,7,8,9,10];
+function surname(n){ const w=String(n||'').trim().split(/\s+/); return w.length>1?w.slice(1).join(' '):w[0]||''; }
+function nameTags(g){
+  const P=g.cur; if(!P||!P.call||P.conversion||g.special) return [];
+  let sm=null; try{ sm=slotMap(g); }catch(e){ return []; }
+  const out=[], fade=(t,a,b,f)=>clamp(Math.min((t-a)/f,(b-t)/f),0,1);
+  if(g.phase==='presnap'&&P.call.play_id!=='KNEEL'&&P.call.play_id!=='SPIKE'){
+    const D=g.dur||1, a=Math.min(0.9,D*0.35), b=Math.min(a+1.8,D-0.25), al=fade(g.t,a,b,0.25);
+    if(al>0) for(const i of NAME_SKILL){ const pl=sm.off[i]; if(pl) out.push({side:'off',idx:i,text:surname(pl.name),sub:pl.number!=null?String(pl.number):'',kind:'roster',a:al}); }
+    return out;
+  }
+  const pp=P.players||{}, gain=Math.round(num(P.gain,0)), r=P.result;
+  if((g.phase==='play'||g.phase==='post')&&g.carrier&&g.carrier.side==='off'&&r!=='interception'){
+    const pl=sm.off[g.carrier.idx];
+    const late=g.phase==='post';
+    if(pl&&(g.carrier.idx!==6||(P.decision&&P.decision.action==='SCRAMBLE')||r==='sack'&&late))
+      out.push({side:'off',idx:g.carrier.idx,text:surname(pl.name),sub:late&&r!=='sack'&&r!=='incomplete'?(r==='touchdown'?'TD':(gain>=0?'+':MINUS)+Math.abs(gain)):'',kind:'ball',a:1});
+  }
+  if(g.phase==='post'||(g.phase==='play'&&g.plan&&g.plan.stop&&g.dur&&g.t/g.dur>=g.plan.stop.at)){
+    const d=pp.defender, cr=d&&d.credit;
+    const lab={TACKLE:'TACKLE',SACK:'SACK',INTERCEPTION:'INT',PASS_DEFENDED:'PASS DEFENDED',FORCED_FUMBLE:'FORCED FUMBLE'}[cr];
+    if(lab&&d.name&&(g.phase==='post'||cr!=='TACKLE')){ const i=sm.def.findIndex(x=>x&&x.name===d.name);
+      if(i>=0) out.push({side:'def',idx:i,text:surname(d.name),sub:lab,kind:'def',a:1}); }
+  }
+  return out;
+}
+function drawNameTags(c,T,X,Y,r,s,g){
+  const tf=Math.max(10,Math.round(s*0.82)), sf=Math.max(8,Math.round(tf*0.82)), th=Math.round(tf*1.65), gap=Math.max(4,s*0.4), boxes=[];
+  c.save(); c.textBaseline='middle';
+  for(const t of T){
+    const p=(t.side==='off'?g.off:g.def)[t.idx]; if(!p) continue;
+    const px=X(p.x), py=Y(p.y), col=t.side==='off'?daOff(g):FIELD.pink;
+    c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; const nw=c.measureText(t.text).width;
+    c.font=`800 ${sf}px Manrope, system-ui, sans-serif`; const sw=t.sub?c.measureText(t.sub).width+sf*0.9:0;
+    const w=nw+sw+tf*1.1;
+    /* roster names under the dot (the QB's CHECK bubble sits above), the play's names above it; never on top of another tag */
+    let y=t.kind==='roster'?py+r+gap+th/2:py-r-gap-th/2;
+    for(let k=0;k<6;k++){ const hit=boxes.find(b=>Math.abs(b.x-px)<(b.w+w)/2+2&&Math.abs(b.y-y)<th+2); if(!hit) break; y+=t.kind==='roster'?th+2:-(th+2); }
+    boxes.push({x:px,y,w});
+    c.globalAlpha=t.a;
+    c.fillStyle=t.kind==='roster'?hexA(FIELD.bg,.88):col; c.strokeStyle=col; c.lineWidth=Math.max(1,s*0.1);
+    c.beginPath(); c.roundRect(px-w/2,y-th/2,w,th,th/2); c.fill(); if(t.kind==='roster') c.stroke();
+    let x=px-w/2+tf*0.55;
+    if(t.sub){ c.font=`800 ${sf}px Manrope, system-ui, sans-serif`; c.fillStyle=t.kind==='roster'?col:hexA(FIELD.bg,.85); c.textAlign='left';
+      c.fillText(t.sub,x,y+0.5); x+=sw; }
+    c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; c.fillStyle=t.kind==='roster'?FIELD.ink:FIELD.bg; c.textAlign='left'; c.fillText(t.text,x,y+0.5);
+  }
+  c.restore();
+}
 function slotMap(g){
   const P=g.cur, key=(P?P.seq:'-')+':'+g.phase+':'+(g.plan?1:0);
   if(g._sm&&g._sm.key===key) return g._sm;
@@ -4965,6 +5020,9 @@ class FieldView{
         c.restore();
       }
     }
+    // who is who (19/10/2026, big screen only): the skill players' names before the snap, the ball carrier during
+    // the play, then the defender who made the play (tackle, sack, interception, pass defended) — see nameTags
+    if(g.plays&&typeof modalView!=='undefined'&&this===modalView&&!g.special){ const T=nameTags(g); if(T.length) drawNameTags(c,T,X,Y,r,s,g); }
     // the player whose card is open
     if(g.sel){
       const p=(g.sel.side==='off'?g.off:g.def)[g.sel.idx];

@@ -1508,6 +1508,23 @@ play-by-play ; même chose sur mobile, à l'horizontale. Les commandes du replay
   Test navigateur `outils/site/test_plein_ecran.js` (groupe site) : ordinateur 1440 × 900, téléphone tenu droit
   390 × 844 et en paysage 844 × 390.
 
+### 62. Noms des joueurs sur le terrain (19/10/2026)
+**Demande de Guillaume (19/10)**, validée sur captures : voir sur l'écran du match qui est qui, sans lire le play-by-play —
+les receveurs et le porteur, et en défense l'auteur d'une interception ou d'un plaquage, sans gêner le reste. Trois
+moments (validés), sans le QB.
+- **Avant le snap** : une fois la formation en place, numéro et nom de famille sous les WR, le TE et le RB (jamais le
+  QB ni la ligne) pendant 1,8 s au plus, en fondu, effacés avant le snap ; sous les pions (la bulle « CHECK » du QB est
+  au-dessus) et jamais l'un sur l'autre.
+- **Pendant l'action** : le nom suit le porteur du ballon dès la remise ou la réception (couleur de l'équipe).
+- **À la fin** : le porteur avec son gain (« +26 Quarles », « TD ») et, en rose, le défenseur auteur de l'action :
+  « TACKLE », « SACK », « INT », « PASS DEFENDED », « FORCED FUMBLE » (interception, passe défendue et sack dès l'action,
+  plaquage à la fin) ; effacés avec l'action suivante.
+- Grand écran seulement (vue normale et « Bigger field ») ; ni sur les tuiles de l'accueil, ni sur les coups de pied,
+  ni sur les transformations à 2 points. Les noms viennent de `slotMap` (le pion = le joueur de la fiche) et du
+  GameFeed (`play.players`). `nameTags` / `drawNameTags` ; cellule 427 synchronisée (sans grand écran : rien n'y est
+  dessiné). Corrigé au passage : en « Bigger field », la puce du résultat est décalée à droite du bouton de sortie.
+  Test navigateur `outils/site/test_noms.js` (groupe site).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
