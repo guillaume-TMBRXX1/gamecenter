@@ -278,4 +278,5 @@ def _effet_appel(a, lecture, famille):
         d += (a.get("motion_sep") or {}).get(famille, 0.0)
     if a.get("suite") and lecture["niveau"] == "primaire":
         d += a.get("suite_sep", 0.0)
+    d += (a.get("anticipation") or {}).get(lecture["classe"], 0.0)     # défense engagée (moteur.scouting)
     return d

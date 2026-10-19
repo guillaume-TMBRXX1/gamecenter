@@ -45,7 +45,7 @@ def derniere_cellule_moteur():
             continue
         if "— 12.3 —" in src[:400]:
             break
-        m = re.search(r"— (12\.2 [a-z]+) —", src[:400])
+        m = re.search(r"— (12\.2 [a-z]+(?: [a-z]+)?) —", src[:400])      # « 12.2 vicies semel » : deux mots
         if m:
             tete = m.group(1)
     if not tete:

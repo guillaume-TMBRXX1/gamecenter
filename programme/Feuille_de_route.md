@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim / Snapline (mise à jour le 13/10/2026 : étape 8 — promotion)
+# Feuille de route — GridironSim / Snapline (mise à jour le 19/10/2026 : moteur plus intelligent, étape 5)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; suite : idée 3 (bloc F, course) | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · **idée 5 en cours** : appel de jeu qui apprend (scouting, 12.2 vicies semel) | notebook (+ modules) + site |
 
 ---
 
@@ -837,7 +837,41 @@ seulement).
 **Idée 3 — bloc F, intelligence du jeu de course** (« passe à l'étape 3 », 14/10) : ✅ codé et allumé
 (`moteur/course.py`, cellule 12.2 quindecies, README section 54) — boîte, côté choisi, duels de ligne, trou, lecture
 du porteur, plaqueur ; calibration et 13.4 ✅ ; équilibre 39,8 – 59,8 % ; semaine du 19/10 produite (30,4 min) et
-auditée. PR séparée, après la fusion de celle de l'horloge. **Suite proposée** : idée 4 (checks avant le snap).
+auditée. PR séparée, après la fusion de celle de l'horloge. Suite : idée 4.
+
+**Idée 4 — checks avant le snap** (16/10) : ✅ codé et allumé (`moteur/presnap.py`, cellule 12.2 novodecies, README
+section 58). **Décisions de Guillaume (16/10)** : allumé par défaut ; fréquence des audibles = identité de la franchise
+(`LIBERTE` : de MNL / FRG « on joue notre jeu » à PLS, CTD, APX), 4-8 par match ; check du QB et motion visibles sur le
+terrain (« CHECK · RUN / PASS », motion tracée, roll / lock / bump). Mesuré : 6,0 audibles par match (83 % vers la
+passe), 0,65 trompés, part des passes + 3,1 points (effet voulu) ; 13.4 ✅ sans recalibrage ; équilibre 39,7 – 59,5 % ;
+semaine du 19/10 produite en 32,8 min, auditée (0 anomalie). Exhibition `exh-v40-gmb-mnl`.
+
+**Hors feuille de route, après l'idée 4 (17-19/10)** :
+- **4e essai plus prudent** (17/10, README 59) : `valeur-2` (biais d'identité −5 ; +0,5, prudence dans son camp 3
+  points) : 35 % -> **≈ 16-17 %** des 4es essais joués (GRZ 2 % à GMB 68 %) ; équilibre 37,2 – 59,8 % ; semaine du 19/10
+  régénérée (33,7 min). GameFeeds d'exhibition au moteur complet (jusqu'à la dernière cellule 12.2).
+- **Fumbles disputés** (19/10, README 60, cellule 12.2 vicies, `GC_FUMBLE`) : la défense récupère 1 fois sur 2 ;
+  fumbles perdus 1,78 -> 0,96 par match ; équilibre **39,4 % (SPK) – 60,9 % (CPH)** ; 13.4 ✅ ; semaine du 26/10 en
+  41,9 min.
+- **« Bigger field »** (19/10, README 61) : le match en plein écran (téléphone tourné ou paysage), commandes au toucher.
+- **Noms des joueurs sur le terrain** (19/10, README 62) : receveurs et porteur avant le snap, porteur pendant l'action,
+  auteur de l'action défensive à la fin.
+
+**Idée 5 — l'appel de jeu qui apprend et reste imprévisible** (19/10, en cours) : plan validé par Guillaume le 19/10.
+- Module `moteur/scouting.py`, cellule **12.2 vicies semel** (juste avant 12.3), interrupteur `GC_SCOUTING`, flux
+  `scouting-def` / `scouting-att`.
+- **Défense** : compte ce que l'attaque montre (course / passe et famille du jeu) par down & distance, formation,
+  personnel, zone du terrain et down & distance × formation, avec oubli ; a priori de la ligue ; tendance **nette** =
+  assez d'observations, prédiction ≥ 72 % et écart ≥ 15 points à l'a priori ; elle s'y engage selon son profil
+  (« KEY ») : petit effet d'anticipation si elle devine juste, punie si elle se trompe (play action contre une défense
+  engagée sur la course, boîte allégée contre une défense engagée sur la passe).
+- **Attaque** (self-scout) : se sait lue (sa tendance est nette et la défense a montré qu'elle lit) et casse sa
+  tendance (« BREAK ») : play action après une série de courses, passe sur un down de course, même formation pour le jeu
+  opposé ; plafond par match, jamais en hurry-up / horloge, toujours dans son playbook.
+- **Profils** dérivés de 12.2 quater / bloc D / `LIBERTE`, plus `SCOUT` (engagement, bluff) : MNL, FRG, GRZ jouent leur
+  jeu ; CTX, MRG, LTC, PRM, CTD, GMB jouent aux échecs ; ONX, BST lisent et attaquent le ballon ; GLT, SPK parient trop.
+- Mémoire remise à zéro à chaque match (d'une semaine à l'autre : idée 6). Affichage validé sur captures avant d'être
+  codé.
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
