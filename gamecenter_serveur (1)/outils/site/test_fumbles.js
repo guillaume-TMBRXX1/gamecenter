@@ -4,7 +4,7 @@
 // au moins 2 ; sinon un match réel dont des courses et des sacks reçoivent un fumble gardé à tour de rôle (par le
 // porteur lui-même, par un coéquipier).
 // Vérifie, action par action : le ballon échappe au porteur puis reste à l'attaque (le porteur le récupère lui-même, ou
-// un coéquipier) — jamais à un défenseur ; la puce « FUMBLE · RECOVERED » ; le play-by-play (« fumble, recovered by »)
+// un coéquipier) — jamais à un défenseur ; la puce « FUMBLE · RECOVERED » ; le play-by-play (« fumble, recovered » et qui l'a récupéré)
 // et le commentateur racontent le fumble gardé ; un fumble perdu reste une perte de balle ; le match va au bout, sans
 // erreur JS.
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -36,12 +36,14 @@ function feedAvecFumbles(){
       const self=(k/5)%2===0, team=F.game[P.offense].abbr;
       const who=(P.players&&(P.players.carrier||P.players.passer)||{}).name||'Test Carrier';
       P.fumble={lost:false,by:who,recovered_by:self?'self':'team',team};
-      P.text=String(P.text||'')+' — fumble, '+(self?'recovers it himself':'recovered by '+team);
+      P.text=(who+' fumble, recovered, '+(num(P.gain)>=0?'+':'−')+Math.abs(Math.round(num(P.gain)))).slice(0,40);
     }
     k++;
   }
   return {F,src:src+' (play.fumble ajouté)'};
 }
+
+function num(v,d){ return typeof v==='number'&&isFinite(v)?v:(d||0); }
 
 async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-fumbles-'));
@@ -91,7 +93,7 @@ async function server(){
     check(!chKo.length,`puce « FUMBLE · RECOVERED » (${O.length-chKo.length} / ${O.length})`);
     if(Lo.length) check(Lo.every(o=>o.side==='def'),'un fumble perdu reste une perte de balle : la défense a le ballon');
     const txt=R.feed.join('\n');
-    check(/fumble, (recovered by [A-Z]{2,4}|recovers it himself)/.test(txt),'play-by-play : le fumble gardé');
+    check(/fumble, recovered.* · (recovered by [A-Z]{2,4}|he recovers it himself)/.test(txt),'play-by-play : le fumble gardé');
     const lk=R.lines.filter(l=>l.kept), lkKo=lk.filter(l=>!/Fumble|loose|fumble/.test(l.text)||/undefined|null|NaN/.test(l.text));
     if(lkKo.length) console.log('   commentaire :',JSON.stringify(lkKo.slice(0,3)));
     check(lk.length>0&&!lkKo.length,`commentateur : le fumble gardé est raconté (${lk.length-lkKo.length} / ${lk.length})`);

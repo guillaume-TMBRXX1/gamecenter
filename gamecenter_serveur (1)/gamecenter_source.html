@@ -3440,7 +3440,10 @@ function rpPresnapNote(P,g){ const c=P.presnap; if(!c||typeof c!=='object') retu
     if(c.fooled==='wrong_check') s+=' — fooled: the defense showed '+shown+' and played '+real;
   } else if(c.fooled==='missed_check') s+=' · disguised: the defense showed '+shown+' in the box and played '+real;
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+/* fumble kept by the offense (engine 12.2 vicies, play.fumble): who fell on it */
+function rpFumbleNote(P){ const f=P.fumble; if(!f||f.lost!==false) return '';
+  return f.recovered_by==='self'?' · he recovers it himself':' · recovered by '+esc(String(f.team||'the offense')); }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpFumbleNote(P)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
