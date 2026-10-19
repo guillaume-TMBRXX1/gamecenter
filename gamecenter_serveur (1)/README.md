@@ -1463,6 +1463,31 @@ régénérer la semaine du 19/10.
   sont des matchs du moteur à jour, hors calendrier. Action GitHub : 552 affiches en ≈ 13 min, artefact
   « gamefeeds-exhibition ».
 
+### 60. Fumbles disputés : l'attaque garde le ballon une fois sur deux (notebook 12.2 vicies, 19/10/2026 — allumé)
+**Demande de Guillaume (19/10)** : « l'équipe adverse ne doit pas toujours récupérer le ballon » — 50/50 : la moitié
+du temps la défense récupère et prend la possession ; sinon l'équipe qui a perdu le ballon le récupère et on passe au
+down suivant là où il a été récupéré.
+- **Avant** : un fumble resté en jeu (12.2 quater en efface 30 %, `ADAPT_TURNOVER_KEEP`) était toujours perdu.
+- **Maintenant** (cellule **12.2 vicies**, juste avant 12.3) : chaque fumble est disputé — la défense le récupère 1 fois
+  sur 2 (`FUMBLE_RECUP_DEFENSE`), perte de balle comme avant ; sinon l'attaque le garde, par le porteur lui-même 4 fois
+  sur 10 (`FUMBLE_RECUP_SOI`). L'action redevient une course, un sack ou une passe complétée arrêtée sur place : down
+  suivant (au 4e essai raté, ballon rendu sur downs ; récupéré dans son propre en-but : safety, règle NFL). Tirage dans
+  un flux dédié (« fumble-recuperation ») : le hasard du moteur n'est pas consommé. Interrupteur `GC_FUMBLE=0` : moteur
+  d'avant à l'identique (contrôlé). Non modélisé : le fumble provoqué n'est crédité au défenseur que si la défense
+  récupère (comme avant).
+- **GameFeed** (additif) : `play.fumble` = {`lost`: false, `by`, `recovered_by` : `self` | `team`, `team`}, texte de
+  l'action « Malachi Reed fumble, recovered, +3 » (40 caractères au plus) ; `game.fumble_model`. Les fumbles perdus
+  restent `fumble_lost`. **Site** (cellule 427 comprise) : le ballon échappe au porteur, puis il retombe dessus ou le
+  coéquipier le plus proche le récupère ; puce « FUMBLE · RECOVERED » ; play-by-play « · recovered by VEC » / « · he
+  recovers it himself » ; le commentateur le raconte. Test navigateur `outils/site/test_fumbles.js`.
+- **Mesures** — semaine du 26/10 produite sur une copie de `data/` (`generer_semaine.py`, 279 matchs, 41,9 min en
+  parallèle d'une exécution complète ; `audit_moteur.py` : 0 anomalie bloquante) comparée à la semaine du 19/10 :
+  **fumbles perdus 1,78 -> 0,96 par match** (NFL ≈ 1,1), 0,90 gardés (dont 0,35 par le porteur) ; interceptions 1,68 ->
+  1,59 ; pertes de balle 3,47 -> 2,54 ; 53,5 -> 54,2 points par match.
+- **Contrôles** (exécution complète avec contrôles, 74,6 min sur 4 cœurs en parallèle de la semaine, aucun échec) :
+  12.2 vicies ✅ (25 matchs : défense 53 %) ; équilibre 12.3 **39,4 % (SPK) – 60,9 % (CPH)** ; 13.2 ✅ (Brier 0,2442) ;
+  **13.4 ✅ sans recalibrage** (extrêmes ± 0,026, écart moyen 0,029, outsiders − 20,4 %) ; 377 tests unitaires.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

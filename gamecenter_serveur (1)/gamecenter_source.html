@@ -2943,6 +2943,23 @@ function addFumble(P,rec){
   P.carrier.push([tf+0.012,1,side==='off'?'def':'off',best]);
   P.spot={x:rec.x,y:rec.y}; P.fumble=true;
 }
+/* engine 12.2 vicies — fumble kept by the offense (play.fumble, lost: false): the ball comes loose at the same moment,
+   then the carrier falls on it himself, or the nearest teammate does; the play ends where it was recovered */
+function addFumbleKept(P,rec,self){
+  const tf=0.86, last=P.carrier[P.carrier.length-1], side=last[2], idx=last[3], mine=side==='off'?P.off:P.def;
+  const cp=kfAt(mine[idx],tf);
+  last[1]=tf;
+  if(self){
+    mine[idx]=mine[idx].filter(k=>k[0]<tf).concat([[tf+0.01,cp.x,cp.y],[1,rec.x,rec.y]]);
+    P.carrier.push([tf+0.05,1,side,idx]);
+  } else {
+    let best=-1, bd=1e9;
+    for(let i=0;i<11;i++){ if(i===idx) continue; const p=kfAt(mine[i],tf); const dd=(p.x-cp.x)**2+(p.y-cp.y)**2; if(dd<bd){bd=dd;best=i;} }
+    mine[best]=mine[best].filter(k=>k[0]<tf).concat([[tf+0.01,cp.x,cp.y],[1,rec.x,rec.y]]);
+    P.carrier.push([tf+0.012,1,side,best]);
+  }
+  P.spot={x:rec.x,y:rec.y}; P.fumble='kept';
+}
 
 /* engine 12.2 sexdecies — punt with a return (play.punt_return): the ball comes down at the landing spot (C); then
    - return: the returner (defense index 9) catches it and runs it back to the spot, the coverage closes on him;
@@ -3354,6 +3371,9 @@ function planFromFeed(g,P){
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
+  } else if(P.fumble&&P.fumble.lost===false&&plan.carrier&&plan.carrier.length){
+    const sx=P.spot&&num(P.spot.x,null);
+    addFumbleKept(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)},P.fumble.recovered_by==='self');
   }
   return plan;
 }
@@ -3420,12 +3440,16 @@ function rpPresnapNote(P,g){ const c=P.presnap; if(!c||typeof c!=='object') retu
     if(c.fooled==='wrong_check') s+=' — fooled: the defense showed '+shown+' and played '+real;
   } else if(c.fooled==='missed_check') s+=' · disguised: the defense showed '+shown+' in the box and played '+real;
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+/* fumble kept by the offense (engine 12.2 vicies, play.fumble): who fell on it */
+function rpFumbleNote(P){ const f=P.fumble; if(!f||f.lost!==false) return '';
+  return f.recovered_by==='self'?' · he recovers it himself':' · recovered by '+esc(String(f.team||'the offense')); }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpFumbleNote(P)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
 function rpChip(P){
   const r=P.result, gn=Math.round(num(P.gain,0)), sg=(gn>=0?'+':MINUS)+Math.abs(gn);
+  if(P.fumble&&P.fumble.lost===false&&r!=='touchdown'&&r!=='safety') return {t:'FUMBLE · RECOVERED',c:'bad'};   /* 12.2 vicies */
   switch(r){
     case 'touchdown': return {t:'TOUCHDOWN',c:'td'};
     case 'interception': return {t:'INTERCEPTED',c:'hot'};
@@ -6801,6 +6825,11 @@ function playLine(g,P){
       text= g.idx===0 ? '' : /^Free kick/.test(String(P.text||'')) ? `${nick(dfT)} free kick after the safety.` : `${nick(off)} kick off.`; break; }
     default: text='';
   }
+  /* engine 12.2 vicies: the ball came loose, but the offense kept it */
+  if(P.fumble&&P.fumble.lost===false&&P.result!=='touchdown'&&P.result!=='safety'){ prio=Math.max(prio,2);
+    const who=P.fumble.by||car||sur(qb);
+    text = P.fumble.recovered_by==='self' ? V([`Fumble! ${who} puts it on the ground… and falls right on it. ${nick(off)} keep it.`,`The ball is loose — ${who} recovers his own fumble!`])
+      : V([`Fumble! ${who} loses it… and the ${nick(off)} recover! They keep the ball.`,`Fumble! It's on the ground… scramble for it… and it's still ${nick(off)} ball!`]); }
   const st=P.after&&P.after.status;
   if(st==='half'){ prio=3; text=(text?text+' ':'')+`And that's halftime. ${scoreLine(g)}`; }
   if(st==='final'){ prio=3; const ot=num(P.quarter,4)>4;
