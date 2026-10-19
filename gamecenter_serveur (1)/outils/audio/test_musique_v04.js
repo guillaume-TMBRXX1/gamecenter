@@ -23,6 +23,7 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
 (async()=>{
   const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined,args:['--autoplay-policy=no-user-gesture-required']});
   const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+  if(process.env.REPRO) await p.addInitScript(r=>{ window.__REPRO=r; },process.env.REPRO);
   await require('./commun').ouvrir(p,`http://localhost:${PORT}/`);
   console.log('2. navigateur');
   const r=await p.evaluate(async()=>{
@@ -30,6 +31,12 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
     A.setSound(true); for(let i=0;i<80&&!M.music.ready();i++) await wait(100);
     await wait(2500); const start=M.stats().music;
     const mm=M.music, out={start};
+    /* 20/10/2026 : l'état de départ vient du match à l'antenne à l'heure du test (un match en fin de partie le met en
+       final_drive, plus tendu que red_zone : « la tension monte » échouait selon l'heure). Ensuite, le match à
+       l'antenne ne commande plus la musique et on repart d'un état calme : les vérifications ne dépendent plus de
+       l'horloge. REPRO=final_drive (variable d'environnement) rejoue le cas qui échouait. */
+    if(window.__REPRO) mm.request(window.__REPRO,true);
+    M.setMusic=()=>{}; mm.request('gameplay',true); await wait(400);
     mm.request('red_zone'); await wait(400); out.up=mm.stats();
     mm.request('gameplay'); await wait(400); out.down=mm.stats();            /* < 20 s : attend */
     mm.since-=21; mm.tick(); await wait(3600); out.later=mm.stats();         /* 20 s plus tard : redescend */
