@@ -76,6 +76,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : horloge continue, chrono des 40 s, temps morts" node outils/site/test_horloge.js
   lancer "Site : checks avant le snap (audible, motion, défense qui se décale)" node outils/site/test_audibles.js
   lancer "Site : fumbles gardés par l.attaque" node outils/site/test_fumbles.js
+  lancer "Site : Bigger field en plein écran (ordinateur, téléphone)" node outils/site/test_plein_ecran.js
   lancer "Site : histoire, records, carrières" node outils/site/test_histoire.js
   lancer "Site : classement des joueurs (Ranking)" node outils/site/test_classement.js
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js
