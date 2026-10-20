@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · **idée 5 en cours** : appel de jeu qui apprend (scouting, 12.2 vicies semel) | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63 ; PR en brouillon, à fusionner par Guillaume) | notebook (+ modules) + site |
 
 ---
 
@@ -857,7 +857,8 @@ semaine du 19/10 produite en 32,8 min, auditée (0 anomalie). Exhibition `exh-v4
 - **Noms des joueurs sur le terrain** (19/10, README 62) : receveurs et porteur avant le snap, porteur pendant l'action,
   auteur de l'action défensive à la fin.
 
-**Idée 5 — l'appel de jeu qui apprend et reste imprévisible** (19/10, en cours) : plan validé par Guillaume le 19/10.
+**Idée 5 — l'appel de jeu qui apprend et reste imprévisible** (19-20/10) : ✅ codé et allumé (README du serveur,
+section 63) ; plan validé par Guillaume le 19/10, rendus validés sur captures le 19/10.
 - Module `moteur/scouting.py`, cellule **12.2 vicies semel** (juste avant 12.3), interrupteur `GC_SCOUTING`, flux
   `scouting-def` / `scouting-att`.
 - **Défense** : compte ce que l'attaque montre (course / passe et famille du jeu) par down & distance, formation,
@@ -870,8 +871,17 @@ semaine du 19/10 produite en 32,8 min, auditée (0 anomalie). Exhibition `exh-v4
   opposé ; plafond par match, jamais en hurry-up / horloge, toujours dans son playbook.
 - **Profils** dérivés de 12.2 quater / bloc D / `LIBERTE`, plus `SCOUT` (engagement, bluff) : MNL, FRG, GRZ jouent leur
   jeu ; CTX, MRG, LTC, PRM, CTD, GMB jouent aux échecs ; ONX, BST lisent et attaquent le ballon ; GLT, SPK parient trop.
-- Mémoire remise à zéro à chaque match (d'une semaine à l'autre : idée 6). Affichage validé sur captures avant d'être
-  codé.
+- Mémoire remise à zéro à chaque match (d'une semaine à l'autre : idée 6).
+- Écart au plan : tendance nette à **66 % et 10 points** (au lieu de 72 % / 15 : trop peu de lectures par match).
+- **Mesuré** : 6-7 lectures par match (≈ 62 % justes), ≈ 2,3 tendances cassées ; points attendus par action : défense
+  juste −0,22, trompée +0,25, cassure +0,10 ; site : « KEY · RUN / PASS », « BREAK », puce « READ / BURNED / BROKE
+  TENDENCY », play-by-play et commentateur (sous-titres). Équilibre 12.3 **39,9 – 63,0 %** (BST : lit sans parier,
+  engagement 0,60) ; 13.2 / 13.4 ✅ sans recalibrage ; calibration dans les tolérances ; semaine du 26/10 en 32 min,
+  auditée (0 anomalie, 0 alerte). Exhibition `exh-v41-ltc-mnl`.
+- **À surveiller** : BST (déjà ≥ 60 % coupé) au test d'équilibre ; peu de cassures en play action (0,06 par match : la
+  ligue passe beaucoup, les tendances nettes sont surtout des tendances passe) ; défaut vu sur les captures : sur un jet
+  sweep, l'étiquette de nom montre le RB au lieu du WR porteur ; sur téléphone, « On air » recouvre la puce du résultat.
+- **Suite proposée** : idée 6 (mémoire d'une semaine à l'autre : le carnet de scouting comme point de départ).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
