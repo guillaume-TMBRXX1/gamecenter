@@ -91,7 +91,7 @@ const CSS=`
   #vidCard .vu{margin-top:24px;font:900 17px/1 'Big Shoulders Display',system-ui;letter-spacing:.22em;background:var(--vbrand);-webkit-background-clip:text;background-clip:text;color:transparent}
   #vidCard .sg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
   #vidCard .si{border-radius:14px;padding:12px 12px 11px;background:var(--vglass);border:1px solid var(--vline);border-top:3px solid var(--tc,var(--vacc))}
-  #vidCard .si b{display:block;font:900 44px/1 'Big Shoulders Display',Archivo,system-ui;font-variant-numeric:tabular-nums}
+  #vidCard .si b{display:block;white-space:nowrap;font:900 44px/1 'Big Shoulders Display',Archivo,system-ui;font-variant-numeric:tabular-nums}
   #vidCard .si span{display:block;margin-top:6px;font:800 10.5px/1.25 Manrope,system-ui;letter-spacing:.14em;text-transform:uppercase;color:var(--vink2)}
   #vidCard .bar{width:64px;height:5px;border-radius:3px;background:var(--tc,var(--vacc));margin-top:16px}`;
 const LOGO='<svg viewBox="0 0 24 24"><path d="M1.6 9.6h3.6M.8 12h4.4M1.6 14.4h3.6" stroke="#fff" stroke-opacity=".7" stroke-width="1.3" stroke-linecap="round"/><path d="M7 12C9.7 7.3 19.3 7.3 22.4 12 19.3 16.7 9.7 16.7 7 12Z" fill="#fff"/><path d="M11.8 12h6.4M13.4 10.7v2.6M15 10.7v2.6M16.6 10.7v2.6" stroke="#1E5C78" stroke-width="1.2" stroke-linecap="round"/></svg>';
@@ -99,7 +99,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 
 /* ---------- le journal de l'agent IA, tiré du GameFeed (ce que le moteur a vraiment décidé) ---------- */
 const PRETTY=s=>String(s||'').replace(/_/g,' ').toLowerCase().replace(/\b(pa|rpo|qb|wr|te)\b/g,m=>m.toUpperCase());
-const COV={'COVER_2':'Cover 2','COVER_3':'Cover 3','COVER_4':'Cover 4','MAN':'man','ZONE':'zone','BLITZ':'a blitz','BOX_STACK':'a stacked box'};
+const COV={'COVER_2':'Cover 2','COVER_3':'Cover 3','COVER_4':'Cover 4','MAN':'man','ZONE':'zone','BLITZ':'blitz','BOX_STACK':'stacked box'};
 function hud(F,i,coaches){
   const P=F.plays[i], prev=i>0?F.plays[i-1]:null, G=F.game;
   const off=P.offense==='home'?G.home.abbr:G.away.abbr, dfn=P.offense==='home'?G.away.abbr:G.home.abbr;
@@ -112,6 +112,7 @@ function hud(F,i,coaches){
   const ps=P.presnap;
   if(ps&&ps.box_read!=null&&(ty==='run'||ty==='pass')) out.push(`reads <b>${ps.box_read} in the box</b>${ps.shell_shown?' · '+ps.shell_shown:''}${ps.audible?` → <b>audible ${ps.to&&ps.to.type==='run'?'RUN':'PASS'}</b>`:''}`);
   const sc=P.scout;
+  const post=[];
   if(sc&&sc.def) out.push(`${dfn} AI keyed on the <b>${sc.def.key}</b> (${esc(sc.def.why||'')})`);
   if(sc&&sc.off&&sc.off.broke) out.push(`<b>breaks its tendency</b> — ${esc(sc.off.why||'')}`);
   if(ty==='run'||ty==='pass') out.push(`call: <b>${PRETTY(c.concept||c.play_id)}</b>${c.formation?' · '+PRETTY(c.formation):''} vs ${COV[dd.concept]||PRETTY(dd.concept)||'?'}`);
@@ -120,12 +121,13 @@ function hud(F,i,coaches){
   else if(ty==='kickoff') out.push(`kickoff`);
   const dk=P.decision;
   if(dk&&dk.coverage&&ty==='pass'){ const r=dk.reads?`read ${dk.read}/${dk.reads}`:'';
-    out.push(`QB ${r} · ${dk.coverage}${dk.throw_time?` · throws in <b>${(+dk.throw_time).toFixed(1)}s</b>`:''}${dk.pressure?' · <b>under pressure</b>':''}`); }
-  const lines=out.slice(-3);
+    post.push(`QB ${r} · ${dk.coverage}${dk.throw_time?` · throws in <b>${(+dk.throw_time).toFixed(1)}s</b>`:''}${dk.pressure?' · <b>pressured</b>':''}`); }
+  const lines=out.slice(-(3-post.length)).map(t=>({t})).concat(post.map(t=>({t,post:true})));
   const side=P.offense, wb=prev&&prev.win_prob_home!=null?prev.win_prob_home:null, wa=P.win_prob_home!=null?P.win_prob_home:null;
   const wp=wb==null||wa==null?null:{team:off, avant:Math.round(100*(side==='home'?wb:1-wb)), apres:Math.round(100*(side==='home'?wa:1-wa))};
   const s0=prev&&prev.after&&prev.after.score?prev.after.score:{home:0,away:0};
-  const bug={away:G.away.abbr, home:G.home.abbr, as:s0.away, hs:s0.home, poss:P.offense};
+  const s1=P.after&&P.after.score?P.after.score:s0;
+  const bug={away:G.away.abbr, home:G.home.abbr, as:s0.away, hs:s0.home, as1:s1.away, hs1:s1.home, poss:P.offense};
   return {head,lines,wp,bug,off,dfn};
 }
 function frappe(P){                                         // le résultat frappé en grand, et son sous-titre
@@ -182,33 +184,52 @@ function frappe(P){                                         // le résultat frap
     window.__vidTop(t,true); },[top,esc.toString(),LOGO]);
   const resserrer=()=>p.evaluate(v=>{ const m=window.__gc.getModalView(); if(m){ m.viewW=v; m.resize(); } window.dispatchEvent(new Event('resize')); },VIEW_YARDS);
   await resserrer(); await attendre(800);
+  /* les polices chargées avant toute mesure (sinon le journal se mesure avec la police de secours, plus étroite) */
+  await p.evaluate(()=>Promise.all(["600 12.5px 'Azeret Mono'","900 44px 'Big Shoulders Display'","800 10px Manrope"].map(f=>document.fonts.load(f))).then(()=>document.fonts.ready));
+  const verifier=async()=>{ const v=await p.evaluate(()=>{ const m=document.getElementById('modal'), f=m.querySelector('.field.big'), r=f&&f.getBoundingClientRect();
+      return {theater:m.classList.contains('theater'), tr:getComputedStyle(m.querySelector('.m-panel')).transform, w:r&&r.width, h:r&&r.height, top:r&&r.top}; });
+    if(v.theater||(v.tr&&v.tr!=='none')||!v.w||v.w<v.h||Math.abs(v.top-FT)>2) throw new Error('terrain mal placé ou tourné : '+JSON.stringify(v)); };
+  await verifier();
   const ouvrir=async(chemin,i)=>{                                // une action d'un autre match (« What is Snapline? »)
     F=JSON.parse(fs.readFileSync(chemin,'utf8')); feedOuvert=chemin;
     await p.evaluate(([F,i])=>{ const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); G.rpSeek(g,i); g.paused=true; },[F,i]);
-    await vueNormale(); await resserrer(); await attendre(1500); };
+    await vueNormale(); await resserrer(); await attendre(1500); await verifier(); };
 
   /* le bandeau de score, le journal de l'IA et sa probabilité de victoire, pour une action */
-  const montrerHud=(h,lent,label)=>p.evaluate(([h,lent,label])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
+  const montrerHud=(h,lent,label)=>p.evaluate(([h,lent,label,W])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
     const bug=document.getElementById('vidBug'), B=h.bug;
     bug.innerHTML=`<div class="t" style="--tc:${tc(B.away)}"><em>${B.away}</em><b>${B.as}</b></div><div class="t" style="--tc:${tc(B.home)}"><em>${B.home}</em><b>${B.hs}</b></div><div class="c">${label||''}</div>`;
     const hud=document.getElementById('vidHud'); hud.style.setProperty('--tc',tc(h.off));
     const wp=h.wp?`<div class="vh-w"><span>${h.off} win prob</span><div class="vh-b"><i style="width:${h.wp.avant}%"></i></div><b>${h.wp.avant}%</b></div>`:'';
     hud.innerHTML=`<div class="vh-h"><span class="vh-ai">AI</span><span class="vh-who">${lent?'Replay · ':''}${h.head.who}</span><span class="vh-mk"><i>${window.__vidLogo}</i>snapline.live</span></div>`+
       h.lines.map(()=>'<div class="vh-l"></div>').join('')+wp;
-    /* les lignes se tapent l'une après l'autre (≈ 45 caractères / s ; au ralenti, déjà écrites) */
+    /* les lignes se tapent l'une après l'autre (≈ 55 caractères / s, 90 après le snap ; au ralenti, déjà écrites) ; celles d'après le
+       snap (la lecture du QB) attendent le snap (window.__vidHudPost) */
     const els=[...hud.querySelectorAll('.vh-l')];
-    h.lines.forEach((txt,k)=>{ const el=els[k], plain=txt.replace(/<[^>]+>/g,'');
-      if(lent){ el.innerHTML='› '+txt; return; }
-      setTimeout(()=>window.__vidAnim(Math.max(250,plain.length*22),q=>{ const n=Math.round(plain.length*q);
+    /* chaque ligne tient sur une ligne : la police rétrécit (jusqu'à 9 px) plutôt que de couper le texte */
+    /* (mesuré au canevas : le panneau peut être encore caché à cet instant) */
+    const cv=(window.__vidCv=window.__vidCv||document.createElement('canvas')).getContext('2d'), large=W-72-26;
+    const ajuster=(el,txt)=>{ const plain='› '+txt.replace(/<[^>]+>/g,'');
+      for(let f=12.5;f>=9;f-=.5){ cv.font=`600 ${f}px 'Azeret Mono'`; el.style.fontSize=f+'px'; if(cv.measureText(plain).width<=large) break; } };
+    h.lines.forEach((L,k)=>ajuster(els[k],L.t));
+    const taper=(L,k,delai)=>{ const el=els[k], txt=L.t, plain=txt.replace(/<[^>]+>/g,'');
+      setTimeout(()=>window.__vidAnim(Math.max(200,plain.length*(L.post?11:18)),q=>{ const n=Math.round(plain.length*q);
         let out='', c=0, i=0; while(i<txt.length&&c<n){ if(txt[i]==='<'){ const j=txt.indexOf('>',i); out+=txt.slice(i,j+1); i=j+1; continue; } out+=txt[i]; i++; c++; }
         if(q<1&&!/<\/b>$/.test(out)&&(out.match(/<b>/g)||[]).length>(out.match(/<\/b>/g)||[]).length) out+='</b>';
-        el.innerHTML='› '+out+(q<1?'<span class="vh-c"></span>':''); }),k*380+120); });
-  },[h,lent,label]);
+        el.innerHTML='› '+out+(q<1?'<span class="vh-c"></span>':''); }),delai); };
+    let k0=0;
+    h.lines.forEach((L,k)=>{ if(lent){ els[k].innerHTML='› '+L.t; return; } if(!L.post) taper(L,k,(k0++)*380+120); });
+    window.__vidHudPost=()=>{ if(lent) return; let j=0; h.lines.forEach((L,k)=>{ if(L.post) taper(L,k,(j++)*300); }); window.__vidHudPost=()=>{}; };
+  },[h,lent,label,W]);
   /* le résultat : la probabilité bascule, le mot est frappé en grand, la caméra donne un coup de zoom */
   const resultat=(h,fr,lent)=>p.evaluate(([h,fr,lent])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
     const ease=q=>1-Math.pow(1-q,3);
     if(h.wp){ const i=document.querySelector('#vidHud .vh-w .vh-b i'), bb=document.querySelector('#vidHud .vh-w b'), a=h.wp.avant, z=h.wp.apres;
       if(i) window.__vidAnim(lent?1100:700,q=>{ const v=Math.round(a+(z-a)*ease(q)); i.style.width=v+'%'; bb.textContent=q<1?v+'%':`${a}% → ${z}%`; }); }
+    /* le score bug change au résultat (le chiffre qui a bougé saute) */
+    const bs=document.querySelectorAll('#vidBug .t b');
+    [[0,h.bug.as1],[1,h.bug.hs1]].forEach(([k,v])=>{ const b=bs[k]; if(!b||v==null||String(v)===b.textContent) return;
+      b.textContent=v; window.__vidAnim(600,q=>{ b.style.display='inline-block'; b.style.transform=`scale(${1+.6*Math.sin(Math.PI*q)*(1-q*.3)})`; b.style.color=q<1?'var(--cyan)':''; }); });
     if(!fr) return;
     const st=document.getElementById('vidStamp'), d=st.firstElementChild, fl=document.getElementById('vidFlash'), fld=document.querySelector('#modal .field.big');
     st.style.setProperty('--tc',tc(h.off)); fl.style.setProperty('--tc',tc(h.off));
@@ -223,7 +244,10 @@ function frappe(P){                                         // le résultat frap
   const carton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
     const brand=s.title==='snapline.live';
     c.innerHTML=`<div class="vk"><i></i>${e(s.kicker)}</div><div class="vt${brand?' brand':''}">${e(s.title)}</div><div class="vs">${e(s.sub)}</div>${brand?'':'<div class="vu">SNAPLINE.LIVE</div>'}`; c.style.display='flex';
-    const vt=c.querySelector('.vt'); for(let f=brand?58:64;f>30&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px'; },[s,esc.toString()]);
+    /* le titre (un score, un nom) tient sur une ligne si possible : la police rétrécit, sinon il passe à la ligne */
+    const vt=c.querySelector('.vt'); vt.style.whiteSpace='nowrap';
+    for(let f=brand?58:64;f>30&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px';
+    if(vt.scrollWidth>vt.clientWidth) vt.style.whiteSpace=''; },[s,esc.toString()]);
   const statsCarton=s=>p.evaluate(([s,esc])=>{ const e=new Function('return '+esc)(), c=document.getElementById('vidCard');
     const tc=s.team?getComputedStyle(document.documentElement).getPropertyValue('--t-'+s.team.toLowerCase()).trim():'';
     c.style.setProperty('--tc',tc||'');
@@ -232,6 +256,7 @@ function frappe(P){                                         // le résultat frap
       '<div class="vu">SNAPLINE.LIVE</div>';
     c.style.display='flex';
     const vt=c.querySelector('.vt'); for(let f=64;f>30&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px';
+    for(const b of c.querySelectorAll('.si b:not([data-v])')) for(let f=44;f>24&&b.scrollWidth>b.clientWidth;f-=2) b.style.fontSize=f+'px';
     const els=[...c.querySelectorAll('b[data-v]')];          /* horloge pilotée : même rendu à chaque fois */
     window.__vidAnim(800,q=>{ const k=1-Math.pow(1-q,3); for(const b of els) b.textContent=Math.round(+b.dataset.v*k).toLocaleString('en-US'); }); },[s,esc.toString()]);
   if(plan.segments.length&&plan.segments[0].feed&&plan.segments[0].feed!==feedOuvert) await ouvrir(plan.segments[0].feed,plan.segments[0].index);
@@ -286,7 +311,7 @@ function frappe(P){                                         // le résultat frap
     for(let k=0;k<50*FPS;k++){                                // au plus 50 s par action
       await pas();
       const st=await p.evaluate(()=>{ const g=window.__gc.replayGame(); return {idx:g.idx,phase:g.phase}; });
-      if(snap===null&&st.idx===s.index&&st.phase!=='presnap') snap=now();
+      if(snap===null&&st.idx===s.index&&st.phase!=='presnap'){ snap=now(); await p.evaluate(()=>window.__vidHudPost&&window.__vidHudPost()); }
       if(res===null&&((st.idx===s.index&&st.phase==='post')||st.idx>s.index)){ res=now(); await resultat(h,fr,lent); }
       if(st.idx>s.index||st.phase==='done'||(res!==null&&now()-res>=(s.after==null?2.2:s.after))) break;
     }

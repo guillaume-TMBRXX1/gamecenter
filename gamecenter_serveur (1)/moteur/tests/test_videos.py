@@ -200,7 +200,7 @@ class TestSemaineReelle(unittest.TestCase):
         self.assertNotIn("quarter", [x.get("kind") for x in seg])
         self.assertEqual(seg[-1]["type"], "card")
         self.assertTrue(seg[-1]["kicker"].startswith("Final"))
-        self.assertEqual(top["kicker"], "Game in 60 seconds")
+        self.assertEqual(top["kicker"], "AI vs AI · game in 60 seconds")
         self.assertEqual(info["type"], "resume_court")
         g, seg_long, top, info, leg = V.plan_resume(self.doc, self.feeds, long=True)
         self.assertEqual(seg_long[0]["type"], "card")
