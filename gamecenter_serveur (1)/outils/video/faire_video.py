@@ -46,8 +46,8 @@ import choisir as C  # noqa: E402
 PHASE = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl": "Grand Final"}
 ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
 HASHTAGS = "#americanfootball #football #simulation #ai"
-FIN = {"type": "card", "kicker": "Watch the next game live", "title": "snapline.live",
-       "sub": "Type it in your browser · free · a new game every 30 min", "dur": 2.0}
+FIN = {"type": "card", "kicker": "24 AI coaches · 1 league · live", "title": "snapline.live",
+       "sub": "No human calls the plays. Watch the next game live — free, a new game every 30 min.", "dur": 2.2}
 EPINGLE = "Watch the next game live → snapline.live (free, a new game every 30 min) 🏈"
 
 
@@ -102,6 +102,11 @@ def titre_action(why, P):
     return w[0][:1].upper() + w[0][1:]
 
 
+def coordinateurs(doc):
+    """Les agents IA de chaque franchise (coordinateurs offensif et défensif de la semaine) : {ABR: {offense, defense}}."""
+    return {ab: dict(t.get("coordinators") or {}) for ab, t in (doc.get("teams") or {}).items()}
+
+
 # ------------------------------------------------------------------ son du stade
 def _assets():
     with open(os.path.join(RACINE, "audio", "manifest.json"), encoding="utf-8") as fh:
@@ -145,6 +150,8 @@ def evenements_son(timeline):
         else:
             ev.append((res - 0.25, "tackle", 0.7 * g))
             ev.append((res, "cheer_medium" if s.get("highlight") else "cheer_small", 0.7 * g))
+        if s.get("stamp") and r not in ("sack",):           # l'impact sous le mot du résultat (« TOUCHDOWN », « +34 »…)
+            ev.append((res + 0.05, "hit", 0.5 * g))
         if not lent:
             ev.append((res + 0.9, "whistle", 0.6))
     return [(max(0.0, t), k, g) for t, k, g in ev]
@@ -182,14 +189,14 @@ def plan_action(doc, feeds, jour, a=None):
     g = next(x for x in doc["schedule"] if x["id"] == a["game"])
     F, P = feeds[a["game"]], a["play"]
     d = datetime.fromisoformat(C.jour_du_match(g) if meilleure else jour)
-    kicker = "Best play so far" if meilleure else f"Play of the day · {d.strftime('%a %-d %b')}"
-    match = f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"
+    kicker = "AI vs AI · best play so far" if meilleure else f"AI vs AI · play of the day · {d.strftime('%-d %b')}"
+    match = f"{g['away']} @ {g['home']} · every call made by an AI coach"
     hook = C.enjeu(F, a["index"], g)
     sw = C.bascule(F, a["index"], g)
-    top_ralenti = ({"kicker": f"{sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
+    top_ralenti = ({"kicker": f"AI replay · {sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
                    if sw else {"kicker": kicker, "title": hook, "sub": match})
     seg = [{"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.8},
-           {"type": "play", "index": a["index"], "speed": 0.5, "label": "Replay · slow motion", "text": P.get("text"),
+           {"type": "play", "index": a["index"], "speed": 0.5, "label": "0.5×", "text": P.get("text"),
             "after": 1.0, "top": top_ralenti},
            dict(FIN)]
     top = {"kicker": kicker, "title": hook, "sub": match}
@@ -216,7 +223,7 @@ def plan_resume(doc, feeds, gid=None, long=False):
     names = {s: (F["game"].get(s) or {}).get("name", g[s]) for s in ("home", "away")}
     jour = C.jour_du_match(g)
     d = datetime.fromisoformat(jour)
-    kicker = f"Game of the week · {d.strftime('%a %-d %b')}" if long else "Game in 60 seconds"
+    kicker = f"AI vs AI · game of the week · {d.strftime('%-d %b')}" if long else "AI vs AI · game in 60 seconds"
     seg = [{"type": "card", "kicker": "Game of the week", "title": f"{g['away']} @ {g['home']}",
             "sub": f"{names['away']} at {names['home']} · {PHASE.get(g['phase'], '')} · {d.strftime('%A %-d %B')}", "dur": 3.0}] if long else []
     q_avant = None
@@ -230,12 +237,12 @@ def plan_resume(doc, feeds, gid=None, long=False):
         q_avant = q
         sc = C.score_avant(F, i)
         seg.append({"type": "play", "index": i, "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.6 if long else 0.8,
-                    "top": {"kicker": kicker, "title": f"{g['away']} {sc['away']}–{sc['home']} {g['home']}",
-                            "sub": f"{names['away']} at {names['home']} · {PHASE.get(g['phase'], '')}"}})
+                    "top": {"kicker": kicker, "title": f"{g['away']} vs {g['home']}",
+                            "sub": f"{names['away']} at {names['home']} · every call made by an AI coach"}})
     gagnant = "home" if fs["home"] > fs["away"] else "away"
     seg.append({"type": "card", "kicker": "Final" + (" · OT" if any((P.get("quarter") or 0) >= 5 for P in F["plays"]) else ""),
                 "title": f"{g['away']} {fs['away']} – {fs['home']} {g['home']}",
-                "sub": f"{names[gagnant]} win · watch the next game live on snapline.live", "dur": 3.5 if long else 3.0})
+                "sub": f"{names[gagnant]} win · no human called a single play · snapline.live", "dur": 3.5 if long else 3.0})
     top = (seg[0]["top"] if not long else
            {"kicker": kicker, "title": f"{g['away']} @ {g['home']}", "sub": PHASE.get(g["phase"], "")})
     info = {"type": "resume" if long else "resume_court", "game": gid, "plays": idx, "spectacle": C.spectacle(F, g)}
@@ -247,7 +254,7 @@ def plan_resume(doc, feeds, gid=None, long=False):
     return g, seg, top, info, legende
 
 
-PRESENTATION = ["24 teams. 24 AI coaches.", "Every game simulated live", "A full season every week"]
+PRESENTATION = ["24 teams. 24 AI coaches.", "No human calls a single play", "A full season every week"]
 
 
 def plan_presentation(choix, semaines):
@@ -259,10 +266,10 @@ def plan_presentation(choix, semaines):
         P = a["play"]
         seg.append({"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"),
                     "after": 0.8, "feed": os.path.join(a["dossier"], g["feed"]),
-                    "top": {"kicker": "What is Snapline?", "title": phrase,
+                    "top": {"kicker": "What is Snapline? · AI football", "title": phrase,
                             "sub": f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"}})
     seg.append({"type": "card", "kicker": "Free to watch", "title": "snapline.live",
-                "sub": "Type it in your browser · AI coaches · a new game every 30 min", "dur": 2.5})
+                "sub": "Type it in your browser · free · a new AI-coached game every 30 min", "dur": 2.5})
     info = {"type": "presentation", "plays": [{"game": a["game"], "index": a["index"], "why": a["why"]} for a in choix]}
     legende = legendes("What is Snapline? 🏈 24 teams, 24 AI coaches, every game simulated and played live.",
                        "A full season every week, with replays, records and private leagues with friends.",
@@ -315,7 +322,7 @@ def plan_joueur(res, doc):
             "sub": f"{equipe} · {POSTE.get(j['pos'], j['pos'])} · {j['games']} games", "team": j["team"],
             "stats": stats, "dur": 3.4}]
     seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
-                             {"kicker": "Player of the week", "title": j["name"]})
+                             {"kicker": "AI vs AI · player of the week", "title": j["name"]})
     seg.append(dict(FIN))
     info = {"type": "joueur", "player": j["id"], "name": j["name"], "team": j["team"], "score": res["score"],
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
@@ -339,9 +346,9 @@ def plan_champion(res, doc):
     seg = [{"type": "stats", "kicker": "Grand Final champions", "title": nom, "sub": f"{t} beat {o} {res['score'][0]}–{res['score'][1]}",
             "team": t, "stats": stats, "dur": 3.4}]
     seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
-                             {"kicker": "Road to the title", "title": nom})
+                             {"kicker": "AI vs AI · road to the title", "title": nom})
     seg.append({"type": "card", "kicker": "Champions", "title": f"{t} {res['score'][0]}–{res['score'][1]} {o}",
-                "sub": "A new season starts Monday · watch it live on snapline.live", "dur": 2.6})
+                "sub": "Coached by AI from the first snap · a new season starts Monday on snapline.live", "dur": 2.6})
     info = {"type": "champion", "team": t, "opp": o, "score": list(res["score"]), "titles": res["titres"],
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
     legende = legendes(f"{nom} win the Grand Final 🏆",
@@ -374,11 +381,11 @@ def plan_chiffres(res, doc, feeds):
         P = F["plays"][i]
         sc = C.score_avant(F, i)
         seg.append({"type": "play", "index": i, "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 0.5,
-                    "top": {"kicker": chiffre, "title": f"{g['away']} {sc['away']}–{sc['home']} {g['home']}",
+                    "top": {"kicker": f"AI vs AI · {chiffre}", "title": f"{g['away']} vs {g['home']}",
                             "sub": f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"}})
     prol = " · OT" if r.get("overtime") or any((P.get("quarter") or 0) >= 5 for P in F["plays"]) else ""
     seg.append({"type": "card", "kicker": "Final" + prol, "title": score,
-                "sub": "Watch the next game live · snapline.live", "dur": 2.6})
+                "sub": "Two AI coaches, one wild game · watch the next one on snapline.live", "dur": 2.6})
     info = {"type": "chiffres", "game": g["id"], "kind": res["kind"], "value": res["value"], "previous": res["previous"],
             "plays": [x["index"] for x in seg if x["type"] == "play"]}
     detail = (f"New all-time record (previous: {res['previous']})." if res["previous"] is not None
@@ -408,7 +415,7 @@ def plan_franchise(res, doc):
                     "sub": f"{POSTE.get(j['pos'], j['pos'])} · {j['seasons']} season{'s' if j['seasons'] > 1 else ''} with {t}",
                     "team": t, "stats": chiffres_joueur(j), "dur": 3.2})
     seg += _segments_actions(res["actions"], {a["dossier"]: C.charger_semaine(a["dossier"])[0] for a in res["actions"]},
-                             {"kicker": "Franchise story", "title": nom})
+                             {"kicker": "AI vs AI · franchise story", "title": nom})
     seg.append(dict(FIN))
     info = {"type": "franchise", "team": t, "bilan": b, "legende": j and {"id": j["id"], "name": j["name"]},
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
@@ -524,7 +531,7 @@ def main():
     travail = tempfile.mkdtemp(prefix="gc-film-")
     premier = next((x["feed"] for x in seg if x.get("feed")), os.path.join(dossier, g["feed"]))   # match ouvert d'abord
     plan = {"url": f"http://localhost:{a.port}/", "feed": premier, "out": travail,
-            "top": top, "segments": seg}
+            "top": top, "segments": seg, "coaches": coordinateurs(doc)}
     with open(os.path.join(travail, "plan.json"), "w", encoding="utf-8") as fh:
         json.dump(plan, fh)
     p, data = serveur(a.port)
@@ -540,13 +547,15 @@ def main():
     mp4 = os.path.join(sortie, nom + ".mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", os.path.join(travail, "images", "images.txt"),
                     "-i", son, "-vf", "fps=60,scale=1080:1920:flags=lanczos,format=yuv420p", "-c:v", "libx264",
-                    "-profile:v", "high", "-level", "4.2", "-crf", "17", "-preset", "slow", "-tune", "animation",
-                    "-g", "120", "-c:a", "copy", "-shortest",
+                    "-profile:v", "high", "-level", "4.2", "-crf", "14", "-maxrate", "24M", "-bufsize", "48M",
+                    "-preset", "slow", "-tune", "animation", "-g", "60", "-c:a", "copy", "-shortest",
                     "-movflags", "+faststart", mp4], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", "1.2", "-i", mp4, "-frames:v", "1", "-q:v", "2",
+                    os.path.join(sortie, nom + "-cover.jpg")], check=True)        # la couverture à choisir sur TikTok
     with open(os.path.join(sortie, nom + ".txt"), "w", encoding="utf-8") as fh:
         fh.write(legende + "\n")
     with open(os.path.join(sortie, nom + ".json"), "w", encoding="utf-8") as fh:
-        json.dump(dict(info, duree=round(tl["end"], 1), video=os.path.basename(mp4)), fh, ensure_ascii=False, indent=1)
+        json.dump(dict(info, duree=round(tl["end"], 1), video=os.path.basename(mp4), cover=nom + "-cover.jpg"), fh, ensure_ascii=False, indent=1)
     shutil.rmtree(travail, ignore_errors=True)
     print(f"{mp4} · {tl['end']:.1f} s · {json.dumps(info, ensure_ascii=False)[:200]}")
 

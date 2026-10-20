@@ -1049,6 +1049,33 @@ Search Console suffit).
   l'identité de la bible sont en français, la vidéo en anglais ne les montre pas), carton du **joueur légendaire**
   (meilleur score fantasy sur ses saisons avec elle, `moteur/histoire.py`), ses 2 plus belles actions de tous les
   temps.
+- **Habillage « AI vs AI » (20/10/2026)** — **Décisions de Guillaume (20/10)** : refaire les vidéos (terrain tourné et
+  rogné avec « Bigger field », qualité pas assez propre), plus dynamiques, plus « UGC » à la façon des médias sportifs,
+  centrées sur les **agents IA qui jouent les matchs**, aux couleurs du site ; style validé sur un prototype de l'action
+  du jour, puis appliqué à tous les formats.
+  - **Cause du défaut** : sur un téléphone en portrait, « Bigger field » fait pivoter le match ; la vidéo le cliquait.
+    Désormais la vue normale est forcée (`gc-theater-v1 = 0`, bouton relâché s'il est enfoncé) et un **garde-fou**
+    arrête le tournage si le terrain est tourné, plus haut que large ou déplacé (`verifier`, à chaque match ouvert).
+  - **Look du site** : thème sombre, fond en halos, polices Big Shoulders Display / Manrope / Azeret Mono, couleurs
+    des équipes (`--t-<équipe>`), dégradé de la marque (cyan → violet → rose), panneaux en verre ; en haut un kicker
+    « AI vs AI · … » à point rouge, le titre qui apparaît mot par mot ; **score bug** aux couleurs des deux équipes
+    au-dessus du terrain (le titre du résumé et du match hors norme devient l'affiche : le score est dans le bug).
+  - **Le journal de l'IA** (panneau sous le terrain, dans la zone sûre) : « AI OC <coordinateur> » de l'attaque, puis
+    jusqu'à 3 lignes tapées à la machine avec curseur, tirées du GameFeed — 4e essai (probabilité de victoire en
+    tentant / en bottant), lecture de la boîte et audible, « DEF AI keyed on the run (…) » et tendance cassée (étape
+    5), l'appel (concept, formation, couverture) ; la **lecture du QB** (cible n° x, couverture, temps de lancer,
+    pression) ne s'écrit qu'au snap ; chaque ligne tient sur une ligne (la police rétrécit, polices chargées avant
+    la mesure) ; barre de probabilité de victoire qui bascule au résultat, score du bug qui saute quand il change.
+  - **Dynamique** : le mot du résultat en gros (« TOUCHDOWN », « PICKED OFF », « +34 », « CONVERTED »…) avec flash,
+    zoom et secousse du terrain et un impact sonore (`hit`) ; au ralenti (0,5×), l'avant-snap est sauté ; cartons
+    animés (entrée, chiffres qui montent). Animations sur `requestAnimationFrame` sous horloge pilotée (même rendu à
+    chaque tournage).
+  - **Qualité** : `crf 14`, débit max 24 Mbit/s, image clé toutes les secondes (≈ 4 Mbit/s au lieu de 0,7) ; action
+    du jour ≈ 21 s (33 avant), tournage ≈ 2 min (8 avant). **Couverture** : `videos/<nom>-cover.jpg` (image à 1,2 s :
+    titre posé, terrain visible), à choisir comme couverture sur TikTok.
+  - **Textes** : kickers « AI vs AI · play of the day / best play so far / game in 60 seconds / player of the week /
+    road to the title / franchise story », « every call made by an AI coach », présentation « No human calls a single
+    play », carton final « 24 AI coaches · 1 league · live » ; toujours **aucun mot de paris** (test).
 - **Automatique** : `.github/workflows/videos.yml` (« Vidéos ») tous les soirs à 22 h 30 UTC — l'action du jour ; le
   dimanche, en plus, le **résumé court** du plus beau match de la semaine, le **champion** et le **joueur de la
   semaine** ; le mercredi, le **match hors norme** (s'il y en a un) ; le vendredi, la **franchise** (limite du job :

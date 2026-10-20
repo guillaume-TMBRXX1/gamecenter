@@ -6,7 +6,8 @@
 #   en a un (record ou 100 points cumulés) ; le vendredi, la franchise de la semaine (étape 8.6 b).
 # À la demande (onglet Actions → « Vidéos » → Run workflow) : action d'un jour, résumé court d'un match, résumé long
 #   (2 à 3 min), la plus belle action jusqu'ici (« Best play so far », étape 8.2) ou « What is Snapline? » (étape 8.3).
-# Tournage image par image à 60 images/s (étape 8.3) : ≈ 4-5 min par action, ≈ 15-25 min pour un résumé court.
+# Tournage image par image à 60 images/s (étape 8.3) ; habillage « AI vs AI » aux couleurs du site (20/10/2026), vue
+#   normale (jamais « Bigger field »), MP4 1080×1920 haute qualité + couverture JPEG (…-cover.jpg) : ≈ 2-3 min par action.
 # Script : outils/video/faire_video.py (README section 46).
 name: Vidéos
 

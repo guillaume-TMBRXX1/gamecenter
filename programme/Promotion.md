@@ -15,7 +15,8 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
 | 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
 | 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | ✅ 13/10 |
-| — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») ; image de couverture `.jpg` | — |
+| 8.7 | Habillage « AI vs AI » aux couleurs du site : journal des agents IA, score bug, mot du résultat animé, qualité ×5, vue normale forcée (défaut « Bigger field ») ; couverture `-cover.jpg` | ✅ 20/10 |
+| — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») | — |
 
 ## 1. Le compte
 
@@ -71,7 +72,8 @@ regardé), une question en légende.
   Shorts.
 - **Musique** : le son du stade reste le son original de la vidéo (d'autres peuvent le réutiliser). Option : un son
   tendance à **5-10 %** du volume, ajouté dans l'éditeur de TikTok au moment de publier.
-- **Couverture** : choisir l'image de l'action (pas un carton vide).
+- **Couverture** : choisir l'image de l'action (pas un carton vide) ; depuis l'étape 8.7, `<nom>-cover.jpg` dans les
+  *Artifacts* est prête à téléverser comme couverture.
 
 ## 5. Premiers posts (semaine de lancement)
 
