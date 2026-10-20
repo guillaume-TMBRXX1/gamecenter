@@ -16,6 +16,7 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
 | 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | ✅ 13/10 |
 | 8.7 | Habillage « AI vs AI » aux couleurs du site : journal des agents IA, score bug, mot du résultat animé, qualité ×5, vue normale forcée (défaut « Bigger field ») ; couverture `-cover.jpg` | ✅ 20/10 |
+| — | Plus tard (gardé en mémoire le 20/10) : **vidéo démo du site** façon « product showcase » (référence : Reel @_code_and_chill_, 14 s) — le site en vue ordinateur dans le cadre vertical, caméra virtuelle qui zoome et glisse (flou de mouvement), curseur qui clique ; parcours ≈ 15 s : accueil → match en direct (KEY · RUN, touchdown) → play-by-play / probabilité → classement → équipe → records → thème clair ↔ sombre en direct → accueil (boucle) ; jamais l'onglet des paris ; format `faire_video.py demo` à la demande | — |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») | — |
 
 ## 1. Le compte
