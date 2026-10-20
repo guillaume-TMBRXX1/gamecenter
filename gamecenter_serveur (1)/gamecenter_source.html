@@ -2574,8 +2574,11 @@ function psBubble(g){
   return {i:6, text:'CHECK · '+to, pulse:REDUCED?0:Math.sin((g.t-W.cStart)*9)};
 }
 /* engine 12.2 vicies semel (play.scout): the defense keys on what the offense has shown ("KEY · RUN" over the
-   middle linebacker), the offense breaks its tendency ("BREAK" over the QB, unless he is already checking) */
+   middle linebacker), the offense breaks its tendency ("BREAK" over the QB, unless he is already checking);
+   12.2 vicies bis (memory from week to week): a key read mostly from film gets a second line "SCOUTED · 45 GAMES",
+   a break of a tendency that is on tape "ON TAPE" */
 const SC_BREAK={pa:'PLAY ACTION',run_down_pass:'PASS',pass_down_run:'RUN',same_formation:'SAME LOOK'};
+function scFilm(S){ const f=S&&S.def&&S.def.film; return f&&num(f.part,0)>=0.5&&num(f.games,0)>=1 ? f : null; }
 function scBubbles(g){
   if(g.phase!=='presnap'||!g.cur||!g.cur.scout||g.special) return [];
   const S=g.cur.scout, D=g.dur||1, t=g.t, out=[];
@@ -2583,11 +2586,14 @@ function scBubbles(g){
     const L=g.los, d=dirOf(g); let bi=-1, bd=1e9;
     for(let i=0;i<11;i++){ const q=g.def[i]; if(!q) continue; const dx=(q.x-L)*d; if(dx<2.5||dx>8) continue;
       const v=Math.abs(dx-4.5)+Math.abs(q.y-g.bally)*0.6; if(v<bd){ bd=v; bi=i; } }
-    if(bi>=0) out.push({side:'def',i:bi,text:'KEY · '+(S.def.key==='run'?'RUN':'PASS'),pulse:0});
+    const fm=scFilm(S);
+    if(bi>=0) out.push({side:'def',i:bi,text:'KEY · '+(S.def.key==='run'?'RUN':'PASS'),pulse:0,
+      sub:fm?'SCOUTED · '+Math.round(num(fm.games,0))+' GAME'+(Math.round(num(fm.games,0))>1?'S':''):null});
   }
   const chk=typeof psBubble==='function'&&psBubble(g);
   if(S.off&&S.off.broke&&!chk&&(REDUCED||(t>=D*0.55&&t<=D-0.1)))
-    out.push({side:'off',i:6,text:'BREAK · '+(SC_BREAK[S.off.kind]||String(S.off.played||'').toUpperCase()||'TENDENCY'),pulse:REDUCED?0:Math.sin((t-D*0.55)*9)});
+    out.push({side:'off',i:6,text:'BREAK · '+(SC_BREAK[S.off.kind]||String(S.off.played||'').toUpperCase()||'TENDENCY'),pulse:REDUCED?0:Math.sin((t-D*0.55)*9),
+      sub:S.off.on_tape?'ON TAPE':null});
   return out;
 }
 function kfAt(kf,t){
@@ -3482,11 +3488,12 @@ function rpFumbleNote(P){ const f=P.fumble; if(!f||f.lost!==false) return '';
   return f.recovered_by==='self'?' · he recovers it himself':' · recovered by '+esc(String(f.team||'the offense')); }
 /* engine 12.2 vicies semel (play.scout): the defense keyed on a tendency (and was it right), the offense broke its own */
 function rpScoutNote(P,g){ const S=P.scout; if(!S||typeof S!=='object') return ''; let s='';
-  const nm=side=>{ const a=side==='home'?g.home:g.away; return esc(String((a&&typeof TEAMS!=='undefined'&&TEAMS[a]&&TEAMS[a].abbr)||a||'')); };
+  const nm=side=>{ const a=side==='home'?g.home:g.away; return String((a&&typeof TEAMS!=='undefined'&&TEAMS[a]&&TEAMS[a].abbr)||a||''); };   /* shown with textContent: no escaping (« 2nd & long ») */
   const told=Array.isArray(P.adjust)&&P.adjust.some(a=>a&&a.kind==='scout_break');   /* already its own line */
-  if(S.off&&S.off.broke&&!told) s+=' · '+nm(S.off.team)+' break their tendency ('+esc(String(S.off.why||''))+'): '+
+  if(S.off&&S.off.broke&&!told) s+=' · '+nm(S.off.team)+' break their tendency'+(S.off.on_tape?' on tape':'')+' ('+String(S.off.why||'')+'): '+
     ({pa:'play action',run_down_pass:'a pass on a run down',pass_down_run:'a run on a passing down',same_formation:'same look, other play'}[S.off.kind]||(S.off.played==='run'?'a run':'a pass'));
-  if(S.def){ s+=' · '+nm(S.def.team)+' keyed on the '+(S.def.key==='run'?'run':'pass')+' ('+esc(String(S.def.why||''))+')';
+  if(S.def){ const fo=scFilm(S)?Math.round(num(S.def.film.own,0)):0;   /* 12.2 vicies bis: their own games on that film */
+    s+=' · '+nm(S.def.team)+' keyed on the '+(S.def.key==='run'?'run':'pass')+' ('+String(S.def.why||'')+(fo>=1?' incl. '+fo+' of their own':'')+')';
     const ok=scOk(P); s+=S.def.right?(ok?' — right guess, beaten anyway':' — read it'):(ok?' — burned':' — wrong guess'); }
   return s; }
 function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpFumbleNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
@@ -4386,9 +4393,14 @@ function gamePlanHTML(g,n){
     const T=TEAMS[s==='home'?g.home:g.away], p=GP[s]||{}, o=p.offense||{}, d=p.defense||{};
     const row=(k,v)=>v?`<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>`:'';
     const plan=row('Offense',o.summary)+row('Key target',o.focus)+row('Defense',d.summary);
+    /* 12.2 vicies bis: what this defense brings from the film of the other offense (before the game: no spoiler) */
+    const F=((g.gf&&g.gf.game&&g.gf.game.scout_film)||{})[s], O=TEAMS[s==='home'?g.away:g.home];
+    const film=F&&num(F.games,0)>=1?`<tr><th scope="row">On film</th><td>${Math.round(num(F.games,0))} ${esc(O.abbr)} games${num(F.own,0)>=1?` · ${Math.round(num(F.own,0))} against them`:''}</td></tr>`+
+      (Array.isArray(F.top)?F.top:[]).map(x=>`<tr><th scope="row">${x.key==='run'?'Run':'Pass'} tendency</th><td>${num(x.vu,0)} of ${num(x.sur,0)} ${x.key==='run'?'runs':'passes'} ${esc(String(x.text||''))}</td></tr>`).join(''):'';
     const list=adj[s].map(({P,a})=>`<li><span class="gp-t">${qName(P.quarter)} ${clockStr(num(P.clock_start,0))}</span>${esc(String(a.text||''))}${a.reason?`<span class="gp-r"> — ${esc(String(a.reason))}</span>`:''}</li>`).join('');
     return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>
       ${plan?`<table class="pst gp"><caption>Game plan</caption><tbody>${plan}</tbody></table>`:''}
+      ${film?`<table class="pst gp"><caption>Scouting report</caption><tbody>${film}</tbody></table>`:''}
       <p class="gp-cap">In-game adjustments</p>${list?`<ol class="gp-l">${list}</ol>`:'<p class="st-none">None yet</p>'}</div>`;
   };
   return `<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -5121,11 +5133,18 @@ class FieldView{
       const p=(bub.side==='def'?g.def:g.off)[bub.i], px=X(p.x), py=Y(p.y), col=bub.side==='def'?FIELD.pink:daOff(g), tf=Math.max(10,Math.round(s*0.95));
       c.save(); c.lineWidth=Math.max(1.4,s*0.16); c.strokeStyle=col; c.shadowColor=col; c.shadowBlur=FX_GLOW?10:0;
       c.beginPath(); c.arc(px,py,r+Math.max(3,s*0.45)+Math.max(0,bub.pulse)*Math.max(1.5,s*0.25),0,Math.PI*2); c.stroke();
-      c.shadowBlur=0; c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-      const tw=c.measureText(bub.text).width+tf*1.2, th=tf*1.75, ty=py-r-th*0.5-Math.max(6,s*0.6);
-      c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill();
-      c.beginPath(); c.moveTo(px-th*0.22,ty+th/2-1); c.lineTo(px,ty+th/2+th*0.3); c.lineTo(px+th*0.22,ty+th/2-1); c.fill();
-      c.fillStyle=FIELD.bg; c.fillText(bub.text,px,ty+0.5); c.restore();
+      c.shadowBlur=0; c.textAlign='center'; c.textBaseline='middle';
+      const ts=Math.max(8,Math.round(tf*0.7));                       /* 12.2 vicies bis: second line (film) */
+      c.font=`700 ${ts}px Manrope, system-ui, sans-serif`; const sw=bub.sub?c.measureText(bub.sub).width:0;
+      c.font=`800 ${tf}px Manrope, system-ui, sans-serif`;
+      const t1=tf*1.75, th=bub.sub?t1+ts*1.15:t1, tw=Math.max(c.measureText(bub.text).width,sw)+tf*1.2, ty=py-r-th*0.5-Math.max(6,s*0.6);
+      c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,Math.min(th,t1)/2); c.fill();
+      c.beginPath(); c.moveTo(px-t1*0.22,ty+th/2-1); c.lineTo(px,ty+th/2+t1*0.3); c.lineTo(px+t1*0.22,ty+th/2-1); c.fill();
+      c.fillStyle=FIELD.bg;
+      if(bub.sub){ const y1=ty-th/2+t1*0.52; c.fillText(bub.text,px,y1+0.5);
+        c.font=`700 ${ts}px Manrope, system-ui, sans-serif`; c.globalAlpha=0.78; c.fillText(bub.sub,px,y1+tf*0.5+ts*0.62); c.globalAlpha=1; }
+      else c.fillText(bub.text,px,ty+0.5);
+      c.restore();
     }
     // ball: ice-white capsule, lifted when in the air
     const b=g.ball, bx=X(b.x), by=Y(b.y);
@@ -6921,12 +6940,21 @@ function adjLine(g,P){
       case 'o_away': return V([`The ${n} work away from the double on ${L}.`,`${L} is doubled, so the ${n} look elsewhere.`]);
       case 'd_bracket': return V([`The ${n} bracket ${L}${a.reason?': '+String(a.reason):''}.`,`${L} has been the go-to man, and now the ${n} double him.`]);
       case 'd_rotate': return V([`The ${n} rotate the bracket to ${L}.`,`Counter-move: the ${n} slide their help over to ${L}.`]);
-      case 'scout_key': return V([`The ${n} have seen this before — ${String(a.reason||'')}. They're keying on the ${L==='RUN'?'run':'pass'}.`,`${String(a.reason||'')}: the ${n} know what's coming.`]);
+      case 'scout_key': return /^film: /.test(String(a.reason||''))   /* 12.2 vicies bis: read from the film */
+        ? V([`The ${n} have done their homework — on film, ${String(a.reason).slice(6)}. They're keying on the ${L==='RUN'?'run':'pass'}.`,`They've seen it on tape: ${String(a.reason).slice(6)}. The ${n} know what's coming.`])
+        : V([`The ${n} have seen this before — ${String(a.reason||'')}. They're keying on the ${L==='RUN'?'run':'pass'}.`,`${String(a.reason||'')}: the ${n} know what's coming.`]);
       case 'scout_break': return V([`The ${n} break their tendency — ${String(a.reason||'')} until now.`,`Tendency breaker from the ${n}!`]);
       case 'd_disguise': return V([`The ${n} disguise the pressure and play two deep.`,`No more free blitzes: the ${n} drop into a two-deep shell.`]);
     }
     return String(a.text||''); });
   return {prio:2,text:parts.join(' ')};
+}
+/* 12.2 vicies bis: at the opening kickoff, what one defense has seen on film of the other offense */
+function filmLine(g){
+  const SF=(g.gf&&g.gf.game&&g.gf.game.scout_film)||{}, side=['home','away'].find(k=>SF[k]&&Array.isArray(SF[k].top)&&SF[k].top.length);
+  if(!side) return ''; const F=SF[side], x=F.top[0], d=side==='home'?g.home:g.away, o=side==='home'?g.away:g.home;
+  return pickV(g,{seq:0},[`The ${nick(d)} have studied ${Math.round(num(F.games,0))} games of ${nick(o)} film: ${num(x.vu,0)} ${x.key==='run'?'runs':'passes'} in ${num(x.sur,0)} snaps ${String(x.text||'')}.`,
+    `${Math.round(num(F.games,0))} games on tape, and the ${nick(d)} know this one: ${num(x.vu,0)} of ${num(x.sur,0)} ${x.key==='run'?'runs':'passes'} ${String(x.text||'')}.`]);
 }
 function playLine(g,P){
   const pl=P.players||{}, car=pl.carrier&&pl.carrier.name, qb=pl.passer&&pl.passer.name, def=pl.defender&&pl.defender.name;
@@ -6982,7 +7010,7 @@ function playLine(g,P){
       if(kr&&g.idx!==0){ if(kr.touchback) text=V([`Touchback. ${nick(off)} start at the 25.`,`Into the end zone, and that's a touchback.`]);
         else if(num(kr.return,0)>=40){ prio=2; text=V([`${car} breaks the return! ${yds(kr.return)}!`,`What a return by ${car} — ${yds(kr.return)}!`]); }
         else text=V([`${sur(car)} brings it back ${yds(kr.return)}.`,`Returned by ${sur(car)}, ${yds(kr.return)}.`]); break; }
-      text= g.idx===0 ? '' : /^Free kick/.test(String(P.text||'')) ? `${nick(dfT)} free kick after the safety.` : `${nick(off)} kick off.`; break; }
+      text= g.idx===0 ? filmLine(g) : /^Free kick/.test(String(P.text||'')) ? `${nick(dfT)} free kick after the safety.` : `${nick(off)} kick off.`; break; }
     default: text='';
   }
   /* engine 12.2 vicies semel: the defense read it, or got burned */

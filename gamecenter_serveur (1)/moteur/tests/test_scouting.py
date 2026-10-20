@@ -1,5 +1,7 @@
 """Tests de l'appel de jeu qui apprend (moteur/scouting.py) : situations, carnet et oubli, tendance nette, engagement de
-la défense, attaque qui se sait lue et casse sa tendance, anticipation, profils. Aucun test ne dépend de l'heure.
+la défense, attaque qui se sait lue et casse sa tendance, anticipation, profils ; idée 6 : le film d'une semaine à
+l'autre (oubli hebdomadaire, plafonds, a priori < film < match, film vide = idée 5, réputation, stabilité). Aucun test
+ne dépend de l'heure.
 
     python -m unittest discover -s moteur/tests -t .        (depuis « gamecenter_serveur (1) »)
 """
@@ -167,6 +169,201 @@ class Profils(unittest.TestCase):
         self.assertLess(vite["demi_vie"], lent["demi_vie"])
         self.assertTrue(set(sc.SCOUT) >= {"CTX", "MNL", "MRG", "SPK", "CMT"})
         self.assertEqual(len(sc.SCOUT), 24)
+
+
+# ---------- idée 6 : la mémoire d'une semaine à l'autre ----------
+def match_film(film, off, de, jeux, formation="I_FORM", down=1, distance=10, lectures=None):
+    obs = [sc.observation(down, distance, 35, formation, "21", cote, "INSIDE_RUN" if cote == "RUN" else "QUICK_SLANT",
+                          "inside") for cote in jeux]
+    return sc.film_match(film, off, de, obs, lectures)
+
+
+def semaine(n_matchs=3, jeux=("RUN",) * 20 + ("PASS",) * 5, de="ONX", lectures=None):
+    f = sc.film_vide()
+    for k in range(n_matchs):
+        match_film(f, "MNL", de if k == 0 else f"D{k}", list(jeux), lectures=lectures)
+    return f
+
+
+CLES = sc.situations(1, 10, 35, "I_FORM", "21")
+
+
+class Film(unittest.TestCase):
+    def test_film_vide_ne_change_rien(self):
+        """Sans film, le carnet, la tendance et le texte sont exactement ceux de l'idée 5."""
+        a, b = carnet(["RUN"] * 6), carnet(["RUN"] * 6)
+        b.amorcer({}, sc.FILM_DEMI_VIE, {"games": 3, "own": 0})
+        ta, tb = sc.tendance(a, CLES, PD, sc.A_PRIORI["1"]), sc.tendance(b, CLES, PD, sc.A_PRIORI["1"])
+        self.assertEqual(ta, tb)
+        self.assertNotIn("film", tb)
+        self.assertEqual(a.lire(CLES, 0.58, 2.0), b.lire(CLES, 0.58, 2.0))
+        self.assertEqual(sc.film_pour(None, "ONX", "MNL"), ({}, None))
+        self.assertEqual(sc.film_pour(sc.film_vide(), "ONX", "MNL"), ({}, None))
+
+    def test_tendance_des_le_premier_snap(self):
+        film, info = sc.film_pour(sc.film_suivant(None, semaine()), "ONX", "MNL", 1.0)
+        c = sc.Carnet()
+        c.amorcer(film, sc.FILM_DEMI_VIE, info)
+        t = sc.tendance(c, CLES, PD, sc.A_PRIORI["1"])
+        self.assertEqual(t["cote"], "RUN")
+        self.assertGreaterEqual(t["film"]["part"], 0.99)
+        self.assertEqual((t["film"]["games"], t["film"]["own"]), (3, 1))
+        self.assertEqual((t["vu"], t["sur"]), (60, 75))
+        self.assertTrue(sc.raison(t, "on 1st down").startswith("film: 60 of 75 runs on 1st down, 3 games"))
+
+    def test_plafonds_proportions_pas_masse(self):
+        """1 000 snaps de film ne valent pas 1 000 snaps vus : FILM_MAX × poids, proportions gardées."""
+        gros = sc.film_suivant(None, semaine(n_matchs=40))
+        film, _ = sc.film_pour(gros, "D1", "MNL", 1.0)
+        e = film[("ddf", "1|I_FORM")]
+        self.assertAlmostEqual(e["pas"] + e["run"], sc.FILM_MAX["ddf"], places=6)
+        self.assertAlmostEqual(e["run"] / (e["pas"] + e["run"]), 0.8, places=6)
+        film2, _ = sc.film_pour(gros, "D1", "MNL", 0.6)
+        self.assertAlmostEqual(sum(film2[("ddf", "1|I_FORM")][k] for k in ("pas", "run")), 0.6 * sc.FILM_MAX["ddf"],
+                               places=6)
+        self.assertNotIn(("zone", "mid"), film)                    # situations générales : celles du match
+        soi, _ = sc.film_pour(gros, None, "MNL", 1.0)              # l'attaque sait ce qu'elle montre par down
+        self.assertAlmostEqual(sum(soi[("dd", "1")][k] for k in ("pas", "run")), sc.FILM_MAX_SOI["dd"], places=6)
+        self.assertEqual(sc.poids_film("SPK", 8), 0.6)
+        self.assertEqual(sc.poids_film("CTX", 8), 1.0)
+        self.assertLessEqual(max(sc.poids_film(a, f) for a in sc.SCOUT for f in (6, 8, 10, 12)), 1.4)
+
+    def test_ses_matchs_pesent_plus(self):
+        f = sc.film_vide()
+        match_film(f, "MNL", "ONX", ["RUN"] * 10)                 # contre ONX : il court
+        for k in range(3):
+            match_film(f, "MNL", f"D{k}", ["PASS"] * 10)           # contre les autres : il passe
+        f = sc.film_suivant(None, f)
+        onx, _ = sc.film_pour(f, "ONX", "MNL", 1.0)
+        autre, _ = sc.film_pour(f, "D0", "MNL", 1.0)
+        part = lambda e: e["run"] / (e["run"] + e["pas"])
+        self.assertAlmostEqual(part(onx[("form", "I_FORM")]), 15 / 45, places=6)       # 10 × 1,5 sur 45
+        self.assertAlmostEqual(part(autre[("form", "I_FORM")]), 10 / 45, places=6)     # ses passes contre D0 × 1,5
+
+    def test_a_priori_film_match(self):
+        """Le film s'efface pendant le match : ce que l'attaque fait AUJOURD'HUI finit par l'emporter."""
+        film, info = sc.film_pour(sc.film_suivant(None, semaine()), "ONX", "MNL", 1.0)
+        c = sc.Carnet(16.0)
+        c.amorcer(film, sc.FILM_DEMI_VIE, info)
+        for _ in range(12):
+            c.observer(CLES, "PASS", "quick")
+        t = sc.tendance(c, CLES, PD, sc.A_PRIORI["1"])
+        self.assertEqual(t["cote"], "PASS")
+        self.assertLess(t["film"]["part"], 0.5)
+        self.assertEqual((t["vu"], t["sur"]), (12, 12))          # le texte raconte le match
+        self.assertLess(c._k_film(), 0.8)
+
+    def test_confiance_du_film_plafonnee(self):
+        t_film = {"conf": 0.97, "film": {"part": 0.9}}
+        t_match = {"conf": 0.97}
+        self.assertLess(sc._confiance(t_film), sc._confiance(t_match))
+        self.assertAlmostEqual(sc._confiance(t_film), sc._confiance({"conf": sc.FILM_CONF_MAX}))
+
+    def test_doute_efface_aussi_le_film(self):
+        film, info = sc.film_pour(sc.film_suivant(None, semaine()), "ONX", "MNL", 1.0)
+        c = sc.Carnet()
+        c.amorcer(film, sc.FILM_DEMI_VIE, info)
+        avant = c.lire(CLES, 0.58, 2.0)["n"]
+        c.douter(CLES)
+        self.assertAlmostEqual(c.lire(CLES, 0.58, 2.0)["n"], avant / 2, places=6)
+
+    def test_self_scout_match_ou_film(self):
+        """L'attaque se sait prévisible si le match OU son film le montre : le film ne noie jamais le match."""
+        film, info = sc.film_pour(sc.film_suivant(None, semaine(jeux=("PASS",) * 13 + ("RUN",) * 12)), None, "MNL")
+        nu, ou = carnet(["RUN"] * 6), carnet(["RUN"] * 6)
+        ou.amorcer(film, sc.FILM_DEMI_VIE, info, ou=True)
+        self.assertEqual(sc.tendance(nu, CLES, PO, sc.A_PRIORI["1"]), sc.tendance(ou, CLES, PO, sc.A_PRIORI["1"]))
+        seul = sc.Carnet()
+        seul.amorcer(sc.film_pour(sc.film_suivant(None, semaine()), None, "MNL")[0], sc.FILM_DEMI_VIE,
+                     {"games": 3, "own": 0}, ou=True)
+        t = sc.tendance(seul, sc.situations(1, 10, 35), PO, sc.A_PRIORI["1"])     # avant la formation
+        self.assertEqual(t["cote"], "RUN")
+        self.assertGreaterEqual(t["film"]["part"], 0.99)
+
+
+class Semaines(unittest.TestCase):
+    def test_oubli_hebdomadaire_et_stabilite(self):
+        """Anti-inflation : avec la même semaine rejouée 20 fois, le film plafonne à 1 / (1 − oubli) semaines."""
+        s = semaine()
+        f = None
+        for _ in range(20):
+            f = sc.film_suivant(f, s)
+        un = sc.film_suivant(None, s)
+        borne = 1.0 / (1.0 - sc.OUBLI_SEMAINE)
+        self.assertLessEqual(f["attaques"]["MNL"]["matchs"], borne * un["attaques"]["MNL"]["matchs"] + 0.05)
+        e, e1 = f["attaques"]["MNL"]["cles"]["dd|1"], un["attaques"]["MNL"]["cles"]["dd|1"]
+        self.assertLessEqual(e[1], borne * e1[1] + 0.05)
+        self.assertEqual(f["semaines"], 20)
+        self.assertFalse(sc.controler_film(f, ["MNL", "ONX", "D1", "D2"]))
+
+    def test_arrondis_dans_les_bornes(self):
+        """Comptes et familles arrondis au dixième : le contrôle de l'audit les tolère (semaine du 26/10)."""
+        f = None
+        for k in range(5):
+            s = sc.film_vide()
+            obs = [sc.observation(1, 10, 35, "I_FORM", "21", c, con, cl) for c, con, cl in
+                   (("RUN", "INSIDE_RUN", "inside"), ("RUN", "JET_SWEEP", "perimeter"), ("RUN", "DRAW", "inside"),
+                    ("PASS", "STICK", None), ("PASS", "PA_SLIDE", None), ("PASS", "FOUR_VERTS", None),
+                    ("PASS", "Y_CROSS", None))[:3 + k]]
+            sc.film_match(s, "MNL", "ONX", obs * 3)
+            f = sc.film_suivant(f, s)
+        self.assertFalse(sc.controler_film(f, ["MNL", "ONX"]))
+
+    def test_vieux_film_oublie(self):
+        f = sc.film_suivant(None, semaine())
+        for _ in range(12):
+            f = sc.film_suivant(f, sc.film_vide())
+        self.assertNotIn("MNL", f["attaques"])                     # comptes < FILM_MIN : oubliés
+
+    def test_film_deterministe_et_cle(self):
+        a, b = sc.film_suivant(None, semaine()), sc.film_suivant(None, semaine())
+        self.assertEqual(a, b)
+        self.assertEqual(sc.film_cle(a), sc.film_cle(b))
+        self.assertNotEqual(sc.film_cle(a), sc.film_cle(sc.film_suivant(a, semaine())))
+        self.assertIsNone(sc.film_cle(None))
+
+    def test_reputation(self):
+        def defense(lectures, n=4):
+            f = sc.film_vide()
+            for k in range(n):
+                match_film(f, f"A{k}", "ONX", ["RUN"] * 5, lectures=lectures)
+            return sc.film_suivant(None, f)
+        self.assertTrue(sc.reputation(defense((5, 4)), "ONX"))
+        self.assertFalse(sc.reputation(defense((5, 4), n=2), "ONX"))   # deux matchs : trop peu
+        self.assertFalse(sc.reputation(defense((5, 2)), "ONX"))        # elle lit, mais se trompe
+        self.assertFalse(sc.reputation(defense((2, 2)), "ONX"))        # elle lit peu
+        self.assertFalse(sc.reputation(defense((5, 4)), "A1"))
+        self.assertTrue(sc.se_sait_lue({"reputation": True}))
+
+    def test_controle_et_rapport(self):
+        f = sc.film_suivant(None, semaine())
+        self.assertTrue(sc.controler_film(f, ["ONX"]))             # équipes inconnues
+        self.assertEqual(sc.controler_film({"version": "?"}), ["film : version inconnue"])
+        film, info = sc.film_pour(f, "ONX", "MNL", 1.0)
+        c = sc.Carnet()
+        c.amorcer(film, sc.FILM_DEMI_VIE, info)
+        top = sc.film_tendances(c, PD)
+        self.assertEqual(top[0]["dd"], "1")
+        self.assertEqual(top[0]["cote"], "RUN")
+
+    def test_observations_feed(self):
+        feed = {"game": {"home": {"abbr": "MNL"}, "away": {"abbr": "ONX"}},
+                "plays": [{"offense": "home", "los_x": 45, "down": 1, "to_go": 10,
+                           "call": {"type": "run", "concept": "INSIDE_RUN", "formation": "I_FORM", "personnel": "21",
+                                    "play_id": "I_FORM_INSIDE_RUN"}},
+                          {"offense": "away", "los_x": 45, "down": 3, "to_go": 2,
+                           "call": {"type": "pass", "concept": "STICK", "formation": "SHOTGUN", "personnel": "11",
+                                    "play_id": "X"}, "scout": {"def": {"team": "home", "right": True}}},
+                          {"offense": "home", "los_x": 45, "down": 1, "to_go": 10,
+                           "call": {"type": "run", "play_id": "KNEEL"}},
+                          {"offense": "home", "los_x": 45, "down": None, "to_go": None, "call": {"type": "punt"}}]}
+        o = sc.observations_feed(feed, {"INSIDE_RUN": "inside"})
+        self.assertEqual(len(o), 2)
+        self.assertEqual(o[0][:2], ("MNL", "ONX"))
+        self.assertIn(("zone", "mid"), o[0][2])                     # home : ligne des 35 de l'attaque
+        self.assertIn(("zone", "terr"), o[1][2])                    # away : 110 − 45 = 65
+        self.assertEqual(o[1][3:], ("PASS", "quick"))
+        self.assertEqual(sc.lectures_feed(feed), {"MNL": [1, 1]})
 
 
 if __name__ == "__main__":
