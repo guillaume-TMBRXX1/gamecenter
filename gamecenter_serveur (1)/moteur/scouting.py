@@ -71,7 +71,7 @@ SCOUT = {
     "CTX": (0.60, 0.55, 5),   # très adaptative, lit vite
     "VEC": (0.45, 0.25, 3),   # force son jeu
     "AEG": (0.40, 0.35, 3),   # méthodique : lente mais sûre
-    "MNL": (0.50, 0.05, 1),   # physique : joue son jeu
+    "MNL": (0.50, 0.10, 1),   # physique : joue son jeu
     "AXM": (0.50, 0.45, 4),   # précise, le QB a les clés
     "GLT": (0.80, 0.40, 4),   # imprévisible, parie
     "CPH": (0.45, 0.30, 3),   # l'option : la lecture est dans le jeu
@@ -83,7 +83,7 @@ SCOUT = {
     "APX": (0.55, 0.45, 4),   # créative
     "LTC": (0.55, 0.55, 5),   # spread : chaque défenseur doit choisir
     "ZPH": (0.45, 0.20, 2),   # air raid : volume
-    "BST": (0.70, 0.25, 3),   # lockdown : lit et ferme
+    "BST": (0.60, 0.30, 3),   # lockdown : lit et ferme, sans parier (déjà la meilleure défense ; 12.3, 20/10)
     "GRZ": (0.60, 0.10, 1),   # défense contre la course ; attaque sobre
     "MRG": (0.50, 0.70, 7),   # play action : manipuler la défense
     "GMB": (0.70, 0.60, 6),   # audacieuse

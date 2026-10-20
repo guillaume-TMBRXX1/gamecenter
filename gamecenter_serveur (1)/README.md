@@ -1525,6 +1525,80 @@ moments (validés), sans le QB.
   dessiné). Corrigé au passage : en « Bigger field », la puce du résultat est décalée à droite du bouton de sortie.
   Test navigateur `outils/site/test_noms.js` (groupe site).
 
+### 63. L'appel de jeu qui apprend et reste imprévisible (notebook 12.2 vicies semel, 19-20/10/2026 — allumé)
+Feuille de route : « moteur plus intelligent », étape 5. Module `moteur/scouting.py` (tests `test_scouting.py`), cellule
+**12.2 vicies semel** (juste avant 12.3) ; interrupteur `GC_SCOUTING=0` : moteur d'avant à l'identique (contrôlé sur 4
+matchs, référence calculée avant tout chargement de module) ; flux de hasard dédiés `scouting-def` / `scouting-att` (le
+hasard du moteur n'est pas consommé). **Décisions de Guillaume (19/10)** : plan validé ; rendus validés sur captures
+avant d'être codés.
+- **Avant** : les coordinateurs s'adaptaient à ce qui marche (12.2 quater, bloc D) mais l'appel restait lisible — une
+  attaque pouvait répéter ses tendances sans que la défense en profite, et rien ne poussait une attaque à les casser.
+- **Ce que la défense mesure** : un carnet par attaque adverse, situation par situation — down & distance (1st, 2nd /
+  3rd long, moyen, court, 4th), formation, personnel, zone du terrain (son camp, milieu, territoire adverse, zone rouge,
+  goal-to-go) et down & distance × formation : courses / passes et famille du jeu (course intérieure, extérieure,
+  screen / draw ; passe rapide, moyenne, profonde, play action). Les comptes s'oublient (demi-vie en snaps de cette
+  attaque). Elle voit la formation et le personnel avant le snap, jamais l'appel.
+- **Tendance nette** : la part de passes de chaque situation part de l'a priori de la ligue (`A_PRIORI`, par down &
+  distance) ; les situations du snap sont mélangées, la plus précise pèse le plus. Nette = assez d'actions vues (`n_min`
+  du profil), **≥ 66 %** d'un côté et **≥ 10 points** d'écart à l'a priori (passer sur un 3e et 9 n'est pas une
+  tendance). Écart au plan (72 % / 15 points) : à ce seuil, une défense ne voyait que ≈ 2 tendances nettes par match.
+- **La défense s'engage (« KEY »)** selon son profil × la confiance : priorité course ou passe, couverture contre la
+  famille attendue. **Anticipation** (`ANTICIPATION`) — juste : un défenseur de plus dans le trou et −0,8 yard (la
+  boîte du bloc F plafonne à 9), routes attendues couvertes de près (−0,7 pas de séparation) et poche plus courte
+  (−0,3 s) ; trompée : boîte allégée et +1 yard, linebackers qui mordent (+0,9 pas, +1,3 sur un play action), poche plus
+  longue (+0,25 s).
+- **L'attaque se sait lue (self-scout)** quand sa tendance est nette dans la situation du snap et que la défense lui a
+  montré qu'elle lit (une lecture juste dans les 6 derniers snaps, une réponse `d_run` / `d_press` de 12.2 quater, deux
+  courses stoppées) ; elle **casse sa tendance (« BREAK »)** selon son bluff : play action après une série de courses,
+  passe sur un down de course, course / draw sur un down de passe, même formation pour le jeu opposé (sinon : « contre
+  sa tendance ») ; plafond par match ; jamais en hurry-up, en tuant l'horloge ni au 4e essai ; toujours dans son
+  playbook (poids de la feuille d'appel, chemin accéléré `pb_play_weights` compris). Une cassure qui réussit sème le
+  doute (la défense divise par deux ce qu'elle croyait savoir de la situation).
+- **Profils, pas niveaux** : vitesse d'apprentissage (`n_min`, force de l'a priori) depuis `trigger` de 12.2 quater ;
+  oubli depuis `fenetre` du bloc D ; vigilance de l'attaque depuis `learn` de 12.2 quater ; `SCOUT` (engagement, bluff,
+  cassures au plus) : MNL, FRG, GRZ jouent leur jeu ; MRG, CTX, LTC, PRM, CTD, GMB jouent aux échecs ; ONX lit et
+  attaque le ballon ; GLT, SPK parient. Réglage d'équilibre (20/10) : BST engagement 0,70 -> 0,60 (déjà la meilleure
+  défense : lit sans parier), MNL bluff 0,05 -> 0,10.
+- **Journal / GameFeed** (additif) : `play.scout = {version, def: {team, key, family, conf, why, right}, off: {team,
+  tendency, played, broke, kind, same_formation, why}}` (seulement quand il y a quelque chose à raconter) ;
+  `play.adjust` : `scout_key` (première lecture de chaque côté par défense) et `scout_break` (deux premières cassures
+  par attaque), avec leur raison (« 21 of 24 runs on 1st down ») ; `game.scout_model`. Moteur : clé `anticipation` de
+  l'appel (`reaction_defensive._effet_appel`, additive).
+- **Site** (cellule 427 synchronisée) : « KEY · RUN / PASS » au-dessus du linebacker du milieu pendant l'avant-snap,
+  « BREAK · PLAY ACTION / PASS / RUN / SAME LOOK » au-dessus du QB (le CHECK garde la priorité) ; puce du résultat
+  « · READ » (défense juste, action stoppée), « · BURNED » (défense trompée, action réussie), « · BROKE TENDENCY » ;
+  play-by-play « ONX keyed on the run (21 of 24 runs on 1st down) — read it » (« right guess, beaten anyway »,
+  « burned », « wrong guess »), « MRG break their tendency (…) : play action » ; commentateur (sous-titres, aucune cue
+  enregistrée). Test navigateur `outils/site/test_scouting.js` (groupe site, indépendant de l'heure).
+- **Corrigé au passage** : la cellule rechargeait `moteur.reaction_defensive` et effaçait les couvertures ajoutées par
+  l'extension du playbook — le moteur changeait interrupteur coupé ; trouvé par le test d'équilibre, corrigé avant les
+  mesures ci-dessous. `gamefeeds.py` reconnaît une cellule au nom en deux mots.
+- **Mesures** (192 matchs, mêmes graines, effet causal = anticipation allumée − coupée) : **6,0 lectures par match**
+  (deux défenses), justes 61 % ; **2,2 tendances cassées par match**. Points attendus par action pour l'attaque :
+  défense juste **−0,22** (passe −2,2 yards, réussite −9 points ; course −0,6 yard), défense trompée **+0,25** (course
+  contre une défense engagée sur la passe +1,2 yard), tendance cassée **+0,10**. Sur un match, le pari est à peu près
+  neutre : il récompense la bonne lecture et punit l'erreur.
+- **Semaine du 26/10 produite** (`generer_semaine.py --lundi 2026-10-26`, notebook complet, sur une copie de `data/`) en
+  **32 min**, en parallèle d'autres calculs (avant : 34-42 ; limite GitHub 75) ; `audit_moteur.py` : **0 anomalie
+  bloquante, 0 alerte** (279 matchs, 54,0 points par match, 152 actions). **6,6 lectures par match** (justes 62 %, dont
+  0,4 sur la course), **2,3 cassures** (contre la tendance 392, course sur un down de passe 121, même formation 113,
+  play action 17). Identités — cassures par match : LTC 2,8, VEC 2,3, CTD 1,9, PRM 1,9, AXM 1,8 … GRZ 0,4, MNL 0,3,
+  FRG 0,2 ; lectures en défense par match : GMB 5,7, GRZ 5,4, GLT 4,7 … MRD 1,9, AEG 1,6 (elles dépendent aussi de la
+  prévisibilité de l'adversaire).
+- **Équilibre 12.3** (graines officielles, 2 208 matchs) : **39,9 % (CTX, PLS) – 63,0 % (BST)** ✅ (plage 36-64 ; coupé :
+  39,4 % SPK – 60,9 % CPH) ; sur 8 autres graines par affiche (4 416 matchs) : 39,8 % SPK – 56,7 % FRG (coupé : 39,4 % SPK
+  – 60,3 % MNL). Les écarts par équipe changent de signe d'un échantillon à l'autre (bruit : ± 3,7 points sur 184
+  matchs) ; BST, déjà au-dessus de 60 % coupé, reste la franchise à surveiller.
+- **Calibration** (`rapport_calibration.py --jusqua "12.2 vicies semel"`, 1 104 matchs, contre la même cellule coupée) :
+  toutes les mesures de la ligue dans les tolérances — points 53,5 -> 52,8, part des passes 63,3 -> 62,1 %, yards par
+  course 6,04 -> 6,13, complétion 65,1 -> 64,8 %, sacks 9,5 -> 9,9 %, pertes de balle 2,37 -> 2,41 ; les victoires par
+  équipe sortent de 40-60 % pour quelques franchises, coupé comme allumé (92 matchs par équipe : bruit ± 5 points).
+- **Contrôles** (exécution complète avec contrôles, **77 min** sur 4 cœurs, seule, **aucun échec**) : 12.2 vicies semel ✅
+  (coupé = identique sur 4 matchs, déterministe ; 49 matchs : 6,9 lectures, 2,3 cassures) ; 12.3 ✅ équilibre **39,9 %
+  – 63,0 %**, identités nettes, ajustement hebdomadaire dans les plages ; 13.2 ✅ (Brier 0,2452, z² 0,94, biais −0,6 %) ;
+  **13.4 ✅ sans recalibrage** (extrêmes ± 0,029, écart moyen 0,023, outsiders − 21,5 %) ; 14.2 ✅ ; **394 tests
+  unitaires** ; tests navigateur `test_scouting.js` et `test_cellule427.js` ✅.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

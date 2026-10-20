@@ -18,7 +18,8 @@ une cellule ajoutée à la volée qui :
      déguisée (pression présentée, coquille qui tourne) ; depuis le 14/10 : horloge réelle (temps morts, avertissement
      des 2 minutes, genou, spike), 4e essais joués par la valeur, retours de coup d'envoi, lectures de course du bloc F
      (cutback, rebond, bloqué, boîte chargée) ; depuis le 16/10 : checks avant le snap (audibles du QB, déguisements qui
-     le trompent, réponses de la défense aux motions) ;
+     le trompent, réponses de la défense aux motions) ; depuis le 19/10 : appel de jeu qui apprend (défense qui lit une
+     tendance et s'y engage, juste ou brûlée ; attaque qui casse sa tendance, play action compris) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -102,7 +103,17 @@ for _k in range(_P["candidates"]):
             "audibles": sum(1 for p in _pl if (p.get("presnap") or {}).get("audible")),
             "audibles_to_run": sum(1 for p in _pl if ((p.get("presnap") or {}).get("to") or {}).get("type") == "run"),
             "fooled": sum(1 for p in _pl if (p.get("presnap") or {}).get("fooled")),
-            "motion_responses": len({(p.get("presnap") or {}).get("motion_response") for p in _pl} - {None})}
+            "motion_responses": len({(p.get("presnap") or {}).get("motion_response") for p in _pl} - {None}),
+            # 19/10 : appel de jeu qui apprend (12.2 vicies semel) — lectures de la défense, tendances cassées
+            "keys": sum(1 for p in _pl if (p.get("scout") or {}).get("def")),
+            "keys_run": sum(1 for p in _pl if ((p.get("scout") or {}).get("def") or {}).get("key") == "run"),
+            "read_stops": sum(1 for p in _pl if ((p.get("scout") or {}).get("def") or {}).get("right")
+                              and p.get("result") in ("run", "incomplete", "sack") and (p.get("gain") or 0) <= 2),
+            "burned": sum(1 for p in _pl if ((p.get("scout") or {}).get("def") or {}).get("right") is False
+                          and (p.get("gain") or 0) >= 10),
+            "breaks": sum(1 for p in _pl if ((p.get("scout") or {}).get("off") or {}).get("broke")),
+            "breaks_pa": sum(1 for p in _pl if ((p.get("scout") or {}).get("off") or {}).get("kind") == "pa"
+                             and p["scout"]["off"].get("broke"))}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -118,7 +129,9 @@ for _k in range(_P["candidates"]):
               + 6 * min(_dec["punt_returns"], 3) + 6 * min(_dec["punt_other"], 3) + 25 * min(_dec["punt_td"], 1)
               + 4 * min(_dec["out_of_bounds"], 8)
               + 15 * min(_dec["audibles"], 8) + 30 * min(_dec["audibles_to_run"], 2) + 25 * min(_dec["fooled"], 2)
-              + 25 * _dec["motion_responses"])
+              + 25 * _dec["motion_responses"]
+              + 6 * min(_dec["keys"], 8) + 10 * min(_dec["keys_run"], 3) + 12 * min(_dec["read_stops"], 3)
+              + 15 * min(_dec["burned"], 2) + 12 * min(_dec["breaks"], 4) + 25 * min(_dec["breaks_pa"], 2))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])
