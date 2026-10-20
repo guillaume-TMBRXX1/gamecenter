@@ -3362,6 +3362,12 @@ function rpOdds(o){
     np: np&&num(np.run,null)!==null&&num(np.pass,null)!==null ? {run:np.run,pass:np.pass} : null
   };
 }
+/* the pawn that carries a run on the field (planScrimmage): a receiver on a jet / Z sweep, the QB who keeps it
+   (the back in the wildcat, who takes the direct snap), the back otherwise (20/10/2026: the carrier's name always went
+   on the back, so a jet sweep showed the back's name on the receiver who had the ball) */
+function runSlot(P,call){ const t=rpSlot(P);
+  if(t===8||t===9||t===10||t===5) return t;
+  return t===6&&!(call&&call.formation==='WILDCAT')?6:7; }
 function rpSlot(P){
   const id=(P.players&&P.players.carrier&&P.players.carrier.id)||'', m=/_([A-Z]+\d*)$/.exec(id), k=m?m[1]:'';
   if(RP_SLOT[k]!=null) return RP_SLOT[k];
@@ -4113,7 +4119,7 @@ function renderThird(g,el){
   const t=g.cur&&g.cur.call?g.cur.call.type:null;
   const on=g.status==='live' && !g.special && g.down>=3 && (g.phase==='presnap'||g.phase==='play') && (!t||t==='run'||t==='pass');
   const fld=el.closest('.field'); if(fld) fld.classList.toggle('third-on',on);
-  if(el.hidden!==!on) el.hidden=!on; if(!on) return;
+  if(el.hidden!==!on){ el.hidden=!on; if(fsOnBig(g)) fsChipClear(); } if(!on) return;
   const k=g.down===3?'3RD':'4TH'; let sub=`${Math.max(1,Math.round(g.toGo))} to go`;
   if(g.plays){ const S=computeStats(g,rpDone(g)).team[g.poss], a=g.down===3?S.d3:S.d4, c=g.down===3?S.c3:S.c4; sub+=` · ${TEAMS[offTeam(g)].abbr} ${k.toLowerCase()} down ${c}/${a} this game`; }
   const v=k+'|'+sub; if(el._v!==v){ el._v=v; el.querySelector('b').textContent=`${k} DOWN`; el.querySelector('span').textContent=sub; }
@@ -4135,6 +4141,26 @@ function showChip(g){
   document.querySelectorAll(`[data-g="${g.id}"][data-f="chip"]`).forEach(el=>{
     el.textContent=g.chip.t; el.className='chip-play '+(g.chip.c||''); el.hidden=false; void el.offsetWidth; el.classList.add('show');
   });
+  if(fsOnBig(g)) fsChipClear();
+}
+/* "Bigger field": the play chip (top left) is pushed down under the "On air" commentary and the 3rd / 4th down
+   banner (top centre) when they overlap it — a narrow screen or a long chip (20/10/2026). Layout offsets, not screen
+   rectangles: the match may be turned sideways on a phone held upright. */
+function fsOnBig(g){ try{ return g===modalGame; }catch(e){ return false; } }   /* safe before the modal is set up */
+function fsChipClear(){
+  let ch=null; try{ ch=modal.querySelector('.field>.chip-play'); }catch(e){ return; }
+  if(!ch) return;
+  ch.style.top='';
+  if(!modal.classList.contains('theater')||ch.hidden) return;
+  const cx=ch.offsetLeft, cw=ch.offsetWidth; let top=ch.offsetTop;
+  for(const el of [document.getElementById('onAir'),modal.querySelector('.field>.third')]){
+    if(!el||el.hidden||!modal.contains(el)||getComputedStyle(el).display==='none') continue;
+    const w=el.offsetWidth, x=el.offsetLeft-w/2;          /* both are centred with translateX(-50%) */
+    if(cx+cw<=x-4||cx>=x+w+4) continue;
+    const y=el.offsetTop+(el.offsetParent===ch.offsetParent?0:-ch.offsetParent.offsetTop);
+    if(top<y+el.offsetHeight+6&&top+ch.offsetHeight>y-6) top=y+el.offsetHeight+6;
+  }
+  if(top!==ch.offsetTop) ch.style.top=top+'px';
 }
 function hideChip(g){ document.querySelectorAll(`[data-g="${g.id}"][data-f="chip"]`).forEach(el=>el.hidden=true); }
 function renderWP(g){ document.querySelectorAll(`[data-g="${g.id}"][data-f="wpchart"]`).forEach(el=>buildChart(el,g)); }
@@ -4669,7 +4695,7 @@ function slotMap(g){
   if(g.special==='field_goal') put(off,RO,7,nth(RO,'K',1));
   if(g.special==='kickoff') put(def,RD,5,nth(RD,'K',1));
   if(P && !g.special && pp.carrier && pp.carrier.id){
-    const car=RO.find(r=>r.id===pp.carrier.id); put(off,RO,P.call.type==='run'?7:rpSlot(P),car);
+    const car=RO.find(r=>r.id===pp.carrier.id); put(off,RO,P.call.type==='run'?runSlot(P,call):rpSlot(P),car);
   }
   const plan=g.plan;
   /* engine block C: the defender drawn on the contested ball is the one the engine made responsible */
@@ -5196,7 +5222,7 @@ function toggleTheater(fromBrowser){
   THEATER=!theaterOn(); try{ localStorage.setItem('gc-theater-v1',THEATER?'1':'0'); }catch(e){}
   modal.classList.toggle('theater',THEATER); document.body.classList.toggle('gc-match',THEATER&&!!modalGame);
   if(THEATER){ if(fromBrowser!==true) fsEnter(); fsWake(); } else if(fromBrowser!==true) fsLeave();
-  fsAirHome(THEATER&&!!modalGame);
+  fsAirHome(THEATER&&!!modalGame); fsChipClear();
   const b=modal.querySelector('[data-theater]'); if(b){ b.setAttribute('aria-pressed',String(THEATER)); b.innerHTML=THEATER?THEATER_OUT:THEATER_IN;
     b.title=THEATER?'Standard view':'Bigger field'; b.setAttribute('aria-label',THEATER?'Back to the standard view':'Bigger field: the match full screen'); }
   if(modalView) modalView.resize();
@@ -7024,8 +7050,9 @@ function caption(text){
   if(!SET.cap) return; const c=document.getElementById('onAir'); if(!c) return;
   c.querySelector('span').textContent=text; c.hidden=false; c.classList.remove('in'); void c.offsetWidth; c.classList.add('in');
   clearTimeout(CAP_T); CAP_T=setTimeout(captionHide,Math.min(9000,2600+text.length*55));
+  fsChipClear();
 }
-function captionHide(){ const c=document.getElementById('onAir'); if(c) c.hidden=true; }
+function captionHide(){ const c=document.getElementById('onAir'); if(c) c.hidden=true; fsChipClear(); }
 
 /* ---------- which game is on air, and the play hooks ---------- */
 let FOCUS=null, F_Q=0, F_SEQ=-1;

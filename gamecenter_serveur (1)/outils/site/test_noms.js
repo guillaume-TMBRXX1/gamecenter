@@ -15,7 +15,8 @@ function feed(){
   const w=fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort().pop(), dir=path.join(WEEKS,w,'games');
   for(const f of fs.readdirSync(dir).sort()){ const F=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
     const cr=new Set(F.plays.map(P=>P.players&&P.players.defender&&P.players.defender.credit).filter(Boolean));
-    if(cr.has('INTERCEPTION')&&cr.has('SACK')&&cr.has('TACKLE')) return {F,src:`${w}/${f}`}; }
+    const jet=F.plays.some(P=>P.call&&P.call.type==='run'&&/_(WR|TE)\d*$/.test((P.players&&P.players.carrier&&P.players.carrier.id)||''));
+    if(cr.has('INTERCEPTION')&&cr.has('SACK')&&cr.has('TACKLE')&&jet) return {F,src:`${w}/${f}`}; }
   const f=fs.readdirSync(dir).sort()[0]; return {F:JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')),src:`${w}/${f}`};
 }
 async function server(){
@@ -35,7 +36,7 @@ async function server(){
     const tuiles=await p.evaluate(()=>{ const G=window.__gc; let n=0; for(const v of G.views){ if(v.g&&v.g.plays) n++; } return n; });
     const R=await p.evaluate(async F=>{
       const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
-      const pre={}, play={}, post={}, kick=[];
+      const pre={}, play={}, post={}, kick=[], run={};
       for(let i=0;i<120000&&!(g.status==='final'&&g.paused);i++){
         G.stepGame(g,0.05); const P=g.cur; if(!P) continue;
         const T=G.nameTags(g), k=P.seq;
@@ -46,10 +47,14 @@ async function server(){
           if(r.length){ if(o.t0==null) o.t0=g.t; o.t1=g.t; if(g.t>g.dur-0.2) o.late=true; } }
         if(g.phase==='play'&&g.carrier&&g.carrier.side==='off'){ const o=play[k]||(play[k]={n:0,ok:0,res:P.result,conv:!!P.conversion});
           if(g.carrier.idx!==6){ o.n++; if(T.some(t=>t.kind==='ball'&&t.idx===g.carrier.idx)) o.ok++; } }
+        /* 20/10/2026 : le nom qui suit le ballon pendant une course est celui du porteur du moteur (jet sweep : le receveur) */
+        if(g.phase==='play'&&P.call&&P.call.type==='run'&&!P.conversion&&g.carrier&&g.carrier.side==='off'&&g.t>0.6*g.dur&&P.players&&P.players.carrier){
+          const b=T.find(t=>t.kind==='ball'), c=String(P.players.carrier.name||''), o=run[k]||(run[k]={n:0,ok:0,jet:/_(WR|TE)\d*$/.test(P.players.carrier.id||''),car:c,vu:''});
+          if(b){ o.n++; o.vu=b.text; if(c.split(' ').pop()===b.text) o.ok++; } }
         if(g.phase==='post'&&!post[k]) post[k]={res:P.result,gain:P.gain,credit:P.players&&P.players.defender&&P.players.defender.credit,
           def:T.find(t=>t.kind==='def')||null,ball:T.find(t=>t.kind==='ball')||null};
       }
-      return {pre:Object.values(pre),play:Object.values(play),post:Object.values(post),kick,status:g.status};
+      return {pre:Object.values(pre),play:Object.values(play),post:Object.values(post),kick,run:Object.values(run),status:g.status};
     },F);
     const pr=R.pre.filter(o=>!o.conv&&o.kn!=='KNEEL'&&o.kn!=='SPIKE'&&o.dur>1.2);
     if(!pr.every(o=>o.max>=3)) console.log('   ',JSON.stringify(pr.filter(o=>o.max<3)));
@@ -60,6 +65,9 @@ async function server(){
     const pl=R.play.filter(o=>o.n>5&&!o.conv), plKo=pl.filter(o=>o.ok<o.n*0.95);
     if(plKo.length) console.log('   ',JSON.stringify(plKo));
     check(pl.length>20&&!plKo.length,`pendant l'action : le nom suit le porteur du ballon (${pl.length-plKo.length} / ${pl.length})`);
+    const rn=R.run.filter(o=>o.n>3), rnKo=rn.filter(o=>o.ok<o.n*0.95), jet=rn.filter(o=>o.jet);
+    if(rnKo.length) console.log('   ',JSON.stringify(rnKo.slice(0,4)));
+    check(rn.length>10&&!rnKo.length,`course : le nom qui suit le ballon est celui du porteur (${rn.length-rnKo.length} / ${rn.length}, dont ${jet.length} portées par un receveur)`);
     const cp=R.post.filter(o=>o.res==='complete'||o.res==='run'), cpKo=cp.filter(o=>!o.ball||!/^[+−]\d+$/.test(o.ball.sub));
     check(cp.length>20&&cpKo.length<=cp.length*0.05,`fin d'action : le porteur avec son gain (${cp.length-cpKo.length} / ${cp.length})`);
     const lab={TACKLE:'TACKLE',SACK:'SACK',INTERCEPTION:'INT',PASS_DEFENDED:'PASS DEFENDED'};
