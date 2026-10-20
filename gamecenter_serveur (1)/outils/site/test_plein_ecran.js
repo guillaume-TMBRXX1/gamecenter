@@ -59,6 +59,20 @@ async function cas(b,F,nom,opt){
   check(s.bug&&s.pill,'tableau de score et indicateur LIVE / REPLAY sur le terrain');
   check(s.air,'« On air » passe dans le match');
   check(s.thirdTop>=60,`le bandeau du 3e / 4e essai se range sous « On air » (top ${s.thirdTop}px)`);
+  /* 20/10/2026 : la puce du résultat (en haut à gauche) n'est jamais recouverte par « On air » ni par le bandeau du
+     3e essai (centrés en haut) — écran étroit, puce longue ; dans les deux ordres (légende puis puce, puce puis légende) */
+  const recouvre=await p.evaluate(()=>{ const G=window.__gc, g=G.replayGame(), m=document.getElementById('modal');
+    const ch=m.querySelector('.field>.chip-play'), a=document.getElementById('onAir'), t=m.querySelector('.field>.third');
+    const R=e=>e&&!e.hidden?e.getBoundingClientRect():null;
+    const x=(r1,r2)=>!!(r1&&r2&&r1.left<r2.right-1&&r2.left<r1.right-1&&r1.top<r2.bottom-1&&r2.top<r1.bottom-1);
+    const out=[], long='Yardley picks up 14 yards and the first down. The Condors guessed pass, and they got burned.';
+    G.caption(long); g.chip={t:'+14 · 1ST DOWN · OUT OF BOUNDS · BURNED',c:'good'}; G.showChip(g);
+    out.push([x(R(ch),R(a)),x(R(ch),R(t)),!!R(a),!!R(t)]);
+    g.chip={t:'TOUCHDOWN · BROKE TENDENCY',c:'td'}; G.showChip(g); G.caption(long+' '+long.slice(0,40));
+    out.push([x(R(ch),R(a)),x(R(ch),R(t)),!!R(a),!!R(t)]);
+    return out; });
+  check(recouvre.every(r=>r[2]&&!r[0]),`la puce du résultat n'est pas recouverte par « On air » (${JSON.stringify(recouvre)})`);
+  check(recouvre.every(r=>!r[3]||!r[1]),'ni par le bandeau du 3e / 4e essai');
   check(s.btn&&s.bar,'au toucher : bouton de sortie et commandes du replay visibles');
   check(!inter(s.barR,s.bugR),'les commandes du replay ne couvrent pas le tableau de score');
   if(opt.viewport.height>opt.viewport.width) check(s.turned&&s.fw>s.fh,'téléphone tenu droit : le match est tourné à l\'horizontale');

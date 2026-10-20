@@ -1599,6 +1599,22 @@ avant d'être codés.
   **13.4 ✅ sans recalibrage** (extrêmes ± 0,029, écart moyen 0,023, outsiders − 21,5 %) ; 14.2 ✅ ; **394 tests
   unitaires** ; tests navigateur `test_scouting.js` et `test_cellule427.js` ✅.
 
+### 64. Nom du porteur sur une course, puce du résultat sous « On air » (20/10/2026)
+Deux défauts vus sur les captures de l'étape 5 (section 63), corrigés avant l'étape 6 à la demande de Guillaume.
+- **Nom du porteur d'une course** : `slotMap` mettait toujours le nom du porteur sur le pion du RB (slot 7), alors que le
+  terrain fait porter le ballon par le receveur d'un jet / Z sweep (slots 8-10, TE 5) ou par le QB qui le garde (6) :
+  sur un jet sweep, le nom du RB suivait le ballon (et celui du receveur restait sur le RB). `runSlot()` suit le dessin
+  de `planScrimmage` (wildcat : le RB qui reçoit le snap direct).
+- **« Bigger field »** : « On air » et le bandeau du 3e / 4e essai sont centrés en haut, la puce du résultat en haut à
+  gauche ; sur un écran étroit (téléphone en paysage ou tourné) ou avec une puce longue (« +14 · 1ST DOWN · OUT OF
+  BOUNDS · BURNED »), « On air » la recouvrait. `fsChipClear()` la descend juste sous eux quand ils la chevauchent, en
+  coordonnées du match (téléphone tourné compris), à chaque légende, puce, bandeau et passage en plein écran ; vue
+  normale inchangée.
+- Tests : `test_noms.js` (pendant une course, le nom qui suit le ballon est celui du porteur ; le match choisi a une
+  course portée par un receveur) et `test_plein_ecran.js` (puce jamais recouverte, dans les deux ordres d'apparition,
+  ordinateur / téléphone tenu droit / paysage) — les deux échouent sur le site d'avant. Cellule 427 synchronisée (sans
+  grand écran ni « Bigger field » : seul le nom du porteur la concerne).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
