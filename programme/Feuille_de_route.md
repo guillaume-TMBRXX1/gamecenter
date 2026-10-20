@@ -879,8 +879,8 @@ section 63) ; plan validé par Guillaume le 19/10, rendus validés sur captures 
   engagement 0,60) ; 13.2 / 13.4 ✅ sans recalibrage ; calibration dans les tolérances ; semaine du 26/10 en 32 min,
   auditée (0 anomalie, 0 alerte). Exhibition `exh-v41-ltc-mnl`.
 - **À surveiller** : BST (déjà ≥ 60 % coupé) au test d'équilibre ; peu de cassures en play action (0,06 par match : la
-  ligue passe beaucoup, les tendances nettes sont surtout des tendances passe) ; défaut vu sur les captures : sur un jet
-  sweep, l'étiquette de nom montre le RB au lieu du WR porteur ; sur téléphone, « On air » recouvre la puce du résultat.
+  ligue passe beaucoup, les tendances nettes sont surtout des tendances passe). Les deux défauts vus sur les captures
+  (nom du porteur d'un jet sweep, « On air » sur la puce du résultat au téléphone) sont corrigés (20/10, README 64).
 - **Suite proposée** : idée 6 (mémoire d'une semaine à l'autre : le carnet de scouting comme point de départ).
 
 ## Pour la conversation suivante
