@@ -181,7 +181,7 @@ class TestSemaineReelle(unittest.TestCase):
         tout = C.meilleure_action(SEMAINES, datetime(2100, 1, 1, tzinfo=tz))
         self.assertGreaterEqual(tout["note"], m["note"])
         g, seg, top, info, leg = V.plan_action(*C.charger_semaine(tout["dossier"]), None, tout)
-        self.assertEqual(top["kicker"], "Best play so far")
+        self.assertEqual(top["kicker"], "AI vs AI · best play so far")      # habillage « AI broadcast » (20/10)
         self.assertEqual(info["type"], "meilleure")
 
     def test_resume_court(self):

@@ -46,8 +46,8 @@ import choisir as C  # noqa: E402
 PHASE = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl": "Grand Final"}
 ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
 HASHTAGS = "#americanfootball #football #simulation #ai"
-FIN = {"type": "card", "kicker": "Watch the next game live", "title": "snapline.live",
-       "sub": "Type it in your browser · free · a new game every 30 min", "dur": 2.0}
+FIN = {"type": "card", "kicker": "24 AI coaches · 1 league · live", "title": "snapline.live",
+       "sub": "No human calls the plays. Watch the next game live — free, a new game every 30 min.", "dur": 2.2}
 EPINGLE = "Watch the next game live → snapline.live (free, a new game every 30 min) 🏈"
 
 
@@ -100,6 +100,11 @@ def titre_action(why, P):
     if w[0].startswith("game-winning"):
         return "Game-winner"
     return w[0][:1].upper() + w[0][1:]
+
+
+def coordinateurs(doc):
+    """Les agents IA de chaque franchise (coordinateurs offensif et défensif de la semaine) : {ABR: {offense, defense}}."""
+    return {ab: dict(t.get("coordinators") or {}) for ab, t in (doc.get("teams") or {}).items()}
 
 
 # ------------------------------------------------------------------ son du stade
@@ -182,14 +187,14 @@ def plan_action(doc, feeds, jour, a=None):
     g = next(x for x in doc["schedule"] if x["id"] == a["game"])
     F, P = feeds[a["game"]], a["play"]
     d = datetime.fromisoformat(C.jour_du_match(g) if meilleure else jour)
-    kicker = "Best play so far" if meilleure else f"Play of the day · {d.strftime('%a %-d %b')}"
-    match = f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"
+    kicker = "AI vs AI · best play so far" if meilleure else f"AI vs AI · play of the day · {d.strftime('%-d %b')}"
+    match = f"{g['away']} @ {g['home']} · every call made by an AI coach"
     hook = C.enjeu(F, a["index"], g)
     sw = C.bascule(F, a["index"], g)
-    top_ralenti = ({"kicker": f"{sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
+    top_ralenti = ({"kicker": f"AI replay · {sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
                    if sw else {"kicker": kicker, "title": hook, "sub": match})
     seg = [{"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.8},
-           {"type": "play", "index": a["index"], "speed": 0.5, "label": "Replay · slow motion", "text": P.get("text"),
+           {"type": "play", "index": a["index"], "speed": 0.5, "label": "0.5×", "text": P.get("text"),
             "after": 1.0, "top": top_ralenti},
            dict(FIN)]
     top = {"kicker": kicker, "title": hook, "sub": match}
@@ -524,7 +529,7 @@ def main():
     travail = tempfile.mkdtemp(prefix="gc-film-")
     premier = next((x["feed"] for x in seg if x.get("feed")), os.path.join(dossier, g["feed"]))   # match ouvert d'abord
     plan = {"url": f"http://localhost:{a.port}/", "feed": premier, "out": travail,
-            "top": top, "segments": seg}
+            "top": top, "segments": seg, "coaches": coordinateurs(doc)}
     with open(os.path.join(travail, "plan.json"), "w", encoding="utf-8") as fh:
         json.dump(plan, fh)
     p, data = serveur(a.port)
@@ -540,8 +545,8 @@ def main():
     mp4 = os.path.join(sortie, nom + ".mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", os.path.join(travail, "images", "images.txt"),
                     "-i", son, "-vf", "fps=60,scale=1080:1920:flags=lanczos,format=yuv420p", "-c:v", "libx264",
-                    "-profile:v", "high", "-level", "4.2", "-crf", "17", "-preset", "slow", "-tune", "animation",
-                    "-g", "120", "-c:a", "copy", "-shortest",
+                    "-profile:v", "high", "-level", "4.2", "-crf", "14", "-maxrate", "24M", "-bufsize", "48M",
+                    "-preset", "slow", "-tune", "animation", "-g", "60", "-c:a", "copy", "-shortest",
                     "-movflags", "+faststart", mp4], check=True)
     with open(os.path.join(sortie, nom + ".txt"), "w", encoding="utf-8") as fh:
         fh.write(legende + "\n")
