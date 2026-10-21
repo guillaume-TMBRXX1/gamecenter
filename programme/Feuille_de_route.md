@@ -931,7 +931,7 @@ Contrôles en local : notebook complet, rapport de calibration (dans les toléra
 probabilité de victoire validés le 21/10, rendus validés. Holding (attaque, défense), illegal contact, interférences
 (défense, attaque), roughing the passer ; qui la commet selon son profil ; acceptée, l'action est annulée ; site :
 drapeau jaune au moment de la faute, appel de l'arbitre, play-by-play, stats, commentateur ; audit.
-@@CONTROLES_PEN_FDR@@
+Contrôles en local : notebook complet, audit d'une semaine de 279 matchs (0 anomalie), rapport de calibration (dans les tolérances), tests unitaires et navigateur ✅.
 
 **Hors feuille de route, 21/10 — résultats du jour en cours seulement** (README 66) : le calendrier a un onglet par jour,
 aujourd'hui ouvert et les autres fermés ; tableau Live, compteur « Results », bandeau et Big plays ne montrent que les

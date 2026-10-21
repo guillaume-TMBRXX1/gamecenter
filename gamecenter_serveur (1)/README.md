@@ -1815,7 +1815,14 @@ selon la probabilité de victoire ; rendus validés.
   après la pénalité, yards bornés ; repère « drapeaux_par_match » (alerte hors 4-12).
 - **Mesures** (144 matchs) : 8,3 drapeaux par match (7,1 acceptés, 1,2 refusés, ≈ 71 yards acceptés) — holding offensif
   3,2, holding défensif 2,0, interférence défensive 1,4, illegal contact 0,6, roughing 0,55, interférence offensive 0,5.
-@@CONTROLES_PEN@@
+- **Contrôles** (21/10, en local) : notebook complet ✅ (12.2 vicies quater sur 25 matchs : 8,1 drapeaux par match ;
+  12.3 : toutes les franchises entre 36 et 64 % ; 13.2 : Brier moteur − formule −0,0078 ; 13.4 : cotes en direct
+  calibrées, extrêmes ± 0,024, pas de réajustement) ; audit de la semaine exportée par 14.2 (279 matchs) : 0 anomalie,
+  0 alerte, 7,96 drapeaux par match ; rapport de calibration (1104 matchs, `GC_PENALITES=0` -> `1`, `--jusqua "12.2
+  vicies quater"`) : toutes les statistiques dans les tolérances (complétion 63,3 -> 63,1 %, yards par passe 7,37 ->
+  7,27, points 51,8 -> 51,9, premiers essais 41,8 -> 43,5, drives 20,3 -> 19,8, temps ×1,05) ; la plage 40-60 % par
+  équipe du rapport sort pour MNL, CPH, SPK (92 matchs par équipe, bruit ± 5 points ; 12.3 sur 2208 matchs : 51, 59,
+  42 %) ; 443 tests unitaires, tests navigateur (dont `test_penalites.js`) ✅.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
