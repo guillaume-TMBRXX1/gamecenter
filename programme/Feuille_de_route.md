@@ -1,4 +1,4 @@
-# Feuille de route — GridironSim / Snapline (mise à jour le 19/10/2026 : moteur plus intelligent, étape 5)
+# Feuille de route — GridironSim / Snapline (mise à jour le 21/10/2026 : moteur plus intelligent, étape 6)
 
 Ordre choisi par Guillaume. **Une conversation par étape (ou par bloc)** : en début de conversation, lire ce fichier,
 puis `programme/Mise_en_ligne.md`, `programme/Bilan_prototype.md` et `notebook/NFL_Sim_fiche_technique.md`
@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63 ; PR en brouillon, à fusionner par Guillaume) | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63) · ✅ **idée 6** : mémoire d'une semaine à l'autre, le film de scouting (12.2 vicies bis, README 65 ; PR en brouillon, à fusionner par Guillaume) | notebook (+ modules) + site |
 
 ---
 
@@ -881,7 +881,33 @@ section 63) ; plan validé par Guillaume le 19/10, rendus validés sur captures 
 - **À surveiller** : BST (déjà ≥ 60 % coupé) au test d'équilibre ; peu de cassures en play action (0,06 par match : la
   ligue passe beaucoup, les tendances nettes sont surtout des tendances passe). Les deux défauts vus sur les captures
   (nom du porteur d'un jet sweep, « On air » sur la puce du résultat au téléphone) sont corrigés (20/10, README 64).
-- **Suite proposée** : idée 6 (mémoire d'une semaine à l'autre : le carnet de scouting comme point de départ).
+- **Suite** : idée 6, ci-dessous.
+
+**Idée 6 — la mémoire d'une semaine à l'autre** (20-21/10) : ✅ codé et allumé (README du serveur, section 65) ; plan
+validé par Guillaume le 20/10, rendus validés sur captures le 21/10.
+- Module `moteur/scouting.py` (fin du module), cellule **12.2 vicies bis** (juste après 12.2 vicies semel), interrupteur
+  `GC_MEMOIRE` (coupé ou film vide : idée 5 à l'identique, contrôlé) ; aucun hasard nouveau.
+- **Le film** : les appels joués (situation vue avant le snap -> course / passe, famille) de tous les matchs de chaque
+  attaque ; fin de semaine : film × 0,5 + la semaine (≈ 2 semaines au plus), `week_<lundi>/scouting_next_week.json`
+  (compact, ≈ 0,85 Mo ; `week.json` n'en garde qu'un renvoi) ; repris par 15.1 ; **amorce** depuis les GameFeeds des 4
+  dernières semaines quand la semaine précédente n'en a pas (cas du premier samedi). Figé pendant la semaine (cotes).
+- **Défense** : commence avec le film de l'adversaire, formation par formation, ses propres matchs × 1,5, plafonné
+  (poids du coordinateur 0,6 – 1,4) ; a priori < film < match (le film s'efface : demi-vie 24 snaps) ; confiance du film
+  ≤ 0,80. **Attaque** : sait ce qu'elle a montré (match OU film) ; une défense réputée lectrice compte comme « elle lit ».
+- **Écarts au plan** (mesures) : situations générales (down & distance, zone, personnel) laissées au match (sinon 4,9
+  lectures au lieu de 5,9) ; self-scout « match OU film » (sinon 1,6 cassure au lieu de 2,0) ; poids de ses propres
+  matchs sur la formation seulement (taille du film).
+- **Mesuré** (2 208 matchs, mêmes graines) : lectures 5,9 -> 7,1 par match (3,0 sur le film), justes 64 -> 76 %, 1er
+  quart-temps ≈ 1,6 -> 3,1 ; cassures 2,0 -> 2,2 (0,3 « on tape ») ; points 53,6 -> 53,7 ; victoires 40,0 – 60,9 % ; 8
+  semaines enchaînées stables (38,9 – 59,8 % en moyenne). Site : « KEY » + « SCOUTED · 44 GAMES », « BREAK » + « ON
+  TAPE », play-by-play « film: … , 44 games incl. 2 of their own », « Scouting report » dans Game plan, commentateur
+  (sous-titres). Semaine du 26/10 produite en 28,8 min, auditée (0 anomalie, 0 alerte).
+@@CONTROLES_FDR@@
+- **À surveiller** : le premier samedi avec la mémoire (amorce depuis les GameFeeds, temps du calcul, audit, taille de
+  `scouting_next_week.json`) ; les points par match (51,9 sur la semaine du 26/10 contre 54,0 avec l'idée 5 — de l'ordre
+  du bruit, à confirmer sur les vraies semaines) ; la réputation des défenses n'existe qu'à partir des semaines jouées
+  avec l'idée 5 (`play.scout`), donc les cassures « on tape » montent après le premier samedi.
+- **Suite proposée** : idée 7 (pénalités, rotations, blessures, décisions d'équipes spéciales).
 
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
