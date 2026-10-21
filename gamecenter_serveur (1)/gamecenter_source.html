@@ -681,6 +681,16 @@
   .st-tn .abbr{color:var(--ink-3)}
   .pst{margin-top:10px}
   .pst caption{text-align:left;font:600 10.5px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);padding:0 0 6px}
+  .pst.depth{width:100%;table-layout:fixed}
+  .pst.depth th[scope="row"]{width:150px}
+  .pst.depth td{vertical-align:top;text-align:left;white-space:normal}
+  .pst.depth thead th{text-align:left}
+  .dc-p{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;margin:2px 6px 2px 0;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:none;color:inherit;font:600 12.5px var(--f-ui);cursor:pointer;text-align:left}
+  .dc-p:hover,.dc-p:focus-visible{border-color:var(--cyan)}
+  .dc-p.b{border-style:dashed}
+  .dc-p small{font:500 10.5px var(--f-ui);color:var(--ink-3)}
+  .dc-n{font:700 10.5px var(--f-ui);color:var(--cyan);margin-right:4px}
+  .dc-none{color:var(--ink-3)}
   .pst td{color:var(--ink-2)}
   .pst .pos{display:inline-block;min-width:34px;margin-right:8px;font:700 italic 10.5px var(--f-display);letter-spacing:.06em;color:var(--ink-3)}
   .pst.gp td{text-align:left;white-space:normal;font-family:var(--f-ui)}
@@ -3609,7 +3619,7 @@ function penFlag(g,P,plan){ const q=P.penalty; if(!q||!plan||plan.kick||plan.typ
   try{ const sm=slotMap(g), id=q.player&&q.player.id; idx=(sm[side]||[]).findIndex(x=>x&&x.id===id); }catch(e){ idx=-1; }
   if(idx<0) idx=side==='off'?2:0;
   return {at:clamp(at,0.05,0.97),side,idx,shown:false,x:null,y:null}; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:rpPenaltyText(g,P)+rpFumbleNote(P)+rpPocketNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:rpPenaltyText(g,P)+rpSubNote(P,g)+rpFumbleNote(P)+rpPocketNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
@@ -4581,7 +4591,10 @@ function renderStats(g){
         const kick=list.filter(p=>p.kick).map(p=>`<tr>${nm(p)}<td>${p.kick.m}/${p.kick.a}</td><td>${p.kick.lng||'—'}</td><td>${p.kick.xm||0}/${p.kick.xa||0}</td><td>${3*p.kick.m+(p.kick.xm||0)}</td></tr>`);
         const kret=list.filter(p=>p.kr).sort((a,b)=>b.kr.y-a.kr.y).map(p=>`<tr>${nm(p)}<td>${p.kr.n}</td><td>${p.kr.y}</td><td>${(p.kr.y/p.kr.n).toFixed(1)}</td><td>${p.kr.lng}</td><td>${p.kr.td}</td></tr>`);
         const pret=list.filter(p=>p.pnr).sort((a,b)=>b.pnr.y-a.pnr.y).map(p=>`<tr>${nm(p)}<td>${p.pnr.n}</td><td>${p.pnr.y}</td><td>${(p.pnr.y/p.pnr.n).toFixed(1)}</td><td>${p.pnr.lng}</td><td>${p.pnr.td}</td></tr>`);
-        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick)+tbl('Kick returns',['KR','YDS','AVG','LNG','TD'],kret)+tbl('Punt returns',['PR','YDS','AVG','LNG','TD'],pret);
+        const L=rotLineups(g), Rs=(((g.gf||{}).game||{})[s]||{}).roster||[];   /* step 7.3: snaps so far */
+        const snp=L?Rs.map(r=>[r,rotSnaps(g,s,r,n)]).filter(([r,x])=>x&&x.n>0).sort((a,b)=>b[1].n-a[1].n||a[0].depth-b[0].depth)
+          .map(([r,x])=>`<tr>${nm(r)}<td>${x.n}</td><td>${x.pct} %</td><td>${r.depth===2?'Backup':'Starter'}</td></tr>`):[];
+        const html=tbl('Passing',['C/ATT','YDS','TD','INT','SCK'],pass)+tbl('Rushing',['CAR','YDS','AVG','LNG','TD'],rush)+tbl('Receiving',['REC','TGT','YDS','LNG','TD'],rec)+tbl('Defense',['TKL','SCK','INT','PD'],dfn)+tbl('Kicking',['FG','LNG','XP','PTS'],kick)+tbl('Kick returns',['KR','YDS','AVG','LNG','TD'],kret)+tbl('Punt returns',['PR','YDS','AVG','LNG','TD'],pret)+tbl('Snaps',['SNAPS','%','DEPTH'],snp);
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
@@ -4853,7 +4866,8 @@ function slotMap(g){
   const oS=g.poss, dS=oS==='home'?'away':'home', RO=teamRoster(g,oS), RD=teamRoster(g,dS);
   const nth=(R,pos,n)=>R.filter(r=>r.pos===pos)[n-1]||null;
   const call=g.call||{}, df=(call.def&&call.def.formation)||'4_3';
-  const off=OFF_SLOT.map(([p,n])=>nth(RO,p,n)), def=(DEF_SLOT[df]||DEF_SLOT['4_3']).map(([p,n])=>nth(RD,p,n));
+  const LU=P?rotAt(g,P):null;   /* step 7.3: the eleven the engine lined up on this play (play.subs) */
+  const off=OFF_SLOT.map(([p,n])=>LU?rotPl(RO,LU[oS].off[rotPlace(p,n)]):nth(RO,p,n)), def=(DEF_SLOT[df]||DEF_SLOT['4_3']).map(([p,n])=>LU?rotPl(RD,LU[dS].def[p+n]):nth(RD,p,n));
   const put=(arr,R,idx,pl)=>{ if(!pl||idx==null) return; const j=arr.findIndex(x=>x&&x.id===pl.id); if(j>=0&&j!==idx) arr[j]=arr[idx]; arr[idx]=pl; };
   const pp=(P&&P.players)||{};
   if(g.special==='punt') put(off,RO,6,nth(RO,'P',1));
@@ -4879,10 +4893,75 @@ function slotMap(g){
   if(call.formation==='PONY') roles.off[10]='Halfback (2)';
   if(call.formation==='EMPTY') roles.off[7]='Slot (running back)';
   { const XR=FORM_ROLES[call.formation]; if(XR) for(const k in XR) roles.off[+k]=XR[k]; }
+  if(LU&&!g.special){   /* step 7.3: a player of another position in the spot (2nd TE in 12 personnel, LB4 at the goal line…) */
+    const dflt={off:OFF_SLOT.map(([p])=>p),def:(DEF_SLOT[df]||DEF_SLOT['4_3']).map(([p])=>p)};
+    for(const sd of ['off','def']) (sd==='off'?off:def).forEach((pl,i)=>{ if(pl&&pl.pos!==dflt[sd][i]&&(sd==='def'?!(DEF_ROLE[df]||{})[i]:roles.off[i]===OFF_ROLE[i])) roles[sd][i]=POS_NAME[pl.pos]||pl.pos; }); }
   if(g.special==='punt') roles.off[6]='Punter';
   if(g.special==='field_goal'){ roles.off[6]='Holder'; roles.off[7]='Kicker'; }
   if(g.special==='kickoff') roles.def[5]='Kicker';
   return g._sm={key,off,def,roles,oS,dS};
+}
+/* Step 7.3: the bench, packages and rotations. roster[] = the 25 starters then the 11 backups (depth 2, profile:
+   veteran · prospect · specialist) ; play.subs = [{in, out, pos (the spot), reason: package | fatigue | garbage, side}]
+   only when the lineup changes. rotLineups(g): the 22 on the field at each play, rebuilt from the starters' spots */
+const ROT_PLACES={off:['LT','LG','C','RG','RT','QB','RB','TE','WR1','WR2','WR3'],def:['EDGE1','EDGE2','DT1','DT2','LB1','LB2','LB3','CB1','CB2','S1','S2']};
+const ROT_PROFILE={starter:'Starter',veteran:'Veteran',prospect:'Prospect',specialist:'Specialist'};
+function rotPlace(p,n){ return p==='WR'?'WR'+n:p; }
+function rotPl(R,id){ return id?R.find(r=>r.id===id)||null:null; }
+function rotLineups(g){
+  const F=g.gf, plays=g.plays||[];
+  if(!F||!F.game||!F.game.rotation_model) return null;
+  if(g._rl&&g._rl.f===F&&g._rl.n===plays.length) return g._rl;
+  const cur={};
+  for(const side of ['home','away']){ const R=(F.game[side]||{}).roster||[], prof={};
+    for(const r of R) (prof[r.pos]=prof[r.pos]||[]).push(r.id);
+    cur[side]={};
+    for(const u of ['off','def']){ cur[side][u]={}; for(const pl of ROT_PLACES[u]){ const m=/^([A-Z]+?)(\d)?$/.exec(pl), pos=m[1], k=+(m[2]||1); cur[side][u][pl]=(prof[pos]||[])[k-1]||null; } } }
+  const at=[], snaps={home:{},away:{}}, unit={home:{off:0,def:0},away:{off:0,def:0}}, cum=[];
+  let snap={home:{off:cur.home.off,def:cur.home.def},away:{off:cur.away.off,def:cur.away.def}};
+  for(const P of plays){
+    const t=P.call&&P.call.type;
+    if(t==='run'||t==='pass'){
+      const o=P.offense, d=o==='home'?'away':'home';
+      if(P.subs&&P.subs.length){
+        for(const x of P.subs){ const side=x.side==='off'?o:d; cur[side][x.side]=Object.assign({},cur[side][x.side],{[x.pos]:x.in}); }
+        snap={home:{off:cur.home.off,def:cur.home.def},away:{off:cur.away.off,def:cur.away.def}}; }
+      unit[o].off++; unit[d].def++;
+      for(const id of Object.values(snap[o].off)) if(id) snaps[o][id]=(snaps[o][id]||0)+1;
+      for(const id of Object.values(snap[d].def)) if(id) snaps[d][id]=(snaps[d][id]||0)+1;
+    }
+    at.push(snap);
+    cum.push({home:Object.assign({},snaps.home),away:Object.assign({},snaps.away),unit:{home:Object.assign({},unit.home),away:Object.assign({},unit.away)}});
+  }
+  return g._rl={f:F,n:plays.length,at,cum};
+}
+function rotAt(g,P){ const L=rotLineups(g); return L&&P&&P.seq?L.at[P.seq-1]||null:null; }
+/* snaps of a player over the first n plays: {n, pct} (pct of his unit's snaps) */
+function rotSnaps(g,side,r,n){ const L=rotLineups(g); if(!L||!r||!n) return null; const c=L.cum[Math.min(n,L.cum.length)-1]; if(!c) return null;
+  const u=['EDGE','DT','LB','CB','S'].includes(r.pos)?'def':'off', tot=c.unit[side][u], k=c[side][r.id]||0;
+  return {n:k,pct:tot?Math.round(100*k/tot):0}; }
+/* the notable changes only (play-by-play, commentator): the backup QB when the game is out of reach, the goal-line
+   package — never the ordinary rotations */
+function rotNote(g,P){
+  if(!P||!P.subs||!P.subs.length) return null;
+  const o=P.offense, d=o==='home'?'away':'home', R=s=>((((g.gf||{}).game||{})[s])||{}).roster||[];
+  const nm=(s,id)=>{ const r=R(s).find(x=>x.id===id); return r?r.name:''; };
+  const qb=P.subs.find(x=>x.side==='off'&&x.pos==='QB'&&x.reason==='garbage');
+  if(qb) return {kind:'garbage',name:nm(o,qb.in),team:o,text:`QB2 ${nm(o,qb.in)} comes in — the game is out of reach`};
+  const gl=P.subs.find(x=>x.side==='def'&&x.reason==='package'&&x.pos==='CB2'&&(R(d).find(r=>r.id===x.in)||{}).pos==='LB');
+  if(gl) return {kind:'goal_line',name:nm(d,gl.in),team:d,text:`Goal-line package: ${nm(d,gl.in)} comes in`};
+  return null; }
+function rpSubNote(P,g){ const n=rotNote(g,P); return n?` · ${n.text}`:''; }
+/* depth chart of a team (Teams, My team): starters and backups by position */
+const DEPTH_ROWS=[['QB','Quarterback',['QB']],['RB','Running back',['RB']],['WR','Wide receiver',['WR']],['TE','Tight end',['TE']],
+  ['OL','Offensive line',['LT','LG','C','RG','RT']],['EDGE','Edge rusher',['EDGE']],['DT','Defensive tackle',['DT']],['LB','Linebacker',['LB']],
+  ['CB','Cornerback',['CB']],['S','Safety',['S']],['ST','Specialists',['K','P']]];
+function depthChartHTML(T){
+  const R=T.roster||[]; if(!R.some(r=>r.depth===2)) return '';
+  const cell=r=>`<button type="button" class="dc-p${r.depth===2?' b':''}" data-pl="${esc(r.id)}" data-pt="${T.abbr}" title="Open ${esc(r.name)}'s card"><span class="dc-n">${r.number!=null?r.number:''}</span>${esc(r.name)}${r.depth===2?`<small>${esc(r.slot||r.pos)} · ${esc(r.specialty||ROT_PROFILE[r.profile]||'')}</small>`:`<small>${esc(r.pos)}</small>`}</button>`;
+  const rows=DEPTH_ROWS.map(([k,l,ps])=>{ const xs=R.filter(r=>ps.includes(r.pos));
+    return `<tr><th scope="row">${l}</th><td>${xs.filter(r=>r.depth!==2).map(cell).join('')}</td><td>${xs.filter(r=>r.depth===2).map(cell).join('')||'<span class="dc-none">—</span>'}</td></tr>`; }).join('');
+  return `<div class="st-scroll"><table class="pst depth"><caption>Depth chart · starters and backups</caption><thead><tr><th scope="col">Position</th><th scope="col">Starters</th><th scope="col">Backups</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function ratingOverall(r){ const v=Object.values(r||{}).filter(x=>typeof x==='number'); return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null; }
 function statLine(e){
@@ -4912,8 +4991,12 @@ function playerCardHTML(g,side,idx){
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${T.name} · ${unit}${role?' · '+esc(role):''}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
   if(!pl) return head+`<p class="pc-note">${g.plays?'The engine has no roster player in this spot.':'Player cards arrive with the engine feed for this board.'}</p>`;
-  const st=computeStats(g,rpDone(g)).pl[teamSide][pl.id];
-  return head+playerBodyHTML(pl,tone,'This game',st?statLine(st):[],'No stats yet in this game');
+  const st=computeStats(g,rpDone(g)).pl[teamSide][pl.id], lines=st?statLine(st):[];
+  const sn=rotSnaps(g,teamSide,pl,rpDone(g));   /* step 7.3: playing time, starter or backup, energy at the final whistle */
+  if(sn){ lines.unshift(['Snaps',`${sn.n} (${sn.pct} %)`]);
+    lines.unshift(['Depth',pl.depth===2?`Backup · ${pl.specialty||ROT_PROFILE[pl.profile]||''}`:'Starter']);
+    if(rpDone(g)>=g.plays.length&&pl.energy!=null) lines.push(['Energy at the final whistle',String(pl.energy)]); }
+  return head+playerBodyHTML(pl,tone,'This game',lines,'No stats yet in this game');
 }
 /* Body of a player card (attributes, intelligence, development, stats): during a game and from a roster */
 function playerBodyHTML(pl,tone,statTitle,lines,noStats){
@@ -4969,7 +5052,9 @@ function rosterCardHTML(abbr,pid){
     if(s.rush.c) lines.push(['Rushing',`${s.rush.c} car · ${s.rush.y||0} yds · ${s.rush.td||0} TD`]);
     if(s.rec.t) lines.push(['Receiving',`${s.rec.r||0}/${s.rec.t} · ${s.rec.y||0} yds · ${s.rec.td||0} TD`]);
     if(s.def.tk||s.def.sk||s.def.i||s.def.pd) lines.push(['Defense',`${s.def.tk||0} tkl · ${s.def.sk||0} sck · ${s.def.i||0} INT · ${s.def.pd||0} PD`]);
-    lines.push(['Games',String(n)]); }
+    lines.push(['Games',String(n)]);
+    if(s.snaps) lines.push(['Snaps',`${s.snaps}${s.usnaps?` (${Math.round(100*s.snaps/s.usnaps)} %)`:''}`]); }
+  if(T.roster.some(r=>r.depth===2)) lines.unshift(['Depth',p.depth===2?`Backup${p.slot?' '+p.slot:''} · ${p.specialty||ROT_PROFILE[p.profile]||''}`:'Starter']);
   const tone=['EDGE','DT','LB','CB','S'].includes(p.pos)?'d':'o';
   const head=`<div class="pc-head"><span class="pc-mark ${tone}" aria-hidden="true">${p.number!=null?p.number:''}</span><div class="pc-id">
       <div class="pc-name" id="pcName">${esc(p.name)}</div>
@@ -4997,7 +5082,9 @@ function bindPlayerPick(view){
 }
 document.addEventListener('click',e=>{ if(!pcard) return; if(e.target.closest('.pcard')&&!e.target.closest('[data-pclose]')) return; closePlayerCard(); });
 ['viewTeams','viewMyteam','viewRanking'].forEach(id=>{ const v=document.getElementById(id); if(!v) return;
-  v.addEventListener('click',e=>{ const r=e.target.closest('tr[data-pl]'); if(!r||e.target.closest('button,a')) return; e.stopPropagation(); openRosterCard(r.dataset.pt,r.dataset.pl,e.clientX,e.clientY); });
+  v.addEventListener('click',e=>{ const d=e.target.closest('button.dc-p[data-pl]');   /* step 7.3: depth chart */
+    if(d){ e.stopPropagation(); openRosterCard(d.dataset.pt,d.dataset.pl,e.clientX,e.clientY); return; }
+    const r=e.target.closest('tr[data-pl]'); if(!r||e.target.closest('button,a')) return; e.stopPropagation(); openRosterCard(r.dataset.pt,r.dataset.pl,e.clientX,e.clientY); });
   v.addEventListener('keydown',e=>{ const r=e.target.closest&&e.target.closest('tr[data-pl]'); if(!r||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); const b=r.getBoundingClientRect(); openRosterCard(r.dataset.pt,r.dataset.pl,b.left+Math.min(220,b.width/2),b.top+b.height/2); }); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImmediatePropagation(); closePlayerCard(); } },true);
 /*@ui-end*/
@@ -5715,6 +5802,11 @@ function seasonAgg(t){
       q.gp.add(g.id);
       for(const k of ['pass','rush','rec','def','kick']) if(p[k]) for(const s in p[k]) if(s!=='lng') add(q[k],s,p[k][s]);
     }
+    const F=SEASON.feeds[g.id], L=F?rotLineups({plays:F.plays,gf:F}):null;   /* step 7.3: snaps of the week */
+    if(L&&L.cum.length){ const c=L.cum[L.cum.length-1];
+      for(const side of ['home','away']) for(const r of (F.game[side]||{}).roster||[]){ const k=c[side][r.id]; if(!k) continue;
+        const q=P[r.id]||(P[r.id]={id:r.id,name:r.name,pos:r.pos,team:G[side],gp:new Set(),pass:{},rush:{},rec:{},def:{},kick:{}});
+        q.gp.add(g.id); add(q,'snaps',k); add(q,'usnaps',c.unit[side][['EDGE','DT','LB','CB','S'].includes(r.pos)?'def':'off']); } }
   }
   _agg={key,players:P,finals:fin.length};
   return _agg;
@@ -6081,6 +6173,7 @@ function teamDetailHTML(abbr,t,mine){
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
         ${mine?`<span class="label" style="margin-top:14px;display:block">Still to play</span>${up||'<p class="st-none">No game left this week.</p>'}`:''}</div></div>
       ${mine?`<div class="panel mt-hist" data-mthist="${T.abbr}">${teamHistoryHTML(abbr)}</div>`:''}
+      ${depthChartHTML(T)}
       <div class="st-scroll"><table class="pst roster"><caption>Roster · tap a player for his card</caption><thead><tr><th scope="col">Player</th><th>#</th><th>Age</th><th>Rtg</th><th class="tl">This week</th></tr></thead><tbody>${roster}</tbody></table></div></div>`;
 }
 function renderTeams(t){
@@ -7229,6 +7322,10 @@ function playLine(g,P){
   /* a big swing of the engine's win probability */
   if(prio>=2&&st!=='final'){ const h=g.hist||[], prev=h.length?h[h.length-1]:null, p=num(P.win_prob_home,null);
     if(prev!=null&&p!=null&&Math.abs(p-prev)>=.18){ const fav=p>=.5?g.home:g.away; text+=` The engine now gives the ${nick(fav)} a ${Math.round((p>=.5?p:1-p)*100)} percent chance.`; } }
+  /* step 7.3: only the notable changes — the backup QB when the game is out of reach, the goal-line package */
+  { const rn=rotNote(g,P); if(rn&&text){ prio=Math.max(prio,2);
+      text=(rn.kind==='garbage'?V([`${rn.name} comes in at quarterback — the game is out of reach.`,`The starters take a seat: ${rn.name} is in at quarterback.`])
+        :V([`Goal-line package for the ${nick(rn.team==='home'?g.home:g.away)} — ${rn.name} comes in.`,`They load up at the goal line: ${rn.name} is on the field.`]))+' '+text; } }
   /* step 7.1: flushed out of the pocket, he threw on the run */
   if(P.pocket&&P.pocket.on_run&&text&&(P.result==='complete'||P.result==='incomplete'||P.result==='touchdown'||P.result==='interception'))
     text=V([`Flushed to his ${P.pocket.side==='left'?'left':'right'}, ${sur(qb)} throws on the run…`,`${sur(qb)} escapes the pocket, throwing on the move…`])+' '+text;

@@ -93,6 +93,7 @@ RECRUE_AGE = (21.5, 23.5)
 RECRUE_ECART = {"physique": (2.0, 5.0), "technique": (4.0, 8.0), "mental": (6.0, 10.0)}
 RECRUE_POTENTIEL = (9.0, 13.0)
 RECRUE_DEV = (("slow", 0.15), ("normal", 0.45), ("fast", 0.30), ("star", 0.10))
+RECRUE_BANC = "prospect"              # étape 7.3 : la recrue d'une place du banc est un jeune à potentiel
 
 # ---- forme ----
 FORME_INERTIE = 0.35                  # part de la forme de la semaine précédente gardée
@@ -163,6 +164,8 @@ def profil_initial(pid, poste, profondeur=1):
 # ------------------------------------------------------------------------------------------------------------------
 def etat_initial(joueurs, origine=None):
     """joueurs : [{"id", "name", "pos", "team", "ratings" (notes de base)}] -> état de départ (semaine 0).
+    Étape 7.3 (facultatif) : "profil" ({age0, dev, potentiel, carriere} à la place de profil_initial) et "banc" (profil
+    du remplaçant : veteran / prospect / specialist).
 
     Au départ, actuelle = base et forme = 0 : les notes effectives sont exactement celles du roster (le moteur joue
     comme sans le bloc E)."""
@@ -172,9 +175,11 @@ def etat_initial(joueurs, origine=None):
         equipe, poste, prof = decoder_id(pid)
         poste = j.get("pos") or poste
         base = {k: int(v) for k, v in (j.get("ratings") or {}).items()}
-        J[pid] = dict(profil_initial(pid, poste, prof), name=j.get("name", pid), pos=poste,
+        J[pid] = dict(j.get("profil") or profil_initial(pid, poste, prof), name=j.get("name", pid), pos=poste,
                       team=j.get("team") or equipe, base=base, actuelle={k: float(v) for k, v in base.items()},
                       forme=0.0, apprentissage=0.0, bonus_iq=0.0, historique=[])
+        if j.get("banc"):                    # étape 7.3 : remplaçant (profil du banc, groupes à part)
+            J[pid]["banc"] = j["banc"]
     return {"version": VERSION, "origine": origine, "semaines": 0, "derniere": None, "joueurs": J}
 
 
@@ -298,18 +303,29 @@ def _brut(pos, s, equipe, matchs):
     return None
 
 
+PARTICIPATION_BANC = 1.5              # étape 7.3 : participation d'un remplaçant = 1,5 × sa part des snaps (≤ 1)
+
+
+def participation_banc(s, e):
+    """Participation (0-1) d'un remplaçant : sa part des snaps de son équipe (stats « snaps » / « team_snaps »)."""
+    tot = (s or {}).get("team_snaps") or (e or {}).get("snaps_side") or 0
+    return min(1.0, PARTICIPATION_BANC * (s or {}).get("snaps", 0) / tot) if tot else 0.0
+
+
 def performances(etat, stats_joueurs, stats_equipes, bilans=None):
     """{pid: (participation 0-1, performance en écarts-types bornée ± 1,5)} pour la semaine jouée."""
     stats_joueurs, stats_equipes, bilans = stats_joueurs or {}, stats_equipes or {}, bilans or {}
     brut, part = {}, {}
     rb_att = {}
     for pid, j in etat["joueurs"].items():
-        if j["pos"] == "RB":
+        if j["pos"] == "RB" and not j.get("banc"):
             rb_att[j["team"]] = rb_att.get(j["team"], 0) + (stats_joueurs.get(pid) or {}).get("rush_att", 0)
     for pid, j in etat["joueurs"].items():
         s, e = stats_joueurs.get(pid) or {}, stats_equipes.get(j["team"]) or {}
         matchs = e.get("games", 0)
-        if not stats_equipes:                         # pas de stats : titulaires au complet, RB2 en rotation
+        if j.get("banc"):                             # étape 7.3 : un remplaçant progresse avec ses snaps
+            part[pid] = participation_banc(s, e) if stats_equipes else 0.0
+        elif not stats_equipes:                       # pas de stats : titulaires au complet, RB2 en rotation
             part[pid] = 0.3 if (j["pos"] == "RB" and decoder_id(pid)[2] >= 2) else 1.0
         elif matchs <= 0:
             part[pid] = 0.0
@@ -323,7 +339,8 @@ def performances(etat, stats_joueurs, stats_equipes, bilans=None):
     groupes = {}
     for pid, v in brut.items():
         if v is not None:
-            groupes.setdefault(_GROUPE_PERF.get(etat["joueurs"][pid]["pos"], "?"), []).append(pid)
+            jj = etat["joueurs"][pid]
+            groupes.setdefault((_GROUPE_PERF.get(jj["pos"], "?"), bool(jj.get("banc"))), []).append(pid)
     for g, ids in groupes.items():
         vals = [brut[p] for p in ids]
         m = sum(vals) / len(vals)
@@ -386,8 +403,11 @@ def _borner_actuelle(j):
 
 def groupe_ligue(pid, j):
     """Groupe de l'anti-inflation (1) : l'unité ; les RB titulaires et remplaçants à part (le RB1 porte l'essentiel des
-    courses : une moyenne sur les 8 RB laissait monter les yards par course quand les RB1 progressaient)."""
+    courses : une moyenne sur les 8 RB laissait monter les yards par course quand les RB1 progressaient). Étape 7.3 :
+    le banc forme ses propres groupes."""
     u = UNITE.get(j["pos"], j["pos"])
+    if j.get("banc"):                        # étape 7.3 : les remplaçants à part (la moyenne des titulaires ne bouge pas)
+        return (u, "banc")
     return (u, decoder_id(pid)[2]) if j["pos"] == "RB" else (u, 0)
 
 
@@ -589,17 +609,19 @@ def recrue(j, pid, semaines, cle, noms, pris=()):
     return dict(age0=round(a - semaines / SEMAINES_PAR_AN, 2), dev=dev,
                 potentiel=round(rng.uniform(*RECRUE_POTENTIEL), 1), carriere=0.0, name=nom, pos=j["pos"],
                 team=j["team"], base=dict(j["base"]), actuelle=actuelle, forme=0.0, apprentissage=0.0, bonus_iq=0.0,
-                historique=[], recrue={"semaine": cle, "remplace": j["name"]})
+                historique=[], recrue={"semaine": cle, "remplace": j["name"]},
+                **({"banc": RECRUE_BANC} if j.get("banc") else {}))
 
 
-def retraites(etat, cle, noms):
-    """Remplace (en place) les joueurs qui partent par une recrue ; renvoie les mouvements (week.json)."""
+def retraites(etat, cle, noms, ligue=False):
+    """Remplace (en place) les joueurs qui partent par une recrue ; renvoie les mouvements (week.json).
+    ligue (étape 7.3, avec le banc) : le nom de la recrue n'est porté par personne dans la ligue (sinon : dans l'équipe)."""
     mouv = []
     for pid in sorted(etat["joueurs"]):
         j = etat["joueurs"][pid]
         if not doit_partir(j, etat["semaines"]):
             continue
-        pris = {x["name"] for x in etat["joueurs"].values() if x["team"] == j["team"]}
+        pris = {x["name"] for x in etat["joueurs"].values() if ligue or x["team"] == j["team"]}
         r = recrue(j, pid, etat["semaines"], cle, noms, pris)
         mouv.append({"id": pid, "team": j["team"], "pos": j["pos"], "retired": j["name"],
                      "age": int(age(j, etat["semaines"])), "ovr": ovr(notes_effectives(j)), "rookie": r["name"],
@@ -609,13 +631,14 @@ def retraites(etat, cle, noms):
 
 
 def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, index=None, bilans=None,
-                     lundi_suivant=None, recrues=None):
+                     lundi_suivant=None, recrues=None, noms_ligue=False):
     """État au début de la semaine suivante, d'après la semaine jouée. Ne modifie pas `etat`.
 
     stats_joueurs : {pid: ligne de season_stats} · stats_equipes : {équipe: ligne d'équipe} · bilans : {équipe: % de
     victoires} · unites(équipe, {pid: notes}) -> notes d'unité (garde-fou d'équipe ; None : pas de garde) ·
     index : n° de la semaine jouée (clé du flux aléatoire) · recrues : (prénoms, noms) pour nommer les recrues
-    (étape 6 ; None : pas de retraites, comportement du bloc E). Renvoie (nouvel_etat, rapport)."""
+    (étape 6 ; None : pas de retraites, comportement du bloc E) · noms_ligue : recrues nommées sans doublon dans la ligue
+    (étape 7.3). Renvoie (nouvel_etat, rapport)."""
     import copy
     E = copy.deepcopy(etat)
     cle = index if index is not None else E["semaines"] + 1
@@ -635,7 +658,7 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
         _borner_actuelle(j)
     E["semaines"] += 1
     E["derniere"] = cle
-    mouvements = retraites(E, cle, recrues) if recrues else []
+    mouvements = retraites(E, cle, recrues, noms_ligue) if recrues else []
     derive = _renormaliser(E)
     _recentrer_forme(E)
     # expérience -> intelligence : relative au groupe (somme nulle)
@@ -643,7 +666,7 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
     for pid, j in E["joueurs"].items():
         g = IQ_GROUPE.get(j["pos"])
         if g:
-            grp.setdefault(g, []).append(j)
+            grp.setdefault((g, bool(j.get("banc"))), []).append(j)
     for js in grp.values():
         m = sum(j["apprentissage"] for j in js) / len(js)
         for j in js:
