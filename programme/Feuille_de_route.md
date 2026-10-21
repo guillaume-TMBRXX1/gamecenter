@@ -912,6 +912,10 @@ validé par Guillaume le 20/10, rendus validés sur captures le 21/10.
   avec l'idée 5 (`play.scout`), donc les cassures « on tape » montent après le premier samedi.
 - **Suite proposée** : idée 7 (pénalités, rotations, blessures, décisions d'équipes spéciales).
 
+**Hors feuille de route, 21/10 — résultats du jour en cours seulement** (README 66) : le calendrier a un onglet par jour,
+aujourd'hui ouvert et les autres fermés ; tableau Live, compteur « Results », bandeau et Big plays ne montrent que les
+matchs du jour (le matin : « Today's results appear here · first kickoff 10:00 »). Test `test_jour.js`.
+
 ## Pour la conversation suivante
 1. Lire ce fichier, puis les sections 35-46 du README du serveur (et 15-22 pour le moteur).
 2. **Étape 7 — Publicités** : le code est en place (README section 47) ; rien ne s'affiche tant que

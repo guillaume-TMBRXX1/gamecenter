@@ -1711,6 +1711,25 @@ rendus validés sur captures avant d'être finalisés.
   complétion 64,8 -> 64,8 %, pertes de balle 2,41 -> 2,36) ; victoires par équipe hors 40-60 % pour 2 franchises allumée
   (CPH 64 %, CMT 36 %) comme pour 3 coupée (MNL 66 %, CPH, AEG 63 %) : 92 matchs par équipe, bruit ± 5 points.
 
+### 66. Résultats du jour en cours seulement (21/10/2026)
+**Demande de Guillaume (21/10)** : n'afficher que les résultats de la journée en cours (le mercredi 21/10, ceux du jour et
+plus ceux du lundi 19 ou du mardi 20), avec des onglets fermés ou en étant dirigé vers le bon jour.
+- **Avant** : le mercredi à 07:30, le tableau Live montrait les matchs terminés de mardi soir, le bandeau leurs scores,
+  « Results 120 » (toute la semaine), et le calendrier filtré sur « Results » commençait par le lundi 19 (deux journées
+  de 60 matchs à faire défiler avant d'arriver au jour).
+- **Maintenant** (jour = date à Bruxelles, `dayKey` / `isToday`) :
+  - **calendrier** : un onglet par jour (`<details>`) — titre, « TODAY », résumé (« 60 games · 60 final », « 27 games ·
+    3 live · 24 final », « No results yet · first kickoff 10:00 ») ; **aujourd'hui ouvert, les autres jours fermés**
+    (avant la semaine ou un jour sans match : le prochain jour de matchs) ; un toucher ouvre un jour passé, le choix
+    tient jusqu'à minuit (le lendemain, la veille se referme) ; filtres All games / Upcoming / Results inchangés ;
+  - **tableau Live** : tuiles des matchs terminés, compteur « Results », bandeau du haut et Big plays : les matchs du jour
+    seulement. Le matin, avant le premier coup d'envoi : les matchs du jour à venir, « Results 0 », et le bandeau dit
+    « Today's results appear here · first kickoff 10:00 ».
+  - Inchangés : classements, fiches d'équipe (« Results this week »), History, Ranking, paris.
+- Site seulement (cellule 427 synchronisée : le notebook n'a ni tableau de saison ni calendrier). Test navigateur
+  `outils/site/test_jour.js` (groupe site, indépendant de l'heure : le serveur est réglé sur le 3e jour de la dernière
+  semaine, à 07:30 puis 2 h après le premier coup d'envoi) — il échoue sur le site d'avant.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
