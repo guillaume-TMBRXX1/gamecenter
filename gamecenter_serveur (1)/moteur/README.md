@@ -336,6 +336,22 @@ Interrupteurs du notebook : `SCOUTING_ENABLED` (`GC_SCOUTING=0` : moteur d'avant
 film vide : idée 5 à l'identique, contrôlé). GameFeed : `play.scout` (`def.film = {games, own, part}`, `off.on_tape`),
 `game.scout_film`, `game.scout_memory`. Mesures : README du serveur, sections 63 et 65. Tests : `test_scouting.py`.
 
+## Les pénalités pendant l'action (étape 7.2 « moteur plus intelligent », notebook 12.2 vicies quater, 21/10/2026)
+
+```
+action jouée (course / passe, poche 7.1, cible, couverture) ──> penalites.tirer : un drapeau au plus (holding, illegal
+                                 contact, DPI, OPI, roughing) et qui l'a commis (duel perdu, discipline, ballon disputé)
+appliquer (yards, moitié de la distance, premier essai / essai rejoué) · sans_faute (l'action compte)
+                                 ──> arbitrer : l'équipe qui subit la faute garde la meilleure probabilité de victoire
+```
+
+| Fichier | Rôle |
+|---|---|
+| `penalites.py` | `candidats`, `tirer`, `appliquer`, `sans_faute`, `points_attendus_essai`, `wp_etat`, `arbitrer`, `annonce` ; constantes `TAUX`, `YARDS`, `RECEPTION`, `PROFONDEUR`, `DISCIPLINE_EQUIPE`. Flux `penalites`. Branché par le notebook (crochet d'`execute_play`) ; sans le crochet : moteur à l'identique |
+
+Interrupteur du notebook : `PENALITES_ENABLED` (`GC_PENALITES=0`). GameFeed : `play.penalty`. Mesures : README du
+serveur, section 68. Tests : `test_penalites.py`.
+
 ## La poche et la ligne offensive (étape 7.1 « moteur plus intelligent », notebook 12.2 vicies ter, 21/10/2026)
 
 ```
