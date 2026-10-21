@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63) · ✅ **idée 6** : mémoire d'une semaine à l'autre, le film de scouting (12.2 vicies bis, README 65 ; PR en brouillon, à fusionner par Guillaume) | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63) · ✅ **idée 6** : mémoire d'une semaine à l'autre, le film de scouting (12.2 vicies bis, README 65, fusionnée) · hors feuille de route : résultats du jour en cours seulement (README 66, fusionnée) · ✅ **étape 7.1** : la poche et la ligne offensive (12.2 vicies ter, README 67 ; PR en brouillon, à fusionner par Guillaume) · 7.2 pénalités, 7.3 banc, 7.4 blessures à venir | notebook (+ modules) + site |
 
 ---
 
@@ -910,7 +910,21 @@ validé par Guillaume le 20/10, rendus validés sur captures le 21/10.
   `scouting_next_week.json`) ; les points par match (51,9 sur la semaine du 26/10 contre 54,0 avec l'idée 5 — de l'ordre
   du bruit, à confirmer sur les vraies semaines) ; la réputation des défenses n'existe qu'à partir des semaines jouées
   avec l'idée 5 (`play.scout`), donc les cassures « on tape » montent après le premier samedi.
-- **Suite proposée** : idée 7 (pénalités, rotations, blessures, décisions d'équipes spéciales).
+- **Suite** : étape 7, ci-dessous.
+
+**Étape 7** (plan revu avec Guillaume le 21/10) : 7.1 la poche et la ligne offensive · 7.2 pénalités pendant l'action
+seulement (holding, roughing the passer, interférences, illegal contact ; ≈ 8 par match ; accepter / refuser, effet sur
+le jeu, audit, site, GameFeed, retransmission) · 7.3 banc (11 remplaçants par franchise, noms jamais déjà portés dans la
+ligue ; les doublons existants restent) et rotations / fatigue · 7.4 blessures (pendant le match, absences d'une ou
+plusieurs semaines publiées avant les cotes). Les équipes spéciales ne changent pas.
+
+**7.1 — la poche et la ligne offensive** : ✅ codé et allumé (README du serveur, section 67 ; module `moteur/poche.py`,
+cellule 12.2 vicies ter, `GC_POCHE`) ; rendus validés sur vidéos le 21/10 (pas de mise en évidence du duel perdu ; pas
+de semaine à produire, les tests suffisent). Duels de protection, duel perdu au temps avant la pression, poche pliée par
+les bords / enfoncée / effondrée ; le QB monte, glisse ou sort et lance en courant ; sack crédité au vainqueur du duel ;
+site : fer à cheval, rushers qui contournent ou poussent, QB qui bouge, play-by-play, stats (lancers en courant, duels
+de protection, pressions), commentateur.
+Contrôles en local : notebook complet, rapport de calibration (dans les tolérances), tests unitaires et navigateur ✅.
 
 **Hors feuille de route, 21/10 — résultats du jour en cours seulement** (README 66) : le calendrier a un onglet par jour,
 aujourd'hui ouvert et les autres fermés ; tableau Live, compteur « Results », bandeau et Big plays ne montrent que les

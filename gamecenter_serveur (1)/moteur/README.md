@@ -336,6 +336,24 @@ Interrupteurs du notebook : `SCOUTING_ENABLED` (`GC_SCOUTING=0` : moteur d'avant
 film vide : idée 5 à l'identique, contrôlé). GameFeed : `play.scout` (`def.film = {games, own, part}`, `off.on_tape`),
 `game.scout_film`, `game.scout_memory`. Mesures : README du serveur, sections 63 et 65. Tests : `test_scouting.py`.
 
+## La poche et la ligne offensive (étape 7.1 « moteur plus intelligent », notebook 12.2 vicies ter, 21/10/2026)
+
+```
+appel + protection + rushers ──> poche.affecter : duels EDGE / tackle, DT / guard (centre en double), blitzeurs (centre,
+                                 RB / TE qui protègent, sinon libres) ; marge rush − protection
+temps avant la pression (bloc B, − AVANCE) ──> Poche.armer : le duel qui cède (tiré selon les marges), les suivants,
+                                 forme (bords / intérieur / effondrée)
+pression avant le lancer ──> Poche.reagir : monte (bords) · glisse (intérieur) · sort et lance en courant (mobilité),
+                                 sinon fin de poche du bloc B (scramble, throwaway, passe forcée, sack crédité au vainqueur)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `poche.py` | `affecter`, `Poche` (`armer`, `reagir`, `journal`, `vainqueur`), constantes `REACTION`, `EN_COURANT`, `FIN_HORS_POCHE`, `AVANCE`. Flux `poche`. Branché par `decider_passe(…, poche=…)` et `QBDecisionEngine.decide_b(…, poche_p=…)` ; sans poche : bloc B à l'identique |
+
+Interrupteur du notebook : `POCHE_ENABLED` (`GC_POCHE=0`). GameFeed : `play.pocket`. Mesures : README du serveur,
+section 67. Tests : `test_poche.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
