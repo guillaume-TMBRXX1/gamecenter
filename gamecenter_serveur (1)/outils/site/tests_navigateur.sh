@@ -77,6 +77,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : checks avant le snap (audible, motion, défense qui se décale)" node outils/site/test_audibles.js
   lancer "Site : fumbles gardés par l.attaque" node outils/site/test_fumbles.js
   lancer "Site : appel de jeu qui apprend (KEY, BREAK, READ / BURNED)" node outils/site/test_scouting.js
+  lancer "Site : mémoire d.une semaine à l.autre (SCOUTED, ON TAPE, Scouting report)" node outils/site/test_memoire.js
   lancer "Site : Bigger field en plein écran (ordinateur, téléphone)" node outils/site/test_plein_ecran.js
   lancer "Site : noms des joueurs sur le terrain" node outils/site/test_noms.js
   lancer "Site : histoire, records, carrières" node outils/site/test_histoire.js

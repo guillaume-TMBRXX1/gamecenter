@@ -4,7 +4,8 @@
 Exécute NFL_Sim_GameCenter.ipynb sans l'ouvrir (comme le calcul du samedi, mais SANS produire de semaine), puis
 une cellule ajoutée à la volée qui :
   1. reprend les staffs ajustés de la dernière semaine (staffs_next_week) et, depuis V26, les notes des joueurs
-     (players_next_week — bloc E, progression ; amorce depuis ses stats sinon), comme le ferait la semaine suivante ;
+     (players_next_week — bloc E, progression ; amorce depuis ses stats sinon) et, depuis le 20/10, le film de
+     scouting (scouting_next_week ; amorce depuis les GameFeeds sinon), comme le ferait la semaine suivante ;
   2. joue N matchs candidats entre deux franchises avec le moteur courant (V27 : extension du playbook V0.1 —
      nouvelles formations, RPO, options, motions, paquets défensifs ; V25 : plan de jeu et adaptation en match —
      bloc D, intelligence des receveurs et des défenseurs — bloc C, intelligence du QB et poche — bloc B, lectures du
@@ -19,7 +20,8 @@ une cellule ajoutée à la volée qui :
      des 2 minutes, genou, spike), 4e essais joués par la valeur, retours de coup d'envoi, lectures de course du bloc F
      (cutback, rebond, bloqué, boîte chargée) ; depuis le 16/10 : checks avant le snap (audibles du QB, déguisements qui
      le trompent, réponses de la défense aux motions) ; depuis le 19/10 : appel de jeu qui apprend (défense qui lit une
-     tendance et s'y engage, juste ou brûlée ; attaque qui casse sa tendance, play action compris) ;
+     tendance et s'y engage, juste ou brûlée ; attaque qui casse sa tendance, play action compris) ; depuis le 20/10 :
+     mémoire d'une semaine à l'autre (le film de scouting de la dernière semaine, scouting_next_week) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -43,6 +45,8 @@ if _prev and _prev.get("staffs_next_week"):
     apply_staff_snapshots(_prev["staffs_next_week"])
 if "progression_reprendre" in globals():                 # V26, bloc E : notes des joueurs de la semaine suivante
     print("bloc E : notes depuis", progression_reprendre(_prev))
+if "memoire_reprendre" in globals():                    # idée 6 : film de scouting de la semaine suivante
+    print("mémoire : film depuis", memoire_reprendre(_prev, _weeks[-1] if _weeks else None))
 _H, _A = _P["home"], _P["away"]
 _XPF = set(moteur.playbook_expansion.FORMATIONS) if globals().get("EXPANSION_ENABLED") else set()
 _cands = []

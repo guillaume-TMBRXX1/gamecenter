@@ -8,7 +8,8 @@ outils/moteur/rapport_calibration.py), sans le test d'équilibre ni les cotes (�
 les cotes du moteur (simuler_exhibition.py les a). Avant le 17/10/2026, le chargement s'arrêtait à 12.2 undecies :
 les feeds n'avaient ni l'horloge réelle, ni le bloc F, ni les audibles.
 Comme la semaine suivante (15.1) et simuler_exhibition.py : staffs ajustés (staffs_next_week) et notes des joueurs
-(bloc E : players_next_week, amorce depuis les stats sinon) de la dernière semaine de data/weeks.
+(bloc E : players_next_week, amorce depuis les stats sinon) de la dernière semaine de data/weeks ; idée 6 : son film
+de scouting (scouting_next_week, amorce depuis les GameFeeds sinon ; --base : sans film).
 
     python3 outils/exhibition/gamefeeds.py --matchs "MNL@VEC,CTX@AEG" --par-affiche 2 --sortie /tmp/feeds
     python3 outils/exhibition/gamefeeds.py --matchs tous --par-affiche 1      # toutes les affiches (552 à 24 équipes)
@@ -72,7 +73,9 @@ def main():
         _staffs(ns)
         ns["apply_staff_snapshots"](prev.get("staffs_next_week") or prev.get("staffs_at_start"))
     src = ns["progression_reprendre"](prev)
-    print(f"semaine précédente : {os.path.basename(os.path.dirname(weeks[-1])) if weeks else 'aucune'} · notes : {src}")
+    film = ns["memoire_reprendre"](prev, weeks[-1] if weeks else None) if "memoire_reprendre" in ns else "—"
+    print(f"semaine précédente : {os.path.basename(os.path.dirname(weeks[-1])) if weeks else 'aucune'} · notes : {src}"
+          f" · film : {film}")
     teams = list(ns["AI_FRANCHISES"])
     if a.matchs.strip().lower() == "tous":
         pairs = [(v, h) for h in teams for v in teams if v != h]

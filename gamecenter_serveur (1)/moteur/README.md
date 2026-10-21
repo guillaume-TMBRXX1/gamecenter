@@ -315,6 +315,27 @@ Interrupteur du notebook : `PRESNAP_ENABLED` (`GC_PRESNAP=0` : moteur d'avant à
 `play.presnap` (look, box_shown, box_real, box_read, shell_shown, shell_real, read, audible, from, to, fooled, motion,
 motion_response, sec, clock, qb). Mesures : README du serveur, section 58. Tests : `test_presnap.py`.
 
+## Appel de jeu qui apprend, et sa mémoire d'une semaine à l'autre (étapes 5 et 6 « moteur plus intelligent », notebook 12.2 vicies semel et bis, 19-21/10/2026)
+
+```
+fin de semaine (14.1) : film = film × 0,5 + appels joués de la semaine (situations vues avant le snap -> course / passe,
+                        famille) ; scouting_next_week.json (à part, compact) ; amorce depuis les GameFeeds sinon (15.1)
+début de match : carnet de la défense = film de l'attaque adverse, formation par formation (down & distance ×
+                 formation, formation ; ses propres matchs × 1,5), plafonné (FILM_MAX × poids du coordinateur)
+                 self-scout de l'attaque : match OU film (FILM_MAX_SOI : down & distance et zone compris)
+à chaque snap : a priori de la ligue < film (s'efface : demi-vie de 24 snaps) < match -> tendance nette ?
+                défense : KEY (confiance plafonnée à 0,80 si la preuve vient surtout du film) ; attaque : BREAK si elle
+                se sait lue (lecture juste, réponse de 12.2 quater, courses stoppées, réputation de lectrice)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `scouting.py` | Carnet (oubli, couche film : `amorcer`, mode « match OU film »), `tendance`, `engagement` (flux `scouting-def`), `cassure` (flux `scouting-att`), `anticipation`, profils `SCOUT` ; idée 6 : `film_match`, `film_suivant` (oubli hebdomadaire, comptes < FILM_MIN oubliés), `film_pour` (mise à l'échelle), `reputation`, `observations_feed` / `lectures_feed` (amorce), `film_tendances` (rapport d'avant-match), `controler_film` (audit), `film_cle` (cache des cotes). Aucun hasard dans le film |
+
+Interrupteurs du notebook : `SCOUTING_ENABLED` (`GC_SCOUTING=0` : moteur d'avant), `MEMOIRE_ENABLED` (`GC_MEMOIRE=0` ou
+film vide : idée 5 à l'identique, contrôlé). GameFeed : `play.scout` (`def.film = {games, own, part}`, `off.on_tape`),
+`game.scout_film`, `game.scout_memory`. Mesures : README du serveur, sections 63 et 65. Tests : `test_scouting.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova
@@ -392,6 +413,12 @@ et réversible · sans appel = bloc E · déterminisme · pression réelle contr
 motion qui révèle l'homme · protection max · blitz qui laisse un receveur · nouvelles coquilles · lectures RPO / option
 (en distribution, le QB se trompe) · paquets (parts), banjo contre les groupes, fronts de situation, rush jamais sur
 un blitz, mouvement de moyenne nulle · effets de course, motion, shift, enchaînement.
+
+Scouting (`test_scouting.py`) : situations, carnet et oubli, tendance nette, engagement, cassure, anticipation, profils ;
+idée 6 : **film vide = idée 5** · tendance dès le premier snap · plafonds (proportions, pas masse) · ses propres matchs
+pèsent plus · **a priori < film < match** (le film s'efface) · confiance du film plafonnée · doute · self-scout match OU
+film · **oubli hebdomadaire et stabilité sur 20 semaines** · vieux film oublié · arrondis · déterminisme et clé ·
+réputation · rapport d'avant-match · GameFeed -> film (amorce).
 
 ## Calibration (garde-fou 3)
 

@@ -1642,6 +1642,75 @@ Deux défauts vus sur les captures de l'étape 5 (section 63), corrigés avant l
   ordinateur / téléphone tenu droit / paysage) — les deux échouent sur le site d'avant. Cellule 427 synchronisée (sans
   grand écran ni « Bigger field » : seul le nom du porteur la concerne).
 
+### 65. La mémoire d'une semaine à l'autre : le film de scouting (notebook 12.2 vicies bis, 20-21/10/2026 — allumée)
+Feuille de route : « moteur plus intelligent », étape 6. Module `moteur/scouting.py` (fin du module ; tests
+`test_scouting.py`), cellule **12.2 vicies bis** (juste après 12.2 vicies semel) ; interrupteur `GC_MEMOIRE=0` : moteur de
+l'idée 5 à l'identique (contrôlé sur 4 matchs, référence calculée avant tout branchement ; un film vide aussi) ; aucun
+hasard nouveau (flux `scouting-def` / `scouting-att` de l'idée 5). **Décisions de Guillaume (20-21/10)** : plan validé ;
+rendus validés sur captures avant d'être finalisés.
+- **Avant** : le carnet de scouting de l'idée 5 (section 63) repartait de zéro à chaque match.
+- **Le film** : pour chaque attaque, ce qu'une défense voit avant le snap (down & distance, formation, personnel, zone)
+  et ce qui a été joué (course / passe, famille), sur tous ses matchs — les appels joués du journal, pas `play.scout`.
+  Fin de semaine (14.1, `run_week`) : film de la semaine suivante = film × **0,5** + la semaine jouée (playoffs compris ;
+  série bornée : ≈ 2 semaines au plus ; comptes de moins d'une demi-action oubliés), écrit **à part** par `export_week`
+  dans `week_<lundi>/scouting_next_week.json` (compact, ≈ 0,85 Mo ; `week.json`, écrit indenté et relu par le serveur,
+  n'en garde qu'un renvoi `{file, version, weeks, last}` ; non publié). La semaine suivante le reprend (15.1,
+  `memoire_reprendre`) ; semaine précédente sans film : **amorce** depuis les GameFeeds des 4 dernières semaines de
+  `data/weeks` (même film que depuis le journal : contrôlé). **Figé pendant la semaine** : les cotes sont calculées
+  avant (le cache des cotes de 13.1 tient compte du film) et les paris ouverts dès la publication.
+- **La défense** commence chaque match avec le film de l'attaque adverse — tous ses matchs, ceux qu'elle a joués
+  elle-même contre elle pesant **1,5 fois** (au niveau de la formation) — étudié **formation par formation** (down &
+  distance × formation, formation), plafonné en actions équivalentes (`FILM_MAX` × poids du coordinateur, 0,6 – 1,4 :
+  fenêtre du bloc D ; AEG, CTD, MRD étudient le film, SPK y croit peu, MNL, FRG, GRZ restent sobres) : le film garde les
+  proportions de l'attaque, pas sa masse. **A priori de la ligue < film < match** : le film s'efface pendant le match
+  (demi-vie de 24 snaps de l'attaque) ; une tendance vue surtout sur le film est plafonnée à 0,80 de confiance.
+- **Écarts au plan, après mesure** : (1) les situations générales (down & distance, zone, personnel) restent celles du
+  match — sur le film elles ressemblent à la moyenne de la ligue et noyaient les séries du match (5,9 -> 4,9 lectures
+  par match) ; (2) l'attaque se sait prévisible si le match **OU** son film le montre (mélangés, ses cassures tombaient
+  de 2,0 à 1,6) ; (3) le poids de ses propres matchs ne porte que sur la formation (taille du film).
+- **L'attaque** (self-scout) commence en sachant ce qu'elle a montré (son film à plein poids, down & distance et zone
+  compris : elle se juge avant de choisir sa formation) ; une défense qui a la **réputation** de lire (≥ 3,5 lectures par
+  match, ≥ 60 % justes, sur au moins 3 matchs du film) compte comme « elle lit » dès le premier snap. Plafonds de l'idée
+  5 inchangés.
+- **Anti-inflation** : oubli hebdomadaire (série bornée), plafonds par situation, confiance plafonnée, aucune force
+  ajoutée (`ANTICIPATION` inchangée) ; audit : film dans ses bornes, `play.scout.def.film` cohérent (bloquant).
+- **GameFeed** (additif) : `play.scout.version` « scouting-2 » ; `play.scout.def.film = {games, own, part}` (matchs sur
+  le film, dont les siens, part du film dans la preuve) ; raison « film: 41 of 52 runs on 1st down from I-formation, 44
+  games » ; `play.scout.off.on_tape` ; `game.scout_film = {home|away: {games, own, top: [{dd, formation, key, vu, sur,
+  text}]}}` (ce que chaque défense apporte du film) ; `game.scout_memory = {film, weeks, source}` ; `game.scout_model`.
+- **Site** (cellule 427 synchronisée ; rendus validés sur captures) : bulle « KEY · RUN / PASS » avec une seconde ligne
+  « SCOUTED · 44 GAMES » quand la lecture vient surtout du film, « ON TAPE » sous « BREAK · … » ; play-by-play « TDL
+  keyed on the pass (film: 154 of 166 passes on 2nd & long from Trips, 44 games incl. 2 of their own) — burned » ;
+  onglet **Game plan** : « Scouting report » (matchs sur le film, deux tendances ; rien après le coup d'envoi : pas de
+  spoiler) ; commentateur (sous-titres) : le rapport au coup d'envoi, « They've seen it on tape … ». Corrigé au passage :
+  le play-by-play échappait deux fois la note de scouting (« 2nd &amp; long »). Test navigateur `outils/site/test_memoire.js`
+  (groupe site, indépendant de l'heure).
+- **Mesures** (2 208 matchs, mêmes graines, film reconstruit depuis les GameFeeds des 4 dernières semaines ; mémoire
+  coupée -> allumée) : **lectures 5,9 -> 7,1 par match** (dont 3,0 sur le film, 79 % justes) ; **justes 64 % -> 76 %** ;
+  lectures au 1er quart-temps ≈ 1,6 -> 3,1 ; cassures 2,0 -> 2,2 (dont 0,3 « on tape » ; 0,9 avec un film qui porte la
+  réputation des défenses) ; points 53,6 -> 53,7 ; victoires 39,7 – 61,1 % -> 40,0 – 60,9 %. **8 semaines enchaînées**
+  (le film de chaque semaine nourrit la suivante) : points ≈ 53,8, lectures ≈ 6,7 (76 % justes), cassures ≈ 2,3, taille
+  du film bornée ; moyenne des 8 semaines 38,9 % (SPK) – 59,8 % (FRG). Un écart par équipe de ± 3 points n'est pas
+  mesurable ici (bruit ≈ 5 points par équipe sur ces échantillons) : la plage de 12.3 fait foi. Calcul : + 10 % par match.
+- **Semaine du 26/10 produite** (`generer_semaine.py --lundi 2026-10-26`, notebook complet, sur une copie de `data/`) en
+  **28,8 min** (idée 5 : 32 ; limite GitHub 75) ; `audit_moteur.py` : **0 anomalie bloquante, 0 alerte** (279 matchs,
+  51,9 points par match — 54,0 avec l'idée 5 sur la même semaine : écart de l'ordre du bruit sur 279 matchs) ; **7,8
+  lectures par match** (78 % justes), dont 3,3 sur le film (80 % justes) ; 2,5 cassures (0,3 « on tape ») ; film de la
+  semaine suivante 0,85 Mo.
+- **Contrôles** (exécution complète avec contrôles, **56,5 min** sur 4 cœurs, seule, **aucun échec**) : 12.2 vicies bis ✅
+  (coupé = idée 5 à l'identique sur 4 matchs, film vide aussi, film du journal = film des GameFeeds, déterministe ; film
+  de contrôle : 49 matchs, 6,0 lectures, 2,8 cassures dont 0,9 « on tape ») ; 12.3 ✅ équilibre **41,0 % (NVA) – 61,1 %
+  (FRG)** (idée 5 : 39,9 – 63,0), identités nettes, ajustement hebdomadaire dans les plages, 53,9 points par match ; 13.2
+  ✅ (Brier 0,2478, z² 1,05, biais − 1,2 %) ; **13.4** : avec les paramètres d'avant, ❌ extrêmes ± 0,042, écart moyen
+  0,033, outsiders − 28,7 % (les avances tiennent mieux) — paramètres `LIVE_*` ré-ajustés pour la mémoire (13.1, nouvel
+  outil `outils/moteur/fit_live.py` : maximum de vraisemblance sur 1 500 matchs, graines 3 100 000 + ; `GC_MEMOIRE=0`
+  garde ceux d'avant) -> ✅ extrêmes ± 0,022, écart moyen 0,019, outsiders − 8,2 % ; 14.2 ✅ ; **412 tests unitaires** ;
+  tests navigateur complets ✅ (`test_memoire.js`, `test_scouting.js`, `test_cellule427.js` compris).
+- **Calibration** (`rapport_calibration.py --jusqua "12.2 vicies bis"`, 1 104 matchs, contre `GC_MEMOIRE=0`) : toutes les
+  mesures de la ligue dans les tolérances (points 52,77 -> 52,73, passes 62,1 -> 61,9 %, yards par course 6,13 -> 6,12,
+  complétion 64,8 -> 64,8 %, pertes de balle 2,41 -> 2,36) ; victoires par équipe hors 40-60 % pour 2 franchises allumée
+  (CPH 64 %, CMT 36 %) comme pour 3 coupée (MNL 66 %, CPH, AEG 63 %) : 92 matchs par équipe, bruit ± 5 points.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

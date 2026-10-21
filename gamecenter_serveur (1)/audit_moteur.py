@@ -16,6 +16,10 @@ try:                                    # bloc E (V26) : notes effectives et con
     from moteur import developpement as _dev
 except Exception:                       # audit sans le dossier moteur/ : contrôles du bloc E réduits
     _dev = None
+try:                                    # idée 6 : bornes du film de scouting (scouting_next_week)
+    from moteur import scouting as _sc
+except Exception:
+    _sc = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -238,6 +242,7 @@ def check_week(A, folder):
             feed = json.load(open(os.path.join(folder, g["feed"]), encoding="utf-8"))
         except Exception as e:
             A.add(BLOQUANT, name, g["id"], None, f"fichier du match illisible : {e}"); continue
+        check_scout(A, name, g, feed)
         st = check_game(A, name, g, feed)
         if st:
             st["phase"] = g["phase"]; st["id"] = g["id"]; stats.append(st)
@@ -248,6 +253,7 @@ def check_week(A, folder):
             if vues.setdefault(pid, r) != r:
                 A.add(BLOQUANT, name, st["id"], None, f"{pid} : notes qui changent pendant la semaine ({vues[pid]} / {r})")
     check_progression(A, name, w)
+    check_film(A, name, folder, w)
     reg = [g for g in sched if g["phase"] == "regular"]
     teams = list(w["teams"]) if isinstance(w["teams"], dict) else [t["abbr"] for t in w["teams"]]
     per = Counter()
@@ -294,6 +300,42 @@ def check_week(A, folder):
             if not any({g["home"], g["away"]} == champs for g in semis):
                 A.add(BLOQUANT, name, None, None, f"finale de conférence {conf} : {sorted(champs)} attendus")
     return stats
+
+
+def check_scout(A, name, g, feed):
+    """Idée 6 : ce que la défense sait du film (play.scout.def.film) est cohérent avec le rapport d'avant-match."""
+    game = feed.get("game") or {}
+    mem = game.get("scout_memory")
+    for p in feed.get("plays") or []:
+        sc = p.get("scout") or {}
+        if sc.get("version") == "scouting-2" and not mem:
+            A.add(BLOQUANT, name, g["id"], p.get("seq"), "play.scout : version scouting-2 sans game.scout_memory")
+        f = (sc.get("def") or {}).get("film")
+        if f is None:
+            continue
+        if not mem or not isinstance(f.get("games"), int) or f["games"] < 1 or not (0 <= f.get("own", 0) <= f["games"]) \
+                or not (0.0 <= f.get("part", -1) <= 1.0):
+            A.add(BLOQUANT, name, g["id"], p.get("seq"), f"play.scout.def.film hors bornes : {f}")
+        rep = (game.get("scout_film") or {}).get(sc["def"].get("team")) or {}
+        if rep and rep.get("games") != f.get("games"):
+            A.add(BLOQUANT, name, g["id"], p.get("seq"), f"play.scout.def.film : {f.get('games')} matchs, rapport {rep.get('games')}")
+
+
+def check_film(A, name, folder, w):
+    """Idée 6 : le film de la semaine suivante (scouting_next_week.json) dans ses bornes."""
+    ref = w.get("scouting_next_week")
+    if not ref:
+        return
+    try:
+        film = json.load(open(os.path.join(folder, ref["file"]), encoding="utf-8")) if ref.get("file") else ref
+    except Exception as e:
+        A.add(BLOQUANT, name, None, None, f"scouting_next_week illisible : {e}"); return
+    teams = list(w["teams"]) if isinstance(w["teams"], dict) else [t["abbr"] for t in w["teams"]]
+    if _sc is not None:
+        for pb in _sc.controler_film(film, teams):
+            A.add(BLOQUANT, name, None, None, f"scouting_next_week : {pb}")
+    if film.get("semaines", 0) < 1 or ref.get("weeks") != film.get("semaines"):
+        A.add(BLOQUANT, name, None, None, f"scouting_next_week : {film.get('semaines')} semaines (renvoi : {ref.get('weeks')})")
 
 
 def check_progression(A, name, w):
