@@ -286,8 +286,9 @@ OL = ("LT", "LG", "C", "RG", "RT")
 # calibration (garde-fou 3) : la rotation met des remplaçants sur le terrain, surtout en défense (DT3, EDGE3, CB3 :
 # un tiers à la moitié des snaps) et répartit les courses (moins de « touches » par RB) ; sans correction, la ligue
 # marquait ≈ 2,4 points de plus. Points ajoutés aux notes d'unité défensives jouées (pas à celles du roster, ni aux
-# cotes : elles sont calculées ensuite sur le moteur allumé).
-CALIBRATION = {"pass_def": 1.2, "run_def": 2.0}
+# cotes : elles sont calculées ensuite sur le moteur allumé). Surtout contre la course : un bonus contre la passe
+# avantageait les défenses de couverture (BST montait à 65 % au test d'équilibre 12.3 avec + 1,2).
+CALIBRATION = {"pass_def": 0.3, "run_def": 1.8}
 
 
 def _famille(poste):
