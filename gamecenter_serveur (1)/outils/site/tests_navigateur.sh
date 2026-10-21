@@ -69,6 +69,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : fin de match dans le grand écran" node outils/site/test_fin_de_match.js
   lancer "Site : recherche" node outils/site/test_recherche.js data/weeks 8108
   lancer "Site : scores des matchs terminés" node outils/site/test_bandeau.js
+  lancer "Site : résultats du jour en cours seulement (onglets des jours)" node outils/site/test_jour.js
   lancer "Site : transformations après un touchdown" node outils/site/test_transformation.js
   lancer "Site : coups d'envoi et retours" node outils/site/test_retours.js
   lancer "Site : punts et retours" node outils/site/test_punts.js
