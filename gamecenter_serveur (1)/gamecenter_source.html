@@ -2680,6 +2680,52 @@ function rushKf(g,s,qbSpot,depthStop){
   return [[0,s.x,s.y],[0.16,s.x-d*0.9,s.y],[0.95,tgt.x,tgt.y],[1,tgt.x,tgt.y]];
 }
 
+/* step 7.1 (engine moteur/poche.py, play.pocket): the pocket. The line kick-slides into a horseshoe around the QB;
+   edge rushers arc around the tackles, interior rushers push straight into the guards. The duel the engine says was
+   lost gives way (edge: around the tackle, who turns; interior: the guard is driven back into the QB; collapse: a
+   second one gives too); the QB steps up, slides, or escapes the pocket and throws on the run. */
+function pocketPlan(pk,O,D,DF,rushers,drop,off,def,d,by,kind){
+  const ls=pk.lsgn||1, sideY=s=>s==='left'?ls:s==='right'?-ls:0, at=(k,u)=>kfAt(k,u);
+  const ol=[0,1,2,3,4].sort((a,b)=>O[b].y*ls-O[a].y*ls), OLI={LT:ol[0],LG:ol[1],C:ol[2],RG:ol[3],RT:ol[4]};
+  /* the cup: tackles deep and wide, guards and center a little less */
+  for(const [pos,i] of Object.entries(OLI)){ const s=O[i], out=Math.sign(s.y-by)||0, tk=pos==='LT'||pos==='RT', gd=pos==='LG'||pos==='RG';
+    const bk=tk?[2.2,4.4,5.2]:gd?[1.4,2.6,3.0]:[1.1,2.0,2.4], wd=tk?[1.2,2.0,1.8]:gd?[0.4,0.6,0.5]:[0,0,0];
+    off[i]=[[0,s.x,s.y],[0.18,s.x-d*bk[0],s.y+out*wd[0]],[0.45,s.x-d*bk[1],s.y+out*wd[1]],[1,s.x-d*bk[2],s.y+out*wd[2]]]; }
+  /* engine duels -> rushers on the field: edge / interior by side, blitzers on the linebackers */
+  const dl=[...DF.dl].sort((a,b)=>D[b].y*ls-D[a].y*ls), lbs=[...DF.lb,...(DF.nb||[])], used=new Set();
+  const slot=du=>{ const b=du.blocker&&du.blocker.pos;
+    let i= b==='LT'?dl[0] : b==='RT'?dl[dl.length-1] : b==='LG'?dl[1] : b==='RG'?dl[dl.length-2] : null;
+    if(i==null||used.has(i)){ const y=by+sideY(du.side)*3; i=lbs.filter(k=>!used.has(k)).sort((a,b)=>Math.abs(D[a].y-y)-Math.abs(D[b].y-y))[0]; }
+    if(i!=null) used.add(i); return i; };
+  const map=pk.duels.map(du=>({du,i:slot(du),b:du.blocker&&OLI[du.blocker.pos]!=null?OLI[du.blocker.pos]:null}));
+  for(const m of map) if(m.i!=null&&!rushers.has(m.i)){ rushers.add(m.i); const s=D[m.i]; def[m.i]=[[0,s.x,s.y],[0.16,s.x-d*0.9,s.y],[0.95,lerp(s.x,drop.x,0.62),lerp(s.y,drop.y,0.37)],[1,lerp(s.x,drop.x,0.62),lerp(s.y,drop.y,0.37)]]; }
+  const lost=pk.beaten!=null&&pk.shape!=='clean'?pk.beaten:null;
+  const second=lost!=null&&pk.shape==='collapse'?map.map((m,k)=>[m,k]).filter(([m,k])=>k!==lost&&m.du.t!=null).sort((a,b)=>a[0].du.t-b[0].du.t)[0]:null;
+  const u=kind==='sack'?0.36:0.42;
+  /* the QB: steps up, slides, escapes (his path decides where the rushers go) */
+  const q0=off[6], react=lost!=null?pk.reaction:null, sy=sideY(pk.side)||(rand(0,1)<.5?1:-1);
+  let qbMove=null;
+  if(react==='step_up') qbMove={x:drop.x+d*1.8,y:drop.y,u:u+0.12};
+  else if(react==='slide') qbMove={x:drop.x+d*0.2,y:drop.y+sy*1.9,u:u+0.12};
+  else if(react==='escape') qbMove={x:drop.x+d*1.0,y:clamp(by+sy*7.5,3,50.3),u:u+0.22};
+  if(qbMove){ const end=react==='escape'?{x:qbMove.x+d*1.0,y:clamp(qbMove.y+sy*2.5,2,51.3)}:{x:qbMove.x+d*0.3,y:qbMove.y};
+    off[6]=kfCut(q0,u,[[qbMove.u,qbMove.x,qbMove.y],[1,end.x,end.y]]); }
+  const qbAt=v=>at(off[6],v);
+  for(const [k,m] of map.entries()){ if(m.i==null) continue; const s=D[m.i], edge=m.du.type==='edge';
+    const bl=m.b!=null?off[m.b]:null, beat=k===lost||(second&&second[1]===k), ub=k===lost?u:u+0.06;
+    if(beat){
+      const bp=bl?at(bl,ub):{x:s.x-d*2,y:s.y}, out=Math.sign(bp.y-by)||sy;
+      const by0= edge?{x:bp.x-d*0.5,y:bp.y+out*0.4}:{x:bp.x+d*0.2,y:bp.y};
+      def[m.i]=[[0,s.x,s.y],[0.16,s.x-d*0.9,s.y],[Math.max(0.2,ub-0.1),bp.x+d*0.6,bp.y+(edge?out*1.1:0)],[ub,by0.x,by0.y],[Math.min(0.98,ub+0.14),qbAt(ub+0.14).x+d*0.8,qbAt(ub+0.14).y],[1,qbAt(1).x+d*0.8,qbAt(1).y]];
+      if(bl){ const q=at(bl,ub); off[m.b]=kfCut(bl,ub, edge ? [[ub+0.08,q.x-d*0.4,q.y-out*0.6],[1,q.x-d*0.5,q.y-out*0.7]]      /* the tackle turns */
+                                                   : [[ub+0.12,drop.x+d*1.4,lerp(q.y,drop.y,0.5)],[1,drop.x+d*1.2,lerp(q.y,drop.y,0.6)]]); }   /* driven back */
+    } else if(bl){
+      const p1=at(bl,0.45), p2=at(bl,1), out=Math.sign(p1.y-by)||1;
+      def[m.i]= edge ? [[0,s.x,s.y],[0.16,s.x-d*0.9,s.y],[0.45,p1.x+d*0.5,p1.y+out*1.0],[0.75,p2.x-d*0.3,p2.y+out*0.7],[1,p2.x-d*0.4,p2.y+out*0.6]]
+                     : [[0,s.x,s.y],[0.16,s.x-d*0.6,s.y],[0.45,p1.x+d*0.8,p1.y],[1,p2.x+d*0.7,p2.y]];
+    } }
+  return {u, beaten:lost!=null?map[lost].i:null, qbMove, qbKf:off[6], uMin:qbMove?Math.min(0.86,qbMove.u+0.06):null, shape:pk.shape, reaction:react};
+}
 /* Scrimmage play. `imp` (imposed by the engine) = {kind:'comp'|'inc'|'sack'|'int'|'run', endX, td, target}.
    Live demo boards pass a random imp; the drawing logic is the same. The ball never lobs on a pass. */
 function planScrimmage(g,call,imp){
@@ -2727,6 +2773,8 @@ function planScrimmage(g,call,imp){
     if(dc==='BLITZ'){ DF.lb.slice(0,2).forEach(i=>rushers.add(i)); }
     if(call.def.formation==='3_4') rushers.add(3);
     for(const i of rushers) def[i]=rushKf(g,D[i],drop,rushers.size>5&&DF.lb.includes(i)?0.8:0.62);
+    const PK=imp.pocket&&!boot?pocketPlan(imp.pocket,O,D,DF,rushers,drop,off,def,d,by,imp.kind):null;   /* step 7.1: the pocket */
+    if(PK) P.pocket=PK;
     const man=dc==='MAN'||dc==='BLITZ';
     const zoneSpots=[]; // [i, depth, y]
     const cov=(i,rk)=>{ def[i]=shadowKf(D[i],rk,0.07,d*1.1,sideOf(kfAt(rk,0.5).y,by)*0.8); };
@@ -2787,7 +2835,7 @@ function planScrimmage(g,call,imp){
       /* the throw must leave the QB after the drop, and travel ~22 yd/s (straight line) */
       for(let k=0;k<40;k++){
         const C=Cfor(uc), q=kfAt(off[6],uc), fu=Math.hypot(C.x-q.x,C.y-q.y)/(22*dur);
-        if(uc-fu>=0.3||uc>=0.82) break;
+        if(uc-fu>=(PK&&PK.qbMove?Math.max(0.3,PK.qbMove.u-0.02):0.3)||uc>=(PK&&PK.qbMove?0.92:0.82)) break;   /* 7.1: after he moved */
         /* fix (2026-10) : sur une complétion, le point d'attrapé ne doit jamais
            dépasser le gain officiel (total) — sinon la "course après réception"
            doit reculer pour recaler le joueur sur le spot final, ce qui se voit
@@ -2808,8 +2856,13 @@ function planScrimmage(g,call,imp){
     if(imp.kind==='sack'){
       const ss={x:imp.endX, y:imp.endY!=null?clamp(imp.endY,1,52.3):drop.y+rand(-2,2)};
       off[6]=[[0,qb.x,qb.y],[underCenter?0.28:0.18,drop.x,drop.y],[0.48,drop.x-d*0.6,drop.y+rand(-1.5,1.5)],[0.66,ss.x,ss.y],[1,ss.x,ss.y]];
-      const sacker=[...rushers].sort((a,b)=>Math.hypot(D[a].x-drop.x,D[a].y-drop.y)-Math.hypot(D[b].x-drop.x,D[b].y-drop.y))[dc==='BLITZ'?0:1]||[...rushers][0];
+      let sacker=[...rushers].sort((a,b)=>Math.hypot(D[a].x-drop.x,D[a].y-drop.y)-Math.hypot(D[b].x-drop.x,D[b].y-drop.y))[dc==='BLITZ'?0:1]||[...rushers][0];
       def[sacker]=[[0,D[sacker].x,D[sacker].y],[0.2,D[sacker].x-d*1,D[sacker].y],[0.5,drop.x+d*0.9,drop.y],[0.66,ss.x+d*0.7,ss.y+0.4],[1,ss.x+d*0.7,ss.y+0.4]];
+      if(PK&&PK.beaten!=null){                                 /* step 7.1: the rusher who won his duel gets him */
+        sacker=PK.beaten; const q=kfAt(off[6],0.5);
+        if(PK.qbMove){ const m=PK.qbMove; ss.x=lerp(ss.x,m.x,0.6); ss.y=m.y; off[6]=kfCut(PK.qbKf,0.5,[[0.66,ss.x,ss.y],[1,ss.x,ss.y]]); }
+        def[sacker]=kfCut(def[sacker],PK.u,[[0.6,lerp(q.x,ss.x,0.5)+d*0.9,lerp(q.y,ss.y,0.5)],[0.66,ss.x+d*0.7,ss.y+0.4],[1,ss.x+d*0.7,ss.y+0.4]]);
+      }
       P.carrier=[[0.08,1,'off',6]]; P.pStart=0.5; P.pEnd=0.72; P.wDef=[.5,.5,.5,.5,.4,.4,0,0,0,.15,.15];
       P.spot=ss; P.gain=(ss.x-L)*d; P.sacker=sacker; P.stop={i:sacker,at:0.66};   /* red blinking ring on the sacker */
     } else {
@@ -3420,7 +3473,8 @@ function planFromFeed(g,P){
   const dk=P.decision||{}, cov=t==='pass'&&!scr?(dk.bust?'bust':dk.reception||null):null;   /* engine block C */
   const pd=!!(P.players&&P.players.defender&&P.players.defender.credit==='PASS_DEFENDED');
   const rs=P.run&&(P.run.side==='left'||P.run.side==='right')?(P.run.side==='left'?-1:1)*(P.offense==='home'?1:-1):null;   /* block F: the run's side */
-  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,oob,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null});
+  const pk=t==='pass'&&P.pocket&&Array.isArray(P.pocket.duels)?Object.assign({},P.pocket,{lsgn:P.offense==='home'?-1:1,act:dk.action||''}):null;   /* step 7.1 */
+  const plan=planScrimmage(g,call,{kind,target:rpSlot(P),endX,td,endY:ey,oob,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null,pocket:pk});
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
@@ -3506,7 +3560,18 @@ function rpScoutNote(P,g){ const S=P.scout; if(!S||typeof S!=='object') return '
     s+=' · '+nm(S.def.team)+' keyed on the '+(S.def.key==='run'?'run':'pass')+' ('+String(S.def.why||'')+(fo>=1?' incl. '+fo+' of their own':'')+')';
     const ok=scOk(P); s+=S.def.right?(ok?' — right guess, beaten anyway':' — read it'):(ok?' — burned':' — wrong guess'); }
   return s; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpFumbleNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+/* step 7.1 (play.pocket): what the pocket did — stepped up, slid, flushed out and threw on the run, who beat whom */
+function rpPocketNote(P){ const k=P.pocket; if(!k||k.shape==='clean'||k.beaten==null||!Array.isArray(k.duels)) return '';
+  const du=k.duels[k.beaten]||{}, sur=n=>String(n||'').split(' ').slice(-1)[0], R=sur(du.rusher&&du.rusher.name), B=sur(du.blocker&&du.blocker.name);
+  const side=k.side==='left'?'left':k.side==='right'?'right':'', act=(P.decision||{}).action;
+  if(P.result==='sack'||(P.result==='safety'&&P.safety_via==='sack')){
+    if(du.free) return ` · ${R} comes in unblocked`;
+    return k.shape==='collapse'?` · the pocket collapses — ${R} beats ${B}`:` · ${R} beats ${B}${du.type==='edge'?' off the edge':' up the middle'}`; }
+  if(k.reaction==='step_up') return ' · steps up in the pocket';
+  if(k.reaction==='slide') return ' · slides away from the rush';
+  if(k.reaction==='escape') return act==='THROWAWAY'?` · flushed ${side}, throws it away`:k.on_run?` · flushed ${side}, throws on the run`:' · flushed out of the pocket';
+  return ''; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:String(P.text||'')+rpFumbleNote(P)+rpPocketNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }

@@ -43,12 +43,18 @@ Horloge réelle et valeur des décisions (12.2 quaterdecies, coupées par défau
 
 Bloc F — intelligence du jeu de course (12.2 quindecies) :
     course              boîte, point d'attaque, duels de ligne, trou, lecture du porteur (cutback, rebond), contact
+
+Étape 7.1 — la poche et la ligne offensive (12.2 vicies ter) :
+    poche               duels de protection (EDGE / tackle, DT / guard, blitzeurs), duel perdu au temps avant la
+                        pression, forme de la poche (bords, intérieur, effondrée), réaction du QB (monte, glisse, sort
+                        de la poche et lance en courant)
 """
 from .aleatoire import flux
 from .progressions import progression
 from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
 from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu, developpement, playbook_expansion
+from . import poche as poche_mod
 from .intelligence_qb import attributs_qb
 from .intelligence_joueurs import attributs_joueur
 from .plan_de_jeu import plan_de_jeu as plan_de_jeu_adverse, AdaptiveGameplanEngine, MemoireTendances
@@ -57,13 +63,14 @@ VERSION = "bloc-E-1"
 FLUX_DECISION = "decision-passe"
 FLUX_JOUEURS = "joueurs-passe"           # bloc C : son propre flux (garde-fou 2)
 FLUX_PLAN = "plan-de-jeu"                # bloc D : son propre flux (cible favorite lue en premier)
+FLUX_POCHE = poche_mod.FLUX              # étape 7.1 : son propre flux
 
 _REACTION = DefensiveReactionEngine()
 _QB = QBDecisionEngine()
 
 
 def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, qb, niveau_pression,
-                  graine_match, numero_action, plan=None, appel=None):
+                  graine_match, numero_action, plan=None, appel=None, poche=None):
     """Toute la chaîne d'une passe, dans le flux dédié de cette action.
 
     qb avec "iq" (moteur.intelligence_qb.attributs_qb) -> décision du bloc B ; sans -> bloc A à l'identique.
@@ -73,6 +80,9 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
     favorite ; flux à part « plan-de-jeu »), bracket et protection dans l'état post-snap ; None -> bloc C à l'identique.
     appel (moteur.playbook_expansion.appel_passe) -> extension du playbook : paquet défensif, jeu de rush, front,
     protection (rôles qui restent bloquer), motion, shift, enchaînement ; None -> bloc D à l'identique.
+    poche (étape 7.1) : {"ligne": {LT…RT: joueur}, "rushers": {"EDGE": […], "DT": […], "LB": […], "S": […], "CB": […]},
+    "roles": {"RB": joueur, "TE": joueur}} -> duels de protection, forme de la poche, réaction du QB (moteur.poche,
+    flux « poche ») ; decision.poche garde la poche (journal, vainqueur du duel) ; None -> moteur d'avant à l'identique.
     Renvoie (lectures, etat_post_snap, decision) ; avec un plan, decision.plan note ce qui a joué.
     """
     rng = flux(FLUX_DECISION, graine_match, numero_action)
@@ -91,7 +101,16 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
     if bloc_c:
         qui = intelligence_joueurs.ajuster_post_snap(etat, lectures, receveurs, defenseurs, concept,
                                                      flux(FLUX_JOUEURS, graine_match, numero_action))
-    decision = _QB.decide(etat, lectures, qb, rng)
+    P = None
+    if poche is not None and (qb or {}).get("iq"):
+        roles = poche.get("roles") or {}
+        retire = list((appel or {}).get("retire") or []) + (["RB"] if (plan or {}).get("protection") else [])
+        prot = [roles[r] for r in dict.fromkeys(retire) if roles.get(r)]
+        P = poche_mod.Poche(poche_mod.affecter(poche["ligne"], poche["rushers"], etat.rushers, prot),
+                            flux(FLUX_POCHE, graine_match, numero_action), rush=(appel or {}).get("rush"))
+    decision = _QB.decide(etat, lectures, qb, rng, poche=P) if P is not None else _QB.decide(etat, lectures, qb, rng)
+    if P is not None:
+        decision.poche = P
     if bloc_c:
         _completer_bloc_c(decision, etat, receveurs, qui)
     if plan:

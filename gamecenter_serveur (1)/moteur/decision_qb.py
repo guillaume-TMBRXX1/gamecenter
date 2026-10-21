@@ -22,6 +22,7 @@ Même un QB élite se trompe (erreur de lecture jamais nulle, bruit de la sépar
 from dataclasses import dataclass, asdict
 
 from .reaction_defensive import LIBRE, SERRE, COUVERT, DOUBLE
+from . import poche as poche_mod
 
 LANCER, THROWAWAY, SCRAMBLE, SACK = "LANCER", "THROWAWAY", "SCRAMBLE", "SACK"
 
@@ -86,6 +87,9 @@ class QBDecision:
     # bloc D (moteur.plan_de_jeu) : ce que le plan de jeu a changé sur cette passe (bracket, protection, receveur
     # évité, cible favorite lue en premier) — rempli par moteur.decider_passe
     plan: dict = None
+    # étape 7.1 (moteur.poche) : réaction du QB quand la poche cède, lancer en courant hors de la poche
+    en_courant: bool = False
+    reaction: str = ""
 
     def to_dict(self):
         return asdict(self)
@@ -174,7 +178,7 @@ def modificateurs_b(qb, statut, presse, erreur_optimiste):
 class QBDecisionEngine:
     """Décide qui reçoit le ballon (ou ce qui arrive à la place)."""
 
-    def decide(self, etat, lectures, qb, rng):
+    def decide(self, etat, lectures, qb, rng, poche=None):
         """
         etat     : PostSnapState (moteur.reaction_defensive)
         lectures : progression (même ordre que pour etat)
@@ -182,7 +186,8 @@ class QBDecisionEngine:
         rng      : flux dédié
         """
         if (qb or {}).get("iq"):
-            return self.decide_b(etat, lectures, qb, rng)
+            return self.decide_b(etat, lectures, qb, rng, poche_p=poche) if poche is not None \
+                else self.decide_b(etat, lectures, qb, rng)
         primaire = lectures[0]["role"] if lectures else ""
         pas = pas_de_lecture(qb)
         t, vues, n = 0.0, [], 0
@@ -229,11 +234,16 @@ class QBDecisionEngine:
                               e.statut in (COUVERT, DOUBLE), t_fin)
         return QBDecision(SACK, primaire, "", 0, n, "", True, False, t_fin)
 
-    def decide_b(self, etat, lectures, qb, rng):
-        """Bloc B : chrono de poche, statut perçu, style du QB (voir l'en-tête du module)."""
+    def decide_b(self, etat, lectures, qb, rng, poche_p=None):
+        """Bloc B : chrono de poche, statut perçu, style du QB (voir l'en-tête du module).
+        poche (moteur.poche.Poche, étape 7.1) : quand la pression arrive, le QB réagit (monte, glisse, sort de la poche)
+        et gagne quelques dixièmes ; sorti, il lance en courant. Sans poche : bloc B à l'identique."""
         primaire = lectures[0]["role"] if lectures else ""
         depart, pas, avance, poche = chrono_b(qb)
         ttp = round(max(0.8, etat.temps_pression + poche), 2)
+        if poche_p is not None:                         # étape 7.1 : quel duel cède au temps avant la pression (un peu
+            ttp = round(max(0.8, ttp - poche_mod.AVANCE), 2)   # plus tôt : le QB regagne ce temps en réagissant)
+            poche_p.armer(ttp)
         hate = ttp - B["hate"]
         t, vues, n = 0.0, [], 0
         for i, l in enumerate(lectures):
@@ -254,12 +264,26 @@ class QBDecisionEngine:
 
         # plus personne à lire, ou la pression est là
         t_fin = round(max(t, ttp) if n == len(lectures) else ttp, 2)
+        hors, reac = False, None
+        if poche_p is not None:                         # étape 7.1 : la poche cède — le QB réagit (flux « poche »)
+            r = poche_p.reagir(qb.get("iq"), float(((qb or {}).get("ratings") or {}).get("mobility", 70)))
+            reac = r["kind"]
+            if r["gain"] > 0:
+                d = self._gain_poche(etat, lectures, qb, poche_p, primaire, vues, n, t, ttp, r, depart, pas, avance)
+                if d is not None:
+                    return d
+                hors = reac == "escape"
+                t_fin = round(t_fin + r["gain"], 2)
+                rng = poche_p.rng
         jouables = [v for v in vues if v[2] in (LIBRE, SERRE)]
+        if hors:                                        # sorti de la poche : routes courtes et moyennes, en courant
+            jouables = [v for v in jouables if v[0].get("classe") in poche_mod.EN_COURANT["classes"]] or jouables
         if jouables:
             l, e, percu = max(jouables, key=lambda v: (ORDRE.index(v[2]), v[1].separation))
             p = P_SOUS_PRESSION[percu] + (_iq(qb, "pressure_response") - REF) * B["pression_pr"]
             if rng.random() < _borne(p, 0.05, 0.95):
-                return self._lancer_b(qb, primaire, l, e, percu, lectures.index(l) + 1, n, True, t_fin, ttp)
+                return self._fin_poche(self._lancer_b(qb, primaire, l, e, percu, lectures.index(l) + 1, n, True, t_fin, ttp),
+                                       hors, reac)
         F = B["fin"]
         dm, mob = _iq(qb, "decision_making"), float(((qb or {}).get("ratings") or {}).get("mobility", 70))
         aw, pa, aggr = _iq(qb, "awareness"), _iq(qb, "pocket_awareness"), _iq(qb, "aggressiveness")
@@ -269,8 +293,16 @@ class QBDecisionEngine:
         p_away = max(0.05, FIN["throwaway"] + (dm - 70) * FIN["throwaway_dm"] + (aw - REF) * F["away_aw"]
                      + (pa - REF) * F["away_pa"])
         p_force = max(0.04, FIN["forcee"] + (dm - 70) * FIN["forcee_dm"] + (aggr - 50) * F["force_aggr"])
+        if hors:                                        # hors de la poche : jeter le ballon devient légal, il court
+            H = poche_mod.FIN_HORS_POCHE
+            p_scr, p_away = p_scr * H["scramble"], p_away * H["throwaway"]
+            tot = p_scr + p_away + p_force
+            if tot > 0.97:
+                p_scr, p_away, p_force = (x * 0.97 / tot for x in (p_scr, p_away, p_force))
         r = rng.random()
         fin = dict(percu="", erreur_lecture=False, presse=True, temps_poche=ttp, bloc="B")
+        if reac is not None:
+            fin.update(reaction=reac)                    # en_courant : un lancer seulement (journal : reaction)
         if r < p_scr:
             return QBDecision(SCRAMBLE, primaire, "", 0, n, "", True, False, t_fin, **fin)
         if r < p_scr + p_away:
@@ -278,8 +310,43 @@ class QBDecisionEngine:
         if r < p_scr + p_away + p_force and lectures:
             cands = vues or [(lectures[0], etat.receveurs[lectures[0]["role"]], etat.receveurs[lectures[0]["role"]].statut)]
             l, e, percu = max(cands, key=lambda v: (ORDRE.index(v[2]), v[1].separation))
-            return self._lancer_b(qb, primaire, l, e, percu, lectures.index(l) + 1, n, True, t_fin, ttp)
+            return self._fin_poche(self._lancer_b(qb, primaire, l, e, percu, lectures.index(l) + 1, n, True, t_fin, ttp),
+                                   hors, reac)
         return QBDecision(SACK, primaire, "", 0, n, "", True, False, t_fin, **fin)
+
+    def _gain_poche(self, etat, lectures, qb, poche, primaire, vues, n, t, ttp, r, depart, pas, avance):
+        """Étape 7.1 : le temps gagné en montant, en glissant ou en sortant de la poche — les lectures continuent (sous
+        pression), dans le flux de la poche. Sorti de la poche (escape) : lancer en courant, routes courtes et moyennes."""
+        rng, fin, hors = poche.rng, ttp + r["gain"], r["kind"] == "escape"
+        for i in range(n, len(lectures)):
+            l = lectures[i]
+            ouvre = max(0.45, l["ouverture"] - avance) + depart
+            t = max(ouvre, t + pas) if i else ouvre
+            t = max(t, ttp)
+            if t > fin:
+                break
+            if hors and l.get("classe") not in poche_mod.EN_COURANT["classes"]:
+                continue
+            e = etat.receveurs[l["role"]]
+            p_err = p_erreur_lecture(qb, etat.famille, True)
+            if getattr(etat, "deguisement", 0.0):
+                p_err = _borne(p_err * (1 + etat.deguisement), B["erreur"]["min"], B["erreur"]["max"])
+            percu = percevoir(e.statut, p_err, rng)
+            vues.append((l, e, percu))
+            if rng.random() < p_lancer_b(qb, percu, l["niveau"], False):
+                return self._fin_poche(self._lancer_b(qb, primaire, l, e, percu, i + 1, i + 1, True, round(t, 2), ttp),
+                                       hors, r["kind"])
+        return None
+
+    @staticmethod
+    def _fin_poche(d, hors, reac):
+        """Lancer après une réaction dans la poche ; en courant : précision moindre (moteur.poche.EN_COURANT)."""
+        d.reaction = reac or ""
+        if hors and d.action == LANCER:
+            d.en_courant = True
+            d.mod_inc = round(d.mod_inc * poche_mod.EN_COURANT["inc"], 4)
+            d.mod_int = round(d.mod_int * poche_mod.EN_COURANT["int"], 4)
+        return d
 
     @staticmethod
     def _lancer_b(qb, primaire, l, e, percu, lecture, n, presse, t, ttp):
