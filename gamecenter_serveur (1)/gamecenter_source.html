@@ -685,6 +685,7 @@
   .pst.depth th[scope="row"]{width:150px}
   .pst.depth td{vertical-align:top;text-align:left;white-space:normal}
   .pst.depth thead th{text-align:left}
+  @media (max-width:640px){ .pst.depth th[scope="row"]{width:84px} .dc-p{padding:4px 7px;font-size:12px} }
   .dc-p{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;margin:2px 6px 2px 0;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:none;color:inherit;font:600 12.5px var(--f-ui);cursor:pointer;text-align:left}
   .dc-p:hover,.dc-p:focus-visible{border-color:var(--cyan)}
   .dc-p.b{border-style:dashed}
@@ -4995,7 +4996,7 @@ function playerCardHTML(g,side,idx){
   const sn=rotSnaps(g,teamSide,pl,rpDone(g));   /* step 7.3: playing time, starter or backup, energy at the final whistle */
   if(sn){ lines.unshift(['Snaps',`${sn.n} (${sn.pct} %)`]);
     lines.unshift(['Depth',pl.depth===2?`Backup · ${pl.specialty||ROT_PROFILE[pl.profile]||''}`:'Starter']);
-    if(rpDone(g)>=g.plays.length&&pl.energy!=null) lines.push(['Energy at the final whistle',String(pl.energy)]); }
+    if((rpDone(g)>=g.plays.length||g.status==='final')&&pl.energy!=null) lines.push(['Energy at the final whistle',String(pl.energy)]); }
   return head+playerBodyHTML(pl,tone,'This game',lines,'No stats yet in this game');
 }
 /* Body of a player card (attributes, intelligence, development, stats): during a game and from a roster */
