@@ -1777,6 +1777,53 @@ plan validé ; rendus validés sur vidéos au ralenti ; pas de mise en évidence
   équipes des deux côtés (92 matchs par équipe, bruit ± 5 points, voir section 65) — l'équilibre est jugé par 12.3 ;
   427 tests unitaires, tests navigateur (dont `test_poche.js`) ✅.
 
+### 68. Les pénalités pendant l'action (notebook 12.2 vicies quater, 21/10/2026 — allumées)
+Feuille de route : « moteur plus intelligent », étape 7.2. Module `moteur/penalites.py` (tests `test_penalites.py`),
+cellule **12.2 vicies quater** (après 12.2 vicies ter) ; interrupteur `GC_PENALITES=0` : moteur d'avant à l'identique
+(contrôlé sur 4 matchs, référence calculée avant tout branchement) ; flux de hasard dédié « penalites ». **Décisions de
+Guillaume (21/10)** : seulement les fautes pendant l'action (holding, roughing the passer, interférences, illegal
+contact ; pas de false start, offside, delay of game, illegal formation) ; ≈ 8 drapeaux par match ; accepter / refuser
+selon la probabilité de victoire ; rendus validés.
+- **Avant** : aucune pénalité, ni dans le moteur ni sur le site.
+- **Qui commet la faute** (un profil, pas un niveau) : holding offensif — le bloqueur qui perd son duel de protection
+  (poche 7.1), à la course un bloqueur faible au bloc de course ; holding défensif et illegal contact — un défenseur en
+  couverture, selon sa discipline (bloc C) ; interférence défensive — le défenseur responsable de la cible, sur un ballon
+  disputé, plus souvent loin ; interférence offensive — la cible ; roughing — le rusher qui a gagné son duel, bien plus
+  souvent sous pression. Une identité « discipline » (AEG, MRD, BST, GRZ) en commet moins. Un drapeau au plus par action.
+- **Ce qu'elle coûte** (règles NFL, moitié de la distance près des en-buts) : 10 yards et essai rejoué (holding
+  offensif, OPI) ; 5 yards et premier essai (holding défensif, illegal contact) ; ballon à l'endroit de la faute et
+  premier essai (DPI ; aux 1 dans l'en-but) ; 15 yards et premier essai (roughing ; ajoutés à la fin d'une passe
+  complétée). Acceptée, la faute **annule l'action** : ni yards ni stats (porteur, défenseur crédité, stats de saison
+  14.1), le temps a passé. Pas de faute de la défense sur une interception, un fumble ou un safety, pas de roughing sur
+  un touchdown (cas où la faute annulerait un changement de possession ou s'appliquerait au coup d'envoi). Non retenus
+  (très rares) : le holding dans son en-but (safety) — moitié de la distance à la place —, l'essai sans temps après une
+  faute de la défense quand la mi-temps se termine.
+- **Accepter / refuser** : l'équipe qui subit la faute garde l'état qui lui donne la meilleure probabilité de victoire
+  (`moteur/valeur.py` : même loi de la marge finale ; points attendus d'un essai selon down, distance et position).
+- **GameFeed** (additif) : `play.penalty = {version, type, name, team, player {id, name, pos, number}, chooser, accepted,
+  declined, wp {accept, decline}, yards, nullified, auto_first, replay_down, after {yl, down, togo}, play_before {result,
+  gain, text}}` ; action annulée : `result` « penalty », `gain` = yards de la pénalité, l'action jouée dans `play_before` ;
+  `game.penalty_model`.
+- **Site** (cellule 427 synchronisée) : l'action annulée est dessinée comme elle a été jouée ; un drapeau jaune part au
+  moment de la faute, sur le joueur qui l'a commise, et reste sur le terrain jusqu'à l'action suivante ; puce « FLAG »,
+  puis l'appel (« FLAG · HOLDING · 10 YDS · REPEAT DOWN », « +15 ROUGHING THE PASSER », « FLAG DECLINED ») ;
+  play-by-play « PENALTY on CTX: Holding, offense, #74 Lachance, 10 yards, repeat 3rd down — no play (Kian Morrow run,
+  +6) », « Flag: Illegal contact, defense, #33 Sandoval — declined » ; stats d'équipe « Penalties (yards) », fiche
+  joueur « Penalties » ; commentateur (sous-titres). Test navigateur `outils/site/test_penalites.js`.
+- **Audit** (`audit_moteur.py`, `check_penalty`) : type dans la liste, équipe, joueur, accepté XOR refusé, choix conforme
+  à la probabilité de victoire, action annulée ⇔ « penalty », pas de points sur une action annulée, down / distance
+  après la pénalité, yards bornés ; repère « drapeaux_par_match » (alerte hors 4-12).
+- **Mesures** (144 matchs) : 8,3 drapeaux par match (7,1 acceptés, 1,2 refusés, ≈ 71 yards acceptés) — holding offensif
+  3,2, holding défensif 2,0, interférence défensive 1,4, illegal contact 0,6, roughing 0,55, interférence offensive 0,5.
+- **Contrôles** (21/10, en local) : notebook complet ✅ (12.2 vicies quater sur 25 matchs : 8,1 drapeaux par match ;
+  12.3 : toutes les franchises entre 36 et 64 % ; 13.2 : Brier moteur − formule −0,0078 ; 13.4 : cotes en direct
+  calibrées, extrêmes ± 0,024, pas de réajustement) ; audit de la semaine exportée par 14.2 (279 matchs) : 0 anomalie,
+  0 alerte, 7,96 drapeaux par match ; rapport de calibration (1104 matchs, `GC_PENALITES=0` -> `1`, `--jusqua "12.2
+  vicies quater"`) : toutes les statistiques dans les tolérances (complétion 63,3 -> 63,1 %, yards par passe 7,37 ->
+  7,27, points 51,8 -> 51,9, premiers essais 41,8 -> 43,5, drives 20,3 -> 19,8, temps ×1,05) ; la plage 40-60 % par
+  équipe du rapport sort pour MNL, CPH, SPK (92 matchs par équipe, bruit ± 5 points ; 12.3 sur 2208 matchs : 51, 59,
+  42 %) ; 443 tests unitaires, tests navigateur (dont `test_penalites.js`) ✅.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
