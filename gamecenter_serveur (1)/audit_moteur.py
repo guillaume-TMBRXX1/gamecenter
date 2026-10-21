@@ -20,6 +20,10 @@ try:                                    # idée 6 : bornes du film de scouting (
     from moteur import scouting as _sc
 except Exception:
     _sc = None
+try:                                    # étape 7.2 : règles des pénalités pendant l'action
+    from moteur import penalites as _pe
+except Exception:
+    _pe = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -154,10 +158,11 @@ def check_game(A, week, g_sched, feed):
                 bad(s, "changement d'équipe sans raison")
             if r in ("interception", "fumble_lost") and pc not in ("turnover", "score"):
                 bad(s, f"« {r} » sans changement de possession ({pc})")
-            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff", "touchdown"):   # bloc 2 : TD puis transformation
+            if p["down"] == 4 and pc is None and a["down"] != 1 and r not in ("kickoff", "touchdown", "penalty"):   # bloc 2 : TD puis transformation
                 bad(s, f"4e tentative ratée sans perte du ballon ({r}, gain {p['gain']} sur {p['to_go']})")
             # progression des tentatives
-            if pc is None and r in ("run", "complete", "incomplete", "sack") and p["down"]:
+            if pc is None and r in ("run", "complete", "incomplete", "sack") and p["down"] and \
+                    not (p.get("penalty") or {}).get("accepted"):
                 gained = (p["gain"] or 0) >= p["to_go"]
                 if gained and a["down"] != 1:
                     bad(s, f"premier essai obtenu (+{p['gain']} sur {p['to_go']}) mais down {a['down']}")
@@ -167,6 +172,7 @@ def check_game(A, week, g_sched, feed):
             halves += 1
             if q != 2:
                 bad(s, f"mi-temps au quart-temps {q}")
+        check_penalty(A, week, gid, p, scorer)
         # --- joueurs ---
         pl = p.get("players") or {}
         if r in ("run", "complete", "touchdown") and p["call"]["type"] in ("run", "pass") and not (pl.get("carrier") or {}).get("name"):
@@ -228,8 +234,50 @@ def check_game(A, week, g_sched, feed):
             "home": fs["home"] if fs else 0, "away": fs["away"] if fs else 0,
             "tie": bool(fs and fs["home"] == fs["away"]), "ot": bool(game.get("overtime")),
             "res": Counter(p["result"] for p in plays),
+            "flags": sum(1 for p in plays if p.get("penalty")), "penalty_model": game.get("penalty_model"),
             "td_len": [p["gain"] for p in plays if p["result"] == "touchdown" and p["gain"] is not None],
             "ratings": ratings}
+
+
+def check_penalty(A, week, gid, p, scorer):
+    """Étape 7.2 : un drapeau pendant l'action — type, équipe, yards, choix selon la probabilité de victoire, effet."""
+    pen = p.get("penalty")
+    s = p["seq"]
+    bad = lambda m: A.add(BLOQUANT, week, gid, s, m)
+    if not pen:
+        if p["result"] == "penalty":
+            bad("action « penalty » sans play.penalty")
+        return
+    if _pe is not None and pen.get("type") not in _pe.TYPES:
+        bad(f"pénalité hors de la liste (pendant l'action seulement) : {pen.get('type')}"); return
+    off = _pe is not None and pen["type"] in _pe.DE_L_ATTAQUE
+    if _pe is not None and pen.get("team") != ("offense" if off else "defense"):
+        bad(f"pénalité {pen['type']} attribuée à « {pen.get('team')} »")
+    if not (pen.get("player") or {}).get("id"):
+        bad("pénalité sans joueur")
+    if bool(pen.get("accepted")) == bool(pen.get("declined")):
+        bad("pénalité ni acceptée ni refusée (ou les deux)")
+    w = pen.get("wp") or {}
+    if w.get("accept") is not None and w.get("decline") is not None:
+        best = (max if pen.get("chooser") == "offense" else min)(w["accept"], w["decline"])
+        if w["accept" if pen.get("accepted") else "decline"] != best:
+            bad(f"choix contraire à la probabilité de victoire ({pen.get('chooser')} : {w})")
+    if not pen.get("accepted"):
+        if p["result"] == "penalty":
+            bad("pénalité refusée mais action annulée")
+        return
+    if pen.get("nullified") != (p["result"] == "penalty") or (pen.get("nullified") and not pen.get("play_before")):
+        bad(f"pénalité acceptée : action annulée {pen.get('nullified')} / résultat « {p['result']} »")
+    if scorer:
+        bad("des points sur une action annulée par une pénalité")
+    af, a = pen.get("after") or {}, p["after"]
+    if a["status"] == "live" and (a["down"], a["to_go"]) != (af.get("down"), af.get("togo")):
+        bad(f"après la pénalité : {a['down']}&{a['to_go']} au lieu de {af.get('down')}&{af.get('togo')}")
+    if pen.get("auto_first") and af.get("down") != 1 or pen.get("replay_down") and af.get("down") != p["down"]:
+        bad(f"pénalité : essai {p['down']} → {af.get('down')} (premier essai {pen.get('auto_first')}, rejoué {pen.get('replay_down')})")
+    y = pen.get("yards")
+    if _pe is not None and pen["type"] in _pe.YARDS and (y is None or y < 0 or y > _pe.YARDS[pen["type"]]):
+        bad(f"pénalité de {y} yards ({pen['type']} : {_pe.YARDS[pen['type']]} au plus)")
 
 
 def check_week(A, folder):
@@ -381,6 +429,11 @@ def stat_alerts(A, stats, label):
             "victoires_domicile": round(hw, 3), "nuls": ties, "prolongations": sum(s["ot"] for s in stats),
             "par_match": {k: round(v / len(stats), 2) for k, v in tot.most_common()},
             "td_longueur_moyenne": round(statistics.mean(tdl), 1) if tdl else None}
+    pen = [s["flags"] for s in stats if s.get("penalty_model")]
+    if pen:
+        summ["drapeaux_par_match"] = round(statistics.mean(pen), 2)
+        if not 4.0 <= summ["drapeaux_par_match"] <= 12.0:
+            A.add(ALERTE, label, None, None, f"pénalités : {summ['drapeaux_par_match']} drapeaux par match (≈ 8 attendus)")
     for s in stats:
         if s["pts"] > 120: A.add(ALERTE, label, s["id"], None, f"score très élevé : {s['home']}-{s['away']}")
         if s["pts"] < 6: A.add(ALERTE, label, s["id"], None, f"score très bas : {s['home']}-{s['away']}")

@@ -48,6 +48,11 @@ Bloc F — intelligence du jeu de course (12.2 quindecies) :
     poche               duels de protection (EDGE / tackle, DT / guard, blitzeurs), duel perdu au temps avant la
                         pression, forme de la poche (bords, intérieur, effondrée), réaction du QB (monte, glisse, sort
                         de la poche et lance en courant)
+
+Étape 7.2 — les pénalités pendant l'action (12.2 vicies quater) :
+    penalites           holding (attaque, défense), illegal contact, interférences de passe (défense, attaque),
+                        roughing the passer : qui la commet (duel perdu, discipline, ballon disputé, pression), ce
+                        qu'elle coûte, accepter / refuser selon la probabilité de victoire
 """
 from .aleatoire import flux
 from .progressions import progression
