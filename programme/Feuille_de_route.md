@@ -910,7 +910,21 @@ validé par Guillaume le 20/10, rendus validés sur captures le 21/10.
   `scouting_next_week.json`) ; les points par match (51,9 sur la semaine du 26/10 contre 54,0 avec l'idée 5 — de l'ordre
   du bruit, à confirmer sur les vraies semaines) ; la réputation des défenses n'existe qu'à partir des semaines jouées
   avec l'idée 5 (`play.scout`), donc les cassures « on tape » montent après le premier samedi.
-- **Suite proposée** : idée 7 (pénalités, rotations, blessures, décisions d'équipes spéciales).
+- **Suite** : étape 7, ci-dessous.
+
+**Étape 7** (plan revu avec Guillaume le 21/10) : 7.1 la poche et la ligne offensive · 7.2 pénalités pendant l'action
+seulement (holding, roughing the passer, interférences, illegal contact ; ≈ 8 par match ; accepter / refuser, effet sur
+le jeu, audit, site, GameFeed, retransmission) · 7.3 banc (11 remplaçants par franchise, noms jamais déjà portés dans la
+ligue ; les doublons existants restent) et rotations / fatigue · 7.4 blessures (pendant le match, absences d'une ou
+plusieurs semaines publiées avant les cotes). Les équipes spéciales ne changent pas.
+
+**7.1 — la poche et la ligne offensive** : ✅ codé et allumé (README du serveur, section 67 ; module `moteur/poche.py`,
+cellule 12.2 vicies ter, `GC_POCHE`) ; rendus validés sur vidéos le 21/10 (pas de mise en évidence du duel perdu ; pas
+de semaine à produire, les tests suffisent). Duels de protection, duel perdu au temps avant la pression, poche pliée par
+les bords / enfoncée / effondrée ; le QB monte, glisse ou sort et lance en courant ; sack crédité au vainqueur du duel ;
+site : fer à cheval, rushers qui contournent ou poussent, QB qui bouge, play-by-play, stats (lancers en courant, duels
+de protection, pressions), commentateur.
+@@CONTROLES_POCHE_FDR@@
 
 **Hors feuille de route, 21/10 — résultats du jour en cours seulement** (README 66) : le calendrier a un onglet par jour,
 aujourd'hui ouvert et les autres fermés ; tableau Live, compteur « Results », bandeau et Big plays ne montrent que les

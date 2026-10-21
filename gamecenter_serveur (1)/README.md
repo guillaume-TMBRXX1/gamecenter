@@ -1730,6 +1730,46 @@ plus ceux du lundi 19 ou du mardi 20), avec des onglets fermés ou en étant dir
   `outils/site/test_jour.js` (groupe site, indépendant de l'heure : le serveur est réglé sur le 3e jour de la dernière
   semaine, à 07:30 puis 2 h après le premier coup d'envoi) — il échoue sur le site d'avant.
 
+### 67. La poche et la ligne offensive (notebook 12.2 vicies ter, 21/10/2026 — allumée)
+Feuille de route : « moteur plus intelligent », étape 7.1. Module `moteur/poche.py` (tests `test_poche.py`), cellule
+**12.2 vicies ter** (après 12.2 vicies bis) ; interrupteur `GC_POCHE=0` : moteur d'avant à l'identique (contrôlé sur 4
+matchs, référence calculée avant tout branchement) ; flux de hasard dédié « poche ». **Décisions de Guillaume (21/10)** :
+plan validé ; rendus validés sur vidéos au ralenti ; pas de mise en évidence du duel perdu ; pas de semaine à produire
+(les tests suffisent).
+- **Avant** : la poche était un chrono (un temps avant la pression par passe, 12.2 quinquies), puis lancer, pression,
+  scramble ou sack (bloc B) ; personne ne gagnait de duel, la poche n'avait pas de forme et le QB ne bougeait pas ; sur
+  le site, la ligne reculait en ligne droite et les rushers fonçaient tout droit.
+- **Duels** : à chaque passe, chaque rusher face à son bloqueur — EDGE contre tackle (bord), DT contre guard
+  (intérieur), le centre double le DT le plus dangereux ; les blitzeurs prennent le centre, puis le RB / TE qui restent
+  protéger (protection de l'extension, plan de jeu du bloc D), sinon ils arrivent libres. Marge : pass_rush / strength
+  contre pass_block / strength.
+- **Pression** : le temps avant la pression ne change pas d'origine (il est calibré : unités, rushers, protection, jeu de
+  rush) ; il dit QUAND un duel cède, les marges disent LEQUEL (un profil, pas un niveau ; les stunts et l'interior
+  collapse de l'extension poussent à l'intérieur, l'edge rush au bord). Forme : **bords** (la poche se courbe en fer à
+  cheval et se referme), **intérieur** (le DT enfonce le guard dans le QB), **effondrée** (un second duel cède dans la
+  foulée), **propre** (le QB lance avant).
+- **Réaction du QB** (pocket awareness, mobilité) : il **monte** dans la poche (pression des bords), **glisse** de l'autre
+  côté (pression intérieure) ou **sort** du côté libre et **lance en courant** (précision moindre, routes courtes et
+  moyennes) ou jette le ballon hors du terrain (légal hors de la poche) ; sinon scramble ou sack, crédité au **rusher qui
+  a gagné son duel**. Calibration : la pression arrive 0,12 s plus tôt (`AVANCE`), le temps que le QB regagne en
+  réagissant — sans elle, la poche ajoutait de la force à l'attaque (sacks 9,6 -> 8,2 %).
+- **GameFeed** (additif) : `play.pocket = {version, ttp, shape, duels: [{rusher, blocker, side, type, margin, free,
+  double, t}], beaten, reaction, side, on_run}` ; `game.pocket_model`.
+- **Site** (cellule 427 synchronisée) : la ligne recule en fer à cheval (tackles profonds et écartés, guards, centre) ;
+  les EDGE contournent les tackles en courbe, les DT poussent droit ; le duel perdu cède (au bord, le tackle pivote ; à
+  l'intérieur, le guard est repoussé dans le QB ; effondrée : un second cède aussi) ; le QB monte, glisse ou sort et lance
+  en courant (le ballon part après sa sortie ; réception très précoce : pas de mouvement) ; le sack est fait par le
+  rusher du duel perdu. Play-by-play : « steps up in the pocket », « slides away from the rush », « flushed right, throws
+  on the run », « Oyelaran beats Lachance off the edge », « the pocket collapses — X beats Y », « X comes in unblocked » ;
+  stats d'équipe « Throws on the run » ; fiche joueur « Pass protection : 7/8 duels won », « Pass rush : 2 pressures
+  won » ; commentateur (sous-titres). Les play actions en roulé (BOOT) gardent leur dessin. Test navigateur
+  `outils/site/test_poche.js` (groupe site, indépendant de l'heure).
+- **Mesures** (552 matchs, mêmes graines, poche coupée -> allumée) : sur ≈ 15 passes sous pression par match, poche pliée
+  par les bords 45 %, enfoncée au centre 31 %, effondrée 24 % ; le QB monte 3,2 fois, glisse 1,7 fois, sort 4,2 fois par
+  match ; ≈ 2 lancers en courant par match (complétion 51 %, 64 % dans la poche) ; sacks 9,55 -> 9,16 %, complétion
+  65,2 -> 64,1 %, yards par passe 7,30 -> 7,21, points 53,8 -> 53,2.
+@@CONTROLES_POCHE@@
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
