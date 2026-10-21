@@ -2708,8 +2708,10 @@ function pocketPlan(pk,O,D,DF,rushers,drop,off,def,d,by,kind){
   if(react==='step_up') qbMove={x:drop.x+d*1.8,y:drop.y,u:u+0.12};
   else if(react==='slide') qbMove={x:drop.x+d*0.2,y:drop.y+sy*1.9,u:u+0.12};
   else if(react==='escape') qbMove={x:drop.x+d*1.0,y:clamp(by+sy*7.5,3,50.3),u:u+0.22};
-  if(qbMove){ const end=react==='escape'?{x:qbMove.x+d*1.0,y:clamp(qbMove.y+sy*2.5,2,51.3)}:{x:qbMove.x+d*0.3,y:qbMove.y};
-    off[6]=kfCut(q0,u,[[qbMove.u,qbMove.x,qbMove.y],[1,end.x,end.y]]); }
+  const end=qbMove?(react==='escape'?{x:qbMove.x+d*1.0,y:clamp(qbMove.y+sy*2.5,2,51.3)}:{x:qbMove.x+d*0.3,y:qbMove.y}):null;
+  /* retime: an early catch — the QB reacts sooner, so the ball still leaves after his move */
+  const qbPath=(u0,u1)=>{ off[6]=kfCut(q0,u0,[[u1,qbMove.x,qbMove.y],[1,end.x,end.y]]); };
+  if(qbMove) qbPath(u,qbMove.u);
   const qbAt=v=>at(off[6],v);
   for(const [k,m] of map.entries()){ if(m.i==null) continue; const s=D[m.i], edge=m.du.type==='edge';
     const bl=m.b!=null?off[m.b]:null, beat=k===lost||(second&&second[1]===k), ub=k===lost?u:u+0.06;
@@ -2724,7 +2726,9 @@ function pocketPlan(pk,O,D,DF,rushers,drop,off,def,d,by,kind){
       def[m.i]= edge ? [[0,s.x,s.y],[0.16,s.x-d*0.9,s.y],[0.45,p1.x+d*0.5,p1.y+out*1.0],[0.75,p2.x-d*0.3,p2.y+out*0.7],[1,p2.x-d*0.4,p2.y+out*0.6]]
                      : [[0,s.x,s.y],[0.16,s.x-d*0.6,s.y],[0.45,p1.x+d*0.8,p1.y],[1,p2.x+d*0.7,p2.y]];
     } }
-  return {u, beaten:lost!=null?map[lost].i:null, qbMove, qbKf:off[6], uMin:qbMove?Math.min(0.86,qbMove.u+0.06):null, shape:pk.shape, reaction:react};
+  const pp={u, q0, beaten:lost!=null?map[lost].i:null, qbMove, qbKf:off[6], uMin:qbMove?Math.min(0.86,qbMove.u+0.06):null, shape:pk.shape, reaction:react,
+    retime:v=>{ if(!qbMove) return; const span=qbMove.u-u, u0=Math.max(0.2,v-span); qbPath(u0,v); qbMove.u=v; pp.u=u0; pp.qbKf=off[6]; }};
+  return pp;
 }
 /* Scrimmage play. `imp` (imposed by the engine) = {kind:'comp'|'inc'|'sack'|'int'|'run', endX, td, target}.
    Live demo boards pass a random imp; the drawing logic is the same. The ball never lobs on a pass. */
@@ -2866,7 +2870,9 @@ function planScrimmage(g,call,imp){
       P.carrier=[[0.08,1,'off',6]]; P.pStart=0.5; P.pEnd=0.72; P.wDef=[.5,.5,.5,.5,.4,.4,0,0,0,.15,.15];
       P.spot=ss; P.gain=(ss.x-L)*d; P.sacker=sacker; P.stop={i:sacker,at:0.66};   /* red blinking ring on the sacker */
     } else {
-      const C=Cfor(uc), q=kfAt(off[6],uc), fu=Math.hypot(C.x-q.x,C.y-q.y)/(22*dur), t0=Math.max(0.24,uc-fu);
+      if(PK&&PK.qbMove&&uc<PK.qbMove.u+0.06){ if(uc>=0.4) PK.retime(uc-0.08); else { off[6]=PK.q0; PK.qbMove=null; } }   /* 7.1: early catch */
+      const C=Cfor(uc), q=kfAt(off[6],uc), fu=Math.hypot(C.x-q.x,C.y-q.y)/(22*dur);
+      const t0=PK&&PK.qbMove?Math.min(uc-0.03,Math.max(0.24,uc-fu,PK.qbMove.u-0.02)):Math.max(0.24,uc-fu);
       const from=kfAt(off[6],t0);
       P.flight={t0,t1:uc,from,to:{x:C.x,y:C.y},peak:0};
       P.carrier=[[0.08,t0,'off',6]]; P.tIdx=tIdx; P.uc=uc;
@@ -4377,7 +4383,7 @@ function computeStats(g,n){
   const res=computeStatsNow(g,n); _stMemo.set(g,{plays:g.plays,gf:g.gf,n,len,res}); return res;
 }
 function computeStatsNow(g,n){
-  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0,kr:0,kry:0,pnr:0,pnry:0});
+  const T=()=>({plays:0,yds:0,passAtt:0,comp:0,passYds:0,passTd:0,ints:0,sacks:0,sackYds:0,rushAtt:0,rushYds:0,rushTd:0,fd:0,d3:0,c3:0,d4:0,c4:0,fum:0,top:0,rz:0,rzTd:0,db:0,tt:0,tn:0,pr:0,scr:0,ot:0,ct:0,cw:0,bust:0,bc:0,xpa:0,xpm:0,c2a:0,c2m:0,kr:0,kry:0,pnr:0,pnry:0});
   const team={home:T(),away:T()}, pl={home:{},away:{}}, roster={home:{},away:{}}, byName={home:{},away:{}};
   for(const s of ['home','away']) for(const r of (((g.gf||{}).game||{})[s]||{}).roster||[]){ roster[s][r.id]=r; byName[s][r.name]=r; }
   const who=(side,id,name)=>{
@@ -4398,6 +4404,12 @@ function computeStatsNow(g,n){
     const dc=P.decision; if(dc){ S.db++; if(dc.action==='LANCER'&&num(dc.throw_time,null)!==null){ S.tt+=dc.throw_time; S.tn++; } if(dc.pressure||dc.hurried) S.pr++; if(dc.action==='SCRAMBLE') S.scr++;
       /* block C: contested balls won by the offense, coverage busts given up by the defense */
       if(dc.reception){ S.bc++; if(dc.reception==='contested'&&P.result!=='sack'){ S.ct++; if(P.result==='complete'||P.result==='touchdown'||P.result==='fumble_lost') S.cw++; } if(dc.bust) team[ds].bust++; } }
+    /* step 7.1 (play.pocket): throws on the run ; pass-protection duels (OL / TE / RB) and pressures won (rushers) */
+    const pk=t==='pass'&&P.pocket&&Array.isArray(P.pocket.duels)?P.pocket:null;
+    if(pk){ if(pk.on_run) S.ot++;
+      const lost=pk.shape!=='clean'&&pk.beaten!=null?pk.beaten:-1;
+      pk.duels.forEach((du,k)=>{ if(du.blocker&&du.blocker.name){ const b=who(o,du.blocker.id,du.blocker.name); b.pb=b.pb||{d:0,w:0}; b.pb.d++; if(k!==lost) b.pb.w++; }
+        if(k===lost&&du.rusher&&du.rusher.name){ const r=who(ds,du.rusher.id,du.rusher.name); r.prs=(r.prs||0)+1; } }); }
     if(scrim){
       S.plays++;
       if(fdn) S.fd++;
@@ -4504,6 +4516,7 @@ function renderStats(g){
       /* engine decisions (blocks A-B): time to throw, pressure, scrambles */
       if(a.db+h.db>0){ const tt=S=>S.tn?(S.tt/S.tn).toFixed(2)+' s':'—';
         rows.push(['Avg. time to throw',tt(a),tt(h),0],['Pressured dropbacks',`${a.pr}/${a.db} · ${pc(a.pr,a.db)}`,`${h.pr}/${h.db} · ${pc(h.pr,h.db)}`,-1,a.db?a.pr/a.db:0,h.db?h.pr/h.db:0],['QB scrambles',a.scr,h.scr,0]); }
+      if(a.ot||h.ot) rows.push(['Throws on the run',a.ot,h.ot,0]);   /* step 7.1 */
       /* engine block C: contested catches (won / thrown), coverage busts given up */
       if(a.bc+h.bc>0) rows.push(['Contested catches',`${a.cw}/${a.ct}`,`${h.cw}/${h.ct}`,1,a.cw,h.cw],['Coverage busts allowed',a.bust,h.bust,-1]);
       body.innerHTML=`<div class="st-scroll"><table class="tst"><thead><tr><th scope="col">Team stats</th><th scope="col"><span class="abbr">${A.abbr}</span></th><th scope="col"><span class="abbr">${H.abbr}</span></th></tr></thead><tbody>${rows.map(([l,va,vh,better,na,nh])=>{
@@ -4813,6 +4826,8 @@ function statLine(e){
   if(e.rush) L.push(['Rushing',`${e.rush.c} car · ${e.rush.y} yds · long ${e.rush.lng}${e.rush.td?` · ${e.rush.td} TD`:''}`]);
   if(e.rec) L.push(['Receiving',`${e.rec.r}/${e.rec.t} · ${e.rec.y} yds · long ${e.rec.lng}${e.rec.td?` · ${e.rec.td} TD`:''}`]);
   if(e.def) L.push(['Defense',`${e.def.tk} tkl · ${e.def.sk} sck · ${e.def.i} INT · ${e.def.pd} PD`]);
+  if(e.pb) L.push(['Pass protection',`${e.pb.w}/${e.pb.d} duels won`]);          /* step 7.1 (play.pocket) */
+  if(e.prs) L.push(['Pass rush',`${e.prs} pressure${e.prs>1?'s':''} won`]);
   return L;
 }
 /* Team key: home = solid glyphs, away = hollow glyphs in the lighter tint */
@@ -7054,6 +7069,9 @@ function filmLine(g){
   return pickV(g,{seq:0},[`The ${nick(d)} have studied ${Math.round(num(F.games,0))} games of ${nick(o)} film: ${num(x.vu,0)} ${x.key==='run'?'runs':'passes'} in ${num(x.sur,0)} snaps ${String(x.text||'')}.`,
     `${Math.round(num(F.games,0))} games on tape, and the ${nick(d)} know this one: ${num(x.vu,0)} of ${num(x.sur,0)} ${x.key==='run'?'runs':'passes'} ${String(x.text||'')}.`]);
 }
+/* step 7.1 (play.pocket): the duel that gave way, as names for the commentator */
+function pocketWho(P){ const k=P.pocket; if(!k||k.beaten==null||k.shape==='clean'||!Array.isArray(k.duels)) return null; const du=k.duels[k.beaten]||{};
+  const n=x=>String((x&&x.name)||'').split(' ').slice(-1)[0]; return du.rusher?{R:n(du.rusher),B:n(du.blocker),type:du.type,free:!!du.free,shape:k.shape}:null; }
 function playLine(g,P){
   const pl=P.players||{}, car=pl.carrier&&pl.carrier.name, qb=pl.passer&&pl.passer.name, def=pl.defender&&pl.defender.name;
   const off=P.offense==='home'?g.home:g.away, dfT=P.offense==='home'?g.away:g.home, gain=num(P.gain,0), fd=/1st down/.test(String(P.text||''));
@@ -7076,7 +7094,11 @@ function playLine(g,P){
     case 'pat_missed': prio=2; text=V([`The extra point is no good!`,`${car} misses the extra point!`]); text+=' '+scoreLine(g); break;
     case 'two_point_good': prio=3; text=V([`They go for two… and they get it! ${car}!`,`Two-point conversion is good!`]); text+=' '+scoreLine(g); break;
     case 'two_point_failed': prio=2; text=V([`The two-point try fails!`,`They went for two — and came up short.`]); text+=' '+scoreLine(g); break;
-    case 'sack': prio=2; if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc&&P.decision.bloc!=='A'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
+    case 'sack': prio=2; { const pw=pocketWho(P);                     /* step 7.1: who beat whom */
+        if(pw){ text= pw.free ? V([`${pw.R} comes in untouched — sacked! Loss of ${yds(gain)}.`,`Nobody picks up ${pw.R}, and he gets home!`])
+          : pw.shape==='collapse' ? V([`The pocket collapses around ${sur(qb)} — ${pw.R} brings him down.`,`It all caves in, and ${pw.R} gets the sack.`])
+          : V([`${pw.R} beats ${pw.B}${pw.type==='edge'?' around the edge':' inside'} and gets home!`,`${pw.B} can't hold ${pw.R} — sack, loss of ${yds(gain)}.`]); break; } }
+      if(P.decision&&P.decision.action==='SACK'&&P.decision.bloc&&P.decision.bloc!=='A'){ text=V([`${sur(qb)} holds it too long… sacked! Loss of ${yds(gain)}.`,`Nobody open, and ${sur(qb)} goes down. ${def||'The rush'} with the sack.`]); break; }
       text=V([`Sacked! ${def||'The pass rush'} gets to ${sur(qb)}, loss of ${yds(gain)}.`,`${sur(qb)} goes down! ${def||'They'} with the sack.`,`Pressure… and ${sur(qb)} is sacked!`]); break;
     case 'complete':
       { const dk=P.decision||{}, cv=dk.coverer&&dk.coverer.name;   /* engine block C */
@@ -7127,6 +7149,9 @@ function playLine(g,P){
   /* a big swing of the engine's win probability */
   if(prio>=2&&st!=='final'){ const h=g.hist||[], prev=h.length?h[h.length-1]:null, p=num(P.win_prob_home,null);
     if(prev!=null&&p!=null&&Math.abs(p-prev)>=.18){ const fav=p>=.5?g.home:g.away; text+=` The engine now gives the ${nick(fav)} a ${Math.round((p>=.5?p:1-p)*100)} percent chance.`; } }
+  /* step 7.1: flushed out of the pocket, he threw on the run */
+  if(P.pocket&&P.pocket.on_run&&text&&(P.result==='complete'||P.result==='incomplete'||P.result==='touchdown'||P.result==='interception'))
+    text=V([`Flushed to his ${P.pocket.side==='left'?'left':'right'}, ${sur(qb)} throws on the run…`,`${sur(qb)} escapes the pocket, throwing on the move…`])+' '+text;
   return text?{prio,text}:null;
 }
 function introLine(g){
