@@ -1768,7 +1768,14 @@ plan validé ; rendus validés sur vidéos au ralenti ; pas de mise en évidence
   par les bords 45 %, enfoncée au centre 31 %, effondrée 24 % ; le QB monte 3,2 fois, glisse 1,7 fois, sort 4,2 fois par
   match ; ≈ 2 lancers en courant par match (complétion 51 %, 64 % dans la poche) ; sacks 9,55 -> 9,16 %, complétion
   65,2 -> 64,1 %, yards par passe 7,30 -> 7,21, points 53,8 -> 53,2.
-@@CONTROLES_POCHE@@
+- **Contrôles** (21/10, en local) : notebook complet ✅ (12.2 vicies ter sur 25 matchs : 2 lancers en courant par match,
+  complétion 42 % en courant / 63,5 % dans la poche, sacks crédités au vainqueur du duel 100 % ; 12.3 : toutes les
+  franchises entre 36 et 64 % ; 13.2 : Brier 0,2472 contre 0,2552 pour la formule de notes ; 13.4 : cotes en direct
+  calibrées, pas de réajustement) ; rapport de calibration (1104 matchs, `GC_POCHE=0` -> `1`, `--jusqua "12.2 vicies
+  ter"`) : toutes les statistiques dans les tolérances (complétion 64,8 -> 63,3 %, sacks 9,9 -> 9,8 %, yards par passe
+  7,45 -> 7,37, points 52,7 -> 51,8, temps par match ×1,11) ; la plage 40-60 % par équipe du rapport sort pour quelques
+  équipes des deux côtés (92 matchs par équipe, bruit ± 5 points, voir section 65) — l'équilibre est jugé par 12.3 ;
+  427 tests unitaires, tests navigateur (dont `test_poche.js`) ✅.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
