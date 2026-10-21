@@ -82,7 +82,7 @@ Modules indépendants, appelés par les fonctions historiques sans les remplacer
    sacks, INT, YPA, pertes de balle, points, drives, premiers downs, équilibre par équipe. Hors tolérance = on corrige
    avant de continuer.
 4. **Cotes du moteur** : tout bloc qui change la distribution des résultats refait la calibration en direct (13.4, puis
-   13.1 / `outils/fit_live.py` si besoin). Leçon de l'étape 4 : l'adaptation avait poussé 13.4 à « outsiders +24 % ».
+   13.1 / `outils/moteur/fit_live.py` si besoin, outil créé le 21/10). Leçon de l'étape 4 : l'adaptation avait poussé 13.4 à « outsiders +24 % ».
 5. **Temps de calcul** : une semaine = ≈ 2 700 matchs (300 par affiche pour les cotes) ; aujourd'hui 16-20 min sur
    GitHub, limite du job 75 min. Mesure à chaque bloc ; budget : **≤ 2 × le temps actuel**.
 6. **Visible pour le spectateur** : chaque bloc ajoute ce qu'il produit au GameFeed (champs additifs, schéma
@@ -902,7 +902,10 @@ validé par Guillaume le 20/10, rendus validés sur captures le 21/10.
   semaines enchaînées stables (38,9 – 59,8 % en moyenne). Site : « KEY » + « SCOUTED · 44 GAMES », « BREAK » + « ON
   TAPE », play-by-play « film: … , 44 games incl. 2 of their own », « Scouting report » dans Game plan, commentateur
   (sous-titres). Semaine du 26/10 produite en 28,8 min, auditée (0 anomalie, 0 alerte).
-@@CONTROLES_FDR@@
+- **Contrôles** (exécution complète, 56,5 min, aucun échec) : 12.3 **41,0 % (NVA) – 61,1 % (FRG)** ; 13.2 ✅ ; **13.4**
+  ❌ avec les paramètres d'avant (extrêmes ± 0,042, outsiders − 28,7 % : les avances tiennent mieux) -> `LIVE_*`
+  ré-ajustés pour la mémoire (nouvel outil `outils/moteur/fit_live.py`) -> ✅ ± 0,022, écart moyen 0,019, outsiders
+  − 8,2 % ; calibration de la ligue dans les tolérances ; 412 tests unitaires ; tests navigateur ✅.
 - **À surveiller** : le premier samedi avec la mémoire (amorce depuis les GameFeeds, temps du calcul, audit, taille de
   `scouting_next_week.json`) ; les points par match (51,9 sur la semaine du 26/10 contre 54,0 avec l'idée 5 — de l'ordre
   du bruit, à confirmer sur les vraies semaines) ; la réputation des défenses n'existe qu'à partir des semaines jouées
@@ -1080,6 +1083,11 @@ divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le t
   = pas de vidéo ce jour-là, rien d'autre n'est touché.
 
 ## Pièges connus
+- **Mémoire de la machine** : l'exécution complète du notebook avec ses contrôles monte à ≈ 12,5 Go ; ne rien lancer de
+  lourd en même temps (le 21/10, notebook + `rapport_calibration.py` en parallèle : noyau tué pendant 13.2, manque de
+  mémoire). Le calcul du samedi saute ces contrôles.
+- **Idée 6** : le film d'une semaine est à part (`week_<lundi>/scouting_next_week.json`) ; un changement du moteur qui
+  modifie le déroulé des matchs peut demander de refaire `outils/moteur/fit_live.py` (13.4).
 - Bloc E : `reset_franchises()` remet les rosters ET l'état de progression à la base (12.3, 14.2 l'appellent) ; les
   notes d'une vraie semaine viennent de `progression_reprendre(prev)` (15.1, exhibition). Les caches d'intelligence
   des blocs B / C (`QB_IQ`, `PLAYER_IQ`) sont vidés à chaque changement de notes (`appliquer_progression`).

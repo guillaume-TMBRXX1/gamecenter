@@ -1697,7 +1697,19 @@ rendus validés sur captures avant d'être finalisés.
   51,9 points par match — 54,0 avec l'idée 5 sur la même semaine : écart de l'ordre du bruit sur 279 matchs) ; **7,8
   lectures par match** (78 % justes), dont 3,3 sur le film (80 % justes) ; 2,5 cassures (0,3 « on tape ») ; film de la
   semaine suivante 0,85 Mo.
-@@CONTROLES@@
+- **Contrôles** (exécution complète avec contrôles, **56,5 min** sur 4 cœurs, seule, **aucun échec**) : 12.2 vicies bis ✅
+  (coupé = idée 5 à l'identique sur 4 matchs, film vide aussi, film du journal = film des GameFeeds, déterministe ; film
+  de contrôle : 49 matchs, 6,0 lectures, 2,8 cassures dont 0,9 « on tape ») ; 12.3 ✅ équilibre **41,0 % (NVA) – 61,1 %
+  (FRG)** (idée 5 : 39,9 – 63,0), identités nettes, ajustement hebdomadaire dans les plages, 53,9 points par match ; 13.2
+  ✅ (Brier 0,2478, z² 1,05, biais − 1,2 %) ; **13.4** : avec les paramètres d'avant, ❌ extrêmes ± 0,042, écart moyen
+  0,033, outsiders − 28,7 % (les avances tiennent mieux) — paramètres `LIVE_*` ré-ajustés pour la mémoire (13.1, nouvel
+  outil `outils/moteur/fit_live.py` : maximum de vraisemblance sur 1 500 matchs, graines 3 100 000 + ; `GC_MEMOIRE=0`
+  garde ceux d'avant) -> ✅ extrêmes ± 0,022, écart moyen 0,019, outsiders − 8,2 % ; 14.2 ✅ ; **412 tests unitaires** ;
+  tests navigateur complets ✅ (`test_memoire.js`, `test_scouting.js`, `test_cellule427.js` compris).
+- **Calibration** (`rapport_calibration.py --jusqua "12.2 vicies bis"`, 1 104 matchs, contre `GC_MEMOIRE=0`) : toutes les
+  mesures de la ligue dans les tolérances (points 52,77 -> 52,73, passes 62,1 -> 61,9 %, yards par course 6,13 -> 6,12,
+  complétion 64,8 -> 64,8 %, pertes de balle 2,41 -> 2,36) ; victoires par équipe hors 40-60 % pour 2 franchises allumée
+  (CPH 64 %, CMT 36 %) comme pour 3 coupée (MNL 66 %, CPH, AEG 63 %) : 92 matchs par équipe, bruit ± 5 points.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
