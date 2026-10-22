@@ -328,10 +328,10 @@ def malus(energie):
 
 def notes_fatiguees(notes, energie):
     """Notes jouées selon l'énergie (entiers 40-99) ; les notes mentales et de botté ne bougent pas."""
-    m = malus(energie)
-    if abs(m) < 0.5:
+    m = int(round(malus(energie)))                 # un nombre entier de points
+    if not m:
         return dict(notes)
-    return {k: (v if k in SANS_MALUS else max(NOTE_MIN, min(NOTE_MAX, int(round(v - m))))) for k, v in notes.items()}
+    return {k: (v if k in SANS_MALUS else max(NOTE_MIN, min(NOTE_MAX, v - m))) for k, v in notes.items()}
 
 
 def cout_snap(poste, gain=0, secondes=0, hurry=False):
