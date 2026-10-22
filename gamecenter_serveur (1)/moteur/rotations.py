@@ -62,6 +62,9 @@ SPECIALITES = {
     "S": ("box safety", ("run_support", "tackling")),
 }
 
+# identité d'une franchise : un spécialiste imposé à une place du banc (« Disrupt » de GLT : un DT de pass rush)
+SPECIALISTE_EQUIPE = {"GLT": {"DT": ("interior pass rusher", ("pass_rush",))}}
+
 # écart au titulaire (points, par note) : (bas, haut) du décalage commun, puis bruit par note
 ECART = {VETERAN: (-6.5, -4.0), JEUNE: (-12.0, -8.5)}
 ECART_SPECIALITE = (-3.0, -0.5)               # spécialiste : sur sa spécialité
@@ -97,7 +100,17 @@ def profils(equipe):
     m = MELANGE.get(equipe, MELANGE[None])
     sac = [p for p in PROFILS for _ in range(m[p])]
     _rng("profils", equipe).shuffle(sac)
-    return {b[0]: p for b, p in zip(BANC, sac)}
+    out = {b[0]: p for b, p in zip(BANC, sac)}
+    for poste in SPECIALISTE_EQUIPE.get(equipe, {}):         # identité : ce spécialiste-là (échangé, mélange gardé)
+        if out[poste] != SPECIALISTE:
+            autre = next(q for q in sorted(out) if out[q] == SPECIALISTE and q not in SPECIALISTE_EQUIPE[equipe])
+            out[poste], out[autre] = SPECIALISTE, out[poste]
+    return out
+
+
+def specialite(equipe, poste):
+    """(nom, notes proches du titulaire) de la spécialité d'un spécialiste."""
+    return SPECIALISTE_EQUIPE.get(equipe, {}).get(poste) or SPECIALITES[poste]
 
 
 def reference(titulaires, couvre):
@@ -112,7 +125,7 @@ def reference(titulaires, couvre):
 def notes(equipe, poste, profil, ref):
     """Notes du remplaçant d'après celles du titulaire de référence (entiers 40-99)."""
     rng = _rng("notes", pid(equipe, poste, NUMERO[poste]))
-    spe = SPECIALITES[poste][1] if profil == SPECIALISTE else ()
+    spe = specialite(equipe, poste)[1] if profil == SPECIALISTE else ()
     commun = rng.uniform(*ECART[profil]) if profil in ECART else 0.0
     d = {}
     for k in sorted(ref):
@@ -160,7 +173,7 @@ def construire_banc(equipe, titulaires, gabarit):
         ref = {k: ref.get(k, 60.0) for k in gabarit[poste]}
         p = pr[poste]
         out.append({"id": pid(equipe, poste, n), "pos": poste, "depth": 2, "slot": slot, "covers": list(couvre),
-                    "profile": p, "specialty": SPECIALITES[poste][0] if p == SPECIALISTE else None,
+                    "profile": p, "specialty": specialite(equipe, poste)[0] if p == SPECIALISTE else None,
                     "ratings": notes(equipe, poste, p, ref), "dev": profil_developpement(equipe, poste, p)})
     return out
 
@@ -263,7 +276,7 @@ ROTATION = {"DT": (("DT1", "DT2"), 0.675), "EDGE": (("EDGE1", "EDGE2"), 0.75), "
 STYLE_ROTATION = {   # franchise -> {groupe: part visée} (les autres : ROTATION)
     "FRG": {"DT": 0.72, "EDGE": 0.79},             # « Dominate » : ses lignes restent sur le terrain
     "MNL": {"DT": 0.71, "RB": 0.60},               # physique : RB2 en rotation (rb2_share 0,4)
-    "GLT": {"DT": 0.64, "EDGE": 0.71},             # « Disrupt » : rotation large, des rushers frais
+    "GLT": {"DT": 0.70, "EDGE": 0.80},             # « Disrupt » : ses meilleurs rushers restent sur le terrain
     "ONX": {"EDGE": 0.72}, "GRZ": {"DT": 0.70},
     "CTD": {"DT": 0.70, "EDGE": 0.78, "RB": 0.66},  # vétérans
     "SPK": {"DT": 0.64, "EDGE": 0.72, "RB": 0.60},  # jeunes : on fait jouer le banc
