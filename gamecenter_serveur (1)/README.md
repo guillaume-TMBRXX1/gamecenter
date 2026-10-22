@@ -1859,8 +1859,12 @@ cellule **12.2 vicies quinquies** (après 12.2 vicies quater) ; interrupteur `GC
   après mesure : à 98 % seul, QB2 entrait dans 3 matchs sur 4, dès qu'une équipe menait d'une possession à 2 minutes)
   — les remplaçants entrent, QB2 compris. La fatigue des touches reste et s'ajoute.
 - **Calibration** (garde-fou 3, `rotations.CALIBRATION`) : sans correction, la ligue marquait ≈ 2,4 points de plus
-  (DT3, EDGE3, CB3 jouent un tiers à la moitié des snaps ; les courses réparties réduisent la fatigue des touches) : + 1,2
-  (passe) et + 2,0 (course) aux notes d'unité défensives **jouées** quand le banc est allumé (pas aux notes du roster).
+  (DT3, EDGE3, CB3 jouent un tiers à la moitié des snaps ; les courses réparties réduisent la fatigue des touches) : + 0,3
+  (passe) et + 1,8 (course) aux notes d'unité défensives **jouées** quand le banc est allumé (pas aux notes du roster).
+  Un premier réglage (+ 1,2 / + 2,0) tenait la ligue mais sortait BST (défense d'élite) du test d'équilibre 12.3 (65,5 %) :
+  la correction porte surtout sur la course, là où le banc coûte. **GLT** garde un spécialiste « interior pass rusher »
+  comme DT3 (`SPECIALISTE_EQUIPE`) ; 12.3 demande GLT **dans les deux premiers** aux sacks (au lieu du premier — décision
+  de Guillaume du 21/10 : GLT et VEC sont à 4,8-4,9 sacks par match, l'ordre se joue au bruit).
 - **GameFeed** (additif) : `roster[]` = 25 titulaires puis 11 remplaçants, `depth` (1 / 2), `profile` (starter ·
   veteran · prospect · specialist), `slot`, `covers`, `specialty`, `snaps`, `snap_pct`, `energy` (fin de match) ;
   `play.subs = [{in, out, pos (place), reason: package | fatigue | garbage, side}]` seulement quand l'alignement change ;
@@ -1882,9 +1886,11 @@ cellule **12.2 vicies quinquies** (après 12.2 vicies quater) ; interrupteur `GC
   48 % (nickel / dime), TE2 14 %, WR4 8 %, LB4 13 %, OL et QB 97 % ; QB2 dans un match sur quatre environ, 2-4 % des
   snaps ; énergie minimale d'un match ≈ 40-65. Calcul : + 9 % par match.
 - **Contrôles** (21/10, en local) : rapport de calibration (1 104 matchs, `GC_BANC=0` -> `1`, `--jusqua "12.2 vicies
-  quinquies"`) : toutes les statistiques dans les tolérances (points 51,9 -> 52,4, yards par course 6,12 -> 6,11,
-  complétion 63,1 -> 63,6 %, sacks 9,9 -> 9,4 %, pertes de balle 2,40 -> 2,34, premiers essais 43,5 -> 43,7) ; la plage
-  40-60 % par équipe sort pour ONX, FRG, APX, BST allumé (MNL, CPH, SPK coupé ; 92 matchs par équipe) ; audit d'une
+  quinquies"`) : toutes les statistiques dans les tolérances (points 51,9 -> 53,2, yards par course 6,12 -> 6,16,
+  complétion 63,1 -> 63,7 %, sacks 9,9 -> 9,3 %, pertes de balle 2,40 -> 2,34, premiers essais 43,5 -> 44,1, temps par
+  match × 0,70) ; la plage 40-60 % par équipe sort pour FRG (64,7 %) et SPK (36,4 %) allumé (SPK 35,3 % coupé ; 92 matchs
+  par équipe, bruit ≈ 5 % : c'est 12.3, 184 matchs par équipe, qui juge) ; 12.3 : toutes les franchises entre 36 et 64 %
+  (BST 62,2 %, PRM 41,0 %), identités tenues, 52,5 points par match ; audit d'une
   semaine de 279 matchs produite avec le banc : 0 anomalie, 0 alerte (51,3 points, 8,1 drapeaux par match) ;
   NOTEBOOK_COMPLET ; 476 tests unitaires, tests navigateur (dont `test_banc.js`, `test_cellule427.js`) ✅.
 

@@ -939,7 +939,7 @@ captures. 11 remplaçants par franchise (vétéran / jeune / spécialiste, ≈ 7
 portés dans la ligue), dans l'état du bloc E ; le personnel de l'appel et le paquet défensif font entrer les joueurs (2e
 TE, fullback, WR4, CB3, S3, LB4, 6e OL) ; énergie par joueur, rotations du coordinateur (DT ≈ 67 %, EDGE ≈ 72 %, RB1 ≈ 63 %),
 hurry-up de PLS ; garbage time (> 98 % dans les 8 dernières minutes, 17 points d'écart : QB2 compris) ; calibration du
-banc (+ 1,2 / + 2,0 aux notes d'unité défensives jouées) ; site : bons joueurs action par action, snaps, fiche, tableau de
+banc (+ 0,3 / + 1,8 aux notes d'unité défensives jouées, surtout contre la course ; GLT garde un DT de pass rush) ; site : bons joueurs action par action, snaps, fiche, tableau de
 profondeur, play-by-play et commentateur pour les changements marquants ; audit. Prépare 7.4 : un remplaçant par place.
 Contrôles en local : notebook complet, audit d'une semaine de 279 matchs (0 anomalie), rapport de calibration (dans les
 tolérances), tests unitaires et navigateur ✅.
