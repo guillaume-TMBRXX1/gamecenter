@@ -1892,7 +1892,13 @@ cellule **12.2 vicies quinquies** (après 12.2 vicies quater) ; interrupteur `GC
   par équipe, bruit ≈ 5 % : c'est 12.3, 184 matchs par équipe, qui juge) ; 12.3 : toutes les franchises entre 36 et 64 %
   (BST 62,2 %, PRM 41,0 %), identités tenues, 52,5 points par match ; audit d'une
   semaine de 279 matchs produite avec le banc : 0 anomalie, 0 alerte (51,3 points, 8,1 drapeaux par match) ;
-  NOTEBOOK_COMPLET ; 476 tests unitaires, tests navigateur (dont `test_banc.js`, `test_cellule427.js`) ✅.
+  notebook complet ✅ (13.2 : Brier 0,2485 contre 0,2557 pour la formule de notes, z² 0,98, biais + 0,9 % ; 13.4 : cotes
+  en direct dans la tolérance sans recalage, extrêmes ± 0,014, écart moyen 0,021 ; 14.2 : semaine validée et exportée,
+  279 GameFeed), puis audit de cette semaine : 0 anomalie, 0 alerte (53,0 points, 8,2 drapeaux par match). En local,
+  12.3 a été exécuté à part (≈ 7 Go : 2 208 matchs complets gardés ensemble, mémoire que Python ne rend pas avant les
+  processus de 13.2 — dans ce conteneur, le noyau meurt en 13.2), et le notebook complet avec, à sa place, les mêmes
+  matchs (mêmes graines) réduits aux équipes et aux scores, ce dont 13.2 a besoin ; 464 tests unitaires, tests
+  navigateur (dont `test_banc.js`, `test_cellule427.js`) ✅.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
