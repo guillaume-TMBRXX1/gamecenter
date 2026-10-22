@@ -24,6 +24,10 @@ try:                                    # étape 7.2 : règles des pénalités p
     from moteur import penalites as _pe
 except Exception:
     _pe = None
+try:                                    # étape 7.3 : le banc, les packages, les rotations
+    from moteur import rotations as _ro
+except Exception:
+    _ro = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -280,17 +284,113 @@ def check_penalty(A, week, gid, p, scorer):
         bad(f"pénalité de {y} yards ({pen['type']} : {_pe.YARDS[pen['type']]} au plus)")
 
 
+# numéros de maillot par poste (affichage, cellule 11.5 du notebook)
+JERSEY = {"QB": range(1, 20), "K": range(1, 20), "P": range(1, 20), "RB": range(20, 50),
+          "WR": [*range(10, 20), *range(80, 90)], "TE": [*range(80, 90), *range(40, 50)],
+          **{p: range(50, 80) for p in ("LT", "LG", "C", "RG", "RT")},
+          "EDGE": [*range(90, 100), *range(50, 60)], "DT": range(90, 100), "LB": range(40, 60), "CB": range(20, 40),
+          "S": range(20, 50)}
+
+
+def check_rotations(A, week, g_sched, feed):
+    """Étape 7.3 : rosters de 36 (titulaires puis remplaçants), numéros, alignement de chaque action reconstitué depuis
+    play.subs (11 par côté, postes de l'unité, personne deux fois, joueurs du roster), porteur et défenseur crédité sur
+    le terrain, snaps cohérents. Renvoie les noms des remplaçants (contrôle de la ligue dans check_week)."""
+    game = feed["game"]
+    if not game.get("rotation_model") or _ro is None:
+        return None
+    gid = g_sched["id"]
+    bad = lambda seq, m: A.add(BLOQUANT, week, gid, seq, m)
+    warn = lambda seq, m: A.add(ALERTE, week, gid, seq, m)
+    R, cur, snaps, n = {}, {}, Counter(), Counter()
+    noms = []
+    for side in ("home", "away"):
+        ro = (game.get(side) or {}).get("roster") or []
+        R[side] = {r["id"]: r for r in ro}
+        if len(ro) != 25 + _ro.TAILLE_BANC or [r.get("depth") for r in ro] != [1] * 25 + [2] * _ro.TAILLE_BANC:
+            bad(None, f"{side} : roster de {len(ro)} joueurs (25 titulaires puis {_ro.TAILLE_BANC} remplaçants attendus)")
+        if len(R[side]) != len(ro):
+            bad(None, f"{side} : un joueur deux fois dans le roster")
+        nums = [r.get("number") for r in ro]
+        if len(set(nums)) != len(nums):
+            bad(None, f"{side} : numéros de maillot en double")
+        for r in ro:
+            if r.get("number") not in JERSEY.get(r["pos"], range(1, 100)):
+                bad(None, f"{r['id']} : n° {r.get('number')} hors de la plage du poste {r['pos']}")
+        noms += [(r["name"], r["id"], (r.get("progression") or {}).get("rookie")) for r in ro if r.get("depth") == 2]
+        prof = {}
+        for r in ro:
+            prof.setdefault(r["pos"], []).append(r["id"])
+        for cote in ("off", "def"):
+            base = {}
+            for pl in _ro.PLACES[cote]:
+                poste, rang = _ro.POSTE_PLACE[pl]
+                ids = prof.get(poste) or []
+                base[pl] = ids[rang - 1] if len(ids) >= rang else None
+            cur[(side, cote)] = base
+    for p in feed["plays"]:
+        if p["call"].get("type") not in ("run", "pass"):
+            continue
+        s = p["seq"]
+        att = p["offense"]
+        de = "away" if att == "home" else "home"
+        for x in p.get("subs") or []:
+            side = att if x.get("side") == "off" else de
+            if x.get("pos") not in _ro.PLACES.get(x.get("side"), ()):
+                bad(s, f"changement à une place inconnue : {x}"); continue
+            if x.get("in") not in R[side] or (x.get("out") is not None and x["out"] not in R[side]):
+                bad(s, f"changement avec un joueur hors du roster : {x}"); continue
+            if x.get("reason") not in ("package", "fatigue", "garbage"):
+                bad(s, f"changement sans raison connue : {x}")
+            cur[(side, x["side"])][x["pos"]] = x["in"]
+        on = {}
+        for side, cote in ((att, "off"), (de, "def")):
+            v = list(cur[(side, cote)].values())
+            if len(v) != 11 or None in v or len(set(v)) != 11:
+                bad(s, f"{side} {cote} : {len(set(v) - {None})} joueurs alignés ({cur[(side, cote)]})")
+            for i in v:
+                if i and _ro.COTE_POSTE.get(R[side][i]["pos"]) != cote:
+                    bad(s, f"{i} ({R[side][i]['pos']}) aligné en {'attaque' if cote == 'off' else 'défense'}")
+                snaps[i] += 1
+            n[(side, cote)] += 1
+            on[cote] = set(v)
+        pp = p.get("players") or {}
+        car = (pp.get("carrier") or {}).get("id")
+        if car and car not in on["off"]:
+            bad(s, f"porteur {car} pas sur le terrain")
+        q = (pp.get("passer") or {}).get("id")
+        if q and q not in on["off"]:
+            bad(s, f"passeur {q} pas sur le terrain")
+        d = (pp.get("defender") or {}).get("name")
+        if d and d not in {R[de][i]["name"] for i in on["def"]}:
+            warn(s, f"défenseur crédité {d} pas sur le terrain")
+    for side in ("home", "away"):
+        us = (game.get(side) or {}).get("unit_snaps") or {}
+        for cote in ("off", "def"):
+            if us.get(cote) is not None and us[cote] != n[(side, cote)]:
+                bad(None, f"{side} : {us[cote]} snaps en {cote} annoncés, {n[(side, cote)]} actions de scrimmage")
+        for i, r in R[side].items():
+            if r.get("snaps") is not None and r["snaps"] != snaps[i]:
+                bad(None, f"{i} : {r['snaps']} snaps annoncés, {snaps[i]} d'après les changements")
+    return noms
+
+
 def check_week(A, folder):
     name = os.path.basename(os.path.normpath(folder))
     w = json.load(open(os.path.join(folder, "week.json"), encoding="utf-8"))
     sched = w["schedule"]
     stats = []
+    banc_noms, tous_noms = set(), set()                 # étape 7.3 : noms des remplaçants uniques dans la ligue
     for g in sched:
         try:
             feed = json.load(open(os.path.join(folder, g["feed"]), encoding="utf-8"))
         except Exception as e:
             A.add(BLOQUANT, name, g["id"], None, f"fichier du match illisible : {e}"); continue
         check_scout(A, name, g, feed)
+        nb = check_rotations(A, name, g, feed)
+        if nb:
+            banc_noms.update((nom, pid) for nom, pid, rookie in nb if not rookie)
+            tous_noms.update((r["name"], r["id"]) for s in ("home", "away") for r in feed["game"][s].get("roster") or [])
         st = check_game(A, name, g, feed)
         if st:
             st["phase"] = g["phase"]; st["id"] = g["id"]; stats.append(st)
@@ -302,6 +402,10 @@ def check_week(A, folder):
                 A.add(BLOQUANT, name, st["id"], None, f"{pid} : notes qui changent pendant la semaine ({vues[pid]} / {r})")
     check_progression(A, name, w)
     check_film(A, name, folder, w)
+    porteurs = Counter(nom for nom, _ in tous_noms)
+    doublons = sorted(nom for nom, _ in banc_noms if porteurs[nom] > 1)
+    if doublons:
+        A.add(ALERTE, name, None, None, f"remplaçants dont le nom est porté par un autre joueur : {doublons[:5]}")
     reg = [g for g in sched if g["phase"] == "regular"]
     teams = list(w["teams"]) if isinstance(w["teams"], dict) else [t["abbr"] for t in w["teams"]]
     per = Counter()

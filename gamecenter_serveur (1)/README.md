@@ -1824,6 +1824,82 @@ selon la probabilité de victoire ; rendus validés.
   équipe du rapport sort pour MNL, CPH, SPK (92 matchs par équipe, bruit ± 5 points ; 12.3 sur 2208 matchs : 51, 59,
   42 %) ; 443 tests unitaires, tests navigateur (dont `test_penalites.js`) ✅.
 
+### 69. Le banc, les packages, la fatigue et les rotations (notebook 12.2 vicies quinquies, 21/10/2026 — allumés)
+Feuille de route : « moteur plus intelligent », étape 7.3. Module `moteur/rotations.py` (tests `test_rotations.py`),
+cellule **12.2 vicies quinquies** (après 12.2 vicies quater) ; interrupteur `GC_BANC=0` : moteur d'avant à l'identique
+(contrôlé sur 4 matchs et sur un GameFeed, référence calculée avant tout branchement) ; flux de hasard dédié
+« rotations ». **Décisions de Guillaume (21/10)** : plan validé, choix compris ; rendus validés sur captures.
+- **Avant** : 25 joueurs par franchise, personne ne sortait jamais ; seule fatigue : le plafond de « touches » du porteur
+  (≤ 3 yards) ; en nickel / dime pas de 3e CB, en 12 personnel pas de 2e TE (le site plaçait le LB3 en nickel back).
+- **7.3.1 — le banc** (extension des rosters de 12.1 : `build_franchise` enveloppée) : 11 remplaçants par franchise (36
+  joueurs, 264 dans la ligue) — QB2, RB3, WR4, TE2, OT (`<équipe>_RT2`), OG (`<équipe>_LG2`), EDGE3, DT3, LB4, CB3, S3 —
+  dans `team.bench`, pas dans `team.roster` (le moteur ne les voit que quand ils entrent). Niveau 7,4 points sous le
+  titulaire en moyenne (2,7 à 12,2 ; DT3 et EDGE3, qui jouent beaucoup, plus près) ; profils **vétéran** (29-33 ans,
+  sans marge), **jeune à potentiel** (21-24 ans, potentiel 8-12, progresse avec ses snaps), **spécialiste** (proche du
+  titulaire sur sa spécialité : slot corner, pass rush specialist, swing tackle…) — 96 / 96 / 72 ; SPK a 6 jeunes, CTD 6
+  vétérans. Noms tirés des réservoirs des recrues (12.1) : aucun des 467 noms déjà portés (rosters, états des joueurs et
+  retraités de toutes les semaines de `data/weeks`), aucun deux fois ; les doublons existants restent ; avec le banc, les
+  recrues futures sont nommées sans doublon dans la ligue. Numéros uniques dans l'équipe et dans la plage du poste (les
+  titulaires gardent les leurs). Bloc E : remplaçants dans l'état des joueurs (`banc`, profil de départ), groupes
+  d'anti-inflation, de forme et d'expérience à part (les titulaires évoluent exactement comme sans banc : test), la
+  recrue d'une place du banc est un jeune ; participation = 1,5 × part des snaps. Notes d'unité sur les titulaires.
+- **7.3.2 — les packages** : chaque action a son alignement (11 places par unité, celles du site) ; le personnel de
+  l'appel fait entrer les joueurs — 2e TE en 12 personnel (place du WR3), fullback (RB2) en 21 / 22, WR4 en 10 et en
+  empty (passes), 6e OL en HEAVY ; le paquet défensif aussi — CB3 en nickel (place du LB3), CB3 et S3 en dime, LB4 en
+  goal line. Le roster de l'action est l'unité alignée : cibles, couverture (le CB3 prend le slot en homme), duels de la
+  poche, plaqueurs et pénalités portent le bon joueur ; rosters rendus à la fin du drive.
+- **7.3.3 — fatigue et rotations** : énergie 0-100 par joueur ; un snap coûte selon le poste (DT 3,5, RB 3,1, EDGE 3,0,
+  OL 1,6, QB 0,7 ; × 1,6 sur une action d'au moins 15 yards ou 7 s ; × 1,3 pour la défense face au hurry-up de PLS, qui
+  ne peut pas faire tourner pendant le drive) ; 1,5 rendu par snap passé hors du terrain, 35 à la mi-temps. Effet :
+  0,1 point de note par point d'énergie d'écart à 85 (− 5 au plus, + 1,5 frais), sauf notes mentales et de botté — un
+  profil, pas un niveau. Rotations du coordinateur (part des snaps visée, retard sur la part + énergie, préférence pour
+  le joueur déjà sur le terrain) : DT ≈ 67,5 %, EDGE ≈ 75 %, RB1 ≈ 62,5 %, modulés par l'identité (FRG et CTD gardent
+  leurs lignes, GLT et SPK tournent plus, MNL / PLS / TDL font tourner les RB). **Garbage time** : probabilité de
+  victoire > 98 % dans les 8 dernières minutes du 4e quart-temps **et** au moins 17 points d'écart (écart au plan,
+  après mesure : à 98 % seul, QB2 entrait dans 3 matchs sur 4, dès qu'une équipe menait d'une possession à 2 minutes)
+  — les remplaçants entrent, QB2 compris. La fatigue des touches reste et s'ajoute.
+- **Calibration** (garde-fou 3, `rotations.CALIBRATION`) : sans correction, la ligue marquait ≈ 2,4 points de plus
+  (DT3, EDGE3, CB3 jouent un tiers à la moitié des snaps ; les courses réparties réduisent la fatigue des touches) : + 0,3
+  (passe) et + 1,8 (course) aux notes d'unité défensives **jouées** quand le banc est allumé (pas aux notes du roster).
+  Un premier réglage (+ 1,2 / + 2,0) tenait la ligue mais sortait BST (défense d'élite) du test d'équilibre 12.3 (65,5 %) :
+  la correction porte surtout sur la course, là où le banc coûte. **GLT** garde un spécialiste « interior pass rusher »
+  comme DT3 (`SPECIALISTE_EQUIPE`) ; 12.3 demande GLT **dans les deux premiers** aux sacks (au lieu du premier — décision
+  de Guillaume du 21/10 : GLT et VEC sont à 4,8-4,9 sacks par match, l'ordre se joue au bruit).
+- **GameFeed** (additif) : `roster[]` = 25 titulaires puis 11 remplaçants, `depth` (1 / 2), `profile` (starter ·
+  veteran · prospect · specialist), `slot`, `covers`, `specialty`, `snaps`, `snap_pct`, `energy` (fin de match) ;
+  `play.subs = [{in, out, pos (place), reason: package | fatigue | garbage, side}]` seulement quand l'alignement change ;
+  `play.players.passer` = le QB aligné ; `game.home/away.unit_snaps` ; `game.rotation_model`. Stats de saison (14.1) :
+  `snaps`, `team_snaps`, `snap_pct` ; passes au QB aligné.
+- **Audit** (`check_rotations`) : rosters de 36 (titulaires puis remplaçants), numéros uniques dans la plage du poste ;
+  alignement de chaque action reconstitué depuis `play.subs` — 11 par côté, postes de l'unité, personne deux fois,
+  joueurs du roster ; porteur et passeur sur le terrain (bloquant), défenseur crédité sur le terrain (alerte) ; snaps
+  cohérents ; noms des remplaçants uniques dans la ligue (alerte).
+- **Site** (cellule 427 synchronisée ; rendus validés sur captures) : les points du terrain suivent `play.subs` (le 2e
+  TE, le CB3 « Nickel back », le QB2 portent leur nom et leur numéro action par action) ; fiche joueur « Depth :
+  Starter / Backup · profil », « Snaps : 42 (68 %) », énergie au coup de sifflet final ; onglet Players : tableau des
+  snaps ; tableau de profondeur (titulaires / remplaçants) dans My team et Teams, chaque nom ouvre sa fiche ;
+  play-by-play « QB2 X comes in — the game is out of reach », « Goal-line package: X comes in » et commentateur
+  (sous-titres) seulement pour ces changements marquants. Test navigateur `outils/site/test_banc.js` (groupe site,
+  indépendant de l'heure).
+- **Mesures** (25 matchs de contrôle de la cellule, semaine de 279 matchs) : ≈ 320 changements par match (packages
+  185, rotations 140, garbage 6) ; parts des snaps : DT1 / DT2 67 %, DT3 66 %, EDGE1 / 2 71 %, EDGE3 57 %, RB1 63 %, CB3
+  48 % (nickel / dime), TE2 14 %, WR4 8 %, LB4 13 %, OL et QB 97 % ; QB2 dans un match sur quatre environ, 2-4 % des
+  snaps ; énergie minimale d'un match ≈ 40-65. Calcul : + 9 % par match.
+- **Contrôles** (21/10, en local) : rapport de calibration (1 104 matchs, `GC_BANC=0` -> `1`, `--jusqua "12.2 vicies
+  quinquies"`) : toutes les statistiques dans les tolérances (points 51,9 -> 53,2, yards par course 6,12 -> 6,16,
+  complétion 63,1 -> 63,7 %, sacks 9,9 -> 9,3 %, pertes de balle 2,40 -> 2,34, premiers essais 43,5 -> 44,1, temps par
+  match × 0,70) ; la plage 40-60 % par équipe sort pour FRG (64,7 %) et SPK (36,4 %) allumé (SPK 35,3 % coupé ; 92 matchs
+  par équipe, bruit ≈ 5 % : c'est 12.3, 184 matchs par équipe, qui juge) ; 12.3 : toutes les franchises entre 36 et 64 %
+  (BST 62,2 %, PRM 41,0 %), identités tenues, 52,5 points par match ; audit d'une
+  semaine de 279 matchs produite avec le banc : 0 anomalie, 0 alerte (51,3 points, 8,1 drapeaux par match) ;
+  notebook complet ✅ (13.2 : Brier 0,2485 contre 0,2557 pour la formule de notes, z² 0,98, biais + 0,9 % ; 13.4 : cotes
+  en direct dans la tolérance sans recalage, extrêmes ± 0,014, écart moyen 0,021 ; 14.2 : semaine validée et exportée,
+  279 GameFeed), puis audit de cette semaine : 0 anomalie, 0 alerte (53,0 points, 8,2 drapeaux par match). En local,
+  12.3 a été exécuté à part (≈ 7 Go : 2 208 matchs complets gardés ensemble, mémoire que Python ne rend pas avant les
+  processus de 13.2 — dans ce conteneur, le noyau meurt en 13.2), et le notebook complet avec, à sa place, les mêmes
+  matchs (mêmes graines) réduits aux équipes et aux scores, ce dont 13.2 a besoin ; 464 tests unitaires, tests
+  navigateur (dont `test_banc.js`, `test_cellule427.js`) ✅.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

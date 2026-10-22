@@ -370,6 +370,26 @@ pression avant le lancer ──> Poche.reagir : monte (bords) · glisse (intéri
 Interrupteur du notebook : `POCHE_ENABLED` (`GC_POCHE=0`). GameFeed : `play.pocket`. Mesures : README du serveur,
 section 67. Tests : `test_poche.py`.
 
+## Le banc, les packages, la fatigue et les rotations (étape 7.3 « moteur plus intelligent », notebook 12.2 vicies quinquies, 21/10/2026)
+
+```
+12.1 (titulaires) ──> rotations.construire_banc : 11 remplaçants (profils vétéran / jeune / spécialiste, ≈ −7)
+                      rotations.noms : jamais un nom déjà porté dans la ligue, jamais deux fois
+chaque action ──> Rotations.alignement(côté, formation, personnel | paquet, garbage) : 11 places par unité —
+                      rotations (DT, EDGE, RB : part des snaps visée + énergie), garbage time, packages ; subs
+après l'action ──> Rotations.jouer : énergie (coût du poste, longue action, hurry-up), récupération, snaps
+                      notes_fatiguees : ± quelques points selon l'énergie (un profil, pas un niveau)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `rotations.py` | `BANC`, `profils`, `construire_banc`, `noms`, `controler_banc` ; `PLACES`, `PERSONNEL_PACKAGE`, `FORMATION_PACKAGE`, `DEFENSE_PACKAGE`, `Rotations` (`alignement`, `jouer`, `mi_temps`, `resume`), `garbage_time`, `malus`, `notes_fatiguees` ; constantes `COUT`, `RECUP_SNAP`, `ROTATION`, `STYLE_ROTATION`, `GARBAGE_*`, `CALIBRATION`. Flux `rotations`. Branché par le notebook (crochet d'action `_XP_SNAP_HOOK`, `execute_play`, `_fr_unit`, `_dec_receveurs`) ; sans le crochet : moteur à l'identique |
+| `developpement.py` | `etat_initial` accepte `profil` et `banc` ; groupes d'anti-inflation, de forme, de performance et d'expérience à part pour le banc ; `participation_banc` (snaps) ; recrue d'une place du banc : un jeune ; `retraites(…, ligue)` / `semaine_suivante(…, noms_ligue)` |
+| `reaction_defensive.py` | en homme, un 3e CB sur le terrain prend le slot (sans lui : comme avant) |
+
+Interrupteur du notebook : `BANC_ENABLED` (`GC_BANC=0`). GameFeed : `roster[].depth / profile / snaps / energy`,
+`play.subs`, `game.rotation_model`. Mesures : README du serveur, section 69. Tests : `test_rotations.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova

@@ -126,9 +126,11 @@ def _tirage(poids, rng):
 
 def _affectations_homme(roles, defs, couverture):
     """Duels en homme : CB1-WR1, CB2-WR2, S2 (ou S1) sur le slot, LB sur TE et RB.
-    En Cover 1 le S1 reste libre au fond (aide) ; en Cover 0 il prend un receveur."""
+    En Cover 1 le S1 reste libre au fond (aide) ; en Cover 0 il prend un receveur. Étape 7.3 : un 3e CB sur le terrain
+    (nickel, dime) prend le slot."""
     cb, s, lb = defs.get("CB", []), defs.get("S", []), defs.get("LB", [])
-    pool = {"WR1": cb[:1], "WR2": cb[1:2], "WR3": s[1:2] or s[:1], "TE": lb[:1] or s[:1], "RB": lb[1:2] or lb[:1]}
+    pool = {"WR1": cb[:1], "WR2": cb[1:2], "WR3": cb[2:3] or s[1:2] or s[:1], "TE": lb[:1] or s[:1],
+            "RB": lb[1:2] or lb[:1]}
     if couverture == "Cover 0" and s:
         pool["TE"] = s[:1]
     return {r: (pool.get(r) or lb[:1] or cb[:1] or [None])[0] for r in roles}
