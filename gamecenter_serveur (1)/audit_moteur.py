@@ -68,7 +68,9 @@ def check_game(A, week, g_sched, feed):
         if s != i + 1:
             bad(s, f"numérotation : action {s} à la position {i + 1}")
         q = p["quarter"]
-        if q < 1 or q > 5:
+        ot = game.get("overtime") or {}                 # playoffs : prolongations jusqu'à un vainqueur (11.6)
+        qmax = 4 + max(1, int(ot.get("periods") or 1)) if ot.get("rule") == "playoff" else 5
+        if q < 1 or q > qmax:
             bad(s, f"quart-temps impossible : {q}")
         if not (0 <= p["clock_end"] <= p["clock_start"] <= qs):
             bad(s, f"horloge incohérente : {p['clock_start']} → {p['clock_end']} (quart de {qs} s)")
@@ -407,11 +409,13 @@ def check_week(A, folder):
     sched = w["schedule"]
     stats = []
     banc_noms, tous_noms = set(), set()                 # étape 7.3 : noms des remplaçants uniques dans la ligue
-    for g in sched:
+    blesses = {}                                        # 7.4 : blessés de « semaines » de la semaine {id: (ko, match)}
+    for g in sorted(sched, key=lambda x: (x["kickoff"], x["id"])):
         try:
             feed = json.load(open(os.path.join(folder, g["feed"]), encoding="utf-8"))
         except Exception as e:
             A.add(BLOQUANT, name, g["id"], None, f"fichier du match illisible : {e}"); continue
+        check_semaine_blesses(A, name, g, feed, blesses)
         check_scout(A, name, g, feed)
         nb = check_rotations(A, name, g, feed)
         if nb:
@@ -501,9 +505,33 @@ def check_infirmerie(A, name, w):
         r = rosters.get(x["team"], {}).get(x["id"])
         if not r or r.get("profile") != "free_agent":
             A.add(BLOQUANT, name, None, None, f"joueur libre {x['id']} pas au banc de {x['team']}")
+    joues = {}
+    for x in rep.get("in_week") or []:
+        joues.setdefault(x.get("game"), []).append(x)
+    for gid, xs in joues.items():                      # 7.4 : chaque blessé de la semaine a sa blessure au match
+        g = next((g for g in w.get("schedule") or [] if g["id"] == gid), None)
+        if g is None:
+            A.add(BLOQUANT, name, gid, None, f"blessé de la semaine dans un match inconnu : {xs[0]['id']}")
     n = len(rosters) or 1
     if len(out) / n > 4:
         A.add(ALERTE, name, None, None, f"infirmerie : {len(out) / n:.1f} absents par équipe (≈ 2 attendus)")
+
+
+def check_semaine_blesses(A, name, g, feed, blesses):
+    """Étape 7.4 (23/10) : un blessé de « semaines » ne rejoue pas les matchs suivants de la semaine — il est « out » au
+    roster des matchs qui commencent après le sien (l'alignement : check_rotations)."""
+    game = feed.get("game") or {}
+    if not game.get("injury_model"):
+        return
+    for side in ("home", "away"):
+        for r in (game.get(side) or {}).get("roster") or []:
+            b = blesses.get(r["id"])
+            if b and b[0] < g["kickoff"] and r.get("status") != "out":
+                A.add(BLOQUANT, name, g["id"], None, f"{r['id']} blessé en {b[1]} (semaines) mais pas « out » ensuite")
+    for p in feed.get("plays") or []:
+        b = p.get("injury")
+        if b and b.get("severity") == "weeks":
+            blesses.setdefault(b["id"], (g["kickoff"], g["id"]))
 
 
 def check_infirmerie_suite(A, name, w, prev):

@@ -95,6 +95,14 @@ async function server(){
       box.innerHTML=G.depthChartHTML(T2)+G.injuryReportHTML(T2);
       out.depthOut=box.querySelectorAll('.dc-p.out').length; out.depthTxt=/OUT · knee/.test(box.innerHTML);
       out.report=box.querySelectorAll('table.inj tbody tr').length; out.reportTxt=/Out · 2 wks/.test(box.innerHTML);
+      // blessé pendant la semaine (23/10) : une fois son action jouée, « out » jusqu'à la fin de la semaine, sans
+      // changer les cotes — rapport et tableau de profondeur (injuries.in_week, envoyé par le serveur)
+      const SW=G.season.sw(), g0=G.season.SCHED[0], r1=RS[1], keep=SW.injuries;
+      SW.injuries=Object.assign({},keep||{},{in_week:[{team:T2.abbr,id:r1.id,name:r1.name,pos:r1.pos,part:'ankle',weeks:1,game:g0.id,seq:3}]});
+      const box2=document.createElement('div'); box2.innerHTML=G.depthChartHTML(T2)+G.injuryReportHTML(T2);
+      out.week={depthOut:box2.querySelectorAll('.dc-p.out').length,report:box2.querySelectorAll('table.inj tbody tr').length,
+        txt:/Hurt \w{3} · out this week \+ 1 wk/.test(box2.innerHTML)};
+      SW.injuries=keep;
       return out;
     },[F,k]);
     check(R.retour.length===0,`le blessé n'est plus aligné après son remplacement${R.retour.length?' (actions '+R.retour.slice(0,5).join(', ')+')':''}`);
@@ -107,6 +115,7 @@ async function server(){
     check(/injured|With .* out/.test(R.lineNext),'commentateur : le remplaçant entre');
     check(R.depthOut===1&&R.depthTxt,`tableau de profondeur : l'absent « OUT · knee » (${R.depthOut})`);
     check(R.report===1&&R.reportTxt,`rapport des blessures : 1 absent, « Out · 2 wks » (${R.report})`);
+    check(R.week.depthOut===2&&R.week.report===2&&R.week.txt,`blessé de la semaine : « out » au tableau de profondeur et au rapport, « Hurt … · out this week + 1 wk » (${JSON.stringify(R.week)})`);
     check(!errs.length,'aucune erreur JS'+(errs.length?' : '+errs.slice(0,3).join(' | '):''));
   } finally { await b.close(); srv.kill(); }
   console.log(fail?`ÉCHEC (${fail})`:'OK'); process.exit(fail?1:0);

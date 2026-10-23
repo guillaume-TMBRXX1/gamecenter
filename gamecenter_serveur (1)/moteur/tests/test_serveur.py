@@ -195,7 +195,10 @@ class Blessures(Base):
         r0["injury"] = {"part": "knee", "severity": "game", "weeks": 0, "seq": 50}
         self.w.feed = lambda gid: f if gid == g["id"] else lire(gid)
         self.w.doc = dict(old_doc, injuries={"model": "blessures-1", "published": "before_odds",
-                                             "out": [{"id": "A"}], "signings": [], "new": [{"id": "B"}]})
+                                             "out": [{"id": "A"}], "signings": [], "new": [{"id": "B"}],
+                                             "in_week": [{"id": "C", "game": g["id"], "seq": 12},
+                                                         {"id": "D", "game": g["id"], "seq": 40}],
+                                             "in_week_signings": [{"id": "F", "game": g["id"], "seq": 12}]})
         try:
             avant = self.w.public_feed(g, 0, upto=20)
             self.assertEqual([b["id"] for b in avant["game"]["injuries"]], ["X"])
@@ -207,6 +210,11 @@ class Blessures(Base):
             st = self.w.public_state(g["ko"] - 60_000)
             self.assertEqual(st["injuries"]["out"], [{"id": "A"}])
             self.assertNotIn("new", st["injuries"])
+            self.assertEqual(st["injuries"]["in_week"], [])                # blessé de la semaine : pas encore joué
+            fin = g["ko"] + int(g["ends"][12] * 1000) + 1                  # l'action 12 est jouée
+            st = self.w.public_state(fin)
+            self.assertEqual([x["id"] for x in st["injuries"]["in_week"]], ["C"])
+            self.assertEqual([x["id"] for x in st["injuries"]["in_week_signings"]], ["F"])
         finally:
             del self.w.feed
             self.w.doc = old_doc
