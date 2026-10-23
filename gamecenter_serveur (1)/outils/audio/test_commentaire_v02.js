@@ -54,7 +54,8 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
     if(Object.keys(r.single).length) console.log('   à enrichir (une seule prise, répétée) :',Object.entries(r.single).map(([c,n])=>c+' ×'+n).join(' · '));
     /* jamais entendues sur ces semaines : ajustements de coordinateurs (semaines V21, à partir du 12/10), intro / test (hors jeu), prolongation (1 seule),
        transformations et retours de coups d'envoi (bloc 2 : semaines calculées à partir du 19/10/2026) */
-    const rare=new Set(['TOUCHBACK','KICK_RETURN_BIG','KICK_RETURN_TD','PAT_GOOD','PAT_MISS','TWO_POINT_GOOD','TWO_POINT_FAIL','ADJ_HURRY','ADJ_CLOCK','ADJ_SHELVE','ADJ_SHELVE_FORM','ADJ_D_DEEP','ADJ_D_HEAT','ADJ_D_RUN','ADJ_D_PRESS','ADJ_D_NOBLITZ','ADJ_D_PREVENT','ADJ_D_ATTACK','INTRO_LIVE','INTRO_JOIN','INTRO_REPLAY','TEST','OVERTIME','SAFETY']);
+    const rare=new Set(['TOUCHBACK','KICK_RETURN_BIG','KICK_RETURN_TD','PAT_GOOD','PAT_MISS','TWO_POINT_GOOD','TWO_POINT_FAIL','ADJ_HURRY','ADJ_CLOCK','ADJ_SHELVE','ADJ_SHELVE_FORM','ADJ_D_DEEP','ADJ_D_HEAT','ADJ_D_RUN','ADJ_D_PRESS','ADJ_D_NOBLITZ','ADJ_D_PREVENT','ADJ_D_ATTACK','INTRO_LIVE','INTRO_JOIN','INTRO_REPLAY','TEST','OVERTIME','SAFETY',
+      'INJURY','INJURY_SUB']);   /* étape 7.4 : absentes des semaines produites avant les blessures */
     console.log('   prises jamais choisies, par cue :',r.unused.join(' '));
     check(r.distinct>=r.total*0.7&&r.unused.every(c=>rare.has(c)||['TOUCHDOWN','VICTORY','DEFEAT','FIELD_GOAL_GOOD','FIELD_GOAL_MISS','INTERCEPTION','FUMBLE','BIG_PLAY'].includes(c)),`${r.distinct}/${r.total} prises utilisées sur la saison, les autres sont des cas rares`);
     check(errs.length===0,'aucune erreur JS'); await p.close(); }
