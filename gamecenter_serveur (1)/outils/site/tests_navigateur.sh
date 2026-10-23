@@ -79,6 +79,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : la poche et la ligne offensive (fer à cheval, step up, sortie, sack)" node outils/site/test_poche.js
   lancer "Site : pénalités pendant l'action (drapeau, appel de l'arbitre, stats)" node outils/site/test_penalites.js
   lancer "Site : le banc, les packages et les rotations (bons joueurs, snaps, profondeur)" node outils/site/test_banc.js
+  lancer "Site : les blessures (terrain, play-by-play, fiche, rapport, profondeur)" node outils/site/test_blessures.js
   lancer "Site : fumbles gardés par l.attaque" node outils/site/test_fumbles.js
   lancer "Site : appel de jeu qui apprend (KEY, BREAK, READ / BURNED)" node outils/site/test_scouting.js
   lancer "Site : mémoire d.une semaine à l.autre (SCOUTED, ON TAPE, Scouting report)" node outils/site/test_memoire.js

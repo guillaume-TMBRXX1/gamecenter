@@ -182,6 +182,36 @@ class Direct(Base):
         self.assertEqual(f["game"]["final_score"], {"home": g["result"]["home"], "away": g["result"]["away"]})
 
 
+class Blessures(Base):
+    def test_pas_de_blessure_a_venir(self):
+        """Étape 7.4 : le site ne reçoit ni la blessure d'une action pas encore jouée, ni les blessures à venir de la
+        semaine ; le rapport d'avant les cotes (absents, signatures), si."""
+        import copy
+        g = self.reg[0]
+        old_doc, lire = self.w.doc, self.w.feed
+        f = copy.deepcopy(lire(g["id"]))
+        r0 = f["game"]["home"]["roster"][0]
+        f["game"]["injuries"] = [{"id": r0["id"], "seq": 50, "team": "home"}, {"id": "X", "seq": 5, "team": "away"}]
+        r0["injury"] = {"part": "knee", "severity": "game", "weeks": 0, "seq": 50}
+        self.w.feed = lambda gid: f if gid == g["id"] else lire(gid)
+        self.w.doc = dict(old_doc, injuries={"model": "blessures-1", "published": "before_odds",
+                                             "out": [{"id": "A"}], "signings": [], "new": [{"id": "B"}]})
+        try:
+            avant = self.w.public_feed(g, 0, upto=20)
+            self.assertEqual([b["id"] for b in avant["game"]["injuries"]], ["X"])
+            self.assertNotIn("injury", avant["game"]["home"]["roster"][0])
+            self.assertIn("injury", f["game"]["home"]["roster"][0])        # le GameFeed lui-même n'est pas modifié
+            apres = self.w.public_feed(g, 0, upto=60)
+            self.assertEqual(len(apres["game"]["injuries"]), 2)
+            self.assertEqual(apres["game"]["home"]["roster"][0]["injury"]["seq"], 50)
+            st = self.w.public_state(g["ko"] - 60_000)
+            self.assertEqual(st["injuries"]["out"], [{"id": "A"}])
+            self.assertNotIn("new", st["injuries"])
+        finally:
+            del self.w.feed
+            self.w.doc = old_doc
+
+
 class Playoffs(Base):
     def test_affiches_et_champion_au_bon_moment(self):
         w = self.w
