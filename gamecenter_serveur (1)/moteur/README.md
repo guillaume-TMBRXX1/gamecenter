@@ -390,6 +390,27 @@ après l'action ──> Rotations.jouer : énergie (coût du poste, longue actio
 Interrupteur du notebook : `BANC_ENABLED` (`GC_BANC=0`). GameFeed : `roster[].depth / profile / snaps / energy`,
 `play.subs`, `game.rotation_model`. Mesures : README du serveur, section 69. Tests : `test_rotations.py`.
 
+## Les blessures (étape 7.4 « moteur plus intelligent », notebook 12.2 vicies sexies, 22-23/10/2026)
+
+```
+fin de l'action ──> blessures.expositions (porteur plaqué, plaqueur, QB sacké, lignes) × fatigue × âge
+                    blessures.tirer : au plus un blessé par action (≈ 0,5 par match) ; gravité, partie du corps
+                    Rotations.blesser : légère (2 à 10 snaps), match, semaines ; URGENCE si la famille est vide
+                    horloge : arrêt pour blessure (hors des 2 dernières minutes d'une mi-temps)
+fin de semaine  ──> blessures.infirmerie_suivante : les absents de la semaine suivante (players_next_week)
+début de semaine──> blessures.absents, signatures (joueur libre), notes d'unité et rotations sans eux — avant les cotes
+pendant la semaine─> blessé de « semaines » : absent des matchs suivants (pas des simulations des cotes : cotes inchangées)
+```
+
+| Fichier | Rôle |
+|---|---|
+| `blessures.py` | `RISQUE`, `PORTEUR`, `PLAQUEUR`, `SACK_QB`, `ECHELLE` (calibrée : 0,51 sortie par match), `GRAVITE`, `PARTIES` ; `expositions`, `tirer`, `blessure`, `facteur_fatigue`, `facteur_age`, `resume` ; infirmerie : `absents`, `infirmerie_suivante`, `signatures`, `notes_joueur_libre`. Flux `blessures` |
+| `rotations.py` | joueurs indisponibles : `blesser`, `disponibles`, `_base` (la profondeur monte ; une place vide : famille du poste puis `URGENCE`, un remplaçant d'abord ; en dernier recours un blessé joue blessé) ; changements « injury », « return », « absence ». Sans blessé : alignements identiques à 7.3 (contrôlé) |
+
+Interrupteur du notebook : `BLESSURES_ENABLED` (`GC_BLESSURES=0`, moteur de 7.3 à l'identique). GameFeed : `play.injury`,
+`game.injuries`, `game.injury_model`, `roster[].injury / status / absence` ; week.json : `injuries` (absents,
+signatures, nouvelles absences). Mesures : README du serveur, section 70. Tests : `test_blessures.py`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova

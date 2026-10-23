@@ -294,6 +294,10 @@ GARBAGE_FIN = 8.0 / 15.0               # les 8 dernières minutes du 4e quart-te
 GARBAGE = (("QB", "QB"), ("RB", "RB"), ("WR1", "WR"), ("TE", "TE"), ("LT", "OL"), ("LG", "OL"), ("EDGE1", "EDGE"),
            ("DT1", "DT"), ("LB1", "LB"), ("CB1", "CB"), ("S1", "S"))
 OL = ("LT", "LG", "C", "RG", "RT")
+# 7.4 — blessures : une place sans joueur disponible à son poste est prise par un joueur d'une famille voisine (du même
+# côté), un remplaçant d'abord (le S3 glisse en CB, le TE2 à la place d'un WR…)
+URGENCE = {"QB": ("RB", "WR"), "RB": ("WR", "TE"), "WR": ("RB", "TE"), "TE": ("WR", "OL"), "OL": ("TE",),
+           "EDGE": ("DT", "LB"), "DT": ("EDGE",), "LB": ("S", "EDGE"), "CB": ("S", "LB"), "S": ("CB", "LB")}
 
 
 # calibration (garde-fou 3) : la rotation met des remplaçants sur le terrain, surtout en défense (DT3, EDGE3, CB3 :
@@ -348,10 +352,16 @@ class Rotations:
         self.equipe = equipe
         self.pos = {j["id"]: j["pos"] for j in joueurs}
         self.prof = profondeur(joueurs)
+        self.prof_complet = {p: list(ids) for p, ids in self.prof.items()}
+        self.indispo = {}                       # 7.4 : blessés {id: snaps de son unité avant de revenir, None : le match}
+        self.choc = set()                       # unités dont l'alignement change à cause d'une blessure
+        self.retours = set()                    # unités où un blessé léger revient (changements : « return »)
+        self.absents = set()                    # 7.4.2 : absents de la semaine (changement du 1er snap : « absence »)
         self.energie = {j["id"]: 100.0 for j in joueurs}
         self.snaps = {j["id"]: 0 for j in joueurs}
         self.n = {"off": 0, "def": 0}
         self.base = {c: {pl: self._titulaire(pl) for pl in PLACES[c]} for c in PLACES}
+        self.base_complete = {c: dict(b) for c, b in self.base.items()}
         self.dernier = {c: dict(self.base[c]) for c in PLACES}
         self.paquet = {c: set() for c in PLACES}
         self.garbage = False
@@ -373,14 +383,57 @@ class Rotations:
             ids = list(self.prof.get(famille, []))
         return [i for i in ids if i not in pris]
 
+    def _base(self, cote):
+        """Titulaires de chaque place avec les blessés : la profondeur sans eux (le WR2 prend la place du WR1…), et une
+        place vide prise par la famille du poste puis une famille voisine (URGENCE), un remplaçant d'abord."""
+        occ, pris = {}, set()
+        tit = set(self.base_complete[cote].values())
+        for pl in PLACES[cote]:
+            i = self._titulaire(pl)
+            if i is None or i in pris:
+                fam = _famille(POSTE_PLACE[pl][0])
+                i = None
+                for f in (fam,) + URGENCE.get(fam, ()):
+                    c = [x for x in self._candidats(f, pris, pl) if x not in self.indispo]
+                    c.sort(key=lambda x: x in tit)          # tri stable : les remplaçants d'abord
+                    if c:
+                        i = c[0]
+                        break
+                if i is None:                      # en dernier recours : un joueur valide du même côté, sinon un
+                    reste = [x for p, ids in self.prof_complet.items() for x in ids          # blessé qui joue blessé
+                             if COTE_POSTE.get(p) == cote and x not in pris]
+                    reste.sort(key=lambda x: (x in self.indispo, x in tit, _famille(self.pos[x]) != fam))
+                    i = reste[0] if reste else None
+            occ[pl] = i
+            if i is not None:
+                pris.add(i)
+        return occ
+
+    def _maj(self):
+        self.prof = {p: [i for i in ids if i not in self.indispo] for p, ids in self.prof_complet.items()}
+        for c in PLACES:
+            self.base[c] = self._base(c) if self.indispo else dict(self.base_complete[c])
+
+    def disponibles(self, famille):
+        return [i for i in self._candidats(famille, set()) if i not in self.indispo]
+
+    def blesser(self, i, snaps=None):
+        """Le joueur sort : pour `snaps` snaps de son unité (blessure légère) ou pour le reste du match (None)."""
+        self.indispo[i] = snaps
+        self.choc.add(COTE_POSTE.get(self.pos[i], "off"))
+        self._maj()
+
     def _rotation(self, groupe, rng, figee):
         """Occupants des places d'un groupe en rotation (DT, EDGE, RB) : énergie + retard sur la part visée."""
         places, _ = ROTATION[groupe]
         poste = POSTE_PLACE[places[0]][0]
-        cands = self.prof.get(poste, [])
-        if len(cands) <= len(places):
-            return {pl: self.base[COTE_POSTE[poste]][pl] for pl in places}
         c = COTE_POSTE[poste]
+        cands = self.prof.get(poste, [])
+        if self.indispo:                     # 7.4 : pas un joueur qui dépanne déjà à une autre place (blessures)
+            autres = {i for pl, i in self.base[c].items() if pl not in places}
+            cands = [i for i in cands if i not in autres]
+        if len(cands) <= len(places):
+            return {pl: self.base[c][pl] for pl in places}
         avant = {pl: self.dernier[c][pl] for pl in places}
         if figee:
             return avant
@@ -442,16 +495,28 @@ class Rotations:
             a, b = self.dernier[cote].get(pl), occ0.get(pl)
             if a != b and b is not None:
                 raison = "package" if (pl in paq or pl in self.paquet[cote]) else \
+                    "absence" if a in self.absents else \
+                    "injury" if (a in self.indispo or cote in self.choc) else \
+                    "return" if cote in self.retours else \
                     "garbage" if (garbage or self.garbage) else "fatigue"
                 subs.append({"in": b, "out": a, "pos": pl, "reason": raison})
         self.dernier[cote], self.paquet[cote] = dict(occ0), paq
         self.garbage = garbage
+        self.choc.discard(cote)
+        self.retours.discard(cote)
         return occ0, subs
 
     def jouer(self, cote, occupants, gain=0, secondes=0, hurry=False):
         """Un snap de l'unité `cote` : énergie de ceux qui jouent, récupération des autres, snaps comptés."""
         sur = set(i for i in occupants.values() if i)
         self.n[cote] += 1
+        revenus = [i for i, k in self.indispo.items() if k is not None and COTE_POSTE.get(self.pos[i]) == cote]
+        for i in revenus:                       # blessure légère : il revient après quelques snaps de son unité
+            self.indispo[i] -= 1
+            if self.indispo[i] <= 0:
+                del self.indispo[i]
+                self.retours.add(cote)
+                self._maj()
         for i, e in self.energie.items():
             if i in sur:
                 self.snaps[i] += 1

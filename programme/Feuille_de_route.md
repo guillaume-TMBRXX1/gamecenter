@@ -33,7 +33,7 @@ PR », README section 38). Ne jamais relancer `--premiere` (la semaine 1 existe)
 | **B2** | **Produit et visibilité** : domaine snapline.live et nom Snapline, scores du bandeau (« Hide scores »), transformation après touchdown, coup d'envoi avec retour, histoire / records / carrières, rappels Web Push, ligues privées, vidéos verticales et référencement | ✅ **terminé le 12/10** (PR #57 → #64) | notebook (+ modules) + site + serveur + workflows |
 | 7 | Publicités | **prête (13/10)**, en attente du compte AdSense de Guillaume — README section 47 | site + serveur — voir `Publicites_plan.md` |
 | **8** | **Promotion du site** : TikTok, puis Instagram Reels et YouTube Shorts, à partir des vidéos du bloc 2 | **en cours** — plan validé le 13/10 (`programme/Promotion.md`) ; ✅ 8.1 plan et photo de profil · ✅ 8.2 action du jour pour TikTok, « Best play so far » · ✅ 8.3 qualité (image par image, 60 i/s), résumé court, « What is Snapline? » · 8.4 lien compté `/tt` (en attente : 1 000 abonnés) · ✅ 8.4 bis adresse visible, commentaire épinglé · ✅ 8.6 a joueur de la semaine, champion · ✅ 8.6 b match hors norme, franchise · 8.5 Reels et Shorts | contenu + outils vidéo + serveur |
-| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63) · ✅ **idée 6** : mémoire d'une semaine à l'autre, le film de scouting (12.2 vicies bis, README 65, fusionnée) · hors feuille de route : résultats du jour en cours seulement (README 66, fusionnée) · ✅ **étape 7.1** : la poche et la ligne offensive (12.2 vicies ter, README 67, fusionnée) · ✅ **étape 7.2** : les pénalités pendant l'action (12.2 vicies quater, README 68, fusionnée) · ✅ **étape 7.3** : le banc, les packages, la fatigue et les rotations (12.2 vicies quinquies, README 69 ; PR à fusionner par Guillaume) · 7.4 blessures à venir | notebook (+ modules) + site |
+| 9 | **Moteur plus intelligent** — idées 1 et 2 (14/10) : horloge réelle (temps entre les actions, temps morts, genou, spike) et valeur des décisions (4e essai par probabilité de victoire) | ✅ **allumé** (12.2 quaterdecies ; décision de Guillaume du 14/10 : quarts de 15 min, ≈ 18 min de retransmission, 4e essai réaliste selon la situation) — 13.4 recalibré, semaine du 19/10 produite et auditée (README section 53) ; ✅ idée 3 bloc F, course (README 54) · ✅ idée 4 checks avant le snap (README 58) · hors feuille de route : 4e essai plus prudent (59), fumbles disputés (60), « Bigger field » (61), noms des joueurs sur le terrain (62) · ✅ **idée 5** : appel de jeu qui apprend (12.2 vicies semel, README 63) · ✅ **idée 6** : mémoire d'une semaine à l'autre, le film de scouting (12.2 vicies bis, README 65, fusionnée) · hors feuille de route : résultats du jour en cours seulement (README 66, fusionnée) · ✅ **étape 7.1** : la poche et la ligne offensive (12.2 vicies ter, README 67, fusionnée) · ✅ **étape 7.2** : les pénalités pendant l'action (12.2 vicies quater, README 68, fusionnée) · ✅ **étape 7.3** : le banc, les packages, la fatigue et les rotations (12.2 vicies quinquies, README 69, fusionnée) · ✅ **étape 7.4** : les blessures (12.2 vicies sexies, README 70 ; PR à fusionner par Guillaume) — l'étape 7 est complète | notebook (+ modules) + site |
 
 ---
 
@@ -943,6 +943,19 @@ banc (+ 0,3 / + 1,8 aux notes d'unité défensives jouées, surtout contre la co
 profondeur, play-by-play et commentateur pour les changements marquants ; audit. Prépare 7.4 : un remplaçant par place.
 Contrôles en local : notebook complet, audit d'une semaine de 279 matchs (0 anomalie), rapport de calibration (dans les
 tolérances), tests unitaires et navigateur ✅.
+
+**7.4 — les blessures** : ✅ codé et allumé (README du serveur, section 70 ; module `moteur/blessures.py`, cellule
+12.2 vicies sexies, `GC_BLESSURES`) ; plan validé le 22/10 (les recommandations), rendus montrés sur captures le 23/10.
+7.4.1 pendant le match : risque à chaque action selon le poste, le contact (porteur plaqué, plaqueur, QB sacké), la
+fatigue et l'âge, ≈ 0,5 sortie par match ; légère (il revient), match, semaines ; partie du corps ; le remplaçant entre
+(la profondeur monte, une famille voisine glisse), arrêt de l'horloge. 7.4.2 l'infirmerie : absent à partir de la
+semaine suivante, gardée dans l'état des joueurs, absents retirés avant les cotes (notes d'unité, rotations, cache),
+joueur libre quand l'effectif est à court, rapport `injuries` dans week.json (≈ 2 absents par équipe) ; décision du
+23/10 : un blessé de « semaines » ne rejoue pas la fin de la semaine en cours, sans changer les cotes (une subtilité
+pour les parieurs, visible une fois la blessure jouée). 7.4.3 site
+(croix médicale, play-by-play, commentateur, fiche, rapport des blessures, profondeur, tuiles), serveur sans
+blessure à venir, audit. Contrôles en local : notebook complet, audit, rapport de calibration (dans les tolérances),
+tests unitaires et navigateur ✅.
 
 **Hors feuille de route, 21/10 — résultats du jour en cours seulement** (README 66) : le calendrier a un onglet par jour,
 aujourd'hui ouvert et les autres fermés ; tableau Live, compteur « Results », bandeau et Big plays ne montrent que les

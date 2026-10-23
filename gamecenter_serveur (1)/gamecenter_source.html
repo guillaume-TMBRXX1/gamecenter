@@ -692,6 +692,19 @@
   .dc-p small{font:500 10.5px var(--f-ui);color:var(--ink-3)}
   .dc-n{font:700 10.5px var(--f-ui);color:var(--cyan);margin-right:4px}
   .dc-none{color:var(--ink-3)}
+  /* step 7.4: injuries */
+  .dc-p.out{opacity:.62;border-color:rgba(255,43,43,.55)}
+  .dc-p .dc-out{color:#FF5A5A;font-weight:700;letter-spacing:.04em}
+  .pst.inj{width:100%;margin-bottom:10px}
+  .pst.inj td,.pst.inj thead th{text-align:left;white-space:normal}
+  .pst.inj .inj-st{color:#FF5A5A;font-weight:700}
+  .inj-sig,.inj-none{margin:0 0 12px;font:500 12px var(--f-ui);color:var(--ink-3)}
+  .inj-out{display:flex;align-items:center;gap:6px;margin:6px 0 0;font:600 11.5px var(--f-ui);color:var(--ink-2);line-height:1.35}
+  .inj-out svg{flex:none;width:12px;height:12px}
+  .inj-out .abbr{font-size:10.5px;margin-right:2px}
+  .pc-inj{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 10px;border:1px solid rgba(255,43,43,.45);border-radius:10px;background:rgba(255,43,43,.08);font:500 12.5px var(--f-ui);color:var(--ink-2)}
+  .pc-inj svg{flex:none;width:14px;height:14px}
+  .pc-inj b{color:#FF5A5A}
   .pst td{color:var(--ink-2)}
   .pst .pos{display:inline-block;min-width:34px;margin-right:8px;font:700 italic 10.5px var(--f-display);letter-spacing:.06em;color:var(--ink-3)}
   .pst.gp td{text-align:left;white-space:normal;font-family:var(--f-ui)}
@@ -3620,7 +3633,7 @@ function penFlag(g,P,plan){ const q=P.penalty; if(!q||!plan||plan.kick||plan.typ
   try{ const sm=slotMap(g), id=q.player&&q.player.id; idx=(sm[side]||[]).findIndex(x=>x&&x.id===id); }catch(e){ idx=-1; }
   if(idx<0) idx=side==='off'?2:0;
   return {at:clamp(at,0.05,0.97),side,idx,shown:false,x:null,y:null}; }
-function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:rpPenaltyText(g,P)+rpSubNote(P,g)+rpFumbleNote(P)+rpPocketNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
+function rpFeedItem(g,P){ return {q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:P.offense==='home'?g.home:g.away,text:rpPenaltyText(g,P)+rpSubNote(P,g)+injSubNote(g,P)+injNote(P)+rpFumbleNote(P)+rpPocketNote(P)+rpScoutNote(P,g)+rpPresnapNote(P,g)+rpReadNote(P)+rpXpNote(P)+rpRunNote(P)+rpClockNote(P,g),kind:rpKind(P)}; }
 /* coordinator adjustments made during the game (engine 12.2 quater, play.adjust): one play-by-play line each;
    engine block D (12.2 octies) adds why (a.reason: "5 of the last 8 targets") and each team's game plan */
 function rpAdjItems(g,P){ const A=Array.isArray(P.adjust)?P.adjust:[]; return A.map(a=>({q:P.quarter,clk:clockStr(num(P.clock_start,0)),team:a.team==='home'?g.home:g.away,text:String(a.text||'')+(a.reason?' — '+String(a.reason):''),kind:'adj'})); }
@@ -4022,6 +4035,7 @@ function miniTile(g){
       <div class="matchup"><span><b>${A.name}</b><em>@</em><b>${H.name}</b></span>${g.sched?seasonTileMeta(g):`<span class="watch">${ICON.eye}${g.viewers}</span>`}</div>
       ${powerHTML(g)}
       <div class="odds-row">${oddBtn(g,'ml','away','team')}${oddBtn(g,'ml','home','team')}</div>
+      ${injOutHTML(g)}
     </div>
   </article>`;
 }
@@ -4055,7 +4069,7 @@ function featTile(g){
     ${fieldHTML(g,'',true)}
     ${g.replay?`<div class="rp-call" data-g="${g.id}" data-f="rpcall"></div>`:''}
     <div class="feat-bottom">
-      <div class="feat-left">${powerHTML(g)}${marketsHTML(g,false)}${g.replay?`<p class="rp-note">${g.gf&&g.gf.game.pregame_odds?'Moneyline, spread and total straight from the engine at every play.':'Moneyline straight from the engine at every play. Spread and total open once the engine prices them.'}</p>`:''}</div>
+      <div class="feat-left">${powerHTML(g)}${marketsHTML(g,false)}${injOutHTML(g)}${g.replay?`<p class="rp-note">${g.gf&&g.gf.game.pregame_odds?'Moneyline, spread and total straight from the engine at every play.':'Moneyline straight from the engine at every play. Spread and total open once the engine prices them.'}</p>`:''}</div>
       ${wpHTML(g,false)}
     </div>
   </article>`;
@@ -4818,6 +4832,7 @@ function nameTags(g){
     if(lab&&d.name&&(g.phase==='post'||cr!=='TACKLE')){ const i=sm.def.findIndex(x=>x&&x.name===d.name);
       if(i>=0) out.push({side:'def',idx:i,text:surname(d.name),sub:lab,kind:'def',a:1}); }
   }
+  if(g.phase==='post'&&P.injury){ const sp=injSpot(g,sm); if(sp) out.push({side:sp.side,idx:sp.idx,text:surname(P.injury.name),sub:'INJURED',kind:'inj',a:1}); }
   return out;
 }
 /* where the flag lands: by the player who committed the foul, at the moment of the foul (thrown from behind the play,
@@ -4838,12 +4853,22 @@ function drawFlag(c,g,fl,X,Y,s){
   c.fillStyle='#FFD400'; c.beginPath(); c.moveTo(-w/2,-w/2); c.lineTo(w/2,-w/2*0.8); c.lineTo(w/2*0.85,w/2); c.lineTo(-w/2,w/2*0.85); c.closePath(); c.fill();
   c.shadowBlur=0; c.fillStyle='#B89400'; c.beginPath(); c.arc(-w*0.32,-w*0.32,Math.max(1.2,w*0.14),0,Math.PI*2); c.fill();
   c.restore(); }
+function injSpot(g,sm){ const P=g.cur, b=P&&P.injury; if(!b) return null;
+  try{ sm=sm||slotMap(g); }catch(e){ return null; }
+  const side=b.team===P.offense?'off':'def', idx=sm[side].findIndex(x=>x&&x.id===b.id);
+  return idx>=0&&(side==='off'?g.off:g.def)[idx]?{side,idx}:null; }
+function drawInjury(c,p,X,Y,r,s){ if(!p) return;
+  const px=X(p.x)+r*1.6, py=Y(p.y)+r*1.6, h=Math.max(7,s*0.9), w=h*0.34;
+  c.save(); c.shadowColor=STOP_RED; c.shadowBlur=FX_GLOW?10:0;
+  c.fillStyle='#FFFFFF'; c.beginPath(); c.roundRect(px-h/2-2,py-h/2-2,h+4,h+4,3); c.fill();
+  c.fillStyle=STOP_RED; c.fillRect(px-w/2,py-h/2,w,h); c.fillRect(px-h/2,py-w/2,h,w);
+  c.restore(); }
 function drawNameTags(c,T,X,Y,r,s,g){
   const tf=Math.max(10,Math.round(s*0.82)), sf=Math.max(8,Math.round(tf*0.82)), th=Math.round(tf*1.65), gap=Math.max(4,s*0.4), boxes=[];
   c.save(); c.textBaseline='middle';
   for(const t of T){
     const p=(t.side==='off'?g.off:g.def)[t.idx]; if(!p) continue;
-    const px=X(p.x), py=Y(p.y), col=t.side==='off'?daOff(g):FIELD.pink;
+    const px=X(p.x), py=Y(p.y), col=t.kind==='inj'?STOP_RED:t.side==='off'?daOff(g):FIELD.pink;
     c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; const nw=c.measureText(t.text).width;
     c.font=`800 ${sf}px Manrope, system-ui, sans-serif`; const sw=t.sub?c.measureText(t.sub).width+sf*0.9:0;
     const w=nw+sw+tf*1.1;
@@ -4906,7 +4931,7 @@ function slotMap(g){
    veteran · prospect · specialist) ; play.subs = [{in, out, pos (the spot), reason: package | fatigue | garbage, side}]
    only when the lineup changes. rotLineups(g): the 22 on the field at each play, rebuilt from the starters' spots */
 const ROT_PLACES={off:['LT','LG','C','RG','RT','QB','RB','TE','WR1','WR2','WR3'],def:['EDGE1','EDGE2','DT1','DT2','LB1','LB2','LB3','CB1','CB2','S1','S2']};
-const ROT_PROFILE={starter:'Starter',veteran:'Veteran',prospect:'Prospect',specialist:'Specialist'};
+const ROT_PROFILE={starter:'Starter',veteran:'Veteran',prospect:'Prospect',specialist:'Specialist',free_agent:'Free agent'};
 function rotPlace(p,n){ return p==='WR'?'WR'+n:p; }
 function rotPl(R,id){ return id?R.find(r=>r.id===id)||null:null; }
 function rotLineups(g){
@@ -4953,13 +4978,53 @@ function rotNote(g,P){
   if(gl) return {kind:'goal_line',name:nm(d,gl.in),team:d,text:`Goal-line package: ${nm(d,gl.in)} comes in`};
   return null; }
 function rpSubNote(P,g){ const n=rotNote(g,P); return n?` · ${n.text}`:''; }
+/* Step 7.4: injuries. play.injury = {id, name, team (home|away), pos, part, severity: minor | game | weeks, weeks,
+   returns} on the play where he got hurt; play.subs reason "injury" (his replacement, next play), "return" (back from a
+   minor one), "absence" (out this week, first snap); roster[].status (active | out) and roster[].absence
+   {part, weeks_left}; week.json injuries {out, signings, new} — published before the odds */
+function injStatus(b){ return b.severity==='minor'?'questionable to return':b.severity==='game'?'will not return':`out ${b.weeks} week${b.weeks>1?'s':''}`; }
+function injNote(P){ const b=P&&P.injury; return b?` · Injury: ${b.name} (${b.pos}), ${b.part} — ${injStatus(b)}`:''; }
+function injSubs(g,P){
+  if(!P||!P.subs) return [];
+  const o=P.offense, d=o==='home'?'away':'home', R=s=>((((g.gf||{}).game||{})[s])||{}).roster||[];
+  const nm=(s,id)=>{ const r=R(s).find(x=>x.id===id); return r?r.name:''; };
+  return P.subs.filter(x=>x.reason==='injury'||x.reason==='return').map(x=>{ const s=x.side==='off'?o:d;
+    return {kind:x.reason,team:s,in:nm(s,x.in),out:nm(s,x.out)}; }).filter(x=>x.in); }
+function injSubNote(g,P){ const L=injSubs(g,P), inj=L.find(x=>x.kind==='injury'), ret=L.find(x=>x.kind==='return');
+  return (inj?` · ${inj.in} comes in for the injured ${inj.out}`:'')+(ret?` · ${ret.in} returns`:''); }
+/* key players out this week (the starters), for a team: [{name, pos, part, weeks_left}] */
+function injBanner(part,status){ return `<div class="pc-inj" role="note">${INJ_CROSS}<span><b>Injured</b> · ${esc(part||'')} — ${esc(status)}</span></div>`; }
+const INJ_CROSS='<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="0.5" y="0.5" width="11" height="11" rx="2.5" fill="#fff"/><path d="M4.6 2.4h2.8v2.2h2.2v2.8H7.4v2.2H4.6V7.4H2.4V4.6h2.2z" fill="#FF2B2B"/></svg>';
+/* injured this week (23/10): a player hurt for a week or more misses the rest of the week too, the odds published
+   on Saturday do not move — the server only sends him once the play is out (injuries.in_week: {id, team, game, seq}) */
+function injWeek(abbr){ const m={}; for(const x of ((SW&&SW.injuries)||{}).in_week||[]) if(x.team===abbr) m[x.id]=x; return m; }
+function injDay(x){ const s=SCHED_BY[x.game]; return s&&isFinite(s.ko)?new Date(s.ko).toLocaleDateString('en-US',{weekday:'short',timeZone:'Europe/Brussels'}):''; }
+function injOut(abbr){ const T=SW&&SW.teams&&SW.teams[abbr]; if(!T) return [];
+  const W=injWeek(abbr);
+  return (T.roster||[]).filter(r=>(r.status==='out'||W[r.id])&&r.depth!==2).map(r=>({name:r.name,pos:r.pos,part:W[r.id]?W[r.id].part:(r.absence||{}).part,weeks:(r.absence||{}).weeks_left})); }
+function injOutHTML(g){ if(!g||!g.sched||!SW) return '';
+  const L=[g.away,g.home].map(a=>injOut(a).map(x=>`<b class="abbr">${TEAMS[a].abbr}</b> ${esc(x.pos)} ${esc(surname(x.name))}`)).flat();
+  return L.length?`<p class="inj-out" title="Injury report, published before the odds">${INJ_CROSS}<span>Out: ${L.join(' · ')}</span></p>`:''; }
+function injuryReportHTML(T){
+  const R=T.roster||[], out=R.filter(r=>r.status==='out'), rep=(SW&&SW.injuries)||{}, W=injWeek(T.abbr);
+  const sig=(rep.signings||[]).concat(rep.in_week_signings||[]).filter(x=>x.team===T.abbr);
+  const wk=Object.values(W).filter(x=>!out.some(r=>r.id===x.id));
+  if(!out.length&&!sig.length&&!wk.length) return (rep.model?'<p class="inj-none">Injury report · no player out this week.</p>':'');
+  const repl=id=>((rep.out||[]).find(o=>o.id===id)||{}).replacement;
+  const rows=out.map(r=>{ const a=r.absence||{}, rp=repl(r.id);
+    return `<tr data-pl="${esc(r.id)}" data-pt="${T.abbr}" tabindex="0"><th scope="row"><span class="pos">${esc(r.pos)}</span>${esc(r.name)}</th><td>${esc(a.part||'')}</td><td class="inj-st">Out · ${a.weeks_left||1} wk${(a.weeks_left||1)>1?'s':''}</td><td>${rp&&rp.name?esc(rp.name):'—'}</td></tr>`; }).join('')
+    + wk.map(x=>`<tr data-pl="${esc(x.id)}" data-pt="${T.abbr}" tabindex="0"><th scope="row"><span class="pos">${esc(x.pos)}</span>${esc(x.name)}</th><td>${esc(x.part||'')}</td><td class="inj-st">Hurt ${esc(injDay(x))} · out this week + ${x.weeks} wk${x.weeks>1?'s':''}</td><td>—</td></tr>`).join('');
+  return `<div class="st-scroll"><table class="pst inj"><caption>Injury report · published before the odds</caption><thead><tr><th scope="col">Player</th><th scope="col">Injury</th><th scope="col">Status</th><th scope="col">Replaced by</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    +(sig.length?`<p class="inj-sig">Signed for the week: ${sig.map(x=>`${esc(x.name)} (${esc(x.pos)}, free agent)`).join(' · ')}</p>`:'');
+}
 /* depth chart of a team (Teams, My team): starters and backups by position */
 const DEPTH_ROWS=[['QB','Quarterback',['QB']],['RB','Running back',['RB']],['WR','Wide receiver',['WR']],['TE','Tight end',['TE']],
   ['OL','Offensive line',['LT','LG','C','RG','RT']],['EDGE','Edge rusher',['EDGE']],['DT','Defensive tackle',['DT']],['LB','Linebacker',['LB']],
   ['CB','Cornerback',['CB']],['S','Safety',['S']],['ST','Specialists',['K','P']]];
 function depthChartHTML(T){
-  const R=T.roster||[]; if(!R.some(r=>r.depth===2)) return '';
-  const cell=r=>`<button type="button" class="dc-p${r.depth===2?' b':''}" data-pl="${esc(r.id)}" data-pt="${T.abbr}" title="Open ${esc(r.name)}'s card"><span class="dc-n">${r.number!=null?r.number:''}</span>${esc(r.name)}${r.depth===2?`<small>${esc(r.slot||r.pos)} · ${esc(r.specialty||ROT_PROFILE[r.profile]||'')}</small>`:`<small>${esc(r.pos)}</small>`}</button>`;
+  const W=injWeek(T.abbr), R=(T.roster||[]).map(r=>W[r.id]&&r.status!=='out'?Object.assign({},r,{status:'out',absence:{part:W[r.id].part}}):r);
+  if(!R.some(r=>r.depth===2)) return '';
+  const cell=r=>`<button type="button" class="dc-p${r.depth===2?' b':''}${r.status==='out'?' out':''}" data-pl="${esc(r.id)}" data-pt="${T.abbr}" title="Open ${esc(r.name)}'s card"><span class="dc-n">${r.number!=null?r.number:''}</span>${esc(r.name)}${r.status==='out'?`<small class="dc-out">OUT · ${esc((r.absence||{}).part||'')}</small>`:r.depth===2?`<small>${esc(r.slot||r.pos)} · ${esc(r.specialty||ROT_PROFILE[r.profile]||'')}</small>`:`<small>${esc(r.pos)}</small>`}</button>`;
   const rows=DEPTH_ROWS.map(([k,l,ps])=>{ const xs=R.filter(r=>ps.includes(r.pos));
     return `<tr><th scope="row">${l}</th><td>${xs.filter(r=>r.depth!==2).map(cell).join('')}</td><td>${xs.filter(r=>r.depth===2).map(cell).join('')||'<span class="dc-none">—</span>'}</td></tr>`; }).join('');
   return `<div class="st-scroll"><table class="pst depth"><caption>Depth chart · starters and backups</caption><thead><tr><th scope="col">Position</th><th scope="col">Starters</th><th scope="col">Backups</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -4997,7 +5062,8 @@ function playerCardHTML(g,side,idx){
   if(sn){ lines.unshift(['Snaps',`${sn.n} (${sn.pct} %)`]);
     lines.unshift(['Depth',pl.depth===2?`Backup · ${pl.specialty||ROT_PROFILE[pl.profile]||''}`:'Starter']);
     if((rpDone(g)>=g.plays.length||g.status==='final')&&pl.energy!=null) lines.push(['Energy at the final whistle',String(pl.energy)]); }
-  return head+playerBodyHTML(pl,tone,'This game',lines,'No stats yet in this game');
+  const inj=pl.injury&&pl.injury.seq!=null&&rpDone(g)>pl.injury.seq?injBanner(pl.injury.part,injStatus(pl.injury)):'';   /* step 7.4 */
+  return head+inj+playerBodyHTML(pl,tone,'This game',lines,'No stats yet in this game');
 }
 /* Body of a player card (attributes, intelligence, development, stats): during a game and from a roster */
 function playerBodyHTML(pl,tone,statTitle,lines,noStats){
@@ -5061,7 +5127,8 @@ function rosterCardHTML(abbr,pid){
       <div class="pc-name" id="pcName">${esc(p.name)}</div>
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${esc(T.name)} · ${POS_NAME[p.pos]||esc(p.pos)}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
-  return head+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
+  const ab=p.status==='out'?injBanner((p.absence||{}).part,`out this week${(p.absence||{}).weeks_left>1?` (${p.absence.weeks_left} weeks)`:''}`):'';   /* step 7.4 */
+  return head+ab+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
 }
 function openRosterCard(abbr,pid,cx,cy){ const h=rosterCardHTML(abbr,pid); if(h) showCardEl(h,cx,cy,null); }
 /* nearest player dot to a click, through the field's 3D tilt */
@@ -5340,6 +5407,8 @@ class FieldView{
     // step 7.2: the yellow flag — thrown when the foul happens, on the player who committed it, left on the turf
     const fl=g.plan&&g.plan.flag;
     if(fl&&(g.phase==='post'||(g.phase==='play'&&g.dur&&g.t/g.dur>=fl.at))) drawFlag(c,g,fl,X,Y,s);
+    // step 7.4: the injured player stays down after the play — a medical cross by him
+    if(g.phase==='post'&&g.cur&&g.cur.injury&&!g.special){ const sp=injSpot(g); if(sp) drawInjury(c,(sp.side==='off'?g.off:g.def)[sp.idx],X,Y,r,s); }
     // who is who (19/10/2026, big screen only): the skill players' names before the snap, the ball carrier during
     // the play, then the defender who made the play (tackle, sack, interception, pass defended) — see nameTags
     if(g.plays&&typeof modalView!=='undefined'&&this===modalView&&!g.special){ const T=nameTags(g); if(T.length) drawNameTags(c,T,X,Y,r,s,g); }
@@ -6174,6 +6243,7 @@ function teamDetailHTML(abbr,t,mine){
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
         ${mine?`<span class="label" style="margin-top:14px;display:block">Still to play</span>${up||'<p class="st-none">No game left this week.</p>'}`:''}</div></div>
       ${mine?`<div class="panel mt-hist" data-mthist="${T.abbr}">${teamHistoryHTML(abbr)}</div>`:''}
+      ${injuryReportHTML(T)}
       ${depthChartHTML(T)}
       <div class="st-scroll"><table class="pst roster"><caption>Roster · tap a player for his card</caption><thead><tr><th scope="col">Player</th><th>#</th><th>Age</th><th>Rtg</th><th class="tl">This week</th></tr></thead><tbody>${roster}</tbody></table></div></div>`;
 }
@@ -7330,6 +7400,12 @@ function playLine(g,P){
   /* step 7.1: flushed out of the pocket, he threw on the run */
   if(P.pocket&&P.pocket.on_run&&text&&(P.result==='complete'||P.result==='incomplete'||P.result==='touchdown'||P.result==='interception'))
     text=V([`Flushed to his ${P.pocket.side==='left'?'left':'right'}, ${sur(qb)} throws on the run…`,`${sur(qb)} escapes the pocket, throwing on the move…`])+' '+text;
+  { const L=injSubs(g,P), x=L.find(y=>y.kind==='injury');   /* step 7.4: the replacement of an injured player */
+    if(x&&text) text=V([`${x.in} comes in for the injured ${x.out}.`,`With ${x.out} out, ${x.in} is on the field.`])+' '+text; }
+  if(P.injury&&text){ const b=P.injury; prio=Math.max(prio,2);   /* step 7.4: a player down after the play */
+    text+=' '+(b.part==='concussion'?V([`${b.name} is slow to get up — he's being checked for a concussion. He will not return.`,`${b.name} stays down. Head injury, and he's done for the day.`])
+      :b.severity==='minor'?V([`${b.name} is slow to get up, holding his ${b.part}. He's questionable to return.`,`${b.name} goes down… the trainers are out. Looks like the ${b.part}.`])
+      :V([`${b.name} stays down — the trainers are out. That's a ${b.part} injury, and he will not return.`,`Bad news for the ${nick(b.team==='home'?g.home:g.away)}: ${b.name} is hurt, the ${b.part}. He's out for the game.`])); }
   if(P.penalty&&text){ const q=P.penalty;   /* step 7.2: a flag that did not wipe the play out */
     if(!q.accepted) text+=' '+V([`There's a flag… but it's declined.`,`Flag on the play — declined.`]);
     else if(!q.nullified){ prio=Math.max(prio,2); text+=' '+V([`And a flag: roughing the passer, fifteen more yards!`,`Late hit on ${sur(qb)} — another fifteen yards.`]); } }
@@ -7540,6 +7616,7 @@ async function serverPoll(){
     if(st.standings_by_slot.length!==SW.standings_by_slot.length){ SW.standings_by_slot=st.standings_by_slot; changed=true; }
     if(st.futures.length!==SW.futures.length){ SW.futures=st.futures; changed=true; }
     for(const k of ['standings','seeds','champion','runner_up']) if(st[k]&&!SW[k]){ SW[k]=st[k]; changed=true; }
+    if(st.injuries&&JSON.stringify(st.injuries)!==JSON.stringify(SW.injuries||null)){ SW.injuries=st.injuries; changed=true; }   /* step 7.4: hurt this week */
     for(const g of games) if(g.sched) g.growing=!isFinite(g.sched.end);
     if(changed){ _agg={key:null}; BOARD_SIG=''; seasonRefresh(true); }
   }catch(e){ if(++POLL_FAIL>=3) document.body.classList.add('srv-off'); }

@@ -228,6 +228,13 @@ class Week:
         if not known:
             game = {"id": game.get("id"), "home": None, "away": None, "phase": g["phase"], "kickoff": g["kickoff"]}
         k = self.revealed_plays(g, t) if upto is None else upto
+        if known and "injuries" in game:            # étape 7.4 : pas de blessure d'une action encore à venir
+            game["injuries"] = [b for b in game["injuries"] if b.get("seq", 0) < k]
+            for side in ("home", "away"):
+                if isinstance(game.get(side), dict) and game[side].get("roster"):
+                    game[side] = dict(game[side], roster=[
+                        {x: v for x, v in r.items() if x != "injury"} if (r.get("injury") or {}).get("seq", 0) >= k
+                        else r for r in game[side]["roster"]])
         return {"schema": f.get("schema"), "game": game, "plays": f["plays"][:k] if known else []}
 
     def public_state(self, t):
@@ -238,6 +245,15 @@ class Week:
                "standings_by_slot": d["standings_by_slot"][:cs],
                "futures": [f for f in d["futures"] if f["after_slot"] <= cs],
                "standings": None, "seeds": None, "champion": None, "runner_up": None}
+        if d.get("injuries"):                       # étape 7.4 : le rapport d'avant les cotes (pas les blessures à venir)
+            out["injuries"] = {k: d["injuries"].get(k) for k in ("model", "published", "out", "signings")}
+            by = {g["id"]: g for g in self.sched}
+
+            def joue(x):                             # un blessé de la semaine : une fois son action jouée
+                g = by.get(x.get("game"))
+                return bool(g) and (self.status(g, t) == "final" or self.revealed_plays(g, t) > x.get("seq", 0))
+            for k in ("in_week", "in_week_signings"):
+                out["injuries"][k] = [x for x in d["injuries"].get(k) or [] if joue(x)]
         if cs == self.nslots:
             out["standings"], out["seeds"] = d["standings"], d["seeds"]
         if self.status(self.final, t) == "final":
@@ -830,8 +846,8 @@ def page():
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
-                      "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API},audio:AUDIO_API,"
-                      "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,openReplayFeed,stepGame,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
+                      "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
+                      "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
