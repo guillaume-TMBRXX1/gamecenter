@@ -1955,8 +1955,9 @@ choquant à l'image), un joueur libre quand l'effectif est à court ; « si je n
   déjà blessures coupées (bruit, 12.3 juge) ; notebook complet ✅ (13.2 : Brier 0,2489 contre 0,2546 pour la formule
   de notes, z² 0,95, biais + 0,2 % ; 13.4 : cotes en direct dans la tolérance sans recalage, extrêmes ± 0,016, écart
   moyen 0,017 ; 14.2 : semaine validée et exportée, 279 GameFeed, 42 nouvelles absences au rapport) ; audit de cette
-  semaine : 0 anomalie, 0 alerte ; 12.3 à part (même raison qu'en 7.3) : RESULTAT_123 ; TESTS_UNITAIRES tests
-  unitaires, tests navigateur (dont `test_blessures.js`, `test_banc.js`, `test_cellule427.js`) ✅.
+  semaine : 0 anomalie, 0 alerte ; 12.3 à part (même raison qu'en 7.3) : toutes les franchises entre 36 et 64 % (BST 61,7 %, ONX 40,5 %),
+  identités tenues (sacks GLT, défense BST…), 52,6 points par match ; 479 tests unitaires (dont `test_blessures.py`, le
+  test `Blessures` du serveur), tests navigateur (dont `test_blessures.js`, `test_banc.js`, `test_cellule427.js`) ✅.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
