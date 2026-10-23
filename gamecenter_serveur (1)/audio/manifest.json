@@ -1,6 +1,6 @@
 {
  "schema": "gc-audio-manifest/1",
- "version": "67a2732ae5",
+ "version": "cd7db4a2d3",
  "note": "Généré par outils/audio/generer_audio.py — ne pas éditer à la main. Fichiers pré-générés hors ligne (ElevenLabs).",
  "assets": [
   {
@@ -3096,6 +3096,133 @@
    "text": "All the way back! WHAT A RETURN!",
    "dur": 2.09,
    "bytes": 12765
+  },
+  {
+   "id": "c:injury_calm_01",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_calm_01.cb1a0f00.mp3",
+   "text": "There's a player down on the field.",
+   "dur": 1.7,
+   "bytes": 10461
+  },
+  {
+   "id": "c:injury_calm_02",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_calm_02.0297db58.mp3",
+   "text": "He's slow to get up… the trainers are coming out.",
+   "dur": 2.81,
+   "bytes": 17085
+  },
+  {
+   "id": "c:injury_calm_03",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_calm_03.62e80e16.mp3",
+   "text": "That doesn't look good — a player is hurt.",
+   "dur": 2.52,
+   "bytes": 15357
+  },
+  {
+   "id": "c:injury_calm_04",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_calm_04.8b51f083.mp3",
+   "text": "Injury on the play. He's being helped off the field.",
+   "dur": 3.53,
+   "bytes": 21405
+  },
+  {
+   "id": "c:injury_calm_05",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_calm_05.79d8b3ff.mp3",
+   "text": "The medical staff is out there. Not a good sign.",
+   "dur": 2.9,
+   "bytes": 17661
+  },
+  {
+   "id": "c:injury_calm_minor_01",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "file": "commentary/injury_calm_minor_01.3406f344.mp3",
+   "text": "He's slow to get up, but he walks off on his own.",
+   "dur": 3.17,
+   "bytes": 19245
+  },
+  {
+   "id": "c:injury_calm_minor_02",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "file": "commentary/injury_calm_minor_02.e34bde5f.mp3",
+   "text": "A little shaken up on that one.",
+   "dur": 1.54,
+   "bytes": 9453
+  },
+  {
+   "id": "c:injury_calm_minor_03",
+   "cat": "commentary",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "file": "commentary/injury_calm_minor_03.cab650f1.mp3",
+   "text": "He's banged up — but he should be back.",
+   "dur": 2.21,
+   "bytes": 13485
+  },
+  {
+   "id": "c:injury_sub_calm_01",
+   "cat": "commentary",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_sub_calm_01.5b70d759.mp3",
+   "text": "A new man comes in for the injured player.",
+   "dur": 2.3,
+   "bytes": 14061
+  },
+  {
+   "id": "c:injury_sub_calm_02",
+   "cat": "commentary",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_sub_calm_02.fe00c35a.mp3",
+   "text": "The backup is in now.",
+   "dur": 1.3,
+   "bytes": 8013
+  },
+  {
+   "id": "c:injury_sub_calm_03",
+   "cat": "commentary",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "file": "commentary/injury_sub_calm_03.fd29b49f.mp3",
+   "text": "Change at that spot — the replacement is on the field.",
+   "dur": 3.55,
+   "bytes": 21549
   }
  ]
 }
