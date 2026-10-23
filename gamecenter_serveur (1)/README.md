@@ -1900,6 +1900,64 @@ cellule **12.2 vicies quinquies** (après 12.2 vicies quater) ; interrupteur `GC
   matchs (mêmes graines) réduits aux équipes et aux scores, ce dont 13.2 a besoin ; 464 tests unitaires, tests
   navigateur (dont `test_banc.js`, `test_cellule427.js`) ✅.
 
+### 70. Les blessures (notebook 12.2 vicies sexies, 22-23/10/2026 — allumées)
+Feuille de route : « moteur plus intelligent », étape 7.4, la dernière de l'étape 7. Module `moteur/blessures.py` (tests
+`test_blessures.py`), indisponibles de `moteur/rotations.py`, cellule **12.2 vicies sexies** (après 12.2 vicies
+quinquies) ; interrupteur `GC_BLESSURES=0` : moteur de 7.3 à l'identique (contrôlé sur 4 matchs et sur un GameFeed,
+référence calculée avant tout branchement) ; flux de hasard dédié « blessures ». **Décisions de Guillaume (22/10)** :
+ses recommandations — l'absence commence la semaine suivante (les cotes publiées le samedi restent justes toute la
+semaine), ≈ une sortie tous les deux matchs et ≈ 2 absents par équipe, une partie du corps et une durée (rien de
+choquant à l'image), un joueur libre quand l'effectif est à court ; « si je ne relance pas après 1 h, lance la suite ».
+- **7.4.1 — la blessure pendant le match** : à chaque action de l'attaque (les équipes spéciales ne changent pas),
+  chaque joueur sur le terrain a un risque selon son poste (RB, LB, DT, TE, EDGE plus que les WR, les CB et le QB),
+  bien plus grand s'il prend le coup (porteur plaqué × 9, plaqueur × 5, QB sacké × 14 ; course lancée × 1,5), sa
+  fatigue (énergie de 7.3 sous 70 : jusqu'à × 1,8) et son âge (+ 6 % par an après 29 ans) ; au plus un blessé par
+  action. Gravité : légère 37 % (il revient après 2 à 10 snaps de son unité), match 37 %, semaines 26 % (1 : 18 %,
+  2 : 5 %, 3 : 2 %, 4 : 1 %) ; partie du corps selon la gravité (cheville, épaule, ischios, genou, commotion — jamais
+  légère —, côtes, main…). Le remplaçant de la place entre (`play.subs` « injury », « return » au retour) : la
+  profondeur monte (le WR2 passe WR1, le WR4 entre), une place sans joueur à son poste est prise par une famille
+  voisine (`URGENCE` : le S3 glisse en CB…), en dernier recours (essai à 30 fois le taux) un blessé joue blessé. Le
+  dernier QB valide ne se blesse pas. L'horloge s'arrête (« blessure »), sauf dans les 2 dernières minutes d'une
+  mi-temps (elle garde sa règle). Le tirage a lieu à la fin de l'action, avant l'horloge (`advance_game_clock`).
+- **7.4.2 — l'infirmerie** : une blessure de « semaines » rend absent à partir de la semaine suivante. L'état des
+  joueurs (bloc E, `players_next_week`) garde l'infirmerie (`infirmerie` : partie, semaines restantes, semaine de la
+  blessure ; la plus longue l'emporte ; un retraité en sort) ; au début de la semaine (`progression_debut_semaine`,
+  AVANT les cotes de `run_week`), les absents sortent : notes d'unité recalculées avec leurs remplaçants, rotations
+  sans eux (1er snap : changement « absence »), clé du cache des cotes. Une famille de postes qui a plus d'absents que
+  de remplaçants valides signe un joueur libre pour la semaine (`<équipe>_FA<n>`, profil `free_agent`, 10 points sous
+  le titulaire, nom jamais porté ; pas dans l'état des joueurs). Un absent ne joue pas, donc ne progresse pas
+  (participation nulle). Le rapport est publié dans week.json : `injuries` = absents (avec leur remplaçant),
+  signatures, puis, en fin de semaine, les nouvelles absences (`export_week` l'écrit : une ligne ajoutée en 14.2).
+- **GameFeed / week.json** (additifs) : `play.injury` {id, name, team, pos, part, severity: minor · game · weeks,
+  weeks, returns}, `game.injuries`, `game.injury_model`, `roster[].injury` (blessure du match) ; `roster[].status`
+  (active · out) et `roster[].absence` ; reasons de `play.subs` : `injury`, `return`, `absence`. **Serveur** : le site
+  ne reçoit ni la blessure d'une action pas encore jouée (`game.injuries`, `roster[].injury` filtrés par les actions
+  révélées), ni les nouvelles absences de la semaine (le rapport public : absents et signatures) — test `Blessures`
+  de `test_serveur.py`.
+- **Audit** : un absent n'est jamais aligné, un blessé (sauf blessure légère) ne revient pas, le blessé est sur le
+  terrain à son action, blessures du match = actions avec une blessure ; rapport et rosters concordants (absents
+  « out », joueurs libres au banc) ; d'une semaine à l'autre, les absents sont ceux de l'infirmerie publiée par la
+  précédente (bloquant) ; plus de 4 absents par équipe : alerte. Rosters de 36 + joueurs libres acceptés.
+- **Site** (cellule 427 synchronisée ; rendus montrés sur captures le 23/10) : après l'action, une croix médicale à
+  côté du blessé et son étiquette « INJURED » ; play-by-play (« Injury: X (RB), ribs — will not return », puis « Y comes
+  in for the injured X », « X returns ») et commentateur (commotion à part) ; fiche en match : bandeau « Injured ·
+  ribs — will not return » ; Teams / My team : « Injury report · published before the odds » (joueur, blessure,
+  « Out · 2 wks », remplaçant ; joueurs libres signés), tableau de profondeur (absent « OUT · knee », joueur libre
+  « FA · Free agent »), fiche d'un absent ; tuiles : « Out: … » (titulaires absents). Test navigateur
+  `outils/site/test_blessures.js` (groupe site, indépendant de l'heure).
+- **Mesures** : 276 matchs (une semaine) : 0,51 blessure par match (légères 0,18, match 0,18, semaines 0,15 ; RB
+  devant WR, OL, EDGE, S, LB ; 4 QB sur 141) ; 1,75 nouvel absent par équipe et par semaine (avant la retouche des
+  longues : ≈ 1,5 attendu) ; deux semaines enchaînées (`run_week`) : 41 absents en semaine 2 (1,7 par équipe), 10
+  joueurs libres, aucun absent aligné sur 42 000 actions, 54 absents annoncés pour la semaine 3 (2,25 par équipe).
+- **Contrôles** (23/10, en local) : rapport de calibration (1 104 matchs, `GC_BLESSURES=0` -> `1`, `--jusqua "12.2
+  vicies sexies"`) : toutes les statistiques dans les tolérances (points 53,2 -> 53,3, complétion 63,6 -> 63,7 %,
+  sacks 9,3 -> 9,2 %, yards par course 6,16 -> 6,16, pertes de balle 2,35 -> 2,35) ; ONX et FRG hors de 40-60 %
+  déjà blessures coupées (bruit, 12.3 juge) ; notebook complet ✅ (13.2 : Brier 0,2489 contre 0,2546 pour la formule
+  de notes, z² 0,95, biais + 0,2 % ; 13.4 : cotes en direct dans la tolérance sans recalage, extrêmes ± 0,016, écart
+  moyen 0,017 ; 14.2 : semaine validée et exportée, 279 GameFeed, 42 nouvelles absences au rapport) ; audit de cette
+  semaine : 0 anomalie, 0 alerte ; 12.3 à part (même raison qu'en 7.3) : RESULTAT_123 ; TESTS_UNITAIRES tests
+  unitaires, tests navigateur (dont `test_blessures.js`, `test_banc.js`, `test_cellule427.js`) ✅.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
