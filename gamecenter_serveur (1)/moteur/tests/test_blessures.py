@@ -139,5 +139,37 @@ class Indisponibles(unittest.TestCase):
                     self.assertTrue(None not in v and len(set(v)) == 11, (c, p, occ))
 
 
+class Infirmerie(unittest.TestCase):
+    F = {"name": "Rafe Ellison", "team": "CTX", "pos": "WR", "part": "knee"}
+
+    def test_absents(self):
+        inf = {"A": dict(self.F, weeks_left=1), "B": dict(self.F, weeks_left=0)}
+        self.assertEqual(list(bl.absents(inf)), ["A"])
+        self.assertEqual(bl.absents(None), {})
+
+    def test_semaine_suivante(self):
+        inf = {"A": dict(self.F, weeks_left=1), "B": dict(self.F, weeks_left=3)}
+        nouv = [{"id": "C", "name": "Ivo Varga", "team": "VEC", "pos": "CB", "part": "ankle", "severity": bl.SEMAINES,
+                 "weeks": 2},
+                {"id": "D", "name": "X", "team": "VEC", "pos": "CB", "part": "ankle", "severity": bl.MATCH, "weeks": 0},
+                {"id": "B", "name": "Rafe Ellison", "team": "CTX", "pos": "WR", "part": "foot", "severity": bl.SEMAINES,
+                 "weeks": 1}]
+        n = bl.infirmerie_suivante(inf, nouv, 4)
+        self.assertNotIn("A", n)                                         # sa semaine d'absence est faite
+        self.assertNotIn("D", n)                                         # sorti pour le match seulement
+        self.assertEqual((n["B"]["weeks_left"], n["B"]["part"]), (2, "knee"))     # la plus longue l'emporte
+        self.assertEqual((n["C"]["weeks_left"], n["C"]["since_week"]), (2, 4))
+        self.assertEqual(bl.infirmerie_suivante(inf, nouv, 4, valides={"C": "Ivo Varga"}).keys(), {"C"})
+
+    def test_joueur_libre(self):
+        js = [("CB1", "CB", False), ("CB2", "CB", False), ("CB3", "CB", True), ("LT1", "LT", False),
+              ("RT2", "RT", True)]
+        self.assertEqual(bl.signatures(js, {"CB1"}), [])                 # le CB3 remplace
+        self.assertEqual(bl.signatures(js, {"CB1", "CB2"}), [("CB", "CB2")])
+        self.assertEqual(bl.signatures(js, {"CB3"}), [("CB", "CB3")])    # plus de remplaçant valide
+        self.assertEqual(bl.signatures(js, {"LT1"}), [])                 # famille OL : le tackle de rechange
+        self.assertEqual(bl.notes_joueur_libre({"coverage": 80, "speed": 45}), {"coverage": 70, "speed": 40})
+
+
 if __name__ == "__main__":
     unittest.main()

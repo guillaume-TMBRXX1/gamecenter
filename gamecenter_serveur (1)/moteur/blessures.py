@@ -13,6 +13,13 @@ Le remplaçant de la place entre (banc de 7.3) ; sans remplaçant, un joueur d'u
 Fréquence (décision de Guillaume) : ≈ une sortie sur blessure tous les deux matchs, ≈ 2 absents par équipe et par
 semaine (23 matchs par équipe et par semaine : les taux de la NFL en feraient 5 à 8).
 
+7.4.2 — L'INFIRMERIE : une blessure de « semaines » rend le joueur absent à partir de la semaine suivante ; l'état
+des joueurs (bloc E) garde l'infirmerie d'une semaine à l'autre ({id: {..., "weeks_left"}}) ; au début de la semaine,
+les absents sont retirés de l'effectif AVANT les cotes (notes d'unité, rotations) et le rapport est publié dans
+week.json (« injuries ») ; une famille de postes qui a plus d'absents que de remplaçants valides signe un joueur libre
+pour la semaine (≈ 10 points sous le titulaire, nom jamais porté). Un absent ne joue pas, donc ne progresse pas
+(participation nulle au bloc E).
+
 Déterministe : tout vient du flux dédié « blessures » (graine du match, numéro de l'action).
 """
 import random
@@ -143,3 +150,59 @@ def resume(blessures):
         f = famille(b.get("pos", "?"))
         out["par_famille"][f] = out["par_famille"].get(f, 0) + 1
     return out
+
+
+# ---------- 7.4.2 : l'infirmerie ----------
+ECART_JOUEUR_LIBRE = 10                    # points sous le titulaire qu'il remplace
+NOTE_MIN, NOTE_MAX = 40, 99
+
+
+def absents(infirmerie):
+    """{id: fiche} des joueurs absents cette semaine (weeks_left > 0)."""
+    return {i: f for i, f in (infirmerie or {}).items() if f.get("weeks_left", 0) > 0}
+
+
+def infirmerie_suivante(infirmerie, nouvelles, semaine, valides=None):
+    """L'infirmerie de la semaine suivante : les absents de cette semaine ont manqué une semaine de plus, les blessures
+    de « semaines » de cette semaine s'ajoutent (la plus longue l'emporte).
+
+    infirmerie : {id: fiche} au début de la semaine jouée · nouvelles : [blessure du match] (id, name, team, pos, part,
+    severity, weeks) · semaine : n° de la semaine jouée · valides : {id: nom} des joueurs encore dans la ligue (un
+    retraité remplacé par sa recrue sort de l'infirmerie ; None : pas de contrôle)."""
+    out = {}
+    for i, f in (infirmerie or {}).items():
+        reste = f.get("weeks_left", 0) - 1
+        if reste > 0:
+            out[i] = dict(f, weeks_left=reste)
+    for b in nouvelles:
+        if b.get("severity") != SEMAINES or b.get("weeks", 0) <= 0:
+            continue
+        f = out.get(b["id"])
+        if f is None or b["weeks"] > f["weeks_left"]:
+            out[b["id"]] = {"name": b["name"], "team": b["team"], "pos": b["pos"], "part": b["part"],
+                            "weeks_left": b["weeks"], "weeks": b["weeks"], "since_week": semaine}
+    if valides is not None:
+        out = {i: f for i, f in out.items() if valides.get(i) == f["name"]}
+    return dict(sorted(out.items()))
+
+
+def signatures(joueurs, absents_ids):
+    """Joueurs libres à signer pour une équipe : [(poste, id remplacé)].
+
+    joueurs : [(id, poste, remplaçant: bool)] de l'équipe (titulaires puis banc) · absents_ids : ids absents.
+    Une famille de postes signe autant de joueurs libres qu'elle a d'absents en plus de ses remplaçants valides."""
+    out = []
+    par_famille = {}
+    for i, poste, banc in joueurs:
+        par_famille.setdefault(famille(poste), []).append((i, poste, banc))
+    for fam, js in par_famille.items():
+        partis = [(i, poste) for i, poste, _ in js if i in absents_ids]
+        valides = [i for i, _, banc in js if banc and i not in absents_ids]
+        for i, poste in partis[len(valides):]:
+            out.append((poste, i))
+    return out
+
+
+def notes_joueur_libre(notes_titulaire):
+    """Notes d'un joueur libre : celles du titulaire qu'il remplace, ECART_JOUEUR_LIBRE points plus bas."""
+    return {k: max(NOTE_MIN, min(NOTE_MAX, int(v) - ECART_JOUEUR_LIBRE)) for k, v in notes_titulaire.items()}
