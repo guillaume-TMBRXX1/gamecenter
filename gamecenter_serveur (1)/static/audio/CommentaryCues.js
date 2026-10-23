@@ -10,7 +10,7 @@
 (function(L){
 'use strict';
 const num=(v,f)=>(typeof v==='number'&&isFinite(v))?v:f;
-const STRICT=new Set(['fd','nogain','goal','q2','q3','q4','ot']);
+const STRICT=new Set(['fd','nogain','goal','q2','q3','q4','ot','minor']);
 const TIER_ORDER={calm:['calm','excited','huge'],excited:['excited','huge','calm'],huge:['huge','excited','calm']};
 function hsh(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 const tierOf=imp=>imp>=.75?'huge':imp>=.45?'excited':'calm';
@@ -46,6 +46,7 @@ function resolveCues(c,P,g){
     case 'kickoff': if(g&&g.idx!==0){ const kr=P.kick_return;   /* bloc 2 : coup d'envoi avec retour */
       out.push(kr&&kr.touchback?{cue:'TOUCHBACK',tags:[]}:kr&&(+kr.return||0)>=40?{cue:'KICK_RETURN_BIG',tags:[]}:{cue:'KICKOFF',tags:T}); } break;
   }
+  if(P&&P.injury) out.push({cue:'INJURY',tags:P.injury.severity==='minor'?['minor']:[],tier:'calm'});   /* step 7.4: a player down */
   if(c.status==='half') out.push({cue:'HALFTIME',tags:[],tier:'calm'});
   if(c.status==='final'){
     const ot=c.quarter>4?['ot']:[], s=c.score;
@@ -61,6 +62,7 @@ const ADJ={hurry:'ADJ_HURRY',clock:'ADJ_CLOCK',shelve:'ADJ_SHELVE',shelve_form:'
 function snapCues(c,P){
   const out=[], A=Array.isArray(P.adjust)?P.adjust:[];
   for(const a of A){ const k=ADJ[a&&a.kind]; if(k){ out.push({cue:k,tags:[],tier:'calm'}); break; } }
+  if((P.subs||[]).some(x=>x&&x.reason==='injury')) out.push({cue:'INJURY_SUB',tags:[],tier:'calm'});   /* step 7.4 */
   const ty=c.callType, gd=c.goalDist, goal=P.to_go>=gd;
   if(ty==='field_goal') out.push({cue:'FIELD_GOAL_UNIT',tags:[],tier:'calm'});
   else if(ty!=='punt'&&ty!=='kickoff'){

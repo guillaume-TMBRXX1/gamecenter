@@ -1,6 +1,6 @@
 {
  "schema": "gc-commentary-catalogue/1",
- "note": "Commentaire enregistré (V0.2). Appels génériques en anglais, sans nom de joueur (les noms restent dans les sous-titres). id stable ; changer un texte → nouveau fichier à la prochaine génération. tier : calm / excited / huge selon l'importance du moment. tags : pass, run, fd (premier down), nogain, lead (prise d'avantage), goal, ot, q2/q3/q4.",
+ "note": "Commentaire enregistré (V0.2). Appels génériques en anglais, sans nom de joueur (les noms restent dans les sous-titres). id stable ; changer un texte → nouveau fichier à la prochaine génération. tier : calm / excited / huge selon l'importance du moment. tags : pass, run, fd (premier down), nogain, lead (prise d'avantage), goal, ot, q2/q3/q4, minor (blessure légère, 7.4).",
  "lines": [
   {
    "id": "touchdown_excited_01",
@@ -1637,6 +1637,89 @@
    "tier": "huge",
    "tags": [],
    "text": "All the way back! WHAT A RETURN!"
+  },
+  {
+   "id": "injury_calm_01",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "text": "There's a player down on the field."
+  },
+  {
+   "id": "injury_calm_02",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "text": "He's slow to get up… the trainers are coming out."
+  },
+  {
+   "id": "injury_calm_03",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "text": "That doesn't look good — a player is hurt."
+  },
+  {
+   "id": "injury_calm_04",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "text": "Injury on the play. He's being helped off the field."
+  },
+  {
+   "id": "injury_calm_05",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [],
+   "text": "The medical staff is out there. Not a good sign."
+  },
+  {
+   "id": "injury_calm_minor_01",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "text": "He's slow to get up, but he walks off on his own."
+  },
+  {
+   "id": "injury_calm_minor_02",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "text": "A little shaken up on that one."
+  },
+  {
+   "id": "injury_calm_minor_03",
+   "cue": "INJURY",
+   "tier": "calm",
+   "tags": [
+    "minor"
+   ],
+   "text": "He's banged up — but he should be back."
+  },
+  {
+   "id": "injury_sub_calm_01",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "text": "A new man comes in for the injured player."
+  },
+  {
+   "id": "injury_sub_calm_02",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "text": "The backup is in now."
+  },
+  {
+   "id": "injury_sub_calm_03",
+   "cue": "INJURY_SUB",
+   "tier": "calm",
+   "tags": [],
+   "text": "Change at that spot — the replacement is on the field."
   }
  ]
 }
