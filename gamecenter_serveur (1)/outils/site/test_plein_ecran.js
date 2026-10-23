@@ -27,15 +27,18 @@ async function server(){
 }
 const inter=(a,b)=>a&&b&&a.left<b.right-1&&b.left<a.right-1&&a.top<b.bottom-1&&b.top<a.bottom-1;
 
+/* « tourné » = un quart de tour (matrice de rotation), pas n'importe quelle transformation : à l'ouverture, le panneau
+   glisse un instant (animation mIn / daUp, translateY) — sur une machine lente, la mesure tombait dedans */
 async function cas(b,F,nom,opt){
   console.log(`— ${nom} (${opt.viewport.width} × ${opt.viewport.height})`);
   const ctx=await b.newContext(opt), p=await ctx.newPage(), errs=[]; p.on('pageerror',e=>errs.push(e.message));
   await p.addInitScript(()=>{ try{ localStorage.setItem('gc-theater-v1','0'); }catch(e){} });
-  await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
+  await p.goto(`http://localhost:${PORT}/`,{waitUntil:"domcontentloaded",timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000});
   await p.evaluate(F=>{ const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
     for(let i=0;i<40000;i++){ G.stepGame(g,0.05); const P=g.cur; if(P&&P.down>=3&&g.idx>10&&g.phase==='presnap') break; }
     g.paused=true; },F);
   await p.click('[data-theater]'); await p.waitForTimeout(300);
+  await p.evaluate(()=>Promise.all(document.querySelector('#modal .m-panel').getAnimations().map(a=>a.finished.catch(()=>{}))));
   const etat=()=>p.evaluate(()=>{
     const m=document.getElementById('modal'), q=s=>m.querySelector(s), R=e=>{ if(!e) return null; const r=e.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}; };
     const op=e=>{ let o=1; for(let x=e;x&&x.nodeType===1;x=x.parentElement) o*=+getComputedStyle(x).opacity; return o; };
@@ -44,7 +47,7 @@ async function cas(b,F,nom,opt){
     const bar=[...q('.m-main').children].find(e=>!e.classList.contains('panel')&&!e.classList.contains('field'));
     const a=document.getElementById('onAir');
     return {theater:m.classList.contains('theater'),vw:innerWidth,vh:innerHeight,panel:R(q('.m-panel')),field:R(q('.m-main>.field')),
-      fw:q('.m-main>.field').clientWidth,fh:q('.m-main>.field').clientHeight,turned:getComputedStyle(q('.m-panel')).transform!=='none',
+      fw:q('.m-main>.field').clientWidth,fh:q('.m-main>.field').clientHeight,turned:(e=>{ const t=getComputedStyle(e).transform; if(!t||t==='none') return false; const M=new DOMMatrix(t); return Math.abs(M.b)>0.5&&Math.abs(M.a)<0.5; })(q('.m-panel')),
       feed:vis(q('.m-main>.panel')),side:vis(q('.m-side')),lower:vis(q('.m-lower')),bug:vis(q('.field .bug')),bugR:R(q('.field .bug')),
       pill:vis(q('.field .pill')),third:q('.field .third')&&!q('.field .third').hidden,thirdTop:parseFloat(getComputedStyle(q('.field .third')).top),
       air:a&&a.parentNode===q('.m-panel'),btn:vis(q('[data-theater]')),bar:bar?vis(bar):null,barR:R(bar)};
@@ -77,7 +80,8 @@ async function cas(b,F,nom,opt){
   check(!inter(s.barR,s.bugR),'les commandes du replay ne couvrent pas le tableau de score');
   if(opt.viewport.height>opt.viewport.width) check(s.turned&&s.fw>s.fh,'téléphone tenu droit : le match est tourné à l\'horizontale');
   else check(!s.turned,'pas de rotation quand l\'écran est déjà horizontal');
-  await p.waitForTimeout(2900); s=await etat();
+  await p.waitForTimeout(2500); s=await etat();          /* 2,5 s, puis le fondu : jusqu'à 4 s de plus sur une machine lente */
+  for(let i=0;i<20&&(s.btn||s.bar);i++){ await p.waitForTimeout(200); s=await etat(); }
   check(!s.btn&&!s.bar,'2,5 s sans toucher : bouton et commandes disparaissent, le match seul');
   if(opt.hasTouch) await p.touchscreen.tap(Math.round(s.vw/2),Math.round(s.vh/2)); else { await p.mouse.move(400,300); await p.mouse.move(420,310); }
   await p.waitForTimeout(600); s=await etat();
@@ -85,7 +89,7 @@ async function cas(b,F,nom,opt){
   check(s.btn,'un toucher (ou la souris) les fait revenir');
   /* un joueur touché ouvre sa fiche, même quand le match est tourné */
   const pt=await p.evaluate(()=>{ const G=window.__gc, v=G.views[G.views.length-1], g=v.g, pl=g.off.find(Boolean); const q=v.project(pl.x,pl.y);
-    const m=document.getElementById('modal'), turned=getComputedStyle(m.querySelector('.m-panel')).transform!=='none';
+    const m=document.getElementById('modal'), turned=(e=>{ const t=getComputedStyle(e).transform; if(!t||t==='none') return false; const M=new DOMMatrix(t); return Math.abs(M.b)>0.5&&Math.abs(M.a)<0.5; })(m.querySelector('.m-panel'));
     return turned?{x:innerWidth-q.y,y:q.x}:{x:q.x,y:q.y}; });
   if(opt.hasTouch) await p.touchscreen.tap(Math.round(pt.x),Math.round(pt.y)); else await p.mouse.click(Math.round(pt.x),Math.round(pt.y));
   await p.waitForTimeout(300);
