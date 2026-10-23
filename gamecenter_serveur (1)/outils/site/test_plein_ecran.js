@@ -88,6 +88,8 @@ async function cas(b,F,nom,opt){
   if(!s.btn) console.log('   ',await p.evaluate(()=>{ const b=document.querySelector('[data-theater]'), h=b.parentElement; return JSON.stringify({op:getComputedStyle(h).opacity,r:b.getBoundingClientRect(),d:getComputedStyle(b).display}); }));
   check(s.btn,'un toucher (ou la souris) les fait revenir');
   /* un joueur touché ouvre sa fiche, même quand le match est tourné */
+  /* la vue doit avoir dessiné au moins une fois (sinon project() rend −10000 : machine lente) */
+  await p.waitForFunction(()=>{ const G=window.__gc, v=G.views[G.views.length-1], pl=v&&v.g.off.find(Boolean); return !!pl&&v.project(pl.x,pl.y).x>-1e3; },null,{timeout:10000}).catch(()=>{});
   const pt=await p.evaluate(()=>{ const G=window.__gc, v=G.views[G.views.length-1], g=v.g, pl=g.off.find(Boolean); const q=v.project(pl.x,pl.y);
     const m=document.getElementById('modal'), turned=(e=>{ const t=getComputedStyle(e).transform; if(!t||t==='none') return false; const M=new DOMMatrix(t); return Math.abs(M.b)>0.5&&Math.abs(M.a)<0.5; })(m.querySelector('.m-panel'));
     return turned?{x:innerWidth-q.y,y:q.x}:{x:q.x,y:q.y}; });
