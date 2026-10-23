@@ -114,7 +114,7 @@ async function server(){
       'play-by-play : « steps up », « flushed …, throws on the run », « X beats Y »');
     check(clean.every(x=>!/steps up|flushed|beats/.test(x.text)),'play-by-play : rien sur une poche propre');
     check(R.ot===R.runs&&R.pb>0&&R.prs>0,`stats : « Throws on the run » ${R.ot}, duels de protection (${R.pb} joueurs), pressions (${R.prs} joueurs)`);
-    check(sk.every(x=>/gets home|untouched|collapses|brings him down|can't hold/.test(x.line))&&es.filter(x=>x.result==='complete'||x.result==='incomplete').every(x=>/on the run|on the move/.test(x.line)),
+    check(sk.every(x=>/gets home|untouched|collapses|caves in|brings him down|can't hold/.test(x.line))&&es.filter(x=>x.result==='complete'||x.result==='incomplete').every(x=>/on the run|on the move/.test(x.line)),
       'commentateur : le duel du sack, le lancer en courant');
     check(!errs.length,'aucune erreur JS'+(errs.length?' : '+errs.slice(0,3).join(' | '):''));
   } finally { await b.close(); srv.kill(); }
