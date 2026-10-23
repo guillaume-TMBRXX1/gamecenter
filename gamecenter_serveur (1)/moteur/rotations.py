@@ -356,6 +356,7 @@ class Rotations:
         self.indispo = {}                       # 7.4 : blessés {id: snaps de son unité avant de revenir, None : le match}
         self.choc = set()                       # unités dont l'alignement change à cause d'une blessure
         self.retours = set()                    # unités où un blessé léger revient (changements : « return »)
+        self.absents = set()                    # 7.4.2 : absents de la semaine (changement du 1er snap : « absence »)
         self.energie = {j["id"]: 100.0 for j in joueurs}
         self.snaps = {j["id"]: 0 for j in joueurs}
         self.n = {"off": 0, "def": 0}
@@ -494,6 +495,7 @@ class Rotations:
             a, b = self.dernier[cote].get(pl), occ0.get(pl)
             if a != b and b is not None:
                 raison = "package" if (pl in paq or pl in self.paquet[cote]) else \
+                    "absence" if a in self.absents else \
                     "injury" if (a in self.indispo or cote in self.choc) else \
                     "return" if cote in self.retours else \
                     "garbage" if (garbage or self.garbage) else "fatigue"

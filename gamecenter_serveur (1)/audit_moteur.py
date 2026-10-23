@@ -28,6 +28,10 @@ try:                                    # étape 7.3 : le banc, les packages, le
     from moteur import rotations as _ro
 except Exception:
     _ro = None
+try:                                    # étape 7.4 : les blessures, l'infirmerie
+    from moteur import blessures as _bl
+except Exception:
+    _bl = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -304,11 +308,15 @@ def check_rotations(A, week, g_sched, feed):
     warn = lambda seq, m: A.add(ALERTE, week, gid, seq, m)
     R, cur, snaps, n = {}, {}, Counter(), Counter()
     noms = []
+    sortis, blesses = {}, 0                 # 7.4.1 : {côté: {id: action de la blessure}} (pas les blessures légères)
     for side in ("home", "away"):
         ro = (game.get(side) or {}).get("roster") or []
         R[side] = {r["id"]: r for r in ro}
-        if len(ro) != 25 + _ro.TAILLE_BANC or [r.get("depth") for r in ro] != [1] * 25 + [2] * _ro.TAILLE_BANC:
-            bad(None, f"{side} : roster de {len(ro)} joueurs (25 titulaires puis {_ro.TAILLE_BANC} remplaçants attendus)")
+        libres = sum(1 for r in ro[25 + _ro.TAILLE_BANC:] if r.get("profile") == "free_agent")    # 7.4.2
+        if len(ro) != 25 + _ro.TAILLE_BANC + libres or \
+                [r.get("depth") for r in ro] != [1] * 25 + [2] * (_ro.TAILLE_BANC + libres):
+            bad(None, f"{side} : roster de {len(ro)} joueurs (25 titulaires, {_ro.TAILLE_BANC} remplaçants et les "
+                      f"joueurs libres attendus)")
         if len(R[side]) != len(ro):
             bad(None, f"{side} : un joueur deux fois dans le roster")
         nums = [r.get("number") for r in ro]
@@ -340,7 +348,7 @@ def check_rotations(A, week, g_sched, feed):
                 bad(s, f"changement à une place inconnue : {x}"); continue
             if x.get("in") not in R[side] or (x.get("out") is not None and x["out"] not in R[side]):
                 bad(s, f"changement avec un joueur hors du roster : {x}"); continue
-            if x.get("reason") not in ("package", "fatigue", "garbage"):
+            if x.get("reason") not in ("package", "fatigue", "garbage", "injury", "return", "absence"):
                 bad(s, f"changement sans raison connue : {x}")
             cur[(side, x["side"])][x["pos"]] = x["in"]
         on = {}
@@ -354,6 +362,22 @@ def check_rotations(A, week, g_sched, feed):
                 snaps[i] += 1
             n[(side, cote)] += 1
             on[cote] = set(v)
+        for side, cote in ((att, "off"), (de, "def")):          # 7.4 : un absent ne joue pas, un blessé ne revient pas
+            for i in on[cote]:
+                if (R[side].get(i) or {}).get("status") == "out":
+                    bad(s, f"{i} aligné alors qu'il est absent (infirmerie)")
+                if i in sortis.get(side, {}) and sortis[side][i] < s:
+                    bad(s, f"{i} aligné après sa blessure (action {sortis[side][i]})")
+        b = p.get("injury")
+        if b:
+            side = b.get("team")
+            if b.get("id") not in R.get(side, {}):
+                bad(s, f"blessé hors du roster : {b}")
+            elif b["id"] not in on["off" if side == att else "def"]:
+                bad(s, f"blessé {b['id']} pas sur le terrain")
+            if b.get("severity") != "minor":
+                sortis.setdefault(side, {})[b["id"]] = s
+            blesses += 1
         pp = p.get("players") or {}
         car = (pp.get("carrier") or {}).get("id")
         if car and car not in on["off"]:
@@ -364,6 +388,8 @@ def check_rotations(A, week, g_sched, feed):
         d = (pp.get("defender") or {}).get("name")
         if d and d not in {R[de][i]["name"] for i in on["def"]}:
             warn(s, f"défenseur crédité {d} pas sur le terrain")
+    if game.get("injury_model") and blesses != len(game.get("injuries") or []):
+        bad(None, f"{blesses} actions avec une blessure, {len(game.get('injuries') or [])} blessures au match")
     for side in ("home", "away"):
         us = (game.get(side) or {}).get("unit_snaps") or {}
         for cote in ("off", "def"):
@@ -402,6 +428,7 @@ def check_week(A, folder):
                 A.add(BLOQUANT, name, st["id"], None, f"{pid} : notes qui changent pendant la semaine ({vues[pid]} / {r})")
     check_progression(A, name, w)
     check_film(A, name, folder, w)
+    check_infirmerie(A, name, w)
     porteurs = Counter(nom for nom, _ in tous_noms)
     doublons = sorted(nom for nom, _ in banc_noms if porteurs[nom] > 1)
     if doublons:
@@ -454,6 +481,42 @@ def check_week(A, folder):
     return stats
 
 
+def check_infirmerie(A, name, w):
+    """Étape 7.4.2 : le rapport « injuries » de week.json — chaque absent est « out » au roster de son équipe (et
+    personne d'autre), chaque joueur libre est au banc."""
+    rep = w.get("injuries")
+    if not rep:
+        return
+    rosters = {a: {r["id"]: r for r in t.get("roster") or []} for a, t in (w.get("teams") or {}).items()}
+    out = {o["id"] for o in rep.get("out") or []}
+    for o in rep.get("out") or []:
+        r = rosters.get(o["team"], {}).get(o["id"])
+        if not r or r.get("status") != "out":
+            A.add(BLOQUANT, name, None, None, f"absent {o['id']} pas « out » au roster de {o['team']}")
+    for a, rs in rosters.items():
+        for i, r in rs.items():
+            if r.get("status") == "out" and i not in out:
+                A.add(BLOQUANT, name, None, None, f"{i} « out » au roster sans être au rapport des absents")
+    for x in rep.get("signings") or []:
+        r = rosters.get(x["team"], {}).get(x["id"])
+        if not r or r.get("profile") != "free_agent":
+            A.add(BLOQUANT, name, None, None, f"joueur libre {x['id']} pas au banc de {x['team']}")
+    n = len(rosters) or 1
+    if len(out) / n > 4:
+        A.add(ALERTE, name, None, None, f"infirmerie : {len(out) / n:.1f} absents par équipe (≈ 2 attendus)")
+
+
+def check_infirmerie_suite(A, name, w, prev):
+    """Étape 7.4.2 : les absents d'une semaine sont ceux de l'infirmerie publiée par la précédente (players_next_week)."""
+    inf = (prev.get("players_next_week") or {}).get("infirmerie")
+    if _bl is None or inf is None or not w.get("injuries"):
+        return
+    attendus = set(_bl.absents(inf))
+    out = {o["id"] for o in w["injuries"].get("out") or []}
+    if attendus != out:
+        A.add(BLOQUANT, name, None, None, f"absents ≠ infirmerie de la semaine précédente : {sorted(attendus ^ out)[:5]}")
+
+
 def check_scout(A, name, g, feed):
     """Idée 6 : ce que la défense sait du film (play.scout.def.film) est cohérent avec le rapport d'avant-match."""
     game = feed.get("game") or {}
@@ -496,7 +559,8 @@ def check_progression(A, name, w):
     if etat is None:
         return
     J = etat.get("joueurs") or {}
-    roster = {r["id"] for t in (w["teams"].values() if isinstance(w["teams"], dict) else w["teams"]) for r in t.get("roster") or []}
+    roster = {r["id"] for t in (w["teams"].values() if isinstance(w["teams"], dict) else w["teams"]) for r in t.get("roster") or []
+              if r.get("profile") != "free_agent"}          # 7.4.2 : un joueur libre est signé pour la semaine
     if roster and set(J) != roster:
         A.add(BLOQUANT, name, None, None, f"players_next_week : {len(J)} joueurs pour {len(roster)} au roster")
     if _dev is not None:
@@ -565,7 +629,14 @@ def main():
             elif idx is not None and idx == oidx:
                 A.add(BLOQUANT, os.path.basename(f), None, None, f"même numéro de semaine ({idx}) que {other_name} : graines identiques")
         sig[os.path.basename(f)] = (key, idx)
-    for f in folders:
+    for k, f in enumerate(folders):
+        if k:                                           # 7.4.2 : les absents viennent de l'infirmerie de la précédente
+            try:
+                check_infirmerie_suite(A, os.path.basename(f),
+                                       json.load(open(os.path.join(f, "week.json"), encoding="utf-8")),
+                                       json.load(open(os.path.join(folders[k - 1], "week.json"), encoding="utf-8")))
+            except (OSError, ValueError):
+                pass
         st = check_week(A, f)
         per_week[os.path.basename(f)] = stat_alerts(A, st, os.path.basename(f))
         allstats += st

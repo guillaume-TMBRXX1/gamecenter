@@ -228,6 +228,13 @@ class Week:
         if not known:
             game = {"id": game.get("id"), "home": None, "away": None, "phase": g["phase"], "kickoff": g["kickoff"]}
         k = self.revealed_plays(g, t) if upto is None else upto
+        if known and "injuries" in game:            # étape 7.4 : pas de blessure d'une action encore à venir
+            game["injuries"] = [b for b in game["injuries"] if b.get("seq", 0) < k]
+            for side in ("home", "away"):
+                if isinstance(game.get(side), dict) and game[side].get("roster"):
+                    game[side] = dict(game[side], roster=[
+                        {x: v for x, v in r.items() if x != "injury"} if (r.get("injury") or {}).get("seq", 0) >= k
+                        else r for r in game[side]["roster"]])
         return {"schema": f.get("schema"), "game": game, "plays": f["plays"][:k] if known else []}
 
     def public_state(self, t):
@@ -238,6 +245,8 @@ class Week:
                "standings_by_slot": d["standings_by_slot"][:cs],
                "futures": [f for f in d["futures"] if f["after_slot"] <= cs],
                "standings": None, "seeds": None, "champion": None, "runner_up": None}
+        if d.get("injuries"):                       # étape 7.4 : le rapport d'avant les cotes (pas les blessures à venir)
+            out["injuries"] = {k: d["injuries"].get(k) for k in ("model", "published", "out", "signings")}
         if cs == self.nslots:
             out["standings"], out["seeds"] = d["standings"], d["seeds"]
         if self.status(self.final, t) == "final":
