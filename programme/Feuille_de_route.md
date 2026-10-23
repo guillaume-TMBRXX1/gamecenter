@@ -950,7 +950,9 @@ tolérances), tests unitaires et navigateur ✅.
 fatigue et l'âge, ≈ 0,5 sortie par match ; légère (il revient), match, semaines ; partie du corps ; le remplaçant entre
 (la profondeur monte, une famille voisine glisse), arrêt de l'horloge. 7.4.2 l'infirmerie : absent à partir de la
 semaine suivante, gardée dans l'état des joueurs, absents retirés avant les cotes (notes d'unité, rotations, cache),
-joueur libre quand l'effectif est à court, rapport `injuries` dans week.json (≈ 2 absents par équipe). 7.4.3 site
+joueur libre quand l'effectif est à court, rapport `injuries` dans week.json (≈ 2 absents par équipe) ; décision du
+23/10 : un blessé de « semaines » ne rejoue pas la fin de la semaine en cours, sans changer les cotes (une subtilité
+pour les parieurs, visible une fois la blessure jouée). 7.4.3 site
 (croix médicale, play-by-play, commentateur, fiche, rapport des blessures, profondeur, tuiles), serveur sans
 blessure à venir, audit. Contrôles en local : notebook complet, audit, rapport de calibration (dans les tolérances),
 tests unitaires et navigateur ✅.

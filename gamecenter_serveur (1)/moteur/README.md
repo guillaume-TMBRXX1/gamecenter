@@ -399,6 +399,7 @@ fin de l'action ──> blessures.expositions (porteur plaqué, plaqueur, QB sac
                     horloge : arrêt pour blessure (hors des 2 dernières minutes d'une mi-temps)
 fin de semaine  ──> blessures.infirmerie_suivante : les absents de la semaine suivante (players_next_week)
 début de semaine──> blessures.absents, signatures (joueur libre), notes d'unité et rotations sans eux — avant les cotes
+pendant la semaine─> blessé de « semaines » : absent des matchs suivants (pas des simulations des cotes : cotes inchangées)
 ```
 
 | Fichier | Rôle |

@@ -1928,6 +1928,21 @@ choquant à l'image), un joueur libre quand l'effectif est à court ; « si je n
   le titulaire, nom jamais porté ; pas dans l'état des joueurs). Un absent ne joue pas, donc ne progresse pas
   (participation nulle). Le rapport est publié dans week.json : `injuries` = absents (avec leur remplaçant),
   signatures, puis, en fin de semaine, les nouvelles absences (`export_week` l'écrit : une ligne ajoutée en 14.2).
+- **Pendant la semaine** (décision de Guillaume du 23/10, avant la fusion) : un blessé de « semaines » ne rejoue pas
+  les matchs suivants de la semaine en cours, playoffs compris — **sans changer les cotes** publiées le samedi : les
+  simulations des cotes (graines ≥ `ENGINE_ODDS_SEED_BASE`, celles des playoffs aussi) ne voient que les absents
+  d'avant la semaine (ni les blessés de la semaine, ni les joueurs libres signés pendant la semaine ; clé du cache
+  inchangée). Une subtilité pour les parieurs : le site le montre une fois la blessure jouée. Sa durée part de la
+  semaine suivante (la fin de la semaine en cours s'ajoute) ; au calcul du samedi suivant, les cotes en tiennent
+  compte. Une équipe à court signe un joueur libre aussitôt (pas au roster des matchs d'avant sa signature, ni dans
+  week.json). Rapport : `injuries.in_week` et `in_week_signings` (match, action) ; le serveur ne les publie qu'une fois
+  l'action jouée ; GameFeed des matchs suivants : le blessé « out » (`absence.in_week`), changement « absence » au 1er
+  snap. Site : « Hurt Tue · out this week + 1 wk » au rapport, « OUT » au tableau de profondeur, « Out: … » sur les
+  tuiles des matchs à venir. Audit : un blessé de « semaines » est « out » dans tous les matchs suivants de son équipe
+  (bloquant). Deux semaines enchaînées : 47 puis 35 blessés de « semaines », jamais alignés ensuite ; 12 et 13 joueurs
+  libres signés pendant la semaine ; 47 absents avant les cotes de la semaine 2 (≈ 2 par équipe).
+- **Audit, au passage** : un match de playoffs peut avoir plusieurs prolongations (règle 11.6) — le quart-temps 6 d'une
+  double prolongation n'est plus « impossible » (l'audit aurait bloqué la publication du samedi).
 - **GameFeed / week.json** (additifs) : `play.injury` {id, name, team, pos, part, severity: minor · game · weeks,
   weeks, returns}, `game.injuries`, `game.injury_model`, `roster[].injury` (blessure du match) ; `roster[].status`
   (active · out) et `roster[].absence` ; reasons de `play.subs` : `injury`, `return`, `absence`. **Serveur** : le site
