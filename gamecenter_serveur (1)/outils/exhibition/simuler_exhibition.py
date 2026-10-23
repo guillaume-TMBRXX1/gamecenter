@@ -21,7 +21,9 @@ une cellule ajoutée à la volée qui :
      (cutback, rebond, bloqué, boîte chargée) ; depuis le 16/10 : checks avant le snap (audibles du QB, déguisements qui
      le trompent, réponses de la défense aux motions) ; depuis le 19/10 : appel de jeu qui apprend (défense qui lit une
      tendance et s'y engage, juste ou brûlée ; attaque qui casse sa tendance, play action compris) ; depuis le 20/10 :
-     mémoire d'une semaine à l'autre (le film de scouting de la dernière semaine, scouting_next_week) ;
+     mémoire d'une semaine à l'autre (le film de scouting de la dernière semaine, scouting_next_week) ; depuis le
+     23/10 (étape 7) : la poche (lancers en courant, sacks crédités au duel), les pénalités pendant l'action, le banc
+     (2e TE, nickel, goal line, QB2 en garbage time), les blessures (sortie, remplaçant, blessure légère et retour) ;
   4. calcule les cotes d'avant-match du moteur (300 matchs), les attache, exporte le GameFeed.
 Écrit data/exhibitions/<id>.json et data/exhibitions/index.json ; le site les montre dans « Exhibition ».
 
@@ -117,7 +119,17 @@ for _k in range(_P["candidates"]):
                           and (p.get("gain") or 0) >= 10),
             "breaks": sum(1 for p in _pl if ((p.get("scout") or {}).get("off") or {}).get("broke")),
             "breaks_pa": sum(1 for p in _pl if ((p.get("scout") or {}).get("off") or {}).get("kind") == "pa"
-                             and p["scout"]["off"].get("broke"))}
+                             and p["scout"]["off"].get("broke")),
+            # 23/10, étape 7 : poche (7.1), pénalités (7.2), banc et rotations (7.3), blessures (7.4)
+            "on_the_run": sum(1 for p in _pl if (p.get("pocket") or {}).get("on_run")),
+            "penalties": sum(1 for p in _pl if p.get("penalty")),
+            "penalties_kept": sum(1 for p in _pl if (p.get("penalty") or {}).get("accepted")),
+            "packages": sum(1 for p in _pl for x in (p.get("subs") or []) if x.get("reason") == "package"),
+            "goal_line": sum(1 for p in _pl for x in (p.get("subs") or []) if x.get("reason") == "package" and x.get("pos") == "CB2"),
+            "qb2": sum(1 for p in _pl for x in (p.get("subs") or []) if x.get("reason") == "garbage" and x.get("pos") == "QB"),
+            "injuries": sum(1 for p in _pl if (p.get("injury") or {}).get("severity") in ("game", "weeks")),
+            "injuries_minor": sum(1 for p in _pl if (p.get("injury") or {}).get("severity") == "minor"),
+            "injury_subs": sum(1 for p in _pl for x in (p.get("subs") or []) if x.get("reason") in ("injury", "return"))}
     _score = (_adj * 3 + len(_kinds) * 4 + _conc - max(0, _margin - 7) * 2
               + _dec["beyond_first_read"] + _dec["under_pressure"] + 3 * (_dec["scrambles"] + _dec["throwaways"])
               + 2 * _dec["held_sacks"] + 30 * min(1, _dec["safeties"])
@@ -135,7 +147,10 @@ for _k in range(_P["candidates"]):
               + 15 * min(_dec["audibles"], 8) + 30 * min(_dec["audibles_to_run"], 2) + 25 * min(_dec["fooled"], 2)
               + 25 * _dec["motion_responses"]
               + 6 * min(_dec["keys"], 8) + 10 * min(_dec["keys_run"], 3) + 12 * min(_dec["read_stops"], 3)
-              + 15 * min(_dec["burned"], 2) + 12 * min(_dec["breaks"], 4) + 25 * min(_dec["breaks_pa"], 2))
+              + 15 * min(_dec["burned"], 2) + 12 * min(_dec["breaks"], 4) + 25 * min(_dec["breaks_pa"], 2)
+              + 10 * min(_dec["on_the_run"], 3) + 8 * min(_dec["penalties"], 8) + 6 * min(_dec["penalties_kept"], 6)
+              + min(_dec["packages"], 30) + 15 * min(_dec["goal_line"], 2) + 40 * min(_dec["qb2"], 1)
+              + 60 * min(_dec["injuries"], 1) + 30 * min(_dec["injuries_minor"], 1) + 20 * min(_dec["injury_subs"], 2))
     _cands.append((_score, _seed, _m, _adj, _kinds, _conc, _margin, _dec))
     print(f"candidat {_seed}: {_A} {_m['away_score']} - {_H} {_m['home_score']} · ajustements {_adj} · concepts {_conc} · {_dec}")
 _cands.sort(key=lambda c: -c[0])

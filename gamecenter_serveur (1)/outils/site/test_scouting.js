@@ -112,7 +112,8 @@ async function server(){
     if(chipKo.length) console.log('   puces :',JSON.stringify(chipKo.slice(0,4).map(l=>({seq:l.seq,chip:l.chip,ok:l.ok,sc:l.sc}))));
     check(!chipKo.length,`puce du résultat : « READ », « BURNED », « BROKE TENDENCY » (${L.length-chipKo.length} / ${L.length})`);
     const fd=L.filter(l=>l.sc.def), fdKo=fd.filter(l=>{ const d=l.sc.def;
-      return !l.feed.includes(`keyed on the ${d.key==='run'?'run':'pass'} (${d.why})`)||
+      const pr=`keyed on the ${d.key==='run'?'run':'pass'} (${d.why}`, i=l.feed.indexOf(pr);   /* + « incl. N of their own » (film) */
+      return i<0||!/^( incl\. \d+ of their own)?\)/.test(l.feed.slice(i+pr.length))||
         !l.feed.includes(d.right?(l.ok?'right guess, beaten anyway':'read it'):(l.ok?'burned':'wrong guess')); });
     if(fdKo.length) console.log('   play-by-play :',JSON.stringify(fdKo.slice(0,3).map(l=>l.feed)));
     check(fd.length>0&&!fdKo.length,`play-by-play : la lecture, sa preuve et son issue (${fd.length-fdKo.length} / ${fd.length})`);
