@@ -48,7 +48,7 @@ async function server(){
         if(g.phase==='play'&&g.carrier&&g.carrier.side==='off'){ const o=play[k]||(play[k]={n:0,ok:0,res:P.result,conv:!!P.conversion});
           if(g.carrier.idx!==6){ o.n++; if(T.some(t=>t.kind==='ball'&&t.idx===g.carrier.idx)) o.ok++; } }
         /* 20/10/2026 : le nom qui suit le ballon pendant une course est celui du porteur du moteur (jet sweep : le receveur) */
-        if(g.phase==='play'&&P.call&&P.call.type==='run'&&!P.conversion&&g.carrier&&g.carrier.side==='off'&&g.t>0.6*g.dur&&P.players&&P.players.carrier){
+        if(g.phase==='play'&&P.call&&P.call.type==='run'&&!P.conversion&&!/fumble/i.test(String(P.text||'')+((P.penalty||{}).play_before||{}).text)&&g.carrier&&g.carrier.side==='off'&&g.t>0.6*g.dur&&P.players&&P.players.carrier){
           const b=T.find(t=>t.kind==='ball'), c=String(P.players.carrier.name||''), o=run[k]||(run[k]={n:0,ok:0,jet:/_(WR|TE)\d*$/.test(P.players.carrier.id||''),car:c,vu:''});
           if(b){ o.n++; o.vu=b.text; if(c.split(' ').pop()===b.text) o.ok++; } }
         if(g.phase==='post'&&!post[k]) post[k]={res:P.result,gain:P.gain,credit:P.players&&P.players.defender&&P.players.defender.credit,

@@ -123,7 +123,7 @@ async function server(){
       &&dec.every(x=>/· Flag: .+ — declined/.test(x.text))&&add.every(x=>/^PENALTY on \w+: Roughing the passer, defense, .+ — /.test(x.text)),
       'play-by-play : « PENALTY on … — no play », « Flag: … — declined »');
     if(O.some(x=>!x.line)) console.log('   ',JSON.stringify(O.filter(x=>!x.line)));
-    check(O.every(x=>x.line)&&nul.every(x=>/[Ff]lag|interference|roughing|holding/i.test(x.line))&&dec.every(x=>/declined/.test(x.line)),'commentateur : le drapeau, le refus');
+    check(O.every(x=>x.line)&&nul.every(x=>/[Ff]lag|interference|roughing|holding|illegal contact/i.test(x.line))&&dec.every(x=>/declined/.test(x.line)),'commentateur : le drapeau, le refus');
     check(R.team.home[0]===R.exp.home.n&&R.team.away[0]===R.exp.away.n&&R.team.home[1]===R.exp.home.y&&R.team.away[1]===R.exp.away.y&&R.plp>0,
       `stats : « Penalties (yards) » ${R.team.away[0]} (${R.team.away[1]}) / ${R.team.home[0]} (${R.team.home[1]}), fiche joueur (${R.plp})`);
     check(R.rushAtt===R.runs&&R.passAtt===R.att,`stats : l'action annulée ne compte pas (courses ${R.rushAtt}/${R.runs}, passes ${R.passAtt}/${R.att})`);

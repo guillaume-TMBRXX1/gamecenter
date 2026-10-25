@@ -3414,7 +3414,7 @@ function makeGame(id,home,away,o){
    result, clock, score, possession, win probability and price comes from the feed. The animators
    above only draw the result they are handed. */
 const RP_TYPES=['run','pass','punt','field_goal','kickoff','extra_point','two_point'];
-const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff','safety','pat_good','pat_missed','two_point_good','two_point_failed'];
+const RP_RESULTS=['run','complete','incomplete','sack','interception','fumble_lost','touchdown','field_goal_good','field_goal_missed','punt','kickoff','safety','pat_good','pat_missed','two_point_good','two_point_failed','penalty'];   /* step 7.2: a play wiped out by an accepted flag */
 const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
 /* ---------- broadcast breaks (10/10/2026) ----------
    End of Q1 / Q3 (and of regulation before overtime): a short break; halftime: a dedicated screen; end of game: the
@@ -4823,7 +4823,7 @@ function nameTags(g){
   if((g.phase==='play'||g.phase==='post')&&g.carrier&&g.carrier.side==='off'&&r!=='interception'){
     const pl=sm.off[g.carrier.idx];
     const late=g.phase==='post';
-    if(pl&&(g.carrier.idx!==6||(P.decision&&P.decision.action==='SCRAMBLE')||r==='sack'&&late))
+    if(pl&&(g.carrier.idx!==6||P.call.type==='run'||(P.decision&&P.decision.action==='SCRAMBLE')||r==='sack'&&late))   /* the QB: a designed run (option, read, draw), a scramble, a sack */
       out.push({side:'off',idx:g.carrier.idx,text:surname(pl.name),sub:late&&!nul&&r!=='sack'&&r!=='incomplete'?(r==='touchdown'?'TD':(gain>=0?'+':MINUS)+Math.abs(gain)):'',kind:'ball',a:1});
   }
   if(g.phase==='post'||(g.phase==='play'&&g.plan&&g.plan.stop&&g.dur&&g.t/g.dur>=g.plan.stop.at)){
