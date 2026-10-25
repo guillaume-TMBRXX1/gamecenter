@@ -53,7 +53,7 @@ const table=p=>p.$$eval('#viewRanking tbody tr',rs=>rs.map(r=>{ const td=[...r.q
       await p.click(`[data-rkpos="${pos}"]`); await p.waitForTimeout(150);
       const R=await table(p), ranked=R.filter(r=>r.rk!=='—');
       tops[pos]=ranked[0];
-      const ok=ranked.every((r,i)=>r.rk===String(i+1)&&r.key>0&&(i===0||ranked[i-1].key>=r.key))&&R.slice(ranked.length).every(r=>!r.key);
+      const ok=ranked.every((r,i)=>r.rk===String(i+1)&&r.key>0&&(i===0||ranked[i-1].key>=r.key))&&R.slice(ranked.length).every(r=>!(r.key>0));
       check(ranked.length>0&&ok,`${pos} : ${ranked.length} classés (rangs 1..n, stat clé décroissante)${ranked[0]?` · #1 ${ranked[0].name} ${ranked[0].key}`:''}`);
     }
     const L=cur.leaders.pyd;

@@ -92,7 +92,7 @@ async function server(){
       });
       const st=G.computeStats(g,F.plays.length);
       const pl=[...Object.values(st.pl.home),...Object.values(st.pl.away)];
-      return {out,runs:F.plays.filter(P=>P.pocket&&P.pocket.on_run&&P.call&&P.call.type==='pass').length,ot:st.team.home.ot+st.team.away.ot,pb:pl.filter(x=>x.pb).length,prs:pl.filter(x=>x.prs).length};
+      return {out,runs:F.plays.filter(P=>P.pocket&&P.pocket.on_run&&P.call&&P.call.type==='pass'&&P.result!=='penalty').length,ot:st.team.home.ot+st.team.away.ot,pb:pl.filter(x=>x.pb).length,prs:pl.filter(x=>x.prs).length};
     },F);
     const O=R.out, kind=f=>O.filter(f);
     const pass=kind(x=>x.result!=='sack'&&x.drawn);   /* BOOT : roulé dessiné à part, sans poche */

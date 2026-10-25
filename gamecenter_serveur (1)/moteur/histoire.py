@@ -82,7 +82,9 @@ def feuille_de_match(feed):
                     k["xpa"] += 1
                     k["xpm"] += 1 if c.get("good") else 0
             continue
-        if t == "pass":
+        if P.get("result") == "penalty":                 # étape 7.2 : action annulée par un drapeau, ne compte pas
+            pass
+        elif t == "pass":
             q = qui(o, (pas or {}).get("id"), (pas or {}).get("name") or "QB")
             if r != "sack":
                 pris = r in ("complete", "touchdown", "fumble_lost")
