@@ -2018,8 +2018,8 @@ les étapes 1 et 2 (serveur, puis salon General dans la page), une pour l'étape
   `author {a}` (100 derniers messages d'un auteur), `hide {id, reason}`, `unhide {id}` (revu : ne sera plus masqué
   automatiquement), `ban {a, days, reason}` (`days` 0 = définitif ; masque aussi ses messages des dernières 24 h),
   `unban {a}`, `post {room, body}` (message « Snapline » avec badge), `purge`. Le motif est montré à l'auteur
-  (`/api/chat/status` : `notices`, `ban` — exposé des motifs, DSA art. 17). Une page `/admin/chat` viendra à l'étape 2 ;
-  en attendant :
+  (`/api/chat/status` : `notices`, `ban` — exposé des motifs, DSA art. 17). Page `/admin/chat` : section 72 ; en ligne
+  de commande :
   ```
   curl -X POST https://snapline.live/api/admin/chat -H 'Content-Type: application/json' \
        -d '{"key":"<GC_ADMIN_KEY>","action":"reports"}'
@@ -2042,6 +2042,48 @@ les étapes 1 et 2 (serveur, puis salon General dans la page), une pour l'étape
   semaine) — interrupteur, qui écrit, nettoyage, filtre (et ses faux positifs), liens, débit, signalements, effacement,
   administration, JSON obligatoire, purge, salon de match (position, ouverture, replay), équipes et spoilers, tampon et
   retraits. Essai de bout en bout avec uvicorn (HTTP réel) et mesure de mémoire faits en local.
+
+### 72. Le chat — étape 2 : le salon General dans la page (26/10/2026)
+Ce qu'on voit sur le site **une fois `GC_CHAT=on` posé sur Railway** (sans la variable : rien, la page, `/legal` et
+`/api/delta` sont ceux d'avant ; `/admin/chat` répond 404).
+- **Où** : bouton **Chat** dans la barre de gauche (entre Leagues et My bets) ; sur téléphone, où cette barre est
+  cachée, une icône dans la barre du haut. Un point rose = nouveaux messages depuis la dernière lecture (le numéro du
+  dernier message arrive avec `/api/delta`, aucune requête de plus). Tout est construit par le script seulement si le
+  serveur annonce le chat (`#gf-server` porte `chat`) : chat coupé, le DOM est celui d'avant.
+- **Le panneau** : à droite, par-dessus le bulletin, sans voile (le tableau reste utilisable) ; plein écran sur
+  téléphone (la page dessous devient inerte). Ouvert : `/api/chat` toutes les 3 s, pas quand l'onglet est caché ; au
+  plus 120 messages dans la page (iPad). Ouvrir un match (grand écran, « Bigger field ») ferme le panneau ; le chat
+  dans un match et l'anti-spoiler viennent à l'étape 3. Pas de notification push pour le chat.
+- **Lire et écrire** : un invité lit et voit « Read along, or create a free account to chat » (bouton vers Settings).
+  Un compte écrit (« Message as <pseudo> », Entrée envoie), voit son message tout de suite (« you ») ; compteur à partir
+  de 240 caractères, envoi bloqué au-delà de 280. Chaque refus du serveur a sa phrase (lien, coordonnées, haine,
+  débit, compte trop récent, pseudo réservé, banni avec la date et le motif) ; le texte refusé reste dans le champ.
+  Mots masqués : « Sent. Some words were hidden with *** ».
+- **Sur un message** (bouton « … ») : **Report** (Spam, Abuse, Hate, Spoiler, Other ; comptes seulement), **Mute**
+  (cet appareil seulement ; « Unmute all » en bas), **Delete** pour son propre message. Un message masqué par la
+  modération : l'auteur le voit en haut du panneau avec le motif (« Dismiss »). Message de l'équipe : badge
+  **Snapline**.
+- **Accessibilité** : panneau `role="dialog"` nommé, Échap le ferme et rend le focus au bouton ; liste `role="log"`
+  sans annonce à chaque message : « 3 new messages » au plus toutes les 10 s, seulement si le focus est dans le chat ;
+  champ avec un libellé visible ; menus au clavier (`aria-expanded`) ; cibles de 44 px au doigt ; mouvement coupé avec
+  « réduire les animations » ; thèmes clair et sombre.
+- **Sécurité** : tout texte venu du serveur est posé avec `textContent` (jamais en HTML) — testé avec
+  `<img onerror>` ; écritures en JSON ; jeton dans le corps, jamais dans l'adresse.
+- **Modération : `/admin/chat`** (en français, non indexée, sans cache, pas dans une iframe). La clé est tapée dans la
+  page et gardée dans l'onglet seulement (`sessionStorage`). « À revoir » : messages signalés ou masqués, avec les
+  motifs ; **Masquer** (motif demandé, montré à l'auteur), **Laisser (revu)**, **Bannir 1 jour / 7 jours /
+  définitif** (confirmation ; masque aussi ses messages des dernières 24 h), **Ses messages** ; liste des
+  bannissements avec **Lever** ; **Message de l'équipe** publié dans General.
+- **Page légale** (`/legal#chat`, seulement chat allumé, texte dans `static/legal_chat.html`) : règles du chat
+  (respect, pas de spam ni de lien, données personnelles, usurpation, spoilers), signaler (bouton ou contact), ce que
+  nous pouvons faire et comment la personne est prévenue (motif, demande de réexamen au contact — DSA art. 16-17),
+  effacer ses messages, durée (`GC_CHAT_DAYS`) ; dans « What we keep » : messages, signalements, décisions, durées,
+  aucune adresse IP avec un message. Pas de publicité dans le panneau.
+- **Tests** : `outils/site/test_chat.js` (groupe site de `tests_navigateur.sh`, deux serveurs : chat allumé et coupé ;
+  indépendant de l'heure : l'âge des comptes est reculé dans la base) — invité, deux comptes, `<img onerror>`, mot
+  masqué, lien refusé, compteur, signaler, masquer, effacer, administration depuis la page, ouvrir un match, téléphone
+  390 px, page légale, aucune erreur JS ; `moteur/tests/test_chat.py` (19 tests) : la page ne reçoit `chat` que chat
+  allumé, page légale et `/admin/chat` selon l'interrupteur.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
@@ -2146,6 +2188,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/api/chat?room=&after=&upto=&rev=` | chat : messages d'un salon (si `GC_CHAT` = `read` ou `on`, section 71) |
 | POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
+| GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables

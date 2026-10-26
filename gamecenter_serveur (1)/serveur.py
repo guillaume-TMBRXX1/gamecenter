@@ -844,6 +844,8 @@ def page():
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
     if ADS_CLIENT:
         srv["ads"] = {"client": ADS_CLIENT, "slots": ADS_SLOTS}
+    if chat_mode() != "off":                         # chat (section « chat ») : sans lui, la page ne le dessine pas
+        srv["chat"] = chat_mode()
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -926,9 +928,21 @@ def legal():
     s = (s.replace("__EDITEUR__", val("GC_EDITEUR")).replace("__ADRESSE__", val("GC_EDITEUR_ADRESSE"))
          .replace("__CONTACT__", f'<a href="mailto:{html.escape(contact, quote=True)}">{html.escape(contact)}</a>' if contact else "<i>not set</i>")
          .replace("__ADS__", "on" if ADS_CLIENT else "off"))
+    if chat_mode() != "off":                         # règles du chat et données gardées : seulement chat allumé
+        s = _legal_chat(s)
     if CF_ANALYTICS:
         s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-cache"})
+
+
+def _legal_chat(s):
+    """Page légale, chat allumé : règles du chat (section #chat), messages dans « ce que nous gardons », durées."""
+    with open(os.path.join(HERE, "static", "legal_chat.html"), encoding="utf-8") as fh:
+        parts = dict(re.findall(r"<!--(\w+)-->\n(.*?)<!--/\1-->", fh.read(), re.S))
+    s = s.replace('  <section id="legal">', parts["section"].replace("__DAYS__", str(chat_days())) + '  <section id="legal">', 1)
+    s = s.replace("      <li>Technical logs of our host", parts["privacy"].replace("__DAYS__", str(chat_days()))
+                  + "      <li>Technical logs of our host", 1)
+    return s.replace("Game data is kept while the service runs;", parts["keep"].replace("__DAYS__", str(chat_days())), 1)
 
 
 def _origine(request):
@@ -1943,7 +1957,7 @@ def api_league_standings(lid: str, token: str = "", scope: str = "week"):
     return {"league": pub, "scope": "season" if scope == "season" else "week", "rows": rows, "now": t}
 
 
-# ------------------------------------------------------------------ chat (bloc 3, étape 1 : serveur seul)
+# ------------------------------------------------------------------ chat (bloc 3 ; README sections 71 et 72)
 # Salons : « general » (en direct) et un salon par match « m:<semaine>:<id> » (direct puis replay). Lecture libre, écriture
 # réservée aux comptes. Interrupteur GC_CHAT : off (défaut : routes en 404, /api/delta et la page inchangés), read
 # (lecture seule) ou on. Temps réel = interrogation courte : /api/delta porte le dernier numéro de General (badge des
@@ -2730,6 +2744,15 @@ async def api_admin_chat(req: Request):
     except (TypeError, ValueError):
         raise HTTPException(400, "bad_request")
     raise HTTPException(400, "unknown_action")
+
+
+@app.get("/admin/chat", response_class=HTMLResponse)
+def admin_chat_page():
+    """Page de modération (en français : pour l'administrateur). La clé est tapée dans la page, jamais dans l'adresse."""
+    _chat_on()
+    with open(os.path.join(HERE, "static", "admin_chat.html"), encoding="utf-8") as fh:
+        return HTMLResponse(fh.read(), headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
+                                                "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"})
 
 
 # ------------------------------------------------------------------ exhibitions (matchs hors calendrier)

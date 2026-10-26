@@ -140,6 +140,32 @@ class TestChat(unittest.TestCase):
         m = self.poste(self.joueur(), "hello", self.T)
         self.assertEqual(serveur.api_delta("")["chat"]["general"], m["id"])
 
+    def test_page_legale_et_administration(self):
+        """Étape 2 : la page reçoit « chat » seulement chat allumé ; page légale et /admin/chat selon l'interrupteur."""
+        os.environ["GC_CHAT"] = "off"
+        page0 = serveur.page().body.decode()
+        legal0 = serveur.legal().body.decode()
+        self.assertNotIn('"chat":"', page0)
+        self.assertNotIn('id="chat"', legal0)
+        self.assertNotIn("__DAYS__", legal0)
+        with self.assertRaises(HTTPException) as e:
+            serveur.admin_chat_page()
+        self.assertEqual(e.exception.status_code, 404)
+        for mode in ("read", "on"):
+            os.environ["GC_CHAT"] = mode
+            self.assertIn('"chat":"%s"' % mode, serveur.page().body.decode())
+        os.environ["GC_CHAT_DAYS"] = "14"
+        legal = serveur.legal().body.decode()
+        self.assertIn('<section id="chat">', legal)
+        self.assertLess(legal.index('<section id="chat">'), legal.index('<section id="legal">'))
+        self.assertIn("<b>Chat</b> (accounts only", legal)
+        self.assertIn("deleted automatically after\n      14 days", legal)
+        self.assertIn("except chat messages (14 days)", legal)
+        self.assertNotIn("__DAYS__", legal)
+        r = serveur.admin_chat_page()
+        self.assertEqual(r.headers["x-robots-tag"], "noindex, nofollow")
+        self.assertIn("Modération du chat", r.body.decode())
+
     # ---- qui écrit ----
     def test_lecture_libre_ecriture_comptes(self):
         invite, a = self.joueur(compte=False), self.joueur(team="CTX")
