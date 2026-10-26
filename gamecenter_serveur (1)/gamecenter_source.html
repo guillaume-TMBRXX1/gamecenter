@@ -591,9 +591,10 @@
     background:#05070c;padding:0;overflow:hidden;display:block;box-shadow:none;border:0}
   .m-head .m-theater{margin-left:auto}
   .m-head .m-theater+.icon-btn{margin-left:0}
+  .m-head .m-chat{margin-left:auto} .m-head .m-chat+.m-theater{margin-left:0}
   .modal.theater .m-head{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));
     right:auto;margin:0;padding:0;border:0;background:none;gap:8px;transition:opacity .3s}
-  .modal.theater .m-head>*:not(.m-theater){display:none}
+  .modal.theater .m-head>*:not(.m-theater):not(.m-chat){display:none}
   .modal.theater .m-head .m-theater{width:44px;height:44px;background:rgba(10,12,20,.72);color:#fff;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
   .modal.theater .m-body{display:block;position:absolute;inset:0;padding:0;margin:0}
   .modal.theater .m-main{display:block;position:absolute;inset:0}
@@ -986,6 +987,19 @@
   .chat-cant b{color:var(--ink)}
   .chat-muted{margin:6px 0 0;font-size:12px;color:var(--ink-3)}
   .chat-muted button{border:0;background:none;padding:0;color:var(--ink-2);text-decoration:underline;cursor:pointer;font:inherit;min-height:24px}
+  /* the game's chat (étape 3): a drawer on the right of the big screen; in « Bigger field » it sits inside the turned
+     panel, beside the field, and the chat button stays next to the exit button */
+  .modal.theater .m-head .m-chat{width:44px;height:44px;background:rgba(10,12,20,.72);color:#fff;border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
+  .m-head .m-chat[aria-expanded="true"]{color:var(--cyan)}
+  .mchat{position:fixed;top:0;right:0;bottom:0;width:min(380px,100%);z-index:70;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);border-left:1px solid var(--line-2);box-shadow:-18px 0 40px -18px rgba(0,0,0,.45);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .modal.theater .mchat{position:absolute;width:min(360px,46%);padding-right:env(safe-area-inset-right,0px)}
+  .modal.theater.mchat-on .m-main{right:min(360px,46%)}   /* the field (and the replay controls) step aside, all of it in view */
+  #chatTitle:focus,#mChatTitle:focus{outline:none}   /* headings focused by the script on opening, not by the keyboard */
+  @media (max-width:1099px){ .modal:not(.theater) .mchat{width:100%;border-left:0} }
+  /* wide screens, standard view: the board moves left to make room, its header buttons stay in reach */
+  @media (min-width:1100px){ .modal.mchat-on:not(.theater){padding-right:calc(380px + 16px)} }
+  .chat-spoil{display:block;width:100%;margin:4px 0 0;padding:10px 12px;min-height:44px;text-align:left;border:1px dashed var(--line-2);border-radius:var(--r-md);background:var(--l1);color:var(--ink-2);font:500 13px var(--f-ui);cursor:pointer}
+  .chat-spoil b{color:var(--ink);font-weight:700}
   .chat-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .tr-row{display:grid;grid-template-columns:22px 70px 1fr auto;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding:6px 0}
   .tr-row span:first-child{font:700 italic 12px var(--f-display)} .tr-row .w{color:var(--cyan)} .tr-row .l{color:var(--pink)} .tr-row b{font:600 12.5px var(--f-mono);color:var(--ink)}
@@ -5567,6 +5581,7 @@ function openModal(id){
       ${teamKeyHTML(g)}
       ${rv?`<button type="button" class="rp-load" data-rp="load" data-rpg="${g.id}" title="Replay another engine match (a GameFeed .json file from section 11.4 of the notebook)">${ICON.upload}Load GameFeed</button>`:''}
       ${shareId(g)?`<button class="icon-btn m-share" type="button" data-share="${esc(shareId(g))}" aria-label="Share this game" title="Share this game">${ICON.share}</button>`:''}
+      ${typeof mcBtnHTML==='function'?mcBtnHTML(g):''}
       <button class="icon-btn m-theater" type="button" data-theater aria-pressed="${theaterOn()}" aria-label="${theaterOn()?'Back to the standard view':'Bigger field: the match full screen'}" title="${theaterOn()?'Standard view':'Bigger field'}">${theaterOn()?THEATER_OUT:THEATER_IN}</button>
       <button class="icon-btn" type="button" data-close aria-label="Close board">${ICON.x}</button>
     </header>
@@ -5617,6 +5632,7 @@ function fsWake(){ if(!modal.classList.contains('theater')) return; modal.classL
 function toggleTheater(fromBrowser){
   THEATER=!theaterOn(); try{ localStorage.setItem('gc-theater-v1',THEATER?'1':'0'); }catch(e){}
   modal.classList.toggle('theater',THEATER); document.body.classList.toggle('gc-match',THEATER&&!!modalGame);
+  if(typeof mcHome==='function') mcHome();   /* the game's chat follows the field (turned on a phone held upright) */
   if(THEATER){ if(fromBrowser!==true) fsEnter(); fsWake(); } else if(fromBrowser!==true) fsLeave();
   fsAirHome(THEATER&&!!modalGame); fsChipClear();
   const b=modal.querySelector('[data-theater]'); if(b){ b.setAttribute('aria-pressed',String(THEATER)); b.innerHTML=THEATER?THEATER_OUT:THEATER_IN;
@@ -5664,6 +5680,7 @@ function watchPos(g){ if(g!==modalGame||!g.replay||g.mode!=='replay') return;
   try{ const w=JSON.parse(sessionStorage.getItem(OPEN_KEY)||'null'); if(w&&w.idx!==g.idx){ w.idx=g.idx; sessionStorage.setItem(OPEN_KEY,JSON.stringify(w)); } }catch(e){} }
 function closeModal(keepFocus){
   if(!modalGame) return;
+  if(typeof MC!=='undefined'&&MC.open) mcClose(true);   /* the game's chat goes with its board */
   if(window.GC_DIAG) window.GC_DIAG('close',{keep:!!keepFocus});
   const refresh=(WATCH_DIRTY||BOARD_PENDING)&&SEASON; WATCH_DIRTY=false; BOARD_PENDING=false;
   closePlayerCard();
@@ -6704,6 +6721,7 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
     /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
+    /* bloc 3 : the General chat folds score-like messages about games not watched to the end (on unless turned off) */ chatShield:d.chatShield!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
     /* Audio System V0.2: commentator voice — 'recorded' (GameCenter calls, when the pack is there) or 'device' */
     voiceSrc:d.voiceSrc==='device'?'device':'recorded',
@@ -7127,6 +7145,8 @@ function renderSettings(force){
         <button type="button" class="switch" role="switch" data-set="fx" aria-checked="${SET.fx}" aria-labelledby="setFxL"><i></i></button></div>
       <div class="set-row"><span class="set-l" id="setSpoilL">Hide scores<small>No spoilers: finished games you haven't watched here show no score on the board, the ticker and big plays</small></span>
         <button type="button" class="switch" role="switch" data-set="spoil" aria-checked="${SET.spoil}" aria-labelledby="setSpoilL"><i></i></button></div>
+      ${typeof CHAT_ON!=='undefined'&&CHAT_ON?`<div class="set-row"><span class="set-l" id="setChatShieldL">Chat spoiler shield<small>In the General chat, a message that looks like the score of a game you haven't watched to the end stays folded until you tap it</small></span>
+        <button type="button" class="switch" role="switch" data-set="chatShield" aria-checked="${SET.chatShield}" aria-labelledby="setChatShieldL"><i></i></button></div>`:''}
       <div class="set-row"><span class="set-l">Clock<small>${CLOCK.demo?'Preview time: the week plays from a moment you pick':'Real time, Europe/Brussels'}</small></span>
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
     </div>
@@ -7144,7 +7164,7 @@ function renderSettings(force){
 }
 function settingsClick(t){
   const o=t.closest('[data-set]');
-  if(o){ const n=o.dataset.set; if(o.getAttribute('role')==='switch') SET[n]=!SET[n]; else SET[n]=o.dataset.num!=null?+o.dataset.v:o.dataset.v; saveSettings(); applySettings(); audioApply(); renderSettings(true); if(n==='odds') BET_SIG=''; if(n==='spoil') spoilApply(); return true; }
+  if(o){ const n=o.dataset.set; if(o.getAttribute('role')==='switch') SET[n]=!SET[n]; else SET[n]=o.dataset.num!=null?+o.dataset.v:o.dataset.v; saveSettings(); applySettings(); audioApply(); renderSettings(true); if(n==='chatShield'&&typeof chatReshield==='function') chatReshield(); if(n==='odds') BET_SIG=''; if(n==='spoil') spoilApply(); return true; }
   if(t.closest('[data-sndtest]')){ audioTest(); return true; }
   const pu=t.closest('[data-push]'); if(pu){ if(!pu.disabled) pushAction(pu.dataset.push); return true; }
   const r=t.closest('[data-setreset]');
@@ -8051,19 +8071,25 @@ document.addEventListener('click',e=>{ if(!SERVER||!e.target.closest) return; co
 document.addEventListener('input',e=>{ if(SERVER&&e.target.closest&&e.target.closest('#acForm,#acPwForm')) acErr(''); });
 document.addEventListener('change',e=>{ if(SERVER&&e.target.id==='setName') renameMe(e.target.value); });
 
-/* ---------- Chat (bloc 3, étape 2): the General room ----------
+/* ---------- Chat (bloc 3): the General room (étape 2) and a room per game (étape 3) ----------
    Only when the server says the chat is on (SERVER.chat, from GC_CHAT): otherwise nothing is built and nothing is fetched.
-   Reading is open to everyone; writing needs an account. /api/delta carries the last message number (the dot on the
-   Chat button); the open panel asks /api/chat every 3 s (not while the tab is hidden). Every text from the server is
-   put in the page with textContent, never as HTML. Mute is local (this browser only). */
+   Reading is open to everyone; writing needs an account. /api/delta carries the last message number in General (the dot
+   on the Chat button); an open room asks /api/chat every 3 s (not while the tab is hidden). Every text from the server is
+   put in the page with textContent, never as HTML. Mute is local (this browser only).
+   Spoilers: in a game's room every message carries « at », the number of plays its writer had seen; a viewer only sees
+   the messages written up to the play on his screen, the others wait (pending) and appear when he gets there — live,
+   replay, or a replay scrubbed back. In General, a message that looks like a score and names a team whose game has
+   started, and that this viewer hasn't watched to the end, stays folded (« Possible spoiler ») until he taps it. */
 const CHAT_ON=!!(SERVER&&SERVER.chat);
-const CH={open:false,room:'general',msgs:[],nodes:new Map(),last:0,rev:-1,st:null,timer:0,stT:0,busy:false,loaded:false,
-  srvLast:0,menu:null,step:null,lastFocus:null,ann:0,annT:0,annAt:0,footKey:'',off:false,line:'',lineErr:false};
+const CH={kind:'general',p:'chat',room:'general',open:false,msgs:[],nodes:new Map(),last:0,rev:-1,st:null,timer:0,stT:0,busy:false,loaded:false,
+  srvLast:0,menu:null,step:null,lastFocus:null,ann:0,annT:0,annAt:0,footKey:'',off:false,line:'',lineErr:false,sending:false,reveal:new Set()};
+const MC={kind:'match',p:'mChat',room:null,g:null,open:false,msgs:[],nodes:new Map(),pending:[],pendMore:false,pos:0,last:0,rev:-1,timer:0,tick:0,
+  busy:false,menu:null,step:null,lastFocus:null,ann:0,annT:0,annAt:0,footKey:'',off:false,line:'',lineErr:false,sending:false};
 const CHAT_MAX_DOM=120, CHAT_SEEN_KEY='gc-chat-seen-v1', CHAT_MUTE_KEY='gc-chat-mute-v1', CHAT_NOTE_KEY='gc-chat-notes-v1';
 const CHAT_REASONS=[['spam','Spam'],['abuse','Abuse'],['hate','Hate'],['spoiler','Spoiler'],['other','Other']];
 const CHAT_ERR={chat_read_only:'The chat is read-only for now.',account_required:'Chatting needs a free account.',
   account_too_new:'New accounts can chat 10 minutes after sign-up.',pseudo_reserved:'Your username looks like a staff name: change it in Settings to chat.',
-  room_not_found:'This chat room is closed.',room_closed:'This chat room is closed.',chat_off:'The chat is closed for now.',
+  room_not_found:'This chat room is closed.',room_closed:'This game’s chat opens 30 minutes before kickoff.',chat_off:'The chat is closed for now.',
   empty:'Write a message first.',too_long:'Messages have 280 characters at most.',
   message_blocked:'This message wasn’t sent: hate and threats break the chat rules.',
   links_not_allowed:'Links aren’t allowed in the chat. Remove the link to send it.',
@@ -8074,11 +8100,14 @@ const CHAT_ERR={chat_read_only:'The chat is read-only for now.',account_required
 const CHAT_SVG={bubble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5a2 2 0 012-2h11a2 2 0 012 2v8a2 2 0 01-2 2H11l-4.5 3.5v-3.5h0a2 2 0 01-2-2z"/><path d="M8.5 9.5h7M8.5 12.5h4.5" stroke-linecap="round"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg>'};
+const chatId=(X,s)=>document.getElementById(X.p+s);
 function chatMsg(e){ return CHAT_ERR[e&&e.message]||'Something went wrong. Try again in a moment.'; }
 function chatMuted(){ const m=lsGet(CHAT_MUTE_KEY); return Array.isArray(m)?m:[]; }
 function chatEl(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
 function chatTime(ts){ const d=new Date(ts), n=new Date(nowMs());
   return d.toDateString()===n.toDateString()?tStr(ts):dStr(ts)+' '+tStr(ts); }
+function chatMine(m){ return !!(CH.st&&CH.st.a&&m.a===CH.st.a); }
+function chatFootHTML(X){ return `<div class="chat-foot" id="${X.p}Foot"></div>`; }
 
 function chatInit(){
   if(!CHAT_ON||document.getElementById('chatPanel')) return;
@@ -8093,16 +8122,22 @@ function chatInit(){
     <div id="chatNotes"></div>
     <div class="chat-log" id="chatLog" role="log" aria-live="off" aria-label="Messages in General" tabindex="0"></div>
     <p class="chat-sr" id="chatAnn" aria-live="polite"></p>
-    <div class="chat-foot" id="chatFoot"></div>
+    ${chatFootHTML(CH)}
   </aside>`);
-  const P=document.getElementById('chatPanel');
-  P.addEventListener('click',chatClick);
-  P.addEventListener('submit',e=>{ if(e.target.id==='chatForm'){ e.preventDefault(); chatSend(); } });
-  P.addEventListener('input',e=>{ if(e.target.id==='chatInput') chatCount(); });
-  document.addEventListener('click',e=>{ const b=e.target.closest('[data-chat]'); if(b){ e.preventDefault(); chatToggle(b); } });
+  chatWire(document.getElementById('chatPanel'),CH);
+  document.addEventListener('click',e=>{ const b=e.target.closest('[data-chat]'); if(b){ e.preventDefault(); chatToggle(b); return; }
+    const m=e.target.closest('[data-mchat]'); if(m){ e.preventDefault(); if(MC.open) mcClose(); else mcOpen(m); } });
+  document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return;
+    if(MC.open){ e.stopImmediatePropagation(); mcClose(); return; } },true);   /* the match chat first, then the big screen */
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&CH.open&&!modalGame){ e.stopPropagation(); chatClose(); } });
-  document.addEventListener('visibilitychange',()=>{ if(CH.open&&!document.hidden) chatLoad(false); });
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; if(CH.open) chatLoad(false); if(MC.open) mcLoad(false); });
   chatDot();
+}
+/* the listeners of a room's panel (General or a game's) */
+function chatWire(P,X){
+  P.addEventListener('click',e=>chatClick(X,e));
+  P.addEventListener('submit',e=>{ if(e.target.id===X.p+'Form'){ e.preventDefault(); chatSend(X); } });
+  P.addEventListener('input',e=>{ if(e.target.id===X.p+'Input') chatCount(X); });
 }
 function chatDot(){
   const seen=+lsGet(CHAT_SEEN_KEY)||0, on=!CH.open&&CH.srvLast>seen;
@@ -8119,6 +8154,7 @@ function chatDelta(c){
   chatDot();
 }
 function chatPhone(){ return window.matchMedia&&matchMedia('(max-width:760px)').matches; }
+function chatCoarse(){ return window.matchMedia&&matchMedia('(pointer:coarse)').matches; }
 function chatToggle(btn){ if(CH.open) chatClose(); else chatOpen(btn); }
 function chatOpen(btn){
   if(!CHAT_ON) return;
@@ -8131,8 +8167,8 @@ function chatOpen(btn){
   chatStatus(); chatLoad(!CH.loaded);
   clearInterval(CH.timer); CH.timer=setInterval(()=>{ if(!document.hidden) chatLoad(false); },3000);
   clearInterval(CH.stT); CH.stT=setInterval(()=>{ if(!document.hidden) chatStatus(); },60000);
-  const inp=document.getElementById('chatInput');
-  (inp&&!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)?inp:document.getElementById('chatTitle')).focus({preventScroll:true});
+  const inp=chatId(CH,'Input');
+  (inp&&!chatCoarse()?inp:document.getElementById('chatTitle')).focus({preventScroll:true});
 }
 function chatClose(keepFocus){
   if(!CH.open) return;
@@ -8140,61 +8176,75 @@ function chatClose(keepFocus){
   CH.open=false; clearInterval(CH.timer); clearInterval(CH.stT);
   P.classList.remove('open'); P.inert=true;
   const a=document.querySelector('.app'); if(a) a.inert=false;
-  chatMenu(null);
+  chatMenu(CH,null);
   chatDot();
   if(!keepFocus&&CH.lastFocus&&document.contains(CH.lastFocus)&&CH.lastFocus.offsetParent!==null) CH.lastFocus.focus({preventScroll:true});
   else if(!keepFocus){ const b=document.querySelector(chatPhone()?'.chat-top':'.rail-btn[data-chat]'); if(b) b.focus({preventScroll:true}); }
 }
 
-/* ---- messages ---- */
+/* ---- General: messages ---- */
 async function chatLoad(first){
   if(CH.busy||CH.off) return; CH.busy=true;
   try{
     for(let k=0;k<6;k++){
       const r=await api(`/chat?room=${CH.room}&after=${first?0:CH.last}&rev=${first?-1:CH.rev}`);
       if(r.reset&&!first){ first=true; continue; }        /* too many removals missed: load the room again */
-      if(first){ CH.msgs=[]; CH.nodes.clear(); CH.menu=null; document.getElementById('chatLog').textContent=''; }
-      const gone=new Set(r.gone||[]);
-      if(gone.size){ CH.msgs=CH.msgs.filter(m=>!gone.has(m.id)); for(const id of gone){ const n=CH.nodes.get(id); if(n){ if(CH.menu===id) CH.menu=null; n.remove(); CH.nodes.delete(id); } } }
+      if(first){ chatClear(CH); }
+      chatGone(CH,r.gone);
       chatAdd(r.msgs||[],!first);
       CH.last=Math.max(CH.last,r.last||0); CH.rev=r.rev; CH.loaded=true;
       if(!r.more) break;
       first=false;
     }
     if(CH.open){ lsSet(CHAT_SEEN_KEY,CH.last); chatDot(); }
-    if(!CH.msgs.length) chatEmpty();
-  }catch(e){ if(e.status===404){ CH.off=true; chatFoot(); } }
+    if(!CH.msgs.length) chatEmpty(CH);
+  }catch(e){ if(e.status===404){ CH.off=true; chatFoot(CH); } }
   finally{ CH.busy=false; }
 }
-function chatEmpty(){
-  const log=document.getElementById('chatLog');
-  if(!log.querySelector('.chat-empty')) log.appendChild(Object.assign(chatEl('div','chat-empty'),{innerHTML:'<b>No messages yet</b>Say hello to the other fans.'}));
+function chatClear(X){ X.msgs=[]; X.nodes.clear(); X.menu=null; chatId(X,'Log').textContent=''; }
+function chatGone(X,list){
+  if(!list||!list.length) return; const gone=new Set(list);
+  X.msgs=X.msgs.filter(m=>!gone.has(m.id));
+  if(X.pending) X.pending=X.pending.filter(m=>!gone.has(m.id));
+  for(const id of gone){ const n=X.nodes.get(id); if(n){ if(X.menu===id) X.menu=null; n.remove(); X.nodes.delete(id); } }
 }
-function chatAdd(list,announce){
-  const log=document.getElementById('chatLog'), muted=new Set(chatMuted().map(x=>x.a));
+function chatEmpty(X){
+  const log=chatId(X,'Log');
+  if(log&&!log.querySelector('.chat-empty')) log.appendChild(Object.assign(chatEl('div','chat-empty'),{innerHTML:X===CH?'<b>No messages yet</b>Say hello to the other fans.':'<b>No messages at this point of the game</b>Messages appear here as you reach the play they were written at.'}));
+}
+/* append messages to a room's log (General: every message; a game: the ones the viewer has reached) */
+function chatAppend(X,list,announce){
+  const log=chatId(X,'Log'), muted=new Set(chatMuted().map(x=>x.a));
   const atEnd=log.scrollHeight-log.scrollTop-log.clientHeight<80;
   let others=0;
   for(const m of list){
-    if(CH.nodes.has(m.id)) continue;
-    CH.msgs.push(m);
+    if(X.nodes.has(m.id)) continue;
+    X.msgs.push(m);
     const empty=log.querySelector('.chat-empty'); if(empty) empty.remove();
-    const n=chatNode(m); n.hidden=muted.has(m.a); log.appendChild(n); CH.nodes.set(m.id,n);
-    if(!n.hidden&&!(CH.st&&m.a===CH.st.a)) others++;
+    const n=chatNode(m,X); n.hidden=muted.has(m.a); log.appendChild(n); X.nodes.set(m.id,n);
+    if(!n.hidden&&!chatMine(m)) others++;
   }
-  while(CH.msgs.length>CHAT_MAX_DOM){ const m=CH.msgs.shift(), n=CH.nodes.get(m.id); if(n) n.remove(); CH.nodes.delete(m.id); }
+  while(X.msgs.length>CHAT_MAX_DOM){ const m=X.msgs.shift(), n=X.nodes.get(m.id); if(n) n.remove(); X.nodes.delete(m.id); }
   if(atEnd||!announce) log.scrollTop=log.scrollHeight;
-  if(announce&&others) chatAnnounce(others);
+  if(announce&&others) chatAnnounce(X,others);
 }
-/* screen readers: "3 new messages", at most every 10 s, and only while the chat has the focus */
-function chatAnnounce(n){
-  const P=document.getElementById('chatPanel'); if(!P.contains(document.activeElement)) return;
-  CH.ann+=n; if(CH.annT) return;
-  const wait=Math.max(0,10000-(Date.now()-CH.annAt));
-  CH.annT=setTimeout(()=>{ const k=CH.ann; CH.ann=0; CH.annT=0; CH.annAt=Date.now();
-    document.getElementById('chatAnn').textContent=k===1?'1 new message':k+' new messages'; },wait);
+function chatAdd(list,announce){ chatAppend(CH,list,announce); }
+/* screen readers: "3 new messages", at most every 10 s, and only while that chat has the focus */
+function chatAnnounce(X,n){
+  const P=chatId(X,'Log').closest('[role="dialog"]'); if(!P||!P.contains(document.activeElement)) return;
+  X.ann+=n; if(X.annT) return;
+  const wait=Math.max(0,10000-(Date.now()-X.annAt));
+  X.annT=setTimeout(()=>{ const k=X.ann; X.ann=0; X.annT=0; X.annAt=Date.now();
+    const a=chatId(X,'Ann'); if(a) a.textContent=k===1?'1 new message':k+' new messages'; },wait);
 }
-function chatNode(m){
-  const mine=CH.st&&CH.st.a&&m.a===CH.st.a;
+/* General's spoiler shield: a score-like message naming a team whose game has started, not watched here to the end */
+function chatSpoil(m){
+  if(!SET.chatShield||!m.sc||!m.teams||!m.teams.length||m.adm||chatMine(m)||CH.reveal.has(m.id)||!SEASON) return null;
+  const t=nowMs(), hit=m.teams.filter(a=>SCHED.some(s=>(s.home===a||s.away===a)&&gStatus(s,t)!=='upcoming'&&!watched(s.id)));
+  return hit.length?hit:null;
+}
+function chatNode(m,X){
+  const mine=chatMine(m), spoil=X===CH?chatSpoil(m):null;
   const d=chatEl('div','chat-msg'); d.dataset.id=m.id; d.dataset.a=m.a;
   const meta=chatEl('div','chat-meta');
   meta.appendChild(chatEl('span','chat-n',m.n));
@@ -8205,16 +8255,22 @@ function chatNode(m){
   if(!m.adm){ const b=chatEl('button','chat-more'); b.type='button'; b.dataset.chatMenu=m.id; b.setAttribute('aria-expanded','false');
     b.setAttribute('aria-label',mine?'Actions for your message':'Actions for '+m.n+'’s message'); b.innerHTML=CHAT_SVG.more; meta.appendChild(b); }
   d.appendChild(meta);
-  d.appendChild(chatEl('p','chat-b',m.b));
+  if(spoil){ const s=chatEl('button','chat-spoil'); s.type='button'; s.dataset.chatShow=m.id;
+    s.appendChild(chatEl('b','','Possible spoiler')); s.appendChild(document.createTextNode(' · '+spoil.map(a=>TEAMS[a]?TEAMS[a].abbr:a).join(', ')+' · tap to show'));
+    s.setAttribute('aria-label','Possible spoiler about '+spoil.map(a=>TEAMS[a]?TEAMS[a].name:a).join(' and ')+'. Show the message'); d.appendChild(s); }
+  else d.appendChild(chatEl('p','chat-b',m.b));
   return d;
 }
+function chatRedraw(X){ X.nodes.forEach((n,id)=>{ const m=X.msgs.find(x=>x.id===id); if(!m) return; if(X.menu===id) X.menu=null;
+  const k=chatNode(m,X); k.hidden=n.hidden; n.replaceWith(k); X.nodes.set(id,k); }); }
+function chatReshield(){ if(CHAT_ON&&CH.loaded) chatRedraw(CH); }   /* Settings › Chat spoiler shield */
 /* the actions under a message: Report (with a reason) and Mute, or Delete for your own */
-function chatMenu(id,step,note){
-  if(CH.menu!=null){ const o=CH.nodes.get(CH.menu); if(o){ const a=o.querySelector('.chat-acts'); if(a) a.remove(); const b=o.querySelector('.chat-more'); if(b) b.setAttribute('aria-expanded','false'); } }
-  CH.menu=id; CH.step=step||null;
+function chatMenu(X,id,step,note){
+  if(X.menu!=null){ const o=X.nodes.get(X.menu); if(o){ const a=o.querySelector('.chat-acts'); if(a) a.remove(); const b=o.querySelector('.chat-more'); if(b) b.setAttribute('aria-expanded','false'); } }
+  X.menu=id; X.step=step||null;
   if(id==null) return;
-  const n=CH.nodes.get(id), m=CH.msgs.find(x=>x.id===id); if(!n||!m){ CH.menu=null; return; }
-  const mine=CH.st&&CH.st.a&&m.a===CH.st.a, acts=chatEl('div','chat-acts');
+  const n=X.nodes.get(id), m=X.msgs.find(x=>x.id===id); if(!n||!m){ X.menu=null; return; }
+  const mine=chatMine(m), acts=chatEl('div','chat-acts');
   acts.setAttribute('role','group'); acts.setAttribute('aria-label','Message actions');
   const btn=(label,act,arg,cls)=>{ const b=chatEl('button',cls||'',label); b.type='button'; b.dataset.chatAct=act; if(arg!=null) b.dataset.arg=arg; acts.appendChild(b); return b; };
   if(note) acts.appendChild(chatEl('p','',note));
@@ -8231,39 +8287,43 @@ function chatMenu(id,step,note){
   n.appendChild(acts);
   const b=n.querySelector('.chat-more'); if(b) b.setAttribute('aria-expanded','true');
   const f=acts.querySelector('button'); if(f) f.focus({preventScroll:true});
-  const log=document.getElementById('chatLog'); if(n.offsetTop+n.offsetHeight>log.scrollTop+log.clientHeight) n.scrollIntoView({block:'nearest'});
+  const log=chatId(X,'Log'); if(n.offsetTop+n.offsetHeight>log.scrollTop+log.clientHeight) n.scrollIntoView({block:'nearest'});
 }
-async function chatClick(e){
+function chatMuteApply(){ const muted=new Set(chatMuted().map(x=>x.a)); for(const X of [CH,MC]) X.nodes.forEach(n=>{ n.hidden=muted.has(n.dataset.a); }); }
+async function chatClick(X,e){
   const t=e.target;
   if(t.closest('[data-chat-close]')){ chatClose(); return; }
-  if(t.closest('[data-view-go]')){ chatClose(true); return; }    /* « Create an account »: the page goes to Settings */
-  const mb=t.closest('[data-chat-menu]'); if(mb){ const id=+mb.dataset.chatMenu; chatMenu(CH.menu===id?null:id); if(CH.menu==null) mb.focus(); return; }
+  if(t.closest('[data-mchat-close]')){ mcClose(); return; }
+  if(t.closest('[data-view-go]')){ if(X===CH) chatClose(true); else { mcClose(true); closeModal(); } return; }    /* « Create an account »: the page goes to Settings */
+  const sh=t.closest('[data-chat-show]'); if(sh){ const id=+sh.dataset.chatShow, m=X.msgs.find(x=>x.id===id); if(!m) return;
+    CH.reveal.add(id); const p=chatEl('p','chat-b',m.b); p.tabIndex=-1; sh.replaceWith(p); p.focus({preventScroll:true}); return; }
+  const mb=t.closest('[data-chat-menu]'); if(mb){ const id=+mb.dataset.chatMenu; chatMenu(X,X.menu===id?null:id); if(X.menu==null) mb.focus(); return; }
   const nb=t.closest('[data-chat-note]'); if(nb){ const s=lsGet(CHAT_NOTE_KEY)||[]; s.push(+nb.dataset.chatNote); lsSet(CHAT_NOTE_KEY,s.slice(-50)); chatNotes(); return; }
-  if(t.closest('[data-chat-unmute]')){ lsSet(CHAT_MUTE_KEY,[]); CH.nodes.forEach(n=>n.hidden=false); chatFoot(true); return; }
+  if(t.closest('[data-chat-unmute]')){ lsSet(CHAT_MUTE_KEY,[]); chatMuteApply(); chatFoot(CH,true); chatFoot(MC,true); return; }
   const ab=t.closest('[data-chat-act]'); if(!ab) return;
-  const id=CH.menu, m=CH.msgs.find(x=>x.id===id), act=ab.dataset.chatAct; if(!m) return;
-  const back=()=>{ const n=CH.nodes.get(id), b=n&&n.querySelector('.chat-more'); chatMenu(null); if(b) b.focus(); };
+  const id=X.menu, m=X.msgs.find(x=>x.id===id), act=ab.dataset.chatAct; if(!m) return;
+  const back=()=>{ const n=X.nodes.get(id), b=n&&n.querySelector('.chat-more'); chatMenu(X,null); if(b) b.focus(); };
   if(act==='close') return back();
-  if(act==='del') return chatMenu(id,'del');
-  if(act==='report'){ if(!(PLAYER&&PLAYER.account&&PLAYER.token)) return chatMenu(id,null,'Reporting needs a free account. You can mute this person right away.'); return chatMenu(id,'report'); }
+  if(act==='del') return chatMenu(X,id,'del');
+  if(act==='report'){ if(!(PLAYER&&PLAYER.account&&PLAYER.token)) return chatMenu(X,id,null,'Reporting needs a free account. You can mute this person right away.'); return chatMenu(X,id,'report'); }
   if(act==='mute'){ const l=chatMuted().filter(x=>x.a!==m.a); l.push({a:m.a,n:m.n}); lsSet(CHAT_MUTE_KEY,l.slice(-200));
-    CH.nodes.forEach(n=>{ if(n.dataset.a===m.a) n.hidden=true; }); chatMenu(null); chatFoot(true);
-    chatLine(`${m.n} is muted on this device.`); document.getElementById('chatLog').focus(); return; }
+    chatMenu(X,null); chatMuteApply(); chatFoot(CH,true); chatFoot(MC,true);
+    chatLine(X,`${m.n} is muted on this device.`); chatId(X,'Log').focus(); return; }
   try{
     if(act==='del-yes'){ await api('/chat/delete',{method:'POST',body:JSON.stringify({token:PLAYER.token,id})});
-      CH.msgs=CH.msgs.filter(x=>x.id!==id); const n=CH.nodes.get(id); chatMenu(null); if(n) n.remove(); CH.nodes.delete(id);
-      chatLine('Your message was deleted.'); document.getElementById('chatLog').focus(); }
+      X.msgs=X.msgs.filter(x=>x.id!==id); const n=X.nodes.get(id); chatMenu(X,null); if(n) n.remove(); X.nodes.delete(id);
+      chatLine(X,'Your message was deleted.'); chatId(X,'Log').focus(); }
     else if(act==='report-yes'){ const r=await api('/chat/report',{method:'POST',body:JSON.stringify({token:PLAYER.token,id,reason:ab.dataset.arg})});
-      chatMenu(id,null,r.hidden?'Thanks. This message is hidden until we review it.':'Thanks. We’ll review this message.'); }
-  }catch(err){ chatMenu(id,null,chatMsg(err)); }
+      chatMenu(X,id,null,r.hidden?'Thanks. This message is hidden until we review it.':'Thanks. We’ll review this message.'); }
+  }catch(err){ chatMenu(X,id,null,chatMsg(err)); }
 }
 
 /* ---- who am I, what can I do ---- */
 async function chatStatus(){
-  try{ CH.st=await api('/chat/status',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token||''})}); CH.off=false; }
-  catch(e){ if(e.status===404) CH.off=true; }
-  chatFoot(); chatNotes();
-  if(CH.st&&CH.st.a) CH.nodes.forEach((n,id)=>{ const m=CH.msgs.find(x=>x.id===id); if(m&&m.a===CH.st.a&&!n.querySelector('.chat-you')){ const k=chatNode(m); k.hidden=n.hidden; n.replaceWith(k); CH.nodes.set(id,k); } });
+  try{ CH.st=await api('/chat/status',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token||''})}); CH.off=false; MC.off=false; }
+  catch(e){ if(e.status===404){ CH.off=true; MC.off=true; } }
+  chatFoot(CH); chatFoot(MC); chatNotes();
+  if(CH.st&&CH.st.a) for(const X of [CH,MC]) X.nodes.forEach((n,id)=>{ const m=X.msgs.find(x=>x.id===id); if(m&&m.a===CH.st.a&&!n.querySelector('.chat-you')){ const k=chatNode(m,X); k.hidden=n.hidden; n.replaceWith(k); X.nodes.set(id,k); } });
 }
 function chatNotes(){
   const box=document.getElementById('chatNotes'); if(!box) return;
@@ -8273,49 +8333,153 @@ function chatNotes(){
     p.appendChild(chatEl('b','','Your message was hidden: ')); p.appendChild(document.createTextNode('“'+x.b+'” · '+(x.reason||'It breaks the chat rules.')));
     d.appendChild(p); const b=chatEl('button','','Dismiss'); b.type='button'; b.dataset.chatNote=x.id; d.appendChild(b); box.appendChild(d); }
 }
-function chatFoot(force){
-  const foot=document.getElementById('chatFoot'); if(!foot) return;
+function chatFoot(X,force){
+  const foot=chatId(X,'Foot'); if(!foot) return;
   const st=CH.st, nm=chatMuted().length;
-  const key=[CH.off,st&&st.can_write,st&&st.why,st&&JSON.stringify(st.ban),PLAYER&&PLAYER.name,nm].join('|');
-  if(!force&&key===CH.footKey) return; CH.footKey=key;
-  const keep=document.getElementById('chatInput'), draft=keep?keep.value:'';
+  const key=[X.off,st&&st.can_write,st&&st.why,st&&JSON.stringify(st.ban),PLAYER&&PLAYER.name,nm].join('|');
+  if(!force&&key===X.footKey) return; X.footKey=key;
+  const keep=chatId(X,'Input'), draft=keep?keep.value:'';
   const muted=nm?`<p class="chat-muted">${nm} ${nm===1?'person':'people'} muted on this device · <button type="button" data-chat-unmute>Unmute all</button></p>`:'';
-  if(CH.off){ foot.innerHTML='<p class="chat-cant">The chat is closed for now.</p>'; return; }
+  if(X.off){ foot.innerHTML='<p class="chat-cant">The chat is closed for now.</p>'; return; }
   if(!st){ foot.innerHTML='<p class="chat-cant">Loading…</p>'; return; }
   if(st.can_write){
-    foot.innerHTML=`<form id="chatForm"><label for="chatInput"><span>Message as <b></b></span><span class="chat-count" id="chatCount"></span></label>
-      <div class="chat-form"><input id="chatInput" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" maxlength="600" aria-describedby="chatLine"><button type="submit" id="chatSendBtn">Send</button></div>
-      <p class="chat-msgline" id="chatLine" role="status"></p></form>${muted}`;
+    foot.innerHTML=`<form id="${X.p}Form"><label for="${X.p}Input"><span>Message as <b></b></span><span class="chat-count" id="${X.p}Count"></span></label>
+      <div class="chat-form"><input id="${X.p}Input" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" maxlength="600" aria-describedby="${X.p}Line"><button type="submit" id="${X.p}SendBtn">Send</button></div>
+      <p class="chat-msgline" id="${X.p}Line" role="status"></p></form>${muted}`;
     foot.querySelector('label b').textContent=(PLAYER&&PLAYER.name)||'';
-    const inp=document.getElementById('chatInput'); inp.value=draft; chatCount(); chatLine(CH.line,CH.lineErr);
+    const inp=chatId(X,'Input'); inp.value=draft; chatCount(X); chatLine(X,X.line,X.lineErr);
     return;
   }
   let html;
   if(st.why==='account_required') html=`<p class="chat-cant"><b>Read along, or create a free account to chat.</b></p><button type="button" class="chip-btn" data-view-go="settings">Create an account</button>`;
-  else if(st.why==='banned'&&st.ban) html=`<p class="chat-cant" id="chatBan"></p>`;
+  else if(st.why==='banned'&&st.ban) html=`<p class="chat-cant" data-chat-ban></p>`;
   else if(st.why==='pseudo_reserved') html=`<p class="chat-cant">${esc(CHAT_ERR.pseudo_reserved)}</p><button type="button" class="chip-btn" data-view-go="settings">Open Settings</button>`;
   else html=`<p class="chat-cant">${esc(CHAT_ERR[st.why]||CHAT_ERR.chat_read_only)}</p>`;
   foot.innerHTML=html+muted;
-  const ban=document.getElementById('chatBan');
+  const ban=foot.querySelector('[data-chat-ban]');
   if(ban) ban.textContent=(st.ban.until?`You can chat again on ${dStr(st.ban.until)} at ${tStr(st.ban.until)}.`:'You can no longer chat.')+' Reason: '+(st.ban.reason||'the chat rules')+'. To ask for a review, write to the contact on the legal page.';
 }
-function chatLine(t,err){ CH.line=t||''; CH.lineErr=!!err; const l=document.getElementById('chatLine'); if(!l) return; l.textContent=CH.line; l.classList.toggle('err',CH.lineErr); }
-function chatCount(){
-  const inp=document.getElementById('chatInput'), c=document.getElementById('chatCount'), b=document.getElementById('chatSendBtn'); if(!inp||!c) return;
+function chatLine(X,t,err){ X.line=t||''; X.lineErr=!!err; const l=chatId(X,'Line'); if(!l) return; l.textContent=X.line; l.classList.toggle('err',X.lineErr); }
+function chatCount(X){
+  const inp=chatId(X,'Input'), c=chatId(X,'Count'), b=chatId(X,'SendBtn'); if(!inp||!c) return;
   const n=[...inp.value.trim()].length, max=(CH.st&&CH.st.max_len)||280;
   c.textContent=n>=max-40?`${n} / ${max}`:''; c.classList.toggle('over',n>max);
-  if(b) b.disabled=n===0||n>max||CH.sending;
+  if(b) b.disabled=n===0||n>max||X.sending;
 }
-async function chatSend(){
-  const inp=document.getElementById('chatInput'); if(!inp||CH.sending) return;
-  const body=inp.value.trim(); if(!body){ chatLine(CHAT_ERR.empty,true); return; }
-  CH.sending=true; chatCount();
-  try{ const r=await api('/chat/post',{method:'POST',body:JSON.stringify({token:PLAYER.token,room:CH.room,body})});
-    inp.value=''; chatLine(r.masked?'Sent. Some words were hidden with ***.':'');
-    chatAdd([r.msg],false); CH.last=Math.max(CH.last,r.msg.id); lsSet(CHAT_SEEN_KEY,CH.last);
-    const log=document.getElementById('chatLog'); log.scrollTop=log.scrollHeight; }
-  catch(e){ chatLine(chatMsg(e),true); if(['banned','account_too_new','pseudo_reserved','chat_read_only','account_required'].includes(e.message)) chatStatus(); }
-  finally{ CH.sending=false; chatCount(); inp.focus({preventScroll:true}); }
+async function chatSend(X){
+  const inp=chatId(X,'Input'); if(!inp||X.sending) return;
+  const body=inp.value.trim(); if(!body){ chatLine(X,CHAT_ERR.empty,true); return; }
+  X.sending=true; chatCount(X);
+  try{ const q={token:PLAYER.token,room:X.room,body}; if(X===MC) q.at=mcSeen(MC.g);
+    const r=await api('/chat/post',{method:'POST',body:JSON.stringify(q)});
+    inp.value='';
+    const moved=X===MC&&r.msg.at>q.at;
+    chatLine(X,moved?'Sent. It talks about the score or the result, so people watching a replay see it once they reach the live point.':r.masked?'Sent. Some words were hidden with ***.':'');
+    chatAppend(X,[r.msg],false); X.last=Math.max(X.last,r.msg.id);
+    if(X===CH) lsSet(CHAT_SEEN_KEY,CH.last);
+    const log=chatId(X,'Log'); log.scrollTop=log.scrollHeight; }
+  catch(e){ chatLine(X,chatMsg(e),true); if(['banned','account_too_new','pseudo_reserved','chat_read_only','account_required'].includes(e.message)) chatStatus(); }
+  finally{ X.sending=false; chatCount(X); inp.focus({preventScroll:true}); }
+}
+
+/* ---- a game's room (étape 3): in the big screen, standard view or « Bigger field » ---- */
+/* the room of a game of this week (a board, a live game, a replay from the schedule); none for exhibitions or a file */
+function mcRoom(g){
+  if(!CHAT_ON||!g||!g.gf||!g.gf.game||!SW||!SW.week) return null;
+  const id=g.gf.game.id; return id&&SCHED_BY[id]?`m:${SW.week.start}:${id}`:null;
+}
+/* how many plays this viewer has seen: the score on his screen is the one after these plays */
+function mcSeen(g){
+  if(!g||g.mode==='upcoming') return 0;
+  const k=g.idx+(g.phase==='presnap'||g.phase==='play'?0:1);
+  return Math.max(0,Math.min(g.plays.length,k));
+}
+function mcBtnHTML(g){ return mcRoom(g)?`<button class="icon-btn m-chat" type="button" data-mchat aria-expanded="false" aria-controls="mChat" aria-label="Match chat" title="Match chat">${CHAT_SVG.bubble}</button>`:''; }
+/* where the drawer lives: inside the turned panel in « Bigger field » (a phone held upright), else over the whole board */
+function mcHome(){
+  const P=document.getElementById('mChat'); if(!P) return;
+  const host=modal.classList.contains('theater')?modal.querySelector('.m-panel'):modal;
+  if(host&&P.parentNode!==host) host.appendChild(P);
+}
+function mcOpen(btn){
+  const g=modalGame, room=mcRoom(g); if(!room) return;
+  if(MC.room!==room){ MC.room=room; MC.g=g; MC.loaded=false; MC.last=0; MC.rev=-1; MC.pending=[]; MC.pendMore=false; MC.msgs=[]; MC.nodes.clear(); MC.menu=null; }
+  MC.g=g; MC.open=true; MC.lastFocus=btn||document.activeElement;
+  let P=document.getElementById('mChat');
+  if(!P){
+    modal.insertAdjacentHTML('beforeend',`<aside class="mchat" id="mChat" role="dialog" aria-modal="false" aria-labelledby="mChatTitle">
+      <div class="chat-head"><div class="grow"><h2 id="mChatTitle" tabindex="-1">Match chat</h2><p id="mChatSub"></p></div>
+        <button class="chat-x" type="button" data-mchat-close aria-label="Close the match chat">${CHAT_SVG.x}</button></div>
+      <div class="chat-log" id="mChatLog" role="log" aria-live="off" aria-label="Messages about this game" tabindex="0"></div>
+      <p class="chat-sr" id="mChatAnn" aria-live="polite"></p>
+      ${chatFootHTML(MC)}
+    </aside>`);
+    P=document.getElementById('mChat'); chatWire(P,MC);
+  }
+  mcHome(); MC.footKey=''; chatClear(MC);
+  modal.classList.add('mchat-on'); if(modalView) modalView.resize();
+  const A=TEAMS[g.away], H=TEAMS[g.home];
+  document.getElementById('mChatTitle').textContent=`${A?A.abbr:g.away} @ ${H?H.abbr:g.home} · chat`;
+  document.getElementById('mChatSub').textContent=g.mode==='replay'?'Synced to your replay: messages appear at the play they were written':g.mode==='upcoming'?'Pre-game chat':'Live: synced to the play on your screen';
+  modal.querySelectorAll('[data-mchat]').forEach(b=>b.setAttribute('aria-expanded','true'));
+  if(!CH.st) chatStatus(); else chatFoot(MC,true);
+  mcLoad(true);
+  clearInterval(MC.timer); MC.timer=setInterval(()=>{ if(!document.hidden) mcLoad(false); },3000);
+  clearInterval(MC.tick); MC.tick=setInterval(mcTick,500);
+  const inp=chatId(MC,'Input');
+  (inp&&!chatCoarse()?inp:document.getElementById('mChatTitle')).focus({preventScroll:true});
+}
+function mcClose(keepFocus){
+  if(!MC.open) return;
+  MC.open=false; clearInterval(MC.timer); clearInterval(MC.tick);
+  chatMenu(MC,null);
+  const P=document.getElementById('mChat'); if(P) P.remove();
+  if(modal){ modal.classList.remove('mchat-on'); if(modalView&&modalGame) modalView.resize(); }
+  if(modal) modal.querySelectorAll('[data-mchat]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(!keepFocus){ const b=modal&&modal.querySelector('[data-mchat]'); if(b) b.focus({preventScroll:true}); }
+}
+async function mcLoad(first){
+  if(MC.busy||!MC.open||MC.off) return; MC.busy=true;
+  const room=MC.room;
+  try{
+    for(let k=0;k<6;k++){
+      const pos=mcSeen(MC.g);
+      const r=await api(first?`/chat?room=${encodeURIComponent(room)}&after=0&upto=${pos}`:`/chat?room=${encodeURIComponent(room)}&after=${MC.last}&rev=${MC.rev}`);
+      if(!MC.open||MC.room!==room) return;
+      if(r.reset&&!first){ first=true; continue; }
+      if(first){ chatClear(MC); MC.pending=[]; MC.pos=pos; MC.pendMore=!!r.pend_more; }
+      chatGone(MC,r.gone);
+      mcPlace((r.msgs||[]).concat(r.pending||[]),!first);
+      MC.last=Math.max(MC.last,r.last||0); MC.rev=r.rev; MC.loaded=true;
+      if(!r.more) break;
+      first=false;
+    }
+    if(!MC.msgs.length) chatEmpty(MC);
+  }catch(e){ if(e.status===404){ MC.off=true; chatFoot(MC,true); } }
+  finally{ MC.busy=false; }
+}
+/* a message the viewer has reached is shown; a later one waits for his screen to get there (your own: shown at once) */
+function mcPlace(list,announce){
+  const show=[];
+  for(const m of list){
+    if(MC.nodes.has(m.id)||MC.pending.some(x=>x.id===m.id)) continue;
+    if((m.at||0)<=MC.pos||chatMine(m)) show.push(m); else MC.pending.push(m);
+  }
+  MC.pending.sort((a,b)=>(a.at-b.at)||(a.id-b.id));
+  if(show.length) chatAppend(MC,show,announce);
+}
+/* every half second: the play on the screen moved on (messages reached), or back (a replay scrubbed: load again) */
+function mcTick(){
+  if(!MC.open) return;
+  if(modalGame!==MC.g){ mcClose(true); return; }
+  const pos=mcSeen(MC.g);
+  if(pos<MC.pos){ MC.pos=pos; MC.reload=true; }
+  if(MC.reload){ if(!MC.busy){ MC.reload=false; mcLoad(true); } return; }
+  if(pos===MC.pos) return;
+  MC.pos=pos;
+  const ready=[]; while(MC.pending.length&&(MC.pending[0].at||0)<=pos) ready.push(MC.pending.shift());
+  if(ready.length) chatAppend(MC,ready,true);
+  if(MC.pendMore&&!MC.pending.length) mcLoad(true);
 }
 
 /* ---------------- search: teams, players, coordinators, games, pages ----------------
