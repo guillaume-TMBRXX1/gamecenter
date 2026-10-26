@@ -1974,6 +1974,75 @@ choquant à l'image), un joueur libre quand l'effectif est à court ; « si je n
   identités tenues (sacks GLT, défense BST…), 52,6 points par match ; 479 tests unitaires (dont `test_blessures.py`, le
   test `Blessures` du serveur), tests navigateur (dont `test_blessures.js`, `test_banc.js`, `test_cellule427.js`) ✅.
 
+### 71. Le chat — étape 1 : le serveur (26/10/2026)
+Bloc 3 (espace de discussion). **Décisions de Guillaume (26/10)** : ses recommandations — salon General et un salon par
+match (direct puis replay), ligues en V1.1, pas de messages privés ; lecture libre, écriture réservée aux comptes ;
+messages gardés 30 jours, signalements et décisions 6 mois, masqué au 3e signalement ; pas de lien en V1 ; une PR pour
+les étapes 1 et 2 (serveur, puis salon General dans la page), une pour l'étape 3 (salons de match et anti-spoiler).
+**Étape 1 = serveur seul : rien ne change sur le site** (la page ne sait pas encore afficher le chat).
+- **Interrupteur `GC_CHAT`** : `off` (défaut, et toute autre valeur) — routes du chat en 404, `/api/delta` identique
+  à l'octet près à la version d'avant (contrôlé, horloge figée) ; `read` — lecture seule (incident) ; `on`.
+  `GC_CHAT_DAYS` : durée de conservation des messages (défaut 30 jours).
+- **Salons** : `general` ; `m:<semaine>:<id du match>` (ex. `m:2026-10-26:w5-r01`), ouvert à l'écriture 30 min avant
+  le coup d'envoi (une affiche de playoffs encore cachée reste fermée), lisible ensuite jusqu'à la purge (replay).
+- **Écrire** : comptes seulement (pas un invité) ; pas un compte de moins de 10 min ; pas un pseudo qui pourrait passer
+  pour l'équipe (admin…, snapline, moderat…, ou les mots staff, support, official, system, team, modo — « supporter »,
+  « Badminton » passent) ; pas un banni. Pseudo affiché = pseudo du compte au moment du message (unique), avec l'équipe
+  favorite. Auteur public = identifiant opaque `a` (HMAC de l'id du joueur, clé tirée une fois et gardée dans la base) :
+  **ni id interne, ni jeton, ni adresse IP, ni e-mail** dans une réponse ; l'adresse IP n'est jamais stockée.
+- **Texte** : une ligne, 280 caractères ; caractères invisibles et de sens d'écriture retirés, un signe diacritique
+  par lettre au plus. Filtre `static/chat_filtre.txt` (anglais, français, néerlandais ; relu tout seul quand il change ;
+  jamais servi) : `[bloque]` refusé (`message_blocked`), `[masque]` en astérisques ; chiffres « leet » et sosies
+  cyrilliques compris, « f u c k » lu comme un mot, sans faux positif sur « as », « assist », « Scunthorpe »,
+  « niggling », « Niger », « Raccoon », « 3.5 yds » (testé). Liens refusés sauf snapline.live ; e-mails et numéros de
+  téléphone refusés (`contact_not_allowed`). Le texte est rendu tel quel : la page devra l'afficher par `textContent`.
+- **Débit** (en mémoire : un seul processus) : 1 message toutes les 3 s, 10 par minute, 300 par jour, pas deux fois le
+  même en 2 min ; 30 par minute depuis une même adresse, tous comptes.
+- **Temps réel** : interrogation courte. `/api/delta` porte `chat: {general: <dernier id>, rev}` (badge des non-lus,
+  aucune requête de plus panneau fermé) ; le panneau ouvert lit `GET /api/chat?room=…&after=<id>&rev=<n>` toutes les
+  3 s, servi par un tampon des 300 derniers messages de 32 salons au plus (pire cas mesuré ≈ 9 Mo ; 0,02 ms par appel).
+  `gone` = messages retirés depuis `rev` (masqués, effacés) ; `reset` : trop de retraits manqués, recharger le salon.
+- **Anti-spoiler, salon de match** : chaque message porte `at` = nombre d'actions que l'auteur avait vues, borné au
+  direct (personne ne prétend avoir vu plus loin). Un score qui n'est pas celui de cette position (dans un sens ou dans
+  l'autre), ou un mot de fin de match (won, final, overtime…), renvoie le message au point le plus loin connu.
+  Lecture d'un replay : `upto=<position>` donne les messages déjà « vus » et, à part, `pending` (ceux d'après, que la
+  page montrera quand le spectateur y arrivera ; `pend_more` : il y en a d'autres, relire plus loin) ; `far` =
+  position du direct. **General** : chaque message porte les
+  équipes citées (`teams` : abréviation en majuscules exactes, nom, ville ou surnom) et `sc: 1` s'il ressemble à un
+  score ou à une fin de match — la page floutera (étape 3) ceux qui citent un match que le spectateur n'a pas fini.
+- **Signaler** (comptes ; un par compte et par message ; 20 par heure) : spam, abuse, hate, spoiler, other. Au 3e
+  signalement de comptes différents, le message est masqué en attendant l'administrateur. L'auteur **efface** son
+  propre message (et ses signalements).
+- **Administration** (`GC_ADMIN_KEY`, 10 essais faux par adresse en 15 min ; marche aussi chat coupé) :
+  `POST /api/admin/chat` `{key, action, …}` — `reports` (messages signalés ou masqués à revoir, bannissements),
+  `author {a}` (100 derniers messages d'un auteur), `hide {id, reason}`, `unhide {id}` (revu : ne sera plus masqué
+  automatiquement), `ban {a, days, reason}` (`days` 0 = définitif ; masque aussi ses messages des dernières 24 h),
+  `unban {a}`, `post {room, body}` (message « Snapline » avec badge), `purge`. Le motif est montré à l'auteur
+  (`/api/chat/status` : `notices`, `ban` — exposé des motifs, DSA art. 17). Une page `/admin/chat` viendra à l'étape 2 ;
+  en attendant :
+  ```
+  curl -X POST https://snapline.live/api/admin/chat -H 'Content-Type: application/json' \
+       -d '{"key":"<GC_ADMIN_KEY>","action":"reports"}'
+  curl -X POST https://snapline.live/api/admin/chat -H 'Content-Type: application/json' \
+       -d '{"key":"<GC_ADMIN_KEY>","action":"ban","a":"8ba318ee9f","days":7,"reason":"Spam"}'
+  ```
+- **Conservation** : messages `GC_CHAT_DAYS` jours (30), 200 000 au plus (les plus anciens partent) ; signalements et
+  décisions (avec le texte du message masqué) 6 mois ; bannissements temporaires finis retirés. Purge au plus une fois
+  par heure, à la lecture (pas de fil de plus). ≈ 220 octets par message en base : 10 000 messages ≈ 2,2 Mo
+  (volume de 500 Mo). Tout est dans `gamecenter.db`, donc dans `/api/backup`.
+- **Sécurité** : écritures en JSON seulement (`Content-Type: application/json`, sinon 415 : un formulaire d'un autre
+  site ne peut pas écrire à la place d'un joueur ; de toute façon le jeton n'est pas dans un cookie).
+- **Routes** : `GET /api/chat?room=&after=&upto=&rev=` (lecture libre) · `POST /api/chat/status {token}` ·
+  `POST /api/chat/post {token, room, body, at}` · `POST /api/chat/delete {token, id}` ·
+  `POST /api/chat/report {token, id, reason}` · `POST /api/admin/chat`. Codes d'erreur (la page les traduira) :
+  `chat_off`, `chat_read_only`, `account_required`, `account_too_new`, `pseudo_reserved`, `banned`, `room_not_found`,
+  `room_closed`, `empty`, `too_long`, `message_blocked`, `links_not_allowed`, `contact_not_allowed`, `too_fast`,
+  `too_many`, `duplicate`, `own_message`, `message_not_found`, `json_required`.
+- **Tests** : `moteur/tests/test_chat.py` (18 tests, aucun ne lit l'horloge : instants tirés du calendrier de la
+  semaine) — interrupteur, qui écrit, nettoyage, filtre (et ses faux positifs), liens, débit, signalements, effacement,
+  administration, JSON obligatoire, purge, salon de match (position, ouverture, replay), équipes et spoilers, tampon et
+  retraits. Essai de bout en bout avec uvicorn (HTTP réel) et mesure de mémoire faits en local.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2074,6 +2143,9 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/bets` | `{token, picks:[{key, price_dec, line, stake, title, sub}]}` → acceptés / refusés (et pourquoi) |
 | GET | `/api/leaderboard` | classement de la semaine |
 | GET | `/api/backup?key=` | sauvegarde .zip (base + semaines), si `GC_ADMIN_KEY` est définie |
+| GET | `/api/chat?room=&after=&upto=&rev=` | chat : messages d'un salon (si `GC_CHAT` = `read` ou `on`, section 71) |
+| POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
+| POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
@@ -2089,7 +2161,8 @@ README section 39) · `GC_GOOGLE_VERIFY` (balise de vérification Google Search 
 README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `GC_CF_ANALYTICS` (jeton Cloudflare Web Analytics,
 statistiques d'audience, README section 50) · `GC_HIST_DEPUIS` (première semaine comptée dans History, défaut 2,
 README section 52) · `GC_EDITEUR`,
-`GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47.
+`GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
+section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours).
 
 ## Test
 
