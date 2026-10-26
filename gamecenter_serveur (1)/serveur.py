@@ -15,6 +15,7 @@ Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecente
             « auto » = lundi 12:45 de la semaine la plus récente) · GC_AUTOGEN=1 (produit la semaine suivante
             tout seul, voir generer_semaine.py) · GC_ADMIN_KEY (sauvegarde, réinitialisation de mot de passe)
             GC_SEASON_START (facultatif, ex. 2026-10-05 : semaines plus anciennes hors classement de la saison)
+            GC_CHAT (off par défaut, read, on : le chat, section « chat ») · GC_CHAT_DAYS (conservation, défaut 30 j)
 Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/audio assemblés, versionnés) et /audio/*
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
@@ -843,6 +844,8 @@ def page():
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
     if ADS_CLIENT:
         srv["ads"] = {"client": ADS_CLIENT, "slots": ADS_SLOTS}
+    if chat_mode() != "off":                         # chat (section « chat ») : sans lui, la page ne le dessine pas
+        srv["chat"] = chat_mode()
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -925,9 +928,21 @@ def legal():
     s = (s.replace("__EDITEUR__", val("GC_EDITEUR")).replace("__ADRESSE__", val("GC_EDITEUR_ADRESSE"))
          .replace("__CONTACT__", f'<a href="mailto:{html.escape(contact, quote=True)}">{html.escape(contact)}</a>' if contact else "<i>not set</i>")
          .replace("__ADS__", "on" if ADS_CLIENT else "off"))
+    if chat_mode() != "off":                         # règles du chat et données gardées : seulement chat allumé
+        s = _legal_chat(s)
     if CF_ANALYTICS:
         s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-cache"})
+
+
+def _legal_chat(s):
+    """Page légale, chat allumé : règles du chat (section #chat), messages dans « ce que nous gardons », durées."""
+    with open(os.path.join(HERE, "static", "legal_chat.html"), encoding="utf-8") as fh:
+        parts = dict(re.findall(r"<!--(\w+)-->\n(.*?)<!--/\1-->", fh.read(), re.S))
+    s = s.replace('  <section id="legal">', parts["section"].replace("__DAYS__", str(chat_days())) + '  <section id="legal">', 1)
+    s = s.replace("      <li>Technical logs of our host", parts["privacy"].replace("__DAYS__", str(chat_days()))
+                  + "      <li>Technical logs of our host", 1)
+    return s.replace("Game data is kept while the service runs;", parts["keep"].replace("__DAYS__", str(chat_days())), 1)
 
 
 def _origine(request):
@@ -979,7 +994,10 @@ def api_delta(have: str = ""):
     # le navigateur ne lit « games » que pour les affiches de playoffs dont les équipes étaient cachées : les rosters des
     # 276 matchs de saison régulière (≈ 9 Mo) ne sont plus renvoyés toutes les 3 s
     games = {g["id"]: w.public_feed(g, t, upto=0)["game"] for g in w.sched if g["phase"] != "regular"}
-    return {"now": t, "week_start": w.start, "state": st, "games": games, "plays": plays}
+    out = {"now": t, "week_start": w.start, "state": st, "games": games, "plays": plays}
+    if chat_mode() != "off":                       # chat : dernier message de General (badge des non-lus), retraits
+        out["chat"] = {"general": chat_last(), "rev": _CHAT["rev"]}
+    return out
 
 
 _DIAG = {}                                          # ip -> [début de la minute, lots reçus]
@@ -1937,6 +1955,804 @@ def api_league_standings(lid: str, token: str = "", scope: str = "week"):
     for r in rows:
         r["me"] = r["id"] == p["id"]
     return {"league": pub, "scope": "season" if scope == "season" else "week", "rows": rows, "now": t}
+
+
+# ------------------------------------------------------------------ chat (bloc 3 ; README sections 71 et 72)
+# Salons : « general » (en direct) et un salon par match « m:<semaine>:<id> » (direct puis replay). Lecture libre, écriture
+# réservée aux comptes. Interrupteur GC_CHAT : off (défaut : routes en 404, /api/delta et la page inchangés), read
+# (lecture seule) ou on. Temps réel = interrogation courte : /api/delta porte le dernier numéro de General (badge des
+# non-lus), le panneau ouvert lit /api/chat?room=…&after=… toutes les 3 s, servi par un tampon en mémoire (un seul
+# processus uvicorn). Anti-spoiler : un message de salon de match porte « at », le nombre d'actions que l'auteur avait vues
+# (borné au direct) ; un spectateur n'en voit que les messages où at ≤ sa position. Un score qui ne correspond pas à cette
+# position, ou un mot de fin de match, renvoie le message au point le plus loin connu. Modération : filtre de mots
+# (static/chat_filtre.txt), liens et coordonnées refusés, débit limité, signalements (masqué au 3e), masquage / bannissement
+# par l'administrateur (GC_ADMIN_KEY, motif montré à l'auteur), purge après GC_CHAT_DAYS jours. Ni id interne, ni IP,
+# ni e-mail dans une réponse : l'auteur est un identifiant opaque « a » (HMAC de l'id du joueur, clé tirée une fois).
+# Les fonctions qui dépendent du temps prennent l'instant t (tests sans horloge).
+import unicodedata
+from collections import OrderedDict, deque
+
+CHAT_MAX_LEN, CHAT_RAW_MAX = 280, 2000           # caractères d'un message (après nettoyage) ; au-delà, refusé sans lire
+CHAT_GAP_MS, CHAT_PER_MIN, CHAT_PER_DAY = 3000, 10, 300
+CHAT_DUP_MS = 2 * 60 * 1000                      # même message répété : refusé pendant 2 min
+CHAT_IP_PER_MIN = 30                             # tous comptes d'une même adresse (garde-fou ; adresse jamais stockée)
+CHAT_NEW_ACCOUNT_MS = 10 * 60 * 1000             # un compte de moins de 10 min n'écrit pas encore
+CHAT_REPORTS_HIDE = 3                            # signalements de comptes différents : message masqué, à revoir
+CHAT_REPORTS_PER_HOUR = 20
+CHAT_BUF, CHAT_ROOMS_CACHE, CHAT_PAGE, CHAT_FIRST, CHAT_PENDING = 300, 32, 100, 50, 300   # pire cas ≈ 9 Mo
+CHAT_PREGAME_MS = 30 * 60 * 1000                 # salon d'un match ouvert à l'écriture 30 min avant le coup d'envoi
+CHAT_KEEP_ACTIONS_MS = 180 * 24 * 3600 * 1000    # signalements et décisions : 6 mois
+CHAT_MAX_ROWS = 200_000                          # plafond dur : les plus anciens partent
+CHAT_PURGE_EVERY_MS = 3600 * 1000
+CHAT_RESERVED_PREFIX = ("admin", "snapline", "moderat")              # « Adm1nJoe », « Administrator », « Moderateur »
+CHAT_RESERVED_WORDS = ("modo", "staff", "support", "official", "system", "team")   # mot entier seulement (« supporter » passe)
+CHAT_REPORT_REASONS = ("spam", "abuse", "hate", "spoiler", "other")
+CHAT_FILTRE = os.path.join(HERE, "static", "chat_filtre.txt")
+_CHAT_ROOM_RE = re.compile(r"^m:(\d{4}-\d{2}-\d{2}):([A-Za-z0-9_-]{1,40})$")
+
+
+def chat_mode():
+    m = os.environ.get("GC_CHAT", "off").strip().lower()
+    return m if m in ("read", "on") else "off"
+
+
+def chat_days():
+    try:
+        return max(1, int(os.environ.get("GC_CHAT_DAYS", "30")))
+    except ValueError:
+        return 30
+
+
+_CHAT_LOCK = threading.Lock()
+_CHAT = {"init": False, "secret": None, "rooms": OrderedDict(), "rev": 0, "gone": deque(maxlen=1000),
+         "rate": {}, "ip": {}, "dup": {}, "reports": {}, "purged": None}
+
+
+def _chat_init():
+    if _CHAT["init"]:
+        return
+    with _db_lock, db() as c:
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS chat_messages(id INTEGER PRIMARY KEY AUTOINCREMENT, room TEXT, player TEXT, a TEXT,
+            name TEXT, team TEXT, body TEXT, at INTEGER, teams TEXT, sc INTEGER, adm INTEGER, created INTEGER,
+            hidden INTEGER DEFAULT 0, reason TEXT, reviewed INTEGER DEFAULT 0);
+        CREATE INDEX IF NOT EXISTS chat_messages_room ON chat_messages(room, id);
+        CREATE INDEX IF NOT EXISTS chat_messages_at ON chat_messages(room, at, id);
+        CREATE INDEX IF NOT EXISTS chat_messages_a ON chat_messages(a, id);
+        CREATE INDEX IF NOT EXISTS chat_messages_created ON chat_messages(created);
+        CREATE TABLE IF NOT EXISTS chat_reports(msg INTEGER, reporter TEXT, reason TEXT, created INTEGER,
+            PRIMARY KEY(msg, reporter));
+        CREATE TABLE IF NOT EXISTS chat_bans(a TEXT PRIMARY KEY, player TEXT, until INTEGER, reason TEXT, created INTEGER);
+        CREATE TABLE IF NOT EXISTS chat_actions(id INTEGER PRIMARY KEY AUTOINCREMENT, created INTEGER, action TEXT,
+            msg INTEGER, a TEXT, body TEXT, reason TEXT);
+        CREATE TABLE IF NOT EXISTS chat_meta(k TEXT PRIMARY KEY, v TEXT);
+        """)
+        r = c.execute("SELECT v FROM chat_meta WHERE k='secret'").fetchone()
+        if r:
+            sec = r[0]
+        else:
+            sec = secrets.token_hex(32)
+            c.execute("INSERT INTO chat_meta(k, v) VALUES('secret', ?)", (sec,))
+    _CHAT["secret"] = bytes.fromhex(sec)
+    _CHAT["init"] = True
+
+
+def chat_author(pid):
+    """Identifiant public d'un auteur : opaque, stable, sans lien visible avec l'id interne."""
+    _chat_init()
+    return hmac.new(_CHAT["secret"], str(pid).encode(), hashlib.sha256).hexdigest()[:10]
+
+
+# ---- texte : nettoyage, filtre de mots, liens, spoilers ----
+_CHAT_DROP_CATS = ("Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp")    # contrôle, format (sens d'écriture, largeur nulle)…
+_LEET = str.maketrans({"0": "o", "1": "i", "!": "i", "|": "i", "3": "e", "4": "a", "@": "a", "5": "s", "$": "s",
+                       "7": "t", "+": "t", "8": "b", "9": "g",
+                       # sosies cyrilliques et grecs des lettres latines (« fuсk » avec un с cyrillique)
+                       "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i", "ј": "j",
+                       "к": "k", "м": "m", "н": "h", "т": "t", "в": "b", "ѕ": "s", "ο": "o", "α": "a", "ε": "e",
+                       "ι": "i", "κ": "k", "ν": "v", "ρ": "p", "τ": "t", "υ": "u", "χ": "x"})
+
+
+def chat_clean(raw):
+    """Texte d'un message : une ligne, sans caractère invisible ni de direction, au plus un signe diacritique par lettre
+    (pas de « zalgo »), espaces réduits. Les émojis restent."""
+    s = unicodedata.normalize("NFC", str(raw or "")[:CHAT_RAW_MAX])
+    out, marks = [], 0
+    for ch in s:
+        cat = unicodedata.category(ch)
+        if ch in "\t\r\n\u2028\u2029\x0b\x0c":
+            out.append(" "); marks = 0
+        elif cat in _CHAT_DROP_CATS:
+            continue
+        elif cat in ("Mn", "Me"):
+            if marks < 1 or ch in "\ufe0e\ufe0f":
+                out.append(ch)
+            marks += 1
+        else:
+            out.append(ch); marks = 0
+    return re.sub(r"\s+", " ", "".join(out)).strip()
+
+
+def _chat_norm(word):
+    """Forme comparée par le filtre : sans accent, minuscules, chiffres « leet » et sosies ramenés aux lettres latines."""
+    s = unicodedata.normalize("NFKD", word.casefold().translate(_LEET))
+    return "".join(ch for ch in s if "a" <= ch <= "z")
+
+
+def _chat_pattern(entry):
+    """Entrée de la liste -> motif : chaque groupe de lettres veut au moins autant de lettres (« fuck » attrape
+    « fuuuck », « ass » n'attrape pas « as ») ; « * » final = début de mot ; une expression = des mots qui se suivent."""
+    pre = entry.endswith("*")
+    words = [_chat_norm(x) for x in entry.rstrip("*").split()]
+    if not all(words):
+        return None
+    pat = " ".join("".join(re.escape(m.group(1)) + ("+" if len(m.group(0)) == 1 else "{%d,}" % len(m.group(0)))
+                           for m in re.finditer(r"(.)\1*", w)) for w in words)
+    return pat + ("[a-z]*" if pre else ""), len(words) > 1
+
+
+def _chat_load_filter():
+    lists = {"[bloque]": ([], []), "[masque]": ([], [])}
+    part = None
+    try:
+        with open(CHAT_FILTRE, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                if line in lists:
+                    part = lists[line]
+                elif part is not None:
+                    pp = _chat_pattern(line)
+                    if pp:
+                        part[1 if pp[1] else 0].append(pp[0])
+    except OSError:
+        pass
+
+    def comp(words, phrases):
+        return (re.compile("^(?:" + "|".join(words) + ")$") if words else None,
+                re.compile("(?:^| )(?:" + "|".join(phrases) + ")(?: |$)") if phrases else None)
+    return comp(*lists["[bloque]"]), comp(*lists["[masque]"])
+
+
+_CHAT_FILTER = {"mtime": None, "lists": ((None, None), (None, None))}
+
+
+def _chat_filter():
+    try:
+        m = os.path.getmtime(CHAT_FILTRE)
+    except OSError:
+        m = None
+    if _CHAT_FILTER["mtime"] != m:
+        _CHAT_FILTER.update(mtime=m, lists=_chat_load_filter())
+    return _CHAT_FILTER["lists"]
+
+
+def _chat_hit(norm, lst):
+    return bool(norm) and lst[0] is not None and lst[0].match(norm) is not None
+
+
+_CHAT_TOKEN_RE = re.compile(r"[\w@$]+(?:[!|+][\w@$]+)*", re.UNICODE)    # « sh!t » est un mot, « shit! » aussi
+# lettres isolées séparées par des espaces, points, tirets… (« f u c k », « f.u.c.k ») : lues comme un seul mot
+_CHAT_SPACED_RE = re.compile(r"(?<!\w)(?:[\w@$][\s.*_\-]+){2,}[\w@$](?!\w)", re.UNICODE)
+
+
+def chat_filter(text):
+    """(texte, masqué) ; HTTPException 400 « message_blocked » pour un mot de la liste dure. Les mots de la liste
+    « masque » deviennent des astérisques (un par lettre, au plus 6)."""
+    hard, soft = _chat_filter()
+    masked = False
+
+    def check(m):
+        nonlocal masked
+        n = _chat_norm(m.group(0))
+        if _chat_hit(n, hard):
+            raise HTTPException(400, "message_blocked")
+        if _chat_hit(n, soft):
+            masked = True
+            return "*" * min(6, max(3, len(m.group(0).strip())))
+        return m.group(0)
+
+    words = " ".join(filter(None, (_chat_norm(m.group(0)) for m in _CHAT_TOKEN_RE.finditer(text))))
+    if hard[1] is not None and hard[1].search(words):
+        raise HTTPException(400, "message_blocked")
+    text = _CHAT_SPACED_RE.sub(lambda m: check(m) if len(_chat_norm(m.group(0))) >= 3 else m.group(0), text)
+    text = _CHAT_TOKEN_RE.sub(check, text)
+    return text, masked
+
+
+_CHAT_TLDS = ("com|net|org|io|gg|co|me|ly|tv|xyz|ru|fr|be|de|uk|us|info|biz|app|link|site|online|shop|store|club|top|"
+              "tk|ml|ga|cf|gq|pw|cc|to|in|eu|nl|es|it|pl|ch|ca|au|br|cn|jp|kr|vip|win|bet|casino|porn|sex|news|fun|"
+              "click|pro|live|ai|dev|lol|art|one|life|world|online|space|website|page|ws|su|ua|tr|id|ph|vn|lt|lv|ee")
+_CHAT_LINK_RE = re.compile(r"(?i)(?:\bhttps?://\S+|\bwww\.\S+|\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:" + _CHAT_TLDS
+                           + r")\b(?:/\S*)?)")
+_CHAT_OK_LINK_RE = re.compile(r"(?i)^(?:https?://)?(?:www\.)?snapline\.live(?:/\S*)?$")
+_CHAT_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+_CHAT_PHONE_RE = re.compile(r"(?:\+?\d[\s.\-()]*){9,}")
+
+
+def chat_links(text):
+    """Pas de lien (sauf snapline.live), ni d'adresse e-mail ou de numéro de téléphone (spam, données personnelles)."""
+    if _CHAT_EMAIL_RE.search(text) or _CHAT_PHONE_RE.search(text):
+        raise HTTPException(400, "contact_not_allowed")
+    for m in _CHAT_LINK_RE.finditer(text):
+        if not _CHAT_OK_LINK_RE.match(m.group(0).rstrip(".,;:!?)")):
+            raise HTTPException(400, "links_not_allowed")
+
+
+_CHAT_SCORE_RE = re.compile(r"(?<![\d:.])(\d{1,2})\s*(?:[-–—:]|\bto\b)\s*(\d{1,2})(?![\d:.])", re.IGNORECASE)
+_CHAT_END_RE = re.compile(r"(?i)\b(?:won|wins?|winner|beat|beats|beaten|lost|loses?|loser|final|full[\s-]?time|"
+                          r"comeback|blowout|overtime|ot|champions?|walk[\s-]?off|game over)\b")
+
+
+def chat_scores(text):
+    return [(int(a), int(b)) for a, b in _CHAT_SCORE_RE.findall(text)]
+
+
+def chat_spoilery(text):
+    """Un message qui ressemble à un score ou à une fin de match."""
+    return bool(chat_scores(text) or _CHAT_END_RE.search(text))
+
+
+def _chat_team_words(w):
+    """Mots qui désignent une équipe : abréviation (majuscules exactes), nom complet, ville et surnom (4 lettres et plus)."""
+    out = []
+    for abbr, T in (w.doc.get("teams") or {}).items():
+        name = str(T.get("name") or "")
+        words = {name.casefold()} | {x.casefold() for x in name.split() if len(x) >= 4}
+        out.append((abbr, words))
+    return out
+
+
+def chat_teams(text, w):
+    if w is None:
+        return []
+    low = {x.casefold() for x in re.findall(r"[^\W\d_]+", text)}
+    full = text.casefold()
+    found = []
+    for abbr, words in _chat_team_words(w):
+        if re.search(r"(?<![A-Za-z])" + re.escape(abbr) + r"(?![A-Za-z])", text) or \
+                any((x in full) if " " in x else (x in low) for x in words):
+            found.append(abbr)
+    return found[:4]
+
+
+def _chat_score_at(w, g, k):
+    """Score (domicile, extérieur) après k actions."""
+    if k <= 0:
+        return (0, 0)
+    plays = w.feed(g["id"])["plays"]
+    sc = ((plays[min(k, len(plays)) - 1].get("after") or {}).get("score")) or {}
+    return (int(sc.get("home") or 0), int(sc.get("away") or 0))
+
+
+def chat_at(w, g, at, text, t):
+    """Position d'un message dans un salon de match : ce que l'auteur dit avoir vu, borné au direct ; un score qui n'est
+    pas celui de cette position, ou un mot de fin de match, renvoie le message au point le plus loin connu."""
+    far = w.revealed_plays(g, t) if w.teams_known(g, t) else 0
+    try:
+        k = int(at)
+    except (TypeError, ValueError):
+        k = far
+    k = max(0, min(k, far))
+    if k < far:
+        sc = _chat_score_at(w, g, k)
+        if _CHAT_END_RE.search(text) or any(sorted(p) != sorted(sc) for p in chat_scores(text)):
+            k = far
+    return k
+
+
+# ---- salons ----
+def chat_room(room, t=None):
+    """(semaine, match) d'un salon ; (None, None) pour General ; HTTPException 404 si le salon n'existe pas."""
+    room = str(room or "")
+    if room == "general":
+        return None, None
+    m = _CHAT_ROOM_RE.match(room)
+    w = load_weeks().get(m.group(1)) if m else None
+    if not w or m.group(2) not in w.by:
+        raise HTTPException(404, "room_not_found")
+    return w, w.by[m.group(2)]
+
+
+def _chat_pub(r):
+    """Message public (aucun id interne, aucune adresse)."""
+    d = {"id": r["id"], "a": r["a"], "n": r["name"], "b": r["body"], "ts": r["created"]}
+    if r["team"]:
+        d["t"] = r["team"]
+    if r["room"] != "general":
+        d["at"] = r["at"] or 0
+    if r["sc"]:
+        d["sc"] = 1
+    if r["teams"]:
+        d["teams"] = r["teams"].split(",")
+    if r["adm"]:
+        d["adm"] = 1
+    return d
+
+
+def _chat_buf(room):
+    """Tampon des derniers messages visibles d'un salon (chargé à la demande, CHAT_ROOMS_CACHE salons au plus)."""
+    rooms = _CHAT["rooms"]
+    b = rooms.get(room)
+    if b is not None:
+        rooms.move_to_end(room)
+        return b
+    with db() as c:
+        rows = c.execute("SELECT * FROM chat_messages WHERE room=? AND hidden=0 ORDER BY id DESC LIMIT ?",
+                         (room, CHAT_BUF + 1)).fetchall()
+    b = {"msgs": [_chat_pub(r) for r in reversed(rows[:CHAT_BUF])], "all": len(rows) <= CHAT_BUF}
+    rooms[room] = b
+    while len(rooms) > CHAT_ROOMS_CACHE:
+        rooms.popitem(last=False)
+    return b
+
+
+def _chat_gone(room, mid):
+    """Message retiré (masqué, supprimé) : les navigateurs le retirent au prochain appel."""
+    _CHAT["rev"] += 1
+    _CHAT["gone"].append((_CHAT["rev"], room, mid))
+    b = _CHAT["rooms"].get(room)
+    if b is not None:
+        b["msgs"] = [m for m in b["msgs"] if m["id"] != mid]
+
+
+def chat_last(room="general"):
+    with _CHAT_LOCK:
+        _chat_init()
+        b = _chat_buf(room)
+        return b["msgs"][-1]["id"] if b["msgs"] else 0
+
+
+def chat_read(room, after=0, upto=None, rev=None, t=None):
+    """Messages d'un salon. after = 0 : premier chargement (les derniers ; dans un salon de match, ceux que la position
+    upto laisse voir, plus ceux d'après, « pending », que la page montre quand le spectateur y arrive). after > 0 : les
+    messages arrivés depuis (toutes positions). rev : retraits (masqués, supprimés) depuis ce numéro."""
+    t = now_ms() if t is None else t
+    w, g = chat_room(room, t)
+    _chat_init()
+    out = {"room": room, "msgs": []}
+    with _CHAT_LOCK:
+        _chat_maybe_purge(t)
+        b = _chat_buf(room)
+        last = b["msgs"][-1]["id"] if b["msgs"] else 0
+        if after > 0 and (b["all"] or (b["msgs"] and b["msgs"][0]["id"] <= after + 1)):
+            new = [m for m in b["msgs"] if m["id"] > after]
+            out["msgs"], out["more"] = new[:CHAT_PAGE], len(new) > CHAT_PAGE
+            after = -1                                   # servi par le tampon
+        cur, gone = _CHAT["rev"], list(_CHAT["gone"])
+    if after > 0:                                        # très en retard : lu dans la base
+        with db() as c:
+            rows = c.execute("SELECT * FROM chat_messages WHERE room=? AND hidden=0 AND id>? ORDER BY id LIMIT ?",
+                             (room, after, CHAT_PAGE + 1)).fetchall()
+        out["msgs"], out["more"] = [_chat_pub(r) for r in rows[:CHAT_PAGE]], len(rows) > CHAT_PAGE
+    elif after == 0:
+        with db() as c:
+            if g is None or upto is None:
+                rows = c.execute("SELECT * FROM chat_messages WHERE room=? AND hidden=0 AND id<=? ORDER BY id DESC LIMIT ?",
+                                 (room, last, CHAT_FIRST)).fetchall()
+                out["msgs"] = [_chat_pub(r) for r in reversed(rows)]
+            else:
+                k = max(0, int(upto))
+                rows = c.execute("SELECT * FROM chat_messages WHERE room=? AND hidden=0 AND id<=? AND at<=? "
+                                 "ORDER BY at DESC, id DESC LIMIT ?", (room, last, k, CHAT_FIRST)).fetchall()
+                out["msgs"] = [_chat_pub(r) for r in reversed(rows)]
+                pend = c.execute("SELECT * FROM chat_messages WHERE room=? AND hidden=0 AND id<=? AND at>? "
+                                 "ORDER BY at, id LIMIT ?", (room, last, k, CHAT_PENDING + 1)).fetchall()
+                out["pending"] = [_chat_pub(r) for r in pend[:CHAT_PENDING]]
+                out["pend_more"] = len(pend) > CHAT_PENDING      # la page relira à sa position plus tard
+    out["last"] = max([last] + [m["id"] for m in out["msgs"]])
+    out["rev"] = cur
+    if rev is not None and rev >= 0:
+        if gone and rev < gone[0][0] - 1 and len(gone) == _CHAT["gone"].maxlen:
+            out["reset"] = True                          # trop de retraits manqués : la page recharge le salon
+        out["gone"] = [mid for (n, r, mid) in gone if n > rev and r == room]
+    if g is not None:
+        out["far"] = w.revealed_plays(g, t) if w.teams_known(g, t) else 0
+    return out
+
+
+# ---- écrire ----
+def _chat_ban(c, a, t):
+    r = c.execute("SELECT * FROM chat_bans WHERE a=?", (a,)).fetchone()
+    if r and (r["until"] == 0 or r["until"] > t):
+        return {"until": r["until"] or None, "reason": r["reason"]}
+    return None
+
+
+def chat_why_not(p, t):
+    """Pourquoi ce joueur ne peut pas écrire (code), ou None."""
+    if chat_mode() != "on":
+        return "chat_read_only"
+    if not p or not p.get("login"):
+        return "account_required"
+    if p.get("acct_at") and t - p["acct_at"] < CHAT_NEW_ACCOUNT_MS:
+        return "account_too_new"
+    if chat_reserved(p.get("name")):
+        return "pseudo_reserved"
+    with db() as c:
+        if _chat_ban(c, chat_author(p["id"]), t):
+            return "banned"
+    return None
+
+
+def chat_reserved(name):
+    """Pseudo qui pourrait passer pour l'équipe du site (mots coupés aux majuscules : « SnaplineTeam », « Adm1n_Joe »)."""
+    words = re.split(r"[\W_]+", re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", str(name or "")))
+    whole = _chat_norm(str(name or ""))
+    if "snapline" in whole:
+        return True
+    for x in filter(None, (_chat_norm(w) for w in words)):
+        if x.startswith(CHAT_RESERVED_PREFIX) or x in CHAT_RESERVED_WORDS:
+            return True
+    return False
+
+
+def _chat_rate(pid, ip, norm, t):
+    """Débit : 1 message toutes les 3 s, 10 par minute, 300 par jour, le même message pas deux fois en 2 min,
+    30 par minute depuis une même adresse."""
+    ts = _CHAT["rate"].setdefault(pid, deque(maxlen=CHAT_PER_DAY))
+    while ts and t - ts[0] >= 24 * 3600 * 1000:
+        ts.popleft()
+    if ts and t - ts[-1] < CHAT_GAP_MS:
+        raise HTTPException(429, "too_fast")
+    if sum(1 for x in ts if t - x < 60_000) >= CHAT_PER_MIN or len(ts) >= CHAT_PER_DAY:
+        raise HTTPException(429, "too_many")
+    dup = _CHAT["dup"].get(pid)
+    if dup and dup[1] == norm and t - dup[0] < CHAT_DUP_MS:
+        raise HTTPException(429, "duplicate")
+    if ip:
+        q = _CHAT["ip"].setdefault(ip, deque(maxlen=CHAT_IP_PER_MIN))
+        if len(q) >= CHAT_IP_PER_MIN and t - q[0] < 60_000:
+            raise HTTPException(429, "too_many")
+        q.append(t)
+        if len(_CHAT["ip"]) > 5000:
+            _CHAT["ip"].clear()
+    ts.append(t)
+    _CHAT["dup"][pid] = (t, norm)
+
+
+def chat_post(p, room, body, at=None, ip=None, t=None):
+    """Nouveau message ; renvoie {"msg": public, "masked": bool}. Codes d'erreur (la page les traduit) : chat_read_only,
+    account_required, account_too_new, pseudo_reserved, banned, room_not_found, room_closed, empty, too_long,
+    message_blocked, links_not_allowed, contact_not_allowed, too_fast, too_many, duplicate."""
+    t = now_ms() if t is None else t
+    _chat_init()
+    why = chat_why_not(p, t)
+    if why:
+        raise HTTPException(403, why)
+    w, g = chat_room(room, t)
+    if g is not None and not (w.teams_known(g, t) and t >= g["ko"] - CHAT_PREGAME_MS):
+        raise HTTPException(403, "room_closed")
+    text = chat_clean(body)
+    if not text:
+        raise HTTPException(400, "empty")
+    if len(text) > CHAT_MAX_LEN:
+        raise HTTPException(400, "too_long")
+    chat_links(text)
+    text, masked = chat_filter(text)
+    sc = chat_spoilery(text)
+    teams = chat_teams(text, w or current_week(t))
+    k = chat_at(w, g, at, text, t) if g is not None else 0
+    a = chat_author(p["id"])
+    with _CHAT_LOCK:
+        _chat_rate(p["id"], ip, re.sub(r"[\W_]+", "", text.casefold()) or text, t)
+        with _db_lock, db() as c:
+            cur = c.execute("INSERT INTO chat_messages(room, player, a, name, team, body, at, teams, sc, adm, created) "
+                            "VALUES(?,?,?,?,?,?,?,?,?,0,?)", (room, p["id"], a, p["name"], p.get("fav_team"), text, k,
+                                                              ",".join(teams) or None, 1 if sc else 0, t))
+            r = c.execute("SELECT * FROM chat_messages WHERE id=?", (cur.lastrowid,)).fetchone()
+        msg = _chat_pub(r)
+        b = _chat_buf(room)
+        if not b["msgs"] or b["msgs"][-1]["id"] < msg["id"]:
+            b["msgs"].append(msg)
+        if len(b["msgs"]) > CHAT_BUF:
+            del b["msgs"][:-CHAT_BUF]
+            b["all"] = False
+    return {"msg": msg, "masked": masked}
+
+
+def chat_delete(p, mid, t=None):
+    """L'auteur efface son message (et ses signalements) : il disparaît partout."""
+    with _CHAT_LOCK, _db_lock, db() as c:
+        r = c.execute("SELECT room, player FROM chat_messages WHERE id=?", (int(mid),)).fetchone()
+        if not r or r["player"] != p["id"]:
+            raise HTTPException(404, "message_not_found")
+        c.execute("DELETE FROM chat_messages WHERE id=?", (int(mid),))
+        c.execute("DELETE FROM chat_reports WHERE msg=?", (int(mid),))
+        _chat_gone(r["room"], int(mid))
+    return {"ok": True}
+
+
+def chat_report(p, mid, reason, t=None):
+    """Signalement (comptes ; un par compte et par message). Au CHAT_REPORTS_HIDE-ième de comptes différents, le message
+    est masqué en attendant l'administrateur (sauf s'il l'a déjà revu et laissé)."""
+    t = now_ms() if t is None else t
+    if not p or not p.get("login"):
+        raise HTTPException(403, "account_required")
+    reason = reason if reason in CHAT_REPORT_REASONS else "other"
+    with _CHAT_LOCK:
+        q = _CHAT["reports"].setdefault(p["id"], deque(maxlen=CHAT_REPORTS_PER_HOUR))
+        if len(q) >= CHAT_REPORTS_PER_HOUR and t - q[0] < 3600 * 1000:
+            raise HTTPException(429, "too_many")
+        with _db_lock, db() as c:
+            r = c.execute("SELECT * FROM chat_messages WHERE id=?", (int(mid),)).fetchone()
+            if not r:
+                raise HTTPException(404, "message_not_found")
+            if r["player"] == p["id"]:
+                raise HTTPException(400, "own_message")
+            new = c.execute("INSERT OR IGNORE INTO chat_reports(msg, reporter, reason, created) VALUES(?,?,?,?)",
+                            (r["id"], p["id"], reason, t)).rowcount
+            n = c.execute("SELECT COUNT(*) FROM chat_reports WHERE msg=?", (r["id"],)).fetchone()[0]
+            hidden = bool(r["hidden"])
+            if new and not hidden and not r["reviewed"] and n >= CHAT_REPORTS_HIDE:
+                why = "Hidden after several reports, pending review"
+                c.execute("UPDATE chat_messages SET hidden=1, reason=? WHERE id=?", (why, r["id"]))
+                c.execute("INSERT INTO chat_actions(created, action, msg, a, body, reason) VALUES(?,?,?,?,?,?)",
+                          (t, "auto_hide", r["id"], r["a"], r["body"], why))
+                _chat_gone(r["room"], r["id"])
+                hidden = True
+        if new:
+            q.append(t)
+    return {"ok": True, "hidden": hidden}
+
+
+def chat_status(p, t=None):
+    """Ce que la page doit savoir pour ce joueur : son identifiant public (pour « mes messages »), s'il peut écrire
+    (et sinon pourquoi), un bannissement en cours et ses messages masqués par la modération, avec le motif."""
+    t = now_ms() if t is None else t
+    _chat_init()
+    out = {"mode": chat_mode(), "max_len": CHAT_MAX_LEN, "a": None, "can_write": False, "why": None, "ban": None,
+           "notices": []}
+    out["why"] = chat_why_not(p, t)
+    out["can_write"] = out["why"] is None
+    if p:
+        a = out["a"] = chat_author(p["id"])
+        with db() as c:
+            out["ban"] = _chat_ban(c, a, t)
+            out["notices"] = [{"id": r["id"], "room": r["room"], "b": r["body"], "reason": r["reason"], "ts": r["created"]}
+                              for r in c.execute("SELECT * FROM chat_messages WHERE a=? AND hidden=1 ORDER BY id DESC "
+                                                 "LIMIT 10", (a,))]
+    return out
+
+
+# ---- conservation ----
+def chat_purge(t=None):
+    """Messages : GC_CHAT_DAYS jours (30 par défaut), CHAT_MAX_ROWS au plus ; signalements et décisions : 6 mois ;
+    bannissements temporaires finis : retirés."""
+    t = now_ms() if t is None else t
+    _chat_init()
+    lim = t - chat_days() * 24 * 3600 * 1000
+    with _db_lock, db() as c:
+        n = c.execute("DELETE FROM chat_messages WHERE created<?", (lim,)).rowcount
+        over = c.execute("SELECT COUNT(*) FROM chat_messages").fetchone()[0] - CHAT_MAX_ROWS
+        if over > 0:
+            n += c.execute("DELETE FROM chat_messages WHERE id IN (SELECT id FROM chat_messages ORDER BY id LIMIT ?)",
+                           (over,)).rowcount
+        c.execute("DELETE FROM chat_reports WHERE created<?", (t - CHAT_KEEP_ACTIONS_MS,))
+        c.execute("DELETE FROM chat_actions WHERE created<?", (t - CHAT_KEEP_ACTIONS_MS,))
+        c.execute("DELETE FROM chat_bans WHERE until>0 AND until<=?", (t,))
+    _CHAT["rooms"].clear()
+    # compteurs de débit en mémoire : seulement ceux qui comptent encore (sinon un par auteur, pour toujours)
+    for k, keep in (("rate", 24 * 3600 * 1000), ("ip", 60_000), ("reports", 3600 * 1000)):
+        for x in [x for x, q in _CHAT[k].items() if not q or t - q[-1] >= keep]:
+            del _CHAT[k][x]
+    for x in [x for x, d in _CHAT["dup"].items() if t - d[0] >= CHAT_DUP_MS]:
+        del _CHAT["dup"][x]
+    _CHAT["purged"] = t
+    return n
+
+
+def _chat_maybe_purge(t):
+    if _CHAT["purged"] is None or t - _CHAT["purged"] >= CHAT_PURGE_EVERY_MS:
+        _CHAT["purged"] = t
+        try:
+            chat_purge(t)
+        except Exception as e:                       # la lecture ne doit pas tomber pour une purge ratée
+            print("purge du chat :", e)
+
+
+# ---- administration (GC_ADMIN_KEY) ----
+def _chat_admin(req, body):
+    ip = _ip(req)
+    if _too_many_fails((("admin-chat", ip), 10)):
+        raise HTTPException(429, "too_many")
+    admin = os.environ.get("GC_ADMIN_KEY", "")
+    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+        _note_fail(("admin-chat", ip))
+        raise HTTPException(403, "forbidden")
+    _chat_init()
+
+
+def _chat_admin_row(c, r):
+    d = _chat_pub(r)
+    d.update(room=r["room"], hidden=bool(r["hidden"]), reason=r["reason"], reviewed=bool(r["reviewed"]))
+    d["reports"] = {x["reason"]: x["n"] for x in c.execute(
+        "SELECT reason, COUNT(*) n FROM chat_reports WHERE msg=? GROUP BY reason", (r["id"],))}
+    return d
+
+
+def chat_admin_reports():
+    with db() as c:
+        rows = c.execute("SELECT m.* FROM chat_messages m WHERE m.reviewed=0 AND (m.hidden=1 OR EXISTS "
+                         "(SELECT 1 FROM chat_reports r WHERE r.msg=m.id)) ORDER BY m.id DESC LIMIT 200").fetchall()
+        bans = [dict(r) for r in c.execute("SELECT a, until, reason, created FROM chat_bans ORDER BY created DESC")]
+        return {"reports": [_chat_admin_row(c, r) for r in rows], "bans": bans}
+
+
+def chat_admin_author(a):
+    with db() as c:
+        rows = c.execute("SELECT * FROM chat_messages WHERE a=? ORDER BY id DESC LIMIT 100", (str(a),)).fetchall()
+        ban = c.execute("SELECT a, until, reason, created FROM chat_bans WHERE a=?", (str(a),)).fetchone()
+        return {"a": a, "messages": [_chat_admin_row(c, r) for r in rows], "ban": dict(ban) if ban else None}
+
+
+def chat_admin_hide(mid, hide, reason, t=None):
+    t = now_ms() if t is None else t
+    reason = str(reason or "").strip()[:200] or ("Breaks the chat rules" if hide else None)
+    with _CHAT_LOCK, _db_lock, db() as c:
+        r = c.execute("SELECT * FROM chat_messages WHERE id=?", (int(mid),)).fetchone()
+        if not r:
+            raise HTTPException(404, "message_not_found")
+        c.execute("UPDATE chat_messages SET hidden=?, reason=?, reviewed=1 WHERE id=?", (1 if hide else 0, reason, r["id"]))
+        c.execute("INSERT INTO chat_actions(created, action, msg, a, body, reason) VALUES(?,?,?,?,?,?)",
+                  (t, "hide" if hide else "unhide", r["id"], r["a"], r["body"], reason))
+        if hide:
+            _chat_gone(r["room"], r["id"])
+        else:
+            _CHAT["rooms"].pop(r["room"], None)      # rechargé : le message revient à sa place
+    return {"ok": True}
+
+
+def chat_admin_ban(a, days, reason, t=None):
+    """Bannit un auteur (days = 0 : définitif) et masque ses messages des dernières 24 h."""
+    t = now_ms() if t is None else t
+    a = str(a or "")
+    reason = str(reason or "").strip()[:200] or "Breaks the chat rules"
+    try:
+        days = max(0, int(days))
+    except (TypeError, ValueError):
+        raise HTTPException(400, "bad_days")
+    until = 0 if days == 0 else t + days * 24 * 3600 * 1000
+    with _CHAT_LOCK, _db_lock, db() as c:
+        r = c.execute("SELECT player FROM chat_messages WHERE a=? LIMIT 1", (a,)).fetchone()
+        if not r:
+            raise HTTPException(404, "author_not_found")
+        c.execute("INSERT OR REPLACE INTO chat_bans(a, player, until, reason, created) VALUES(?,?,?,?,?)",
+                  (a, r["player"], until, reason, t))
+        c.execute("INSERT INTO chat_actions(created, action, msg, a, body, reason) VALUES(?,?,?,?,?,?)",
+                  (t, "ban" if days == 0 else f"ban_{days}d", None, a, None, reason))
+        for m in c.execute("SELECT id, room FROM chat_messages WHERE a=? AND hidden=0 AND created>=?",
+                           (a, t - 24 * 3600 * 1000)).fetchall():
+            c.execute("UPDATE chat_messages SET hidden=1, reason=?, reviewed=1 WHERE id=?", (reason, m["id"]))
+            _chat_gone(m["room"], m["id"])
+    return {"ok": True, "until": until or None}
+
+
+def chat_admin_unban(a, t=None):
+    t = now_ms() if t is None else t
+    with _db_lock, db() as c:
+        c.execute("DELETE FROM chat_bans WHERE a=?", (str(a or ""),))
+        c.execute("INSERT INTO chat_actions(created, action, msg, a, body, reason) VALUES(?,?,?,?,?,?)",
+                  (t, "unban", None, str(a or ""), None, None))
+    return {"ok": True}
+
+
+def chat_admin_post(room, body, t=None):
+    """Message de l'équipe (« Snapline », badge) : annonces, rappel des règles. Ni filtre ni débit."""
+    t = now_ms() if t is None else t
+    chat_room(room, t)
+    text = chat_clean(body)
+    if not text or len(text) > CHAT_MAX_LEN:
+        raise HTTPException(400, "too_long" if text else "empty")
+    with _CHAT_LOCK:
+        with _db_lock, db() as c:
+            cur = c.execute("INSERT INTO chat_messages(room, player, a, name, team, body, at, teams, sc, adm, created) "
+                            "VALUES(?,?,?,?,?,?,?,?,?,1,?)", (room, "", "snapline", "Snapline", None, text, 0, None, 0, t))
+            r = c.execute("SELECT * FROM chat_messages WHERE id=?", (cur.lastrowid,)).fetchone()
+        msg = _chat_pub(r)
+        b = _chat_buf(room)
+        b["msgs"].append(msg)
+        del b["msgs"][:-CHAT_BUF]
+    return {"msg": msg}
+
+
+# ---- routes ----
+def _chat_on():
+    if chat_mode() == "off":
+        raise HTTPException(404, "chat_off")
+
+
+async def _chat_body(req):
+    """Corps JSON obligatoire (un formulaire d'un autre site ne peut pas l'envoyer : pas de CSRF possible)."""
+    ct = str((req.headers.get("content-type") if hasattr(req.headers, "get") else "") or "application/json")
+    if not ct.lower().startswith("application/json"):
+        raise HTTPException(415, "json_required")
+    return await _json(req)
+
+
+@app.get("/api/chat")
+def api_chat(room: str = "general", after: int = 0, upto: int = -1, rev: int = -1):
+    """Messages d'un salon (lecture libre). upto : position du spectateur dans un salon de match (-1 : le direct)."""
+    _chat_on()
+    return chat_read(room, max(0, after), None if upto < 0 else upto, rev)
+
+
+@app.post("/api/chat/status")
+async def api_chat_status(req: Request):
+    _chat_on()
+    body = await _chat_body(req)
+    return chat_status(player_by_token(body.get("token")))
+
+
+@app.post("/api/chat/post")
+async def api_chat_post(req: Request):
+    _chat_on()
+    body = await _chat_body(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(403, "account_required")
+    return chat_post(p, body.get("room"), body.get("body"), body.get("at"), _ip(req))
+
+
+@app.post("/api/chat/delete")
+async def api_chat_delete(req: Request):
+    _chat_on()
+    body = await _chat_body(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(403, "account_required")
+    try:
+        return chat_delete(p, int(body.get("id")))
+    except (TypeError, ValueError):
+        raise HTTPException(404, "message_not_found")
+
+
+@app.post("/api/chat/report")
+async def api_chat_report(req: Request):
+    _chat_on()
+    body = await _chat_body(req)
+    try:
+        mid = int(body.get("id"))
+    except (TypeError, ValueError):
+        raise HTTPException(404, "message_not_found")
+    return chat_report(player_by_token(body.get("token")), mid, body.get("reason"))
+
+
+@app.post("/api/admin/chat")
+async def api_admin_chat(req: Request):
+    """Modération (GC_ADMIN_KEY ; marche aussi chat coupé). {key, action, …} : reports · author {a} · hide {id, reason}
+    · unhide {id} · ban {a, days (0 = définitif), reason} · unban {a} · post {room, body} · purge."""
+    body = await _chat_body(req)
+    _chat_admin(req, body)
+    act = body.get("action")
+    try:
+        if act == "reports":
+            return chat_admin_reports()
+        if act == "author":
+            return chat_admin_author(body.get("a"))
+        if act in ("hide", "unhide"):
+            return chat_admin_hide(int(body.get("id")), act == "hide", body.get("reason"))
+        if act == "ban":
+            return chat_admin_ban(body.get("a"), body.get("days", 0), body.get("reason"))
+        if act == "unban":
+            return chat_admin_unban(body.get("a"))
+        if act == "post":
+            return chat_admin_post(body.get("room") or "general", body.get("body"))
+        if act == "purge":
+            return {"deleted": chat_purge()}
+    except (TypeError, ValueError):
+        raise HTTPException(400, "bad_request")
+    raise HTTPException(400, "unknown_action")
+
+
+@app.get("/admin/chat", response_class=HTMLResponse)
+def admin_chat_page():
+    """Page de modération (en français : pour l'administrateur). La clé est tapée dans la page, jamais dans l'adresse."""
+    _chat_on()
+    with open(os.path.join(HERE, "static", "admin_chat.html"), encoding="utf-8") as fh:
+        return HTMLResponse(fh.read(), headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
+                                                "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"})
 
 
 # ------------------------------------------------------------------ exhibitions (matchs hors calendrier)

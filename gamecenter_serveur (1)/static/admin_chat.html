@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Modération du chat · Snapline</title>
+<script>(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")})();</script>
+<style>
+  :root{--bg:#F4F6FA;--card:#fff;--ink:#121726;--ink-2:#4A5468;--line:#DDE3EE;--accent:#1E5C78;--bad:#B23A2F;--ok:#2F7A4A}
+  :root[data-theme="dark"]{--bg:#0B0E1A;--card:#141A2B;--ink:#EEF2FA;--ink-2:#AEB8CC;--line:#262F45;--accent:#2EE6FF;--bad:#FF7A6E;--ok:#6FD39A}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:900px;margin:0 auto;padding:24px 16px 64px}
+  h1{font-size:24px;margin:0 0 4px} h2{font-size:17px;margin:0 0 10px}
+  p,li,small{color:var(--ink-2)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 14px}
+  label{display:block;font-weight:600;margin:0 0 4px;color:var(--ink)}
+  input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;box-sizing:border-box}
+  button{font:inherit;font-weight:600;min-height:40px;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+  button.bad{border-color:var(--bad);color:var(--bad)}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .row > div{flex:1 1 180px}
+  .msg{border-top:1px solid var(--line);padding:12px 0}
+  .msg:first-child{border-top:0}
+  .meta{font-size:13px;color:var(--ink-2);display:flex;gap:8px;flex-wrap:wrap}
+  .meta b{color:var(--ink)}
+  .body{margin:6px 0;overflow-wrap:anywhere;white-space:pre-wrap}
+  .tag{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid var(--line)}
+  .tag.hid{color:var(--bad);border-color:var(--bad)}
+  .acts{display:flex;gap:6px;flex-wrap:wrap}
+  #out{min-height:1.5em;font-weight:600}
+  #out.err{color:var(--bad)} #out.ok{color:var(--ok)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Modération du chat</h1>
+  <p>Messages signalés ou masqués, bannissements, message de l'équipe. Clé : <code>GC_ADMIN_KEY</code> (gardée dans
+    cet onglet seulement, effacée à sa fermeture).</p>
+
+  <section id="login">
+    <form id="keyForm" class="row">
+      <div><label for="key">Clé d'administration</label><input id="key" type="password" autocomplete="off" required></div>
+      <button type="submit">Ouvrir</button>
+    </form>
+  </section>
+
+  <p id="out" role="status" aria-live="polite"></p>
+
+  <div id="app" hidden>
+    <section>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">À revoir <small id="nRep"></small></h2>
+        <div class="acts"><button type="button" id="reload">Actualiser</button><button type="button" id="logout">Fermer la session</button></div>
+      </div>
+      <div id="reports"></div>
+    </section>
+
+    <section>
+      <h2>Messages d'un auteur</h2>
+      <form id="authorForm" class="row">
+        <div><label for="authorA">Identifiant public (a)</label><input id="authorA" required pattern="[0-9a-f]{10}" placeholder="ex. 8ba318ee9f"></div>
+        <button type="submit">Voir ses messages</button>
+      </form>
+      <div id="author"></div>
+    </section>
+
+    <section>
+      <h2>Bannissements</h2>
+      <div id="bans"></div>
+    </section>
+
+    <section>
+      <h2>Message de l'équipe (badge « Snapline »)</h2>
+      <form id="postForm">
+        <label for="postBody">Texte (280 caractères, en anglais pour les joueurs)</label>
+        <textarea id="postBody" maxlength="280" rows="2" required></textarea>
+        <div class="row" style="margin-top:8px"><button type="submit">Publier dans General</button></div>
+      </form>
+    </section>
+  </div>
+</main>
+<script>
+(function(){
+  "use strict";
+  var KEY_STORE="gc-admin-chat-key";
+  var $=function(id){ return document.getElementById(id); };
+  var key=""; try{ key=sessionStorage.getItem(KEY_STORE)||""; }catch(e){}
+  var REASONS={spam:"spam",abuse:"insultes",hate:"haine",spoiler:"spoiler",other:"autre"};
+  var ERR={forbidden:"Clé refusée.",too_many:"Trop d'essais : attendre 15 min.",message_not_found:"Message introuvable (effacé ou purgé).",
+    author_not_found:"Auteur introuvable.",chat_off:"Le chat est coupé (GC_CHAT=off).",empty:"Texte vide.",too_long:"280 caractères au plus."};
+
+  function say(t,cls){ var o=$("out"); o.textContent=t||""; o.className=cls||""; }
+  function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  function when(ms){ if(!ms) return "définitif"; try{ return new Date(ms).toLocaleString("fr-BE",{dateStyle:"medium",timeStyle:"short"}); }catch(e){ return String(ms); } }
+  function btn(label,fn,cls){ var b=el("button",cls,label); b.type="button"; b.addEventListener("click",fn); return b; }
+
+  function call(body){
+    body.key=key;
+    return fetch("/api/admin/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),cache:"no-store"})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+        if(!r.ok) throw new Error(ERR[j.detail]||("Erreur "+r.status+(j.detail?" : "+j.detail:"")));
+        return j; }); });
+  }
+
+  function askReason(def){ var r=window.prompt("Motif montré à l'auteur (en anglais, ex. « Insults », « Spam », « Hate speech ») :",def||"Breaks the chat rules"); return r==null?null:r.trim()||def; }
+
+  function msgEl(m){
+    var d=el("div","msg"), meta=el("div","meta");
+    meta.appendChild(el("b",null,m.n)); meta.appendChild(el("span",null,"a = "+m.a));
+    meta.appendChild(el("span",null,m.room)); meta.appendChild(el("span",null,when(m.ts)));
+    if(m.hidden) meta.appendChild(el("span","tag hid","masqué"+(m.reason?" · "+m.reason:"")));
+    var rep=Object.keys(m.reports||{}).map(function(k){ return (REASONS[k]||k)+" × "+m.reports[k]; }).join(", ");
+    if(rep) meta.appendChild(el("span","tag","signalé : "+rep));
+    d.appendChild(meta); d.appendChild(el("p","body",m.b));
+    var acts=el("div","acts");
+    if(m.hidden) acts.appendChild(btn("Réafficher",function(){ act({action:"unhide",id:m.id},"Message réaffiché (il ne sera plus masqué automatiquement)."); }));
+    else acts.appendChild(btn("Masquer",function(){ var r=askReason(); if(r!=null) act({action:"hide",id:m.id,reason:r},"Message masqué."); },"bad"));
+    if(m.reports&&Object.keys(m.reports).length&&!m.hidden) acts.appendChild(btn("Laisser (revu)",function(){ act({action:"unhide",id:m.id},"Message laissé : marqué comme revu."); }));
+    if(m.a!=="snapline"){
+      acts.appendChild(btn("Bannir 1 jour",function(){ ban(m.a,1); },"bad"));
+      acts.appendChild(btn("7 jours",function(){ ban(m.a,7); },"bad"));
+      acts.appendChild(btn("Définitif",function(){ ban(m.a,0); },"bad"));
+      acts.appendChild(btn("Ses messages",function(){ $("authorA").value=m.a; author(m.a); }));
+    }
+    d.appendChild(acts);
+    return d;
+  }
+  function ban(a,days){
+    var r=askReason("Breaks the chat rules"); if(r==null) return;
+    if(!window.confirm("Bannir "+a+(days?" pendant "+days+" jour(s)":" définitivement")+" ? Ses messages des dernières 24 h seront masqués.")) return;
+    act({action:"ban",a:a,days:days,reason:r},"Auteur banni.");
+  }
+  function act(body,done){ call(body).then(function(){ say(done,"ok"); load(); var a=$("authorA").value; if(a&&!$("author").hidden) author(a,true); }).catch(function(e){ say(e.message,"err"); }); }
+
+  function load(){
+    return call({action:"reports"}).then(function(j){
+      $("login").hidden=true; $("app").hidden=false;
+      var box=$("reports"); box.textContent="";
+      $("nRep").textContent="("+j.reports.length+")";
+      if(!j.reports.length) box.appendChild(el("p",null,"Rien à revoir."));
+      j.reports.forEach(function(m){ box.appendChild(msgEl(m)); });
+      var bx=$("bans"); bx.textContent="";
+      if(!j.bans.length) bx.appendChild(el("p",null,"Aucun bannissement."));
+      j.bans.forEach(function(b){ var d=el("div","msg"), meta=el("div","meta");
+        meta.appendChild(el("b",null,"a = "+b.a)); meta.appendChild(el("span",null,"jusqu'au : "+when(b.until)));
+        meta.appendChild(el("span",null,"motif : "+(b.reason||"—")));
+        d.appendChild(meta); var acts=el("div","acts");
+        acts.appendChild(btn("Lever",function(){ act({action:"unban",a:b.a},"Bannissement levé."); }));
+        acts.appendChild(btn("Ses messages",function(){ $("authorA").value=b.a; author(b.a); }));
+        d.appendChild(acts); bx.appendChild(d); });
+    });
+  }
+  function author(a,quiet){
+    return call({action:"author",a:a}).then(function(j){
+      var box=$("author"); box.textContent=""; box.hidden=false;
+      if(j.ban) box.appendChild(el("p",null,"Banni jusqu'au : "+when(j.ban.until)+" · "+(j.ban.reason||"")));
+      if(!j.messages.length) box.appendChild(el("p",null,"Aucun message gardé."));
+      j.messages.forEach(function(m){ box.appendChild(msgEl(m)); });
+      if(!quiet) say(j.messages.length+" message(s).","ok");
+    }).catch(function(e){ say(e.message,"err"); });
+  }
+
+  $("keyForm").addEventListener("submit",function(e){ e.preventDefault(); key=$("key").value; $("key").value="";
+    load().then(function(){ try{ sessionStorage.setItem(KEY_STORE,key); }catch(_){} say("Session ouverte.","ok"); })
+      .catch(function(err){ key=""; say(err.message,"err"); }); });
+  $("reload").addEventListener("click",function(){ load().then(function(){ say("À jour.","ok"); }).catch(function(e){ say(e.message,"err"); }); });
+  $("logout").addEventListener("click",function(){ key=""; try{ sessionStorage.removeItem(KEY_STORE); }catch(_){} $("app").hidden=true; $("login").hidden=false; say("Session fermée."); });
+  $("authorForm").addEventListener("submit",function(e){ e.preventDefault(); author($("authorA").value.trim()); });
+  $("postForm").addEventListener("submit",function(e){ e.preventDefault(); var t=$("postBody").value.trim(); if(!t) return;
+    call({action:"post",room:"general",body:t}).then(function(){ $("postBody").value=""; say("Message publié dans General.","ok"); }).catch(function(err){ say(err.message,"err"); }); });
+  if(key) load().catch(function(){ key=""; try{ sessionStorage.removeItem(KEY_STORE); }catch(_){} });
+})();
+</script>
+</body>
+</html>

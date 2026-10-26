@@ -89,6 +89,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : classement des joueurs (Ranking)" node outils/site/test_classement.js
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js
   lancer "Site : ligues privées" node outils/site/test_ligues.js
+  lancer "Site : chat, salon General (signaler, masquer, effacer, administration)" node outils/site/test_chat.js
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js
   lancer "Site : publicités, mentions, page légale" node outils/site/test_publicites.js
   lancer "Notebook : Game Center (cellule 427)" node outils/site/test_cellule427.js

@@ -1,0 +1,124 @@
+# Filtre de mots du chat (serveur.py, section « chat »). Relu tout seul quand le fichier change (pas de redémarrage).
+# Fichier jamais servi au public.
+#
+# Comparaison : sans accent, minuscules, chiffres « leet » (0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s) et sosies
+# cyrilliques ramenés aux lettres latines ; « f u c k » et « f.u.c.k » sont lus comme un mot. Chaque groupe de lettres
+# demande AU MOINS autant de lettres : « fuck » attrape « fuuuck », « ass » n'attraperait pas « as ».
+#   mot      : ce mot seulement (« coon » n'attrape pas « raccoon »)
+#   mot*     : tout mot qui commence ainsi (« fuck* » : fucking, fucker…)
+#   deux mots: l'expression, mots qui se suivent (liste [bloque] seulement)
+# [bloque] : message refusé (code message_blocked). [masque] : le mot devient des astérisques, le message passe.
+# Éviter les mots qui ont un sens innocent courant (ex. « niggle », « Niger », « con » en anglais, « pédale » de vélo).
+
+[bloque]
+# haine (anglais)
+nigger*
+nigga*
+niggaz
+faggot*
+fag
+fags
+kike
+kikes
+spic
+spics
+wetback*
+tranny
+trannies
+gook
+gooks
+raghead*
+towelhead*
+beaner*
+paki
+pakis
+negro
+negroes
+# haine (français)
+negre*
+negresse*
+bougnoul*
+youpin*
+tarlouz*
+bicot*
+chinetoque*
+pede
+pedes
+sale juif
+sale juive
+sale arabe
+sale noir
+sale noire
+# haine (néerlandais)
+kankerjood*
+kankerneger*
+# appels à se faire du mal, nazisme
+kys
+kill yourself
+kill urself
+kill your self
+go die
+neck yourself
+va te pendre
+suicide toi
+sieg heil
+heil hitler
+
+[masque]
+# anglais
+fuck*
+motherfuck*
+mofo
+shit
+shits
+shitty
+shithead*
+bullshit
+bitch*
+asshole*
+arsehole*
+dumbass*
+jackass*
+dick
+dicks
+dickhead*
+cunt*
+bastard*
+wanker*
+twat*
+prick
+pricks
+slut*
+whore*
+retard
+retards
+retarded
+chink
+chinks
+coon
+coons
+dyke
+dykes
+stfu
+# français
+merde*
+putain*
+connard*
+connasse*
+conne
+salope*
+salaud*
+encule*
+batard*
+pute
+putes
+fdp
+ntm
+pd
+# néerlandais
+klootzak*
+kutwijf*
+hoer
+hoeren
+godverdomme
+tering

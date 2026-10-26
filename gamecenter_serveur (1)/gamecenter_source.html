@@ -927,6 +927,66 @@
   .lg-manage{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   #viewLeagues .card-h{flex-wrap:wrap;row-gap:8px}#viewLeagues .seg button{white-space:nowrap}
   @media (max-width:760px){ .lg-grid{grid-template-columns:minmax(0,1fr)} }
+  /* ---------- Chat (bloc 3, étape 2): General ----------
+     Built by the script only when the server says the chat is on (#gf-server .chat): nothing here otherwise.
+     A side panel over the page (no scrim: the board stays usable) from 761 px; the whole screen on a phone. */
+  .chat-dot{position:absolute;top:6px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--l1)}
+  .chat-dot[hidden]{display:none}
+  .chat-top{display:none;position:relative}
+  .chat-top .chat-dot{top:4px;right:4px}
+  @media (max-width:760px){ .chat-top{display:inline-flex} }
+  .chat-panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);z-index:270;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);border-left:1px solid var(--line-2);box-shadow:-18px 0 40px -18px rgba(0,0,0,.35);transform:translateX(105%);visibility:hidden;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .28s;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .chat-panel.open{transform:none;visibility:visible;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s}
+  @media (prefers-reduced-motion:reduce){ .chat-panel,.chat-panel.open{transition:none} }
+  @media (max-width:760px){ .chat-panel{width:100%;border-left:0} }
+  .chat-head{display:flex;align-items:center;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+  .chat-head h2{margin:0;font:700 18px/1.2 var(--f-display);letter-spacing:.01em}
+  .chat-head p{margin:2px 0 0;font-size:12px;color:var(--ink-3)}
+  .chat-head .grow{flex:1}
+  .chat-x{width:44px;height:44px;display:grid;place-items:center;border-radius:var(--r-md);border:1px solid var(--line);background:var(--l1);color:var(--ink-2);cursor:pointer}
+  .chat-x svg{width:18px;height:18px}
+  .chat-rules{margin:0;padding:8px 16px;font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--line)}
+  .chat-rules a{color:var(--ink-2)}
+  .chat-note{margin:8px 16px 0;padding:10px 12px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--l1);font-size:12.5px;color:var(--ink-2);display:flex;gap:10px;align-items:flex-start}
+  .chat-note p{margin:0;flex:1;overflow-wrap:anywhere}
+  .chat-note b{color:var(--ink)}
+  .chat-note button{border:0;background:none;color:var(--ink-3);cursor:pointer;font-weight:600;padding:2px 4px;min-height:32px}
+  .chat-log{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 8px 12px;display:flex;flex-direction:column;gap:2px}
+  .chat-empty{margin:auto;padding:24px;text-align:center;color:var(--ink-3);font-size:13px}
+  .chat-empty b{display:block;color:var(--ink);font-size:14px;margin-bottom:4px}
+  .chat-msg{padding:7px 8px;border-radius:var(--r-md)}
+  .chat-msg:hover,.chat-msg:focus-within{background:var(--l1)}
+  .chat-meta{display:flex;align-items:center;gap:6px;min-height:24px;font-size:12px;color:var(--ink-3)}
+  .chat-n{font-weight:700;color:var(--ink);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+  .chat-t{font:700 10px/1 var(--f-mono);letter-spacing:.04em;padding:3px 5px;border-radius:4px;border:1px solid var(--line-2);color:var(--ink-2)}
+  .chat-adm{font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:4px;background:var(--cyan);color:var(--cyan-ink)}
+  .chat-you{font-size:11px;color:var(--ink-3)}
+  .chat-time{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .chat-more{width:32px;height:32px;margin:-4px -2px -4px 0;display:grid;place-items:center;border:0;border-radius:var(--r-md);background:none;color:var(--ink-3);cursor:pointer}
+  .chat-more svg{width:16px;height:16px}
+  .chat-more[aria-expanded="true"]{background:var(--l2);color:var(--ink)}
+  @media (pointer:coarse){ .chat-more{width:44px;height:44px;margin:-10px -6px -10px 0} }
+  .chat-b{margin:2px 0 0;font-size:14px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere}
+  .chat-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chat-acts p{width:100%;margin:0;font-size:12px;color:var(--ink-2)}
+  .chat-acts button{min-height:36px;padding:0 12px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--l1);color:var(--ink);font:600 12.5px var(--f-ui);cursor:pointer}
+  .chat-acts button.warn{border-color:var(--pink);color:var(--pink)}
+  @media (pointer:coarse){ .chat-acts button{min-height:44px} }
+  .chat-foot{border-top:1px solid var(--line);padding:10px 16px 14px}
+  .chat-foot label{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+  .chat-count{font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink-3)}
+  .chat-count.over{color:var(--pink);font-weight:700}
+  .chat-form{display:flex;gap:8px}
+  .chat-form input{flex:1;min-width:0;height:44px;padding:0 12px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--l1);color:var(--ink);font:16px var(--f-ui)}
+  .chat-form button{height:44px;padding:0 16px;border-radius:var(--r-md);border:0;background:var(--cyan);color:var(--cyan-ink);font:700 13px var(--f-ui);cursor:pointer}
+  .chat-form button:disabled{opacity:.5;cursor:default}
+  .chat-msgline{min-height:18px;margin:6px 0 0;font-size:12px;color:var(--ink-2)}
+  .chat-msgline.err{color:var(--pink)}
+  .chat-cant{font-size:13px;color:var(--ink-2);margin:0 0 8px}
+  .chat-cant b{color:var(--ink)}
+  .chat-muted{margin:6px 0 0;font-size:12px;color:var(--ink-3)}
+  .chat-muted button{border:0;background:none;padding:0;color:var(--ink-2);text-decoration:underline;cursor:pointer;font:inherit;min-height:24px}
+  .chat-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .tr-row{display:grid;grid-template-columns:22px 70px 1fr auto;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding:6px 0}
   .tr-row span:first-child{font:700 italic 12px var(--f-display)} .tr-row .w{color:var(--cyan)} .tr-row .l{color:var(--pink)} .tr-row b{font:600 12.5px var(--f-mono);color:var(--ink)}
   .pst.roster td.tl{text-align:left;white-space:normal;color:var(--ink-3);font-size:11.5px}
@@ -5491,6 +5551,7 @@ const modal=document.getElementById('modal');
 let modalGame=null, modalView=null, lastFocus=null;
 function openModal(id){
   const g=byId[id]; if(!g||!g.home||g===pregame) return;
+  if(typeof CH!=='undefined'&&CH.open) chatClose(true);   /* the chat panel gives way to the big screen (no chat in the notebook copy) */
   if(modalGame) closeModal(true);
   if(!modal.contains(document.activeElement)) lastFocus=document.activeElement;
   modalGame=g; if(id!==REPLAY_VIEW_ID) watchRemember('board',id);
@@ -6626,7 +6687,7 @@ function seasonBoot(){
   seasonRefresh(true);
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); joinFromUrl(); }
+  if(SERVER){ chatInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); joinFromUrl(); }
 }
 
 
@@ -7602,6 +7663,7 @@ async function serverPoll(){
     let r; try{ r=await fetch(SERVER.api+'/delta?have='+encodeURIComponent(have),{cache:'no-store',signal:ac?ac.signal:undefined}); } finally{ clearTimeout(to); }
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); POLL_FAIL=0; document.body.classList.remove('srv-off');
+    if(d.chat) chatDelta(d.chat);   /* chat on: newest message in General (the dot on the Chat button) */
     const off=d.now-Date.now(); if(Math.abs(off-SRV_OFF)>1500) SRV_OFF=off;
     if(d.week_start!==SW.week.start){ if(modalGame){ NEW_WEEK=true; return; } location.reload(); return; }   /* nouvelle semaine : jamais pendant un match regardé */
     let changed=false;
@@ -7988,6 +8050,273 @@ document.addEventListener('click',e=>{ if(!SERVER||!e.target.closest) return; co
   const lg=t.closest('[data-lg]'); if(lg&&!lg.disabled){ leagueAction(lg.dataset.lg,lg.dataset.arg); } });
 document.addEventListener('input',e=>{ if(SERVER&&e.target.closest&&e.target.closest('#acForm,#acPwForm')) acErr(''); });
 document.addEventListener('change',e=>{ if(SERVER&&e.target.id==='setName') renameMe(e.target.value); });
+
+/* ---------- Chat (bloc 3, étape 2): the General room ----------
+   Only when the server says the chat is on (SERVER.chat, from GC_CHAT): otherwise nothing is built and nothing is fetched.
+   Reading is open to everyone; writing needs an account. /api/delta carries the last message number (the dot on the
+   Chat button); the open panel asks /api/chat every 3 s (not while the tab is hidden). Every text from the server is
+   put in the page with textContent, never as HTML. Mute is local (this browser only). */
+const CHAT_ON=!!(SERVER&&SERVER.chat);
+const CH={open:false,room:'general',msgs:[],nodes:new Map(),last:0,rev:-1,st:null,timer:0,stT:0,busy:false,loaded:false,
+  srvLast:0,menu:null,step:null,lastFocus:null,ann:0,annT:0,annAt:0,footKey:'',off:false,line:'',lineErr:false};
+const CHAT_MAX_DOM=120, CHAT_SEEN_KEY='gc-chat-seen-v1', CHAT_MUTE_KEY='gc-chat-mute-v1', CHAT_NOTE_KEY='gc-chat-notes-v1';
+const CHAT_REASONS=[['spam','Spam'],['abuse','Abuse'],['hate','Hate'],['spoiler','Spoiler'],['other','Other']];
+const CHAT_ERR={chat_read_only:'The chat is read-only for now.',account_required:'Chatting needs a free account.',
+  account_too_new:'New accounts can chat 10 minutes after sign-up.',pseudo_reserved:'Your username looks like a staff name: change it in Settings to chat.',
+  room_not_found:'This chat room is closed.',room_closed:'This chat room is closed.',chat_off:'The chat is closed for now.',
+  empty:'Write a message first.',too_long:'Messages have 280 characters at most.',
+  message_blocked:'This message wasn’t sent: hate and threats break the chat rules.',
+  links_not_allowed:'Links aren’t allowed in the chat. Remove the link to send it.',
+  contact_not_allowed:'Email addresses and phone numbers aren’t allowed: keep your details private.',
+  too_fast:'One message every 3 seconds: send it again in a moment.',too_many:'That’s a lot of messages: wait a minute, then send it again.',
+  duplicate:'You just sent this message.',own_message:'This is your own message.',message_not_found:'This message is no longer in the chat.',
+  banned:'You can’t chat at the moment.'};
+const CHAT_SVG={bubble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5a2 2 0 012-2h11a2 2 0 012 2v8a2 2 0 01-2 2H11l-4.5 3.5v-3.5h0a2 2 0 01-2-2z"/><path d="M8.5 9.5h7M8.5 12.5h4.5" stroke-linecap="round"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg>'};
+function chatMsg(e){ return CHAT_ERR[e&&e.message]||'Something went wrong. Try again in a moment.'; }
+function chatMuted(){ const m=lsGet(CHAT_MUTE_KEY); return Array.isArray(m)?m:[]; }
+function chatEl(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+function chatTime(ts){ const d=new Date(ts), n=new Date(nowMs());
+  return d.toDateString()===n.toDateString()?tStr(ts):dStr(ts)+' '+tStr(ts); }
+
+function chatInit(){
+  if(!CHAT_ON||document.getElementById('chatPanel')) return;
+  const bets=document.querySelector('.rail-btn[data-view="bets"]');
+  if(bets) bets.insertAdjacentHTML('beforebegin',`<button class="rail-btn" type="button" data-chat aria-controls="chatPanel" aria-expanded="false"><span class="chat-dot" hidden></span>${CHAT_SVG.bubble}Chat</button>`);
+  const theme=document.getElementById('themeBtn');
+  if(theme) theme.insertAdjacentHTML('beforebegin',`<button class="chip-btn snd-btn chat-top" type="button" data-chat aria-controls="chatPanel" aria-expanded="false" aria-label="Chat" title="Chat">${CHAT_SVG.bubble}<span class="chat-dot" hidden></span></button>`);
+  document.body.insertAdjacentHTML('beforeend',`<aside class="chat-panel" id="chatPanel" role="dialog" aria-modal="false" aria-labelledby="chatTitle" inert>
+    <div class="chat-head"><div class="grow"><h2 id="chatTitle" tabindex="-1">Chat</h2><p>General · live, may mention scores</p></div>
+      <button class="chat-x" type="button" data-chat-close aria-label="Close the chat">${CHAT_SVG.x}</button></div>
+    <p class="chat-rules">Be kind · no links or personal details · mind spoilers · <a href="/legal#chat" target="_blank" rel="noopener">Rules</a></p>
+    <div id="chatNotes"></div>
+    <div class="chat-log" id="chatLog" role="log" aria-live="off" aria-label="Messages in General" tabindex="0"></div>
+    <p class="chat-sr" id="chatAnn" aria-live="polite"></p>
+    <div class="chat-foot" id="chatFoot"></div>
+  </aside>`);
+  const P=document.getElementById('chatPanel');
+  P.addEventListener('click',chatClick);
+  P.addEventListener('submit',e=>{ if(e.target.id==='chatForm'){ e.preventDefault(); chatSend(); } });
+  P.addEventListener('input',e=>{ if(e.target.id==='chatInput') chatCount(); });
+  document.addEventListener('click',e=>{ const b=e.target.closest('[data-chat]'); if(b){ e.preventDefault(); chatToggle(b); } });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&CH.open&&!modalGame){ e.stopPropagation(); chatClose(); } });
+  document.addEventListener('visibilitychange',()=>{ if(CH.open&&!document.hidden) chatLoad(false); });
+  chatDot();
+}
+function chatDot(){
+  const seen=+lsGet(CHAT_SEEN_KEY)||0, on=!CH.open&&CH.srvLast>seen;
+  document.querySelectorAll('[data-chat]').forEach(b=>{ const d=b.querySelector('.chat-dot'); if(d) d.hidden=!on;
+    b.setAttribute('aria-expanded',String(CH.open));
+    if(b.classList.contains('chat-top')) b.setAttribute('aria-label',on?'Chat, new messages':'Chat');
+    else b.title=on?'Chat · new messages':'Chat'; });
+}
+/* from /api/delta, every 3 s: the newest message in General */
+function chatDelta(c){
+  if(!CHAT_ON||!c) return;
+  CH.srvLast=c.general||0;
+  if(CH.open&&!CH.busy&&(c.general>CH.last||c.rev>CH.rev)) chatLoad(false);
+  chatDot();
+}
+function chatPhone(){ return window.matchMedia&&matchMedia('(max-width:760px)').matches; }
+function chatToggle(btn){ if(CH.open) chatClose(); else chatOpen(btn); }
+function chatOpen(btn){
+  if(!CHAT_ON) return;
+  if(modalGame) closeModal(true);
+  const P=document.getElementById('chatPanel'); if(!P) return;
+  CH.lastFocus=btn||document.activeElement; CH.open=true;
+  P.inert=false; P.classList.add('open');
+  if(chatPhone()){ const a=document.querySelector('.app'); if(a) a.inert=true; }
+  chatDot();
+  chatStatus(); chatLoad(!CH.loaded);
+  clearInterval(CH.timer); CH.timer=setInterval(()=>{ if(!document.hidden) chatLoad(false); },3000);
+  clearInterval(CH.stT); CH.stT=setInterval(()=>{ if(!document.hidden) chatStatus(); },60000);
+  const inp=document.getElementById('chatInput');
+  (inp&&!(window.matchMedia&&matchMedia('(pointer:coarse)').matches)?inp:document.getElementById('chatTitle')).focus({preventScroll:true});
+}
+function chatClose(keepFocus){
+  if(!CH.open) return;
+  const P=document.getElementById('chatPanel');
+  CH.open=false; clearInterval(CH.timer); clearInterval(CH.stT);
+  P.classList.remove('open'); P.inert=true;
+  const a=document.querySelector('.app'); if(a) a.inert=false;
+  chatMenu(null);
+  chatDot();
+  if(!keepFocus&&CH.lastFocus&&document.contains(CH.lastFocus)&&CH.lastFocus.offsetParent!==null) CH.lastFocus.focus({preventScroll:true});
+  else if(!keepFocus){ const b=document.querySelector(chatPhone()?'.chat-top':'.rail-btn[data-chat]'); if(b) b.focus({preventScroll:true}); }
+}
+
+/* ---- messages ---- */
+async function chatLoad(first){
+  if(CH.busy||CH.off) return; CH.busy=true;
+  try{
+    for(let k=0;k<6;k++){
+      const r=await api(`/chat?room=${CH.room}&after=${first?0:CH.last}&rev=${first?-1:CH.rev}`);
+      if(r.reset&&!first){ first=true; continue; }        /* too many removals missed: load the room again */
+      if(first){ CH.msgs=[]; CH.nodes.clear(); CH.menu=null; document.getElementById('chatLog').textContent=''; }
+      const gone=new Set(r.gone||[]);
+      if(gone.size){ CH.msgs=CH.msgs.filter(m=>!gone.has(m.id)); for(const id of gone){ const n=CH.nodes.get(id); if(n){ if(CH.menu===id) CH.menu=null; n.remove(); CH.nodes.delete(id); } } }
+      chatAdd(r.msgs||[],!first);
+      CH.last=Math.max(CH.last,r.last||0); CH.rev=r.rev; CH.loaded=true;
+      if(!r.more) break;
+      first=false;
+    }
+    if(CH.open){ lsSet(CHAT_SEEN_KEY,CH.last); chatDot(); }
+    if(!CH.msgs.length) chatEmpty();
+  }catch(e){ if(e.status===404){ CH.off=true; chatFoot(); } }
+  finally{ CH.busy=false; }
+}
+function chatEmpty(){
+  const log=document.getElementById('chatLog');
+  if(!log.querySelector('.chat-empty')) log.appendChild(Object.assign(chatEl('div','chat-empty'),{innerHTML:'<b>No messages yet</b>Say hello to the other fans.'}));
+}
+function chatAdd(list,announce){
+  const log=document.getElementById('chatLog'), muted=new Set(chatMuted().map(x=>x.a));
+  const atEnd=log.scrollHeight-log.scrollTop-log.clientHeight<80;
+  let others=0;
+  for(const m of list){
+    if(CH.nodes.has(m.id)) continue;
+    CH.msgs.push(m);
+    const empty=log.querySelector('.chat-empty'); if(empty) empty.remove();
+    const n=chatNode(m); n.hidden=muted.has(m.a); log.appendChild(n); CH.nodes.set(m.id,n);
+    if(!n.hidden&&!(CH.st&&m.a===CH.st.a)) others++;
+  }
+  while(CH.msgs.length>CHAT_MAX_DOM){ const m=CH.msgs.shift(), n=CH.nodes.get(m.id); if(n) n.remove(); CH.nodes.delete(m.id); }
+  if(atEnd||!announce) log.scrollTop=log.scrollHeight;
+  if(announce&&others) chatAnnounce(others);
+}
+/* screen readers: "3 new messages", at most every 10 s, and only while the chat has the focus */
+function chatAnnounce(n){
+  const P=document.getElementById('chatPanel'); if(!P.contains(document.activeElement)) return;
+  CH.ann+=n; if(CH.annT) return;
+  const wait=Math.max(0,10000-(Date.now()-CH.annAt));
+  CH.annT=setTimeout(()=>{ const k=CH.ann; CH.ann=0; CH.annT=0; CH.annAt=Date.now();
+    document.getElementById('chatAnn').textContent=k===1?'1 new message':k+' new messages'; },wait);
+}
+function chatNode(m){
+  const mine=CH.st&&CH.st.a&&m.a===CH.st.a;
+  const d=chatEl('div','chat-msg'); d.dataset.id=m.id; d.dataset.a=m.a;
+  const meta=chatEl('div','chat-meta');
+  meta.appendChild(chatEl('span','chat-n',m.n));
+  if(m.adm) meta.appendChild(chatEl('span','chat-adm','Snapline'));
+  else if(m.t&&TEAMS[m.t]){ const t=chatEl('span','chat-t',TEAMS[m.t].abbr); t.title='Favorite team: '+TEAMS[m.t].name; meta.appendChild(t); }
+  if(mine) meta.appendChild(chatEl('span','chat-you','you'));
+  const tm=chatEl('time','chat-time',chatTime(m.ts)); tm.dateTime=new Date(m.ts).toISOString(); meta.appendChild(tm);
+  if(!m.adm){ const b=chatEl('button','chat-more'); b.type='button'; b.dataset.chatMenu=m.id; b.setAttribute('aria-expanded','false');
+    b.setAttribute('aria-label',mine?'Actions for your message':'Actions for '+m.n+'’s message'); b.innerHTML=CHAT_SVG.more; meta.appendChild(b); }
+  d.appendChild(meta);
+  d.appendChild(chatEl('p','chat-b',m.b));
+  return d;
+}
+/* the actions under a message: Report (with a reason) and Mute, or Delete for your own */
+function chatMenu(id,step,note){
+  if(CH.menu!=null){ const o=CH.nodes.get(CH.menu); if(o){ const a=o.querySelector('.chat-acts'); if(a) a.remove(); const b=o.querySelector('.chat-more'); if(b) b.setAttribute('aria-expanded','false'); } }
+  CH.menu=id; CH.step=step||null;
+  if(id==null) return;
+  const n=CH.nodes.get(id), m=CH.msgs.find(x=>x.id===id); if(!n||!m){ CH.menu=null; return; }
+  const mine=CH.st&&CH.st.a&&m.a===CH.st.a, acts=chatEl('div','chat-acts');
+  acts.setAttribute('role','group'); acts.setAttribute('aria-label','Message actions');
+  const btn=(label,act,arg,cls)=>{ const b=chatEl('button',cls||'',label); b.type='button'; b.dataset.chatAct=act; if(arg!=null) b.dataset.arg=arg; acts.appendChild(b); return b; };
+  if(note) acts.appendChild(chatEl('p','',note));
+  else if(mine){
+    if(step==='del'){ acts.appendChild(chatEl('p','','Delete this message for everyone?')); btn('Delete','del-yes',null,'warn'); btn('Cancel','close'); }
+    else { btn('Delete','del'); btn('Close','close'); }
+  } else if(step==='report'){
+    acts.appendChild(chatEl('p','','Why are you reporting this message?'));
+    for(const [k,l] of CHAT_REASONS) btn(l,'report-yes',k);
+    btn('Cancel','close');
+  } else {
+    btn('Report','report'); btn('Mute '+m.n,'mute'); btn('Close','close');
+  }
+  n.appendChild(acts);
+  const b=n.querySelector('.chat-more'); if(b) b.setAttribute('aria-expanded','true');
+  const f=acts.querySelector('button'); if(f) f.focus({preventScroll:true});
+  const log=document.getElementById('chatLog'); if(n.offsetTop+n.offsetHeight>log.scrollTop+log.clientHeight) n.scrollIntoView({block:'nearest'});
+}
+async function chatClick(e){
+  const t=e.target;
+  if(t.closest('[data-chat-close]')){ chatClose(); return; }
+  if(t.closest('[data-view-go]')){ chatClose(true); return; }    /* « Create an account »: the page goes to Settings */
+  const mb=t.closest('[data-chat-menu]'); if(mb){ const id=+mb.dataset.chatMenu; chatMenu(CH.menu===id?null:id); if(CH.menu==null) mb.focus(); return; }
+  const nb=t.closest('[data-chat-note]'); if(nb){ const s=lsGet(CHAT_NOTE_KEY)||[]; s.push(+nb.dataset.chatNote); lsSet(CHAT_NOTE_KEY,s.slice(-50)); chatNotes(); return; }
+  if(t.closest('[data-chat-unmute]')){ lsSet(CHAT_MUTE_KEY,[]); CH.nodes.forEach(n=>n.hidden=false); chatFoot(true); return; }
+  const ab=t.closest('[data-chat-act]'); if(!ab) return;
+  const id=CH.menu, m=CH.msgs.find(x=>x.id===id), act=ab.dataset.chatAct; if(!m) return;
+  const back=()=>{ const n=CH.nodes.get(id), b=n&&n.querySelector('.chat-more'); chatMenu(null); if(b) b.focus(); };
+  if(act==='close') return back();
+  if(act==='del') return chatMenu(id,'del');
+  if(act==='report'){ if(!(PLAYER&&PLAYER.account&&PLAYER.token)) return chatMenu(id,null,'Reporting needs a free account. You can mute this person right away.'); return chatMenu(id,'report'); }
+  if(act==='mute'){ const l=chatMuted().filter(x=>x.a!==m.a); l.push({a:m.a,n:m.n}); lsSet(CHAT_MUTE_KEY,l.slice(-200));
+    CH.nodes.forEach(n=>{ if(n.dataset.a===m.a) n.hidden=true; }); chatMenu(null); chatFoot(true);
+    chatLine(`${m.n} is muted on this device.`); document.getElementById('chatLog').focus(); return; }
+  try{
+    if(act==='del-yes'){ await api('/chat/delete',{method:'POST',body:JSON.stringify({token:PLAYER.token,id})});
+      CH.msgs=CH.msgs.filter(x=>x.id!==id); const n=CH.nodes.get(id); chatMenu(null); if(n) n.remove(); CH.nodes.delete(id);
+      chatLine('Your message was deleted.'); document.getElementById('chatLog').focus(); }
+    else if(act==='report-yes'){ const r=await api('/chat/report',{method:'POST',body:JSON.stringify({token:PLAYER.token,id,reason:ab.dataset.arg})});
+      chatMenu(id,null,r.hidden?'Thanks. This message is hidden until we review it.':'Thanks. We’ll review this message.'); }
+  }catch(err){ chatMenu(id,null,chatMsg(err)); }
+}
+
+/* ---- who am I, what can I do ---- */
+async function chatStatus(){
+  try{ CH.st=await api('/chat/status',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token||''})}); CH.off=false; }
+  catch(e){ if(e.status===404) CH.off=true; }
+  chatFoot(); chatNotes();
+  if(CH.st&&CH.st.a) CH.nodes.forEach((n,id)=>{ const m=CH.msgs.find(x=>x.id===id); if(m&&m.a===CH.st.a&&!n.querySelector('.chat-you')){ const k=chatNode(m); k.hidden=n.hidden; n.replaceWith(k); CH.nodes.set(id,k); } });
+}
+function chatNotes(){
+  const box=document.getElementById('chatNotes'); if(!box) return;
+  const done=new Set(lsGet(CHAT_NOTE_KEY)||[]), list=((CH.st&&CH.st.notices)||[]).filter(x=>!done.has(x.id)).slice(0,3);
+  box.textContent='';
+  for(const x of list){ const d=chatEl('div','chat-note'), p=chatEl('p');
+    p.appendChild(chatEl('b','','Your message was hidden: ')); p.appendChild(document.createTextNode('“'+x.b+'” · '+(x.reason||'It breaks the chat rules.')));
+    d.appendChild(p); const b=chatEl('button','','Dismiss'); b.type='button'; b.dataset.chatNote=x.id; d.appendChild(b); box.appendChild(d); }
+}
+function chatFoot(force){
+  const foot=document.getElementById('chatFoot'); if(!foot) return;
+  const st=CH.st, nm=chatMuted().length;
+  const key=[CH.off,st&&st.can_write,st&&st.why,st&&JSON.stringify(st.ban),PLAYER&&PLAYER.name,nm].join('|');
+  if(!force&&key===CH.footKey) return; CH.footKey=key;
+  const keep=document.getElementById('chatInput'), draft=keep?keep.value:'';
+  const muted=nm?`<p class="chat-muted">${nm} ${nm===1?'person':'people'} muted on this device · <button type="button" data-chat-unmute>Unmute all</button></p>`:'';
+  if(CH.off){ foot.innerHTML='<p class="chat-cant">The chat is closed for now.</p>'; return; }
+  if(!st){ foot.innerHTML='<p class="chat-cant">Loading…</p>'; return; }
+  if(st.can_write){
+    foot.innerHTML=`<form id="chatForm"><label for="chatInput"><span>Message as <b></b></span><span class="chat-count" id="chatCount"></span></label>
+      <div class="chat-form"><input id="chatInput" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" maxlength="600" aria-describedby="chatLine"><button type="submit" id="chatSendBtn">Send</button></div>
+      <p class="chat-msgline" id="chatLine" role="status"></p></form>${muted}`;
+    foot.querySelector('label b').textContent=(PLAYER&&PLAYER.name)||'';
+    const inp=document.getElementById('chatInput'); inp.value=draft; chatCount(); chatLine(CH.line,CH.lineErr);
+    return;
+  }
+  let html;
+  if(st.why==='account_required') html=`<p class="chat-cant"><b>Read along, or create a free account to chat.</b></p><button type="button" class="chip-btn" data-view-go="settings">Create an account</button>`;
+  else if(st.why==='banned'&&st.ban) html=`<p class="chat-cant" id="chatBan"></p>`;
+  else if(st.why==='pseudo_reserved') html=`<p class="chat-cant">${esc(CHAT_ERR.pseudo_reserved)}</p><button type="button" class="chip-btn" data-view-go="settings">Open Settings</button>`;
+  else html=`<p class="chat-cant">${esc(CHAT_ERR[st.why]||CHAT_ERR.chat_read_only)}</p>`;
+  foot.innerHTML=html+muted;
+  const ban=document.getElementById('chatBan');
+  if(ban) ban.textContent=(st.ban.until?`You can chat again on ${dStr(st.ban.until)} at ${tStr(st.ban.until)}.`:'You can no longer chat.')+' Reason: '+(st.ban.reason||'the chat rules')+'. To ask for a review, write to the contact on the legal page.';
+}
+function chatLine(t,err){ CH.line=t||''; CH.lineErr=!!err; const l=document.getElementById('chatLine'); if(!l) return; l.textContent=CH.line; l.classList.toggle('err',CH.lineErr); }
+function chatCount(){
+  const inp=document.getElementById('chatInput'), c=document.getElementById('chatCount'), b=document.getElementById('chatSendBtn'); if(!inp||!c) return;
+  const n=[...inp.value.trim()].length, max=(CH.st&&CH.st.max_len)||280;
+  c.textContent=n>=max-40?`${n} / ${max}`:''; c.classList.toggle('over',n>max);
+  if(b) b.disabled=n===0||n>max||CH.sending;
+}
+async function chatSend(){
+  const inp=document.getElementById('chatInput'); if(!inp||CH.sending) return;
+  const body=inp.value.trim(); if(!body){ chatLine(CHAT_ERR.empty,true); return; }
+  CH.sending=true; chatCount();
+  try{ const r=await api('/chat/post',{method:'POST',body:JSON.stringify({token:PLAYER.token,room:CH.room,body})});
+    inp.value=''; chatLine(r.masked?'Sent. Some words were hidden with ***.':'');
+    chatAdd([r.msg],false); CH.last=Math.max(CH.last,r.msg.id); lsSet(CHAT_SEEN_KEY,CH.last);
+    const log=document.getElementById('chatLog'); log.scrollTop=log.scrollHeight; }
+  catch(e){ chatLine(chatMsg(e),true); if(['banned','account_too_new','pseudo_reserved','chat_read_only','account_required'].includes(e.message)) chatStatus(); }
+  finally{ CH.sending=false; chatCount(); inp.focus({preventScroll:true}); }
+}
 
 /* ---------------- search: teams, players, coordinators, games, pages ----------------
    One index built from the week on the page (nothing is fetched). Matching ignores case and accents; a word
