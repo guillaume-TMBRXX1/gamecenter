@@ -7,7 +7,8 @@ jeu des franchises avec identite_playbooks.py (même rapport que pour une vraie 
     python3 outils/moteur/semaine_identite.py --identite off           # moteur d'avant la refonte
     python3 outils/moteur/semaine_identite.py --md /tmp/r.md --json /tmp/r.json --graine 500000 --travailleurs 4
 
-Le moteur est chargé une fois (cellules de code jusqu'à 12.2 vicies septies, comme rapport_calibration.py, ≈ 8 min),
+Le moteur est chargé une fois (cellules de code jusqu'à 12.2 vicies sexies, comme rapport_calibration.py, ≈ 8 min,
+puis la cellule d'identité 12.2 vicies septies),
 puis les matchs sont répartis entre des processus fils (fork : le moteur chargé est partagé, ≈ 30 s pour 276 matchs).
 Mêmes graines → mêmes matchs.
 
@@ -23,7 +24,8 @@ sys.path.insert(0, HERE)
 import identite_playbooks as ip      # noqa: E402
 import rapport_calibration as rc     # noqa: E402
 
-JUSQUA = "12.2 vicies septies"       # dernière cellule du moteur avant le test d'équilibre (12.3)
+JUSQUA = "12.2 vicies sexies"        # le moteur jusqu'à la cellule d'avant l'identité…
+CELLULE_IDENTITE = "12.2 vicies septies"   # … puis la cellule d'identité, relue dans le notebook à chaque semaine
 _NS = {}
 
 
@@ -39,15 +41,24 @@ def _jouer(tache):
             "score": (g["home_score"], g["away_score"])}
 
 
-def _relire_identite(ns):
-    """Relit moteur/identite_franchises.py et rebranche l'identité (cellule 12.2 vicies septies) : pour le réglage."""
-    import importlib
-    ns["_id_activer"](False)
-    ns["ID"] = importlib.reload(ns["moteur"].identite_franchises)
-    for k in ("_ID_PLAYS", "_ID_THROW", "_ID_NOUVEAUX"):
-        ns[k].clear()
-    ns["_id_creer_plays"]()
-    ns["_id_activer"](ns["IDENTITE_ENABLED"])
+def _brancher_identite(ns):
+    """Relit moteur/identite_franchises.py et exécute la cellule d'identité (12.2 vicies septies) telle qu'elle est
+    dans le notebook : le moteur chargé une fois sert à chaque réglage (module ou cellule)."""
+    import contextlib, importlib, io
+    importlib.reload(ns["moteur"].identite_franchises)
+    nb = json.load(open(rc.NOTEBOOK, encoding="utf-8"))
+    src = next("".join(c["source"]) for c in nb["cells"]
+               if c["cell_type"] == "code" and CELLULE_IDENTITE in "".join(c["source"])[:400])
+    here = os.getcwd()
+    with tempfile.TemporaryDirectory() as tmp:
+        os.chdir(tmp)
+        try:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                exec(compile(src, "<cellule identité>", "exec"), ns)
+        finally:
+            os.chdir(here)
+    print(out.getvalue().strip(), file=sys.stderr)
 
 
 def semaine(ns, graine, travailleurs, md=None, js=None, garder=None, titre="semaine de test"):
@@ -89,7 +100,7 @@ def semaine(ns, graine, travailleurs, md=None, js=None, garder=None, titre="sema
 
 def boucle(ns, dossier, travailleurs):
     """Attend dossier/demande.json ({md, json, graine}) ; chaque demande est jouée dans un processus fils (moteur
-    chargé intact) après relecture du module d'identité ; dossier/fait.json signale la fin (ou l'erreur)."""
+    chargé intact) après relecture du module et de la cellule d'identité ; dossier/fait.json signale la fin (ou l'erreur)."""
     os.makedirs(dossier, exist_ok=True)
     dem, fait = os.path.join(dossier, "demande.json"), os.path.join(dossier, "fait.json")
     print(f"prêt : {dem}", file=sys.stderr)
@@ -105,7 +116,7 @@ def boucle(ns, dossier, travailleurs):
         if pid == 0:
             code = 0
             try:
-                _relire_identite(ns)
+                _brancher_identite(ns)
                 semaine(ns, d.get("graine", 500_000), travailleurs, d.get("md"), d.get("json"))
                 json.dump({"ok": True}, open(fait, "w"))
             except Exception as e:                      # noqa: BLE001 — l'erreur va dans fait.json
@@ -135,6 +146,7 @@ def main():
     if a.boucle:
         boucle(ns, a.boucle, a.travailleurs)
         return
+    _brancher_identite(ns)
     semaine(ns, a.graine, a.travailleurs, a.md, a.json, a.garder,
             "semaine de test" + (f" (identité {a.identite})" if a.identite else ""))
 
