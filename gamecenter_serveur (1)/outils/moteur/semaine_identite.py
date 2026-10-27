@@ -99,7 +99,7 @@ def semaine(ns, graine, travailleurs, md=None, js=None, garder=None, titre="sema
 
 
 def boucle(ns, dossier, travailleurs):
-    """Attend dossier/demande.json ({md, json, graine}) ; chaque demande est jouée dans un processus fils (moteur
+    """Attend dossier/demande.json ({md, json, graine, garder}) ; chaque demande est jouée dans un processus fils (moteur
     chargé intact) après relecture du module et de la cellule d'identité ; dossier/fait.json signale la fin (ou l'erreur)."""
     os.makedirs(dossier, exist_ok=True)
     dem, fait = os.path.join(dossier, "demande.json"), os.path.join(dossier, "fait.json")
@@ -117,7 +117,7 @@ def boucle(ns, dossier, travailleurs):
             code = 0
             try:
                 _brancher_identite(ns)
-                semaine(ns, d.get("graine", 500_000), travailleurs, d.get("md"), d.get("json"))
+                semaine(ns, d.get("graine", 500_000), travailleurs, d.get("md"), d.get("json"), d.get("garder"))
                 json.dump({"ok": True}, open(fait, "w"))
             except Exception as e:                      # noqa: BLE001 — l'erreur va dans fait.json
                 import traceback
