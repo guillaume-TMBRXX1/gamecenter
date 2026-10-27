@@ -25,6 +25,7 @@ const duJour=new Set(W.schedule.filter(g=>jour(Date.parse(g.kickoff))===J).map(g
 
 async function server(at){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-jour-'));
+  process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   fs.cpSync(path.join(WEEKS,week),path.join(data,'weeks',week),{recursive:true});
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_DEMO_AT:new Date(at).toISOString()}),stdio:'ignore'});
   for(let i=0;i<160;i++){ try{ const r=await fetch(`http://localhost:${PORT}/api/time`); if(r.ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }

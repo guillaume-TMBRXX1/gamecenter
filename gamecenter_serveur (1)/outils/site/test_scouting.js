@@ -56,6 +56,7 @@ function feedAvecScouting(){
 
 async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-scouting-'));
+  process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   const w=fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort().pop();
   fs.cpSync(path.join(WEEKS,w),path.join(data,'weeks',w),{recursive:true});
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1'}),stdio:'ignore'});

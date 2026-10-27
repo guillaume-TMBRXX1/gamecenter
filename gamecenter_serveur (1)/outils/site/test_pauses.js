@@ -20,6 +20,7 @@ const feedOf=(week,id)=>JSON.parse(fs.readFileSync(path.join(WEEKS,week,'games',
 
 async function server(at,port){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-pauses-'));
+  process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   fs.cpSync(WEEKS,path.join(data,'weeks'),{recursive:true});
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(port)],{cwd:ROOT,env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_DEMO_AT:at}),stdio:'ignore'});
   for(let i=0;i<80;i++){ try{ const r=await fetch(`http://localhost:${port}/api/time`); if(r.ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
