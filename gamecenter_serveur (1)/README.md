@@ -2085,6 +2085,38 @@ Ce qu'on voit sur le site **une fois `GC_CHAT=on` posé sur Railway** (sans la v
   390 px, page légale, aucune erreur JS ; `moteur/tests/test_chat.py` (19 tests) : la page ne reçoit `chat` que chat
   allumé, page légale et `/admin/chat` selon l'interrupteur.
 
+### 73. Le chat — étape 3 : un salon par match, sans spoiler (26/10/2026)
+Toujours derrière `GC_CHAT` (coupé : ni bouton, ni réglage, rien de chargé). Le serveur était prêt depuis l'étape 1
+(section 71 : position `at` bornée au direct, score ou fin de match renvoyés au point le plus loin connu).
+- **Où** : dans le grand écran d'un match de la semaine (en direct, ou en replay depuis le tableau, le calendrier, une
+  équipe…), bouton bulle **Match chat** dans l'en-tête, à côté de « Bigger field ». Pas de salon pour un match hors
+  calendrier (exhibition, fichier GameFeed chargé). Le tiroir s'ouvre à droite du match ; plein écran sur téléphone en
+  vue normale. En **« Bigger field »**, le bouton reste à côté du bouton de sortie (et s'efface avec lui) et le tiroir
+  vit dans le panneau du match : sur un téléphone tenu droit, il suit le match tourné ;
+  le tiroir en prend un peu moins de la moitié et le terrain reste visible. Fermer le match ferme son chat ; ouvrir le chat General ferme le match (étape 2).
+- **Synchronisé à l'action** : la page compte les actions que le spectateur a vues (le score à l'écran est celui
+  d'après ces actions). Au chargement, `/api/chat?upto=<position>` donne les messages écrits jusque-là et, à part, ceux
+  d'après ; ceux-ci apparaissent quand l'écran y arrive (contrôle toutes les 0,5 s). Revenir en arrière dans un replay
+  recharge le salon à la nouvelle position. En direct, tout le monde est au même point. Un message écrit porte la
+  position de son auteur ; s'il parle d'un score qui n'est pas celui de ce moment (ou du résultat), le serveur le met
+  à la fin et l'auteur lit « Sent. It talks about the score or the result, so people watching a replay see it once
+  they reach the live point ». Ses propres messages s'affichent toujours tout de suite.
+- **General, bouclier anti-spoiler** (Settings › **Chat spoiler shield**, allumé par défaut, à côté de « Hide scores ») :
+  un message qui ressemble à un score ou à une fin de match (`sc`) et qui cite une équipe (`teams`) dont un match de la
+  semaine a commencé sans avoir été regardé ici jusqu'au bout (mémoire « vu » du site) est replié : « Possible
+  spoiler · CTX · tap to show ». Son texte n'est mis dans la page qu'au toucher. Ses propres messages et ceux de
+  l'équipe ne sont jamais repliés.
+- **Accessibilité** : tiroir `role="dialog"` nommé (« CTX @ CMT · chat »), Échap ferme d'abord le chat puis le match,
+  le focus revient au bouton ; même liste, mêmes annonces groupées, mêmes menus que General ; le pli est un bouton
+  qui dit l'équipe (« Possible spoiler about Cortex Foxes. Show the message »).
+- **Le code de l'étape 2 est partagé** : General et un match utilisent les mêmes fonctions (liste, menu, signaler,
+  masquer, effacer, pied avec le champ), chacun avec son état (`CH`, `MC`) ; masquer une personne vaut partout.
+- **Tests** : `outils/site/test_chat_match.js` (groupe site ; horloge des serveurs posée par `GC_DEMO_AT` 3 h après le
+  premier coup d'envoi de la dernière semaine, indépendant de l'heure) — pas de chat chat coupé ni hors calendrier ;
+  replay à l'action 10, 45, 5 puis à la fin ; écrire depuis le replay (position, score renvoyé à la fin) ; Échap ;
+  « Bigger field » sur ordinateur et sur un téléphone tenu droit ; bouclier (replié, montré au toucher, réglage, matchs
+  vus) ; aucune erreur JS. `test_chat.js` (étape 2) passe toujours.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

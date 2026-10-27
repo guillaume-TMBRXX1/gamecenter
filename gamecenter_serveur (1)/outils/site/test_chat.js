@@ -173,6 +173,7 @@ const ouvrirChat=async p=>{ await p.click('.rail-btn[data-chat]'); await p.waitF
 
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs.join(' | '):''));
   }catch(e){ console.log('  ✗ ERREUR',e.stack||e); fail++; }
-  finally{ await b.close(); on.kill(); off.kill(); }
+  finally{ await b.close(); on.kill(); off.kill(); await pause(500);
+    for(const d of [on.data,off.data]) try{ fs.rmSync(d,{recursive:true,force:true}); }catch(e){} }   /* copies des données : pas de reste dans le dossier temporaire */
   console.log(fail?`${fail} FAILED`:'OK'); process.exit(fail?1:0);
 })();
