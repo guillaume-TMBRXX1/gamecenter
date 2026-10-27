@@ -22,6 +22,7 @@ const AT=new Date(KO-10*60e3-20e3).toISOString();
 
 async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-rappels-'));
+  process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   fs.cpSync(WEEKS,path.join(data,'weeks'),{recursive:true});
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,
     env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_DEMO_AT:AT,GC_PUSH_FAKE:'1',GC_PUSH_TICK:'2'}),stdio:'ignore'});

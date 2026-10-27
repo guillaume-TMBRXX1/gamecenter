@@ -18,6 +18,7 @@ const AT=new Date(Date.parse(reg.filter(g=>g.slot===3)[0].kickoff)+60e3).toISOSt
 
 async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-visib-'));
+  process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   fs.cpSync(WEEKS,path.join(data,'weeks'),{recursive:true});
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,
     env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_DEMO_AT:AT,GC_PUSH_LOOP:'0',GC_GOOGLE_VERIFY:'abc"123'}),stdio:'ignore'});
