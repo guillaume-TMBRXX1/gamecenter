@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   videos:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright 1.56.1 n'installe pas Chromium sur ubuntu-latest = 26.04 (27/10/2026)
     timeout-minutes: 90
     defaults:
       run:
