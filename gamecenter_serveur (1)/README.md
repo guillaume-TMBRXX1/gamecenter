@@ -2117,6 +2117,22 @@ Toujours derrière `GC_CHAT` (coupé : ni bouton, ni réglage, rien de chargé).
   « Bigger field » sur ordinateur et sur un téléphone tenu droit ; bouclier (replié, montré au toucher, réglage, matchs
   vus) ; aucune erreur JS. `test_chat.js` (étape 2) passe toujours.
 
+### 74. Refonte des playbooks — étape 1 : mesurer l'identité de jeu (27/10/2026)
+Rien ne change dans le moteur ni dans le site : un outil de mesure, et des fiches à valider avant l'étape 2.
+- **Outil** : `python3 outils/moteur/identite_playbooks.py` (dernière semaine ; `--semaines N`, 0 = toutes ;
+  `--weeks` autre dossier ; `--md fichier` rapport Markdown ; `--json fichier`). ≈ 4 s par semaine. Lit les GameFeed
+  des matchs et compte, par franchise, les appels de course ou de passe (genou et spike exclus ; un scramble compte
+  comme la passe appelée) : familles (courtes, intermédiaires, profondes, écrans, play-action / bootleg, RPO, courses
+  intérieures, en force, extérieures, option / QB), concepts, formations, personnel, plays, motion ; situations
+  (1er & 10, 3e et long, courte distance, zone rouge, 4e tentés) ; défense de l'équipe qui défend (concepts, blitz,
+  homme, paquets, fronts, stunts, ballons récupérés). Puis : signatures (concept ≥ 3 % et ≥ 1,5 fois la ligue), plays
+  exclusifs, écart à la ligue et entre franchises (Jensen-Shannon sur les concepts).
+- **Constat (semaine 2026-10-26)** : 248 plays différents dont 3 exclusifs, écart moyen 0,062, 14 paires sous 0,04
+  (BST–MRD 0,019). Rapport : `programme/Refonte_playbooks_mesure_2026-10-26.md` ; fiches et cibles :
+  `programme/Refonte_playbooks_fiches.md`.
+- **Tests** : `moteur/tests/test_identite_playbooks.py` (deux matchs fabriqués : classement, situations, sens
+  d'attaque, défense attribuée, exclusifs, signatures, écarts, rapport).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
