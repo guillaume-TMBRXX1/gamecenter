@@ -95,7 +95,9 @@ class TestCatalogue(unittest.TestCase):
             self.assertTrue(xp.nom_play(pid))
 
     def test_chaque_concept_et_formation_joue(self):
+        from moteur import identite_franchises
         joues_c = {c for _, c in xp.PLAYS.values()}
+        joues_c |= {c for d in identite_franchises.EXCLUSIFS.values() for _, c in d.values()}   # SALEM (identité)
         joues_f = {f for f, _ in xp.PLAYS.values()}
         for c, d in xp.CONCEPTS.items():
             if not d.get("rpo_de"):
