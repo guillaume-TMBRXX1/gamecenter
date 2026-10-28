@@ -298,8 +298,8 @@ Mesure sur une semaine de test (276 matchs, `outils/moteur/semaine_identite.py`,
 
 | | Avant | Après | Cible |
 |---|---|---|---|
-| Écart moyen à la ligue | 0,064 | 0,111 – 0,115 | ≥ 0,10 |
-| Paire la plus proche | BST–MRD 0,019 (14 paires < 0,04) | BST–ONX 0,05 – 0,06 | aucune < 0,04 |
+| Écart moyen à la ligue | 0,064 | 0,109 – 0,115 | ≥ 0,10 |
+| Paire la plus proche | BST–MRD 0,019 (14 paires < 0,04) | BST–ONX 0,044 – 0,06 | aucune < 0,04 |
 | Plays joués / par une seule franchise | 248 / 4 | 352 / 121 | 4 à 6 exclusifs chacune |
 | Franchises avec moins de 3 signatures | 11 | CTX (par fiche), parfois ONX | aucune (sauf CTX) |
 | Passes (ligue) | 63 % | 63-64 % | inchangé |
@@ -336,35 +336,52 @@ combinaison voisine.
 | TDL | Broncos de Mike Shanahan : zone large et bootleg sur la même allure | SINGLEBACK_WING + OUTSIDE_RUN, PISTOL_WING + BOOT, I_FORM_WING + JET_ACTION, SINGLEBACK + DEEP_CROSS, WEAK + OUTSIDE_RUN |
 | CMT | « Beamer Ball » de Frank Beamer (Virginia Tech) : vitesse, trucs, équipes spéciales | GUN_WING + REVERSE, TRIPS + FL_SE_SCREEN, SHOTGUN + END_AROUND, BUNCH + WR_TUNNEL_SCREEN |
 
-Mesures par franchise après la refonte (graine 500 000) — passes, familles principales, motion, plays, écart :
+Mesures par franchise après la refonte et le réglage de l'étape 3 (graine 500 000) — passes, familles principales,
+motion, plays, écart :
 
 | Franchise | Passes | Familles en tête | Motion | Personnel | Plays (exclusifs) | Écart | Signatures |
 |---|---|---|---|---|---|---|---|
-| AEG | 56 % | courtes 27 %, c. intérieures 24 %, intermédiaires 13 % | 6 % | 11 61 %, 12 25 % | 192 (4) | 0.113 | INSIDE_RUN, TRAP, CURL |
-| APX | 67 % | courtes 23 %, c. en force 14 %, intermédiaires 11 % | 21 % | 11 71 %, 21 12 % | 196 (6) | 0.078 | SCREEN, BOOT, QUICK_SLANT, SPOT_SNAG, RPO_POWER |
-| AXM | 73 % | courtes 37 %, intermédiaires 16 %, c. intérieures 12 % | 22 % | 11 81 %, 12 10 % | 191 (5) | 0.072 | STICK, CURL, DRAG, SPOT_SNAG |
-| BST | 57 % | courtes 25 %, c. intérieures 18 %, intermédiaires 17 % | 3 % | 11 63 %, 12 20 % | 187 (4) | 0.077 | INSIDE_RUN, OUTSIDE_RUN, STICK, CURL, CROSS |
-| CMT | 65 % | courtes 20 %, écrans 19 %, intermédiaires 12 % | 14 % | 11 81 %, 21 11 % | 186 (4) | 0.086 | SCREEN, JET_SWEEP, WR_TUNNEL_SCREEN, FL_SE_SCREEN |
-| CPH | 55 % | option 19 %, courtes 16 %, PA / boot 12 % | 23 % | 11 69 %, 21 19 % | 185 (7) | 0.133 | READ_OPTION, BOOT, POWER_READ, INVERTED_VEER |
-| CTD | 63 % | courtes 20 %, intermédiaires 19 %, c. intérieures 18 % | 4 % | 11 67 %, 12 14 % | 173 (5) | 0.084 | DRAW, CURL, PLAY_ACTION, LEVELS |
-| CTX | 63 % | courtes 20 %, intermédiaires 16 %, profondes 12 % | 5 % | 11 74 %, 21 12 % | 220 (7) | 0.029 | READ_OPTION |
-| FRG | 52 % | c. intérieures 22 %, c. en force 19 %, intermédiaires 16 % | 5 % | 11 46 %, 12 31 % | 171 (4) | 0.125 | INSIDE_RUN, BOOT, WHAM, TRAP |
-| GLT | 68 % | écrans 19 %, PA / boot 14 %, c. intérieures 14 % | 4 % | 11 76 %, 21 11 % | 199 (4) | 0.068 | SCREEN, WR_TUNNEL_SCREEN, FL_SE_SCREEN, PLAY_ACTION |
-| GMB | 63 % | courtes 24 %, c. en force 15 %, profondes 13 % | 8 % | 11 71 %, 21 12 % | 204 (5) | 0.074 | POWER, MESH, QUICK_SLANT, RPO_POWER |
-| GRZ | 64 % | intermédiaires 22 %, c. en force 17 %, PA / boot 15 % | 6 % | 11 51 %, 12 31 % | 192 (5) | 0.090 | BOOT, Y_CROSS, SALEM |
-| LTC | 68 % | courtes 25 %, écrans 15 %, RPO 15 % | 10 % | 11 93 %, 21 5 % | 159 (8) | 0.147 | WR_TUNNEL_SCREEN, STICK, MESH, READ_OPTION, FL_SE_SCREEN |
-| MNL | 34 % | c. en force 45 %, PA / boot 16 %, c. intérieures 11 % | 4 % | 21 38 %, 22 27 % | 149 (5) | 0.248 | POWER, COUNTER, BOOT, POP, POWER_TOSS |
-| MRD | 61 % | courtes 22 %, c. intérieures 21 %, écrans 17 % | 4 % | 11 63 %, 21 21 % | 177 (4) | 0.112 | SCREEN, INSIDE_RUN, CURL |
-| MRG | 62 % | PA / boot 19 %, c. en force 16 %, intermédiaires 14 % | 21 % | 11 55 %, 21 21 % | 187 (6) | 0.082 | BOOT, COUNTER, POP, COUNTER_SWEEP |
-| NVA | 67 % | profondes 23 %, PA / boot 21 %, intermédiaires 16 % | 7 % | 11 54 %, 12 23 % | 167 (5) | 0.159 | POWER, PLAY_ACTION, CORNER, BOOT, DEEP_POST |
-| ONX | 61 % | courtes 31 %, c. intérieures 15 %, c. en force 13 % | 6 % | 11 76 %, 21 11 % | 196 (4) | 0.083 | SHORT_OUT, STICK, HITCH, DART_QUICK_DIG |
-| PLS | 70 % | courtes 36 %, écrans 12 %, c. intérieures 12 % | 3 % | 11 95 %, 21 3 % | 88 (5) | 0.195 | DRAW, STICK, SCREEN, SHORT_OUT, DRAG |
-| PRM | 68 % | intermédiaires 26 %, courtes 19 %, c. en force 13 % | 33 % | 11 73 %, 21 13 % | 199 (5) | 0.076 | CHAMP, CROSS, FLOOD |
-| SPK | 67 % | profondes 24 %, courtes 18 %, intermédiaires 15 % | 12 % | 11 85 %, 21 7 % | 171 (4) | 0.095 | FOUR_VERTS, JET_SWEEP, QUICK_SLANT, DAGGER, DOUBLE_POST |
-| TDL | 60 % | c. extérieures 16 %, PA / boot 15 %, intermédiaires 15 % | 20 % | 11 54 %, 12 27 % | 181 (5) | 0.100 | BOOT, OUTSIDE_RUN, JET_SWEEP, SAIL |
-| VEC | 79 % | profondes 40 %, intermédiaires 22 %, c. intérieures 12 % | 4 % | 11 96 %, 12 2 % | 148 (5) | 0.190 | CORNER, DEEP_POST, FOUR_VERTS, DOUBLE_POST, SWITCH_VERTICALS |
-| ZPH | 77 % | courtes 30 %, intermédiaires 19 %, profondes 18 % | 4 % | 10 63 %, 11 34 % | 133 (5) | 0.154 | MESH, DRAW, FOUR_VERTS, STICK, SAIL |
+| AEG | 56 % | courtes 27 %, c. intérieures 24 %, intermédiaires 14 % | 5 % | 11 62 %, 12 24 % | 190 (4) | 0.112 | INSIDE_RUN, TRAP, CURL |
+| APX | 65 % | courtes 23 %, c. en force 15 %, intermédiaires 11 % | 21 % | 11 70 %, 21 12 % | 198 (6) | 0.077 | SCREEN, BOOT, SPOT_SNAG, RPO_POWER |
+| AXM | 72 % | courtes 35 %, intermédiaires 17 %, c. intérieures 11 % | 21 % | 11 78 %, 12 11 % | 194 (5) | 0.073 | STICK, DRAG, CURL, MESH |
+| BST | 60 % | courtes 29 %, c. intérieures 17 %, intermédiaires 16 % | 4 % | 11 66 %, 12 19 % | 180 (4) | 0.066 | INSIDE_RUN, STICK, CURL, OUTSIDE_RUN, CROSS |
+| CMT | 64 % | courtes 20 %, écrans 19 %, intermédiaires 12 % | 14 % | 11 82 %, 21 10 % | 184 (4) | 0.087 | SCREEN, JET_SWEEP, FL_SE_SCREEN, WR_TUNNEL_SCREEN |
+| CPH | 55 % | option 19 %, courtes 16 %, intermédiaires 12 % | 23 % | 11 70 %, 21 19 % | 186 (6) | 0.130 | READ_OPTION, BOOT, CROSS, POWER_READ, INVERTED_VEER |
+| CTD | 62 % | courtes 19 %, intermédiaires 19 %, c. intérieures 18 % | 4 % | 11 68 %, 12 14 % | 174 (5) | 0.081 | DRAW, INSIDE_RUN, CURL, PLAY_ACTION |
+| CTX | 63 % | courtes 19 %, intermédiaires 16 %, profondes 12 % | 5 % | 11 73 %, 21 12 % | 215 (5) | 0.031 | READ_OPTION |
+| FRG | 53 % | c. intérieures 22 %, c. en force 19 %, intermédiaires 16 % | 5 % | 11 47 %, 12 30 % | 176 (4) | 0.117 | INSIDE_RUN, BOOT, TRAP, WHAM |
+| GLT | 67 % | écrans 18 %, c. intérieures 14 %, courtes 13 % | 4 % | 11 76 %, 21 10 % | 200 (4) | 0.060 | SCREEN, WR_TUNNEL_SCREEN, FL_SE_SCREEN, PLAY_ACTION |
+| GMB | 62 % | courtes 25 %, c. en force 16 %, profondes 12 % | 8 % | 11 70 %, 21 13 % | 206 (5) | 0.078 | POWER, MESH, QUICK_SLANT, CHAMP |
+| GRZ | 62 % | intermédiaires 21 %, c. en force 18 %, PA / boot 15 % | 6 % | 11 49 %, 12 31 % | 195 (5) | 0.092 | POWER, BOOT, Y_CROSS, SALEM |
+| LTC | 68 % | courtes 26 %, écrans 14 %, RPO 14 % | 9 % | 11 93 %, 21 4 % | 157 (8) | 0.144 | WR_TUNNEL_SCREEN, STICK, MESH, FL_SE_SCREEN, READ_OPTION |
+| MNL | 34 % | c. en force 45 %, PA / boot 16 %, c. intérieures 11 % | 5 % | 21 38 %, 22 27 % | 149 (5) | 0.245 | POWER, COUNTER, BOOT, POP, POWER_TOSS |
+| MRD | 62 % | courtes 23 %, c. intérieures 20 %, écrans 18 % | 4 % | 11 64 %, 21 21 % | 179 (4) | 0.111 | SCREEN, INSIDE_RUN, CURL, FL_SE_SCREEN |
+| MRG | 63 % | PA / boot 20 %, c. en force 16 %, intermédiaires 15 % | 23 % | 11 54 %, 21 21 % | 188 (5) | 0.084 | BOOT, COUNTER, POP, COUNTER_SWEEP |
+| NVA | 67 % | profondes 23 %, PA / boot 21 %, intermédiaires 16 % | 7 % | 11 55 %, 12 22 % | 165 (5) | 0.164 | PLAY_ACTION, CORNER, BOOT, DEEP_POST, DOUBLE_POST |
+| ONX | 61 % | courtes 31 %, c. intérieures 15 %, c. en force 14 % | 5 % | 11 76 %, 21 11 % | 199 (4) | 0.077 | SHORT_OUT, HITCH |
+| PLS | 69 % | courtes 36 %, écrans 12 %, c. intérieures 12 % | 3 % | 11 95 %, 21 3 % | 88 (5) | 0.195 | DRAW, STICK, SCREEN, SHORT_OUT, READ_OPTION |
+| PRM | 66 % | intermédiaires 26 %, courtes 18 %, c. en force 14 % | 34 % | 11 72 %, 21 13 % | 200 (5) | 0.079 | CHAMP, CROSS, FLOOD |
+| SPK | 66 % | profondes 22 %, courtes 17 %, intermédiaires 16 % | 9 % | 11 86 %, 21 7 % | 178 (4) | 0.076 | DRAW, FOUR_VERTS, DEEP_POST, QUICK_SLANT, DAGGER |
+| TDL | 60 % | c. extérieures 16 %, intermédiaires 16 %, c. en force 15 % | 19 % | 11 55 %, 12 26 % | 180 (5) | 0.100 | BOOT, OUTSIDE_RUN, JET_SWEEP, SAIL |
+| VEC | 79 % | profondes 39 %, intermédiaires 24 %, c. intérieures 11 % | 4 % | 11 96 %, 12 2 % | 148 (5) | 0.189 | CORNER, DEEP_POST, FOUR_VERTS, DOUBLE_POST, SWITCH_VERTICALS |
+| ZPH | 76 % | courtes 34 %, profondes 18 %, intermédiaires 17 % | 3 % | 11 55 %, 10 41 % | 133 (5) | 0.156 | MESH, DRAW, FOUR_VERTS, STICK, DRAG |
 
-Garde-fous de l'étape 3 (avant fusion) : victoires 40-60 % à force égale sur beaucoup de matchs (une semaine de 23
-matchs par équipe est trop bruitée : 0,28-0,72 avant comme après), totaux de la ligue dans les tolérances de 12.3,
-cotes, audit, calcul du samedi ≤ 75 min.
+## Étape 3 — garde-fous (28/10/2026)
+
+Test d'équilibre de 12.3 (`outils/moteur/equilibre_identite.py` : 2 208 matchs, mêmes graines que le notebook,
+identité coupée puis allumée). Premier passage : SPK 0,364, BST 0,647 (déjà 0,617 avant la refonte) et ZPH 0,383 hors
+de 40-60 % ; réglage : ZPH garde le 10 personnel sur TRIPS / GUN_QUADS / GUN_TRIPS_OPEN / GUN_STACK mais pas sur le
+SHOTGUN de base (son WR4 vient du banc), SPK moins de verticales et de jet sweeps, AXM un jeu court moins appuyé, BST
+moins de courses et un homme ×2,2.
+
+| | Identité coupée | Identité allumée | Tolérance |
+|---|---|---|---|
+| Victoires (min – max) | 0,405 – 0,617 (BST hors limite) | 0,421 – 0,576 | 40 – 60 % |
+| Points par match | 52,6 | 53,6 | ± 2 |
+| Complétion / YPA / YPC | 64,1 % / 7,17 / 5,96 | 64,8 % / 7,29 / 5,85 | ± 2 pts / ± 0,3 / ± 0,2 |
+| Pertes de balle / match | 2,58 | 2,59 | ± 0,3 |
+| Part de passes | 62,6 % | 63,0 % | ± 2 pts |
+| Temps par match | 274 ms | 277 ms | — |
+
+Les identités tiennent après ce réglage : écart moyen 0,109, paire la plus proche BST–ONX 0,044, 117 plays exclusifs
+joués.

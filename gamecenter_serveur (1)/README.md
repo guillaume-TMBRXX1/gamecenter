@@ -2156,6 +2156,12 @@ pas ; les équipes de LEAGUE non plus.
   sous 0,05 (avant 14 sous 0,04), 352 plays joués dont 121 par une seule franchise (avant 248 dont 4), 3 signatures ou
   plus pour toutes les franchises sauf CTX (« Adapt » : pas de dominante, par fiche) et parfois ONX. Points par match
   53,0 (avant 54,1) : à recaler avec le reste à l'étape 3 (calibration, cotes, audit, temps du samedi).
+- **Étape 3 (28/10)** : `python3 outils/moteur/equilibre_identite.py` joue le test d'équilibre de 12.3 (2 208 matchs,
+  mêmes graines) identité coupée puis allumée (`--coupe` réutilise un passage coupé, `--boucle` pour régler) :
+  victoires de 0,421 à 0,576 (coupée : 0,405 à 0,617, BST hors limite), toutes les mesures de la ligue dans les
+  tolérances de `rapport_calibration.TOLERANCES` (points 52,6 -> 53,6), 277 ms par match (coupée 274). Réglage : ZPH
+  garde le 10 personnel hors du SHOTGUN de base, SPK moins de verticales et de jet sweeps, AXM un jeu court moins appuyé,
+  BST moins de courses ; identités tenues (écart moyen 0,109, paire la plus proche 0,044).
 - **Outils** : `python3 outils/moteur/semaine_identite.py` (semaine de test : moteur chargé une fois, ≈ 8 min, puis
   ≈ 30 s par semaine ; `--identite on/off`, `--graine`, `--garder` ; `--boucle dossier` pour régler le module sans
   recharger le notebook) ; `node outils/site/capture_identite.js <GameFeed> <sortie>` (captures : SALEM, ZPH en 10
