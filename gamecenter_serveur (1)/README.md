@@ -2170,6 +2170,16 @@ pas ; les équipes de LEAGUE non plus.
   feuille d'appel, motion déterministe, personnel, défense, SALEM et SPILL_PROTECTION) ; la cellule vérifie budgets,
   exclusifs jouables et réservés, déterminisme, GameFeed valides, interrupteur coupé.
 
+### 76. Correctif : un drive n'est plus coupé à 20 actions (28/10/2026)
+Trouvé par le calcul d'essai de la semaine du 02/11 (refonte des playbooks, étape 3) : un drive de GMB de 20 actions
+finissait par 1er & but aux 8 (holding défensif accepté sur un 4e essai), puis le ballon passait à l'adversaire au même
+endroit. `simulate_drive_franchise` (12.2) et ses enveloppes ont `max_plays = 20` par défaut ; la boucle qui s'arrête à
+20 actions laisse le résultat par défaut, `TURNOVER_ON_DOWNS`. Rare (1 drive sur 1 155 matchs publiés), plus probable
+avec les pénalités ; l'audit le classe bloquant (« après la pénalité ») et la semaine ne serait pas publiée.
+- Cellule **12.2 vicies octies** (après l'identité) : le drive d'une franchise reçoit `max_plays = 60`
+  (`DRIVE_MAX_ACTIONS`, jamais atteint). Les drives de moins de 20 actions ne changent pas (3 matchs de référence
+  contrôlés), le hasard non plus. Interrupteur `GC_DRIVE_LONG` (`0` : coupure à 20 actions, à l'identique).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
