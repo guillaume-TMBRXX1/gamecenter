@@ -12,7 +12,8 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
 function chercher(test){
   for(const f of fs.readdirSync(FEEDS).filter(f=>f.endsWith('.json')).sort()){
     const F=JSON.parse(fs.readFileSync(path.join(FEEDS,f),'utf8'));
-    const i=F.plays.findIndex(P=>test(P,F));
+    const i=F.plays.findIndex((P,k)=>k>0&&test(P,F)&&F.plays[k-1].offense===P.offense&&
+                                    ['run','complete','incomplete'].includes(F.plays[k-1].result));   /* pas de bannière d'avant */
     if(i>=0) return {F,i,f};
   }
   return null;
@@ -53,7 +54,7 @@ async function server(){
         g.paused=true;
         return {seq:g.cur&&g.cur.seq,phase:g.phase,routes:(g.routes||[]).length};
       },{F:c.F,seq:P.seq});
-      await p.waitForTimeout(400);
+      await p.waitForTimeout(5000);          /* les bannières des actions rejouées en accéléré (temps réel) s'effacent */
       await p.screenshot({path:path.join(OUT,`identite_${nom}.png`)});
       check(r.seq===P.seq&&r.phase==='play',`${nom} : action ${P.seq} en cours sur l'écran`);
       check(errs.length===0,`${nom} : aucune erreur JS`+(errs.length?' : '+errs[0]:''));
