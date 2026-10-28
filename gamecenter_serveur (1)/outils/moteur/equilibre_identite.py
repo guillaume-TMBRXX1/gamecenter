@@ -129,14 +129,44 @@ def main():
     ap.add_argument("--graines", type=int, default=4, help="matchs par affiche (12.3 : 4 à 24 équipes)")
     ap.add_argument("--travailleurs", type=int, default=os.cpu_count() or 1)
     ap.add_argument("--sortie", help="rapport JSON (coupé, allumé, verdicts)")
+    ap.add_argument("--coupe", help="rapport JSON d'un passage précédent (--sortie) : sa partie « coupé » sert de "
+                                    "référence, seul le passage allumé est rejoué (réglage)")
+    ap.add_argument("--boucle", help="avec --coupe : dossier de demandes (demande.json -> rapport.txt) ; le moteur "
+                                     "reste chargé, chaque demande relit le module d'identité (réglage)")
     a = ap.parse_args()
     t0 = time.time()
     ns, _ = rc.charger(jusqua=si.JUSQUA, decisions=True)
     print(f"moteur chargé en {time.time() - t0:.0f} s", file=sys.stderr)
     import tempfile
     tmp = tempfile.mkdtemp(prefix="gc-eqid-")
-    off = passage(ns, False, a.graines, a.travailleurs, os.path.join(tmp, "off.json"))
+    off = json.load(open(a.coupe, encoding="utf-8"))["coupe"] if a.coupe else \
+        passage(ns, False, a.graines, a.travailleurs, os.path.join(tmp, "off.json"))
+    if a.boucle:
+        dem, rap = os.path.join(a.boucle, "demande.json"), os.path.join(a.boucle, "rapport.txt")
+        os.makedirs(a.boucle, exist_ok=True)
+        print(f"prêt : {dem}", file=sys.stderr)
+        while True:
+            if not os.path.exists(dem):
+                time.sleep(1)
+                continue
+            d = json.load(open(dem, encoding="utf-8"))
+            os.remove(dem)
+            if d.get("fin"):
+                return
+            on = passage(ns, True, a.graines, a.travailleurs, os.path.join(tmp, "on.json"))
+            import contextlib, io
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                verdict(on, off)
+            open(rap, "w", encoding="utf-8").write(out.getvalue())
     on = passage(ns, True, a.graines, a.travailleurs, os.path.join(tmp, "on.json"))
+    ok = verdict(on, off)
+    if a.sortie:
+        json.dump({"coupe": off, "allume": on, "ok": ok}, open(a.sortie, "w", encoding="utf-8"), indent=1)
+    sys.exit(0 if ok else 1)
+
+
+def verdict(on, off):
     lignes, ok = rc.comparer(on, off)
     print(f"\n{on['games']} matchs par passage · {on['seconds_per_game'] * 1000:.0f} ms par match allumé "
           f"(coupé {off['seconds_per_game'] * 1000:.0f} ms ; p95 {on['seconds_per_game_p95'] * 1000:.0f} ms)")
@@ -146,9 +176,7 @@ def main():
         else:
             print(f"  {'✓' if bon else '✗'} {k:24s} {ref:8.3f} -> {val:8.3f}   écart {ecart:+.3f} (± {tol})")
     print("VERDICT :", "dans les tolérances" if ok else "HORS TOLÉRANCE")
-    if a.sortie:
-        json.dump({"coupe": off, "allume": on, "ok": ok}, open(a.sortie, "w", encoding="utf-8"), indent=1)
-    sys.exit(0 if ok else 1)
+    return ok
 
 
 if __name__ == "__main__":

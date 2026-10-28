@@ -282,7 +282,7 @@ pas de nouvelles mécaniques.
 
 1. **Les fiches** sont bonnes.
 2. **ZPH joue avec un 4e receveur** (10 personnel) : le WR4 du banc (étape 7.3) entre à la place du TE sur ses
-   formations spread (SHOTGUN, TRIPS, GUN_QUADS, GUN_TRIPS_OPEN, GUN_STACK). VEC reste en 11.
+   formations spread (TRIPS, GUN_QUADS, GUN_TRIPS_OPEN, GUN_STACK ; pas le SHOTGUN de base, étape 3). VEC reste en 11.
 3. **Plays exclusifs** : nouvelles combinaisons formation × concept, oui.
 4. **Pas d'effet moteur** pour l'instant : on s'en tient à l'enrichissement des playbooks (choix des jeux).
 5. **SALEM et SPILL_PROTECTION sortent de la réserve**, avec ces définitions (aucune définition publique fiable) :

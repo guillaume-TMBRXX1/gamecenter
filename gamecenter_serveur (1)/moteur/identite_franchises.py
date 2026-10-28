@@ -125,9 +125,9 @@ ATTAQUE = {
                          "RPO_ALERT": 2.5, "FL_SE_SCREEN": 1.8, "WR_TUNNEL_SCREEN": 1.8, "INSIDE_RUN": 0.6,
                          "OUTSIDE_RUN": 0.7, "DRAW": 0.6},
             "formations": {"GUN_TRIPS_OPEN": 2.0, "GUN_FLEX": 1.8, "EMPTY": 1.2, **_f(_DEUX_TE + _SOUS_CENTRE, 0.3)}},
-    "ZPH": {"concepts": {"MESH": 1.6, "Y_CROSS": 2.0, "FOUR_VERTS": 1.3, "STICK": 1.2, "DAGGER": 1.4, "DRAG": 1.2,
+    "ZPH": {"concepts": {"MESH": 1.6, "Y_CROSS": 2.0, "FOUR_VERTS": 1.0, "STICK": 1.2, "DAGGER": 1.4, "DRAG": 1.2,
                          "SAIL": 1.2, "PLAY_ACTION": 0.5, "BOOT": 0.4},
-            "formations": {"EMPTY": 1.6, "GUN_QUADS": 2.4, "GUN_TRIPS_OPEN": 1.6, **_f(_DEUX_TE + _SOUS_CENTRE, 0.2)}},
+            "formations": {"EMPTY": 1.4, "GUN_QUADS": 1.8, "GUN_TRIPS_OPEN": 1.6, **_f(_DEUX_TE + _SOUS_CENTRE, 0.2)}},
     "BST": {"concepts": {"INSIDE_RUN": 1.3, "OUTSIDE_RUN": 1.8, "COUNTER": 1.2, "STICK": 1.4, "SHORT_OUT": 0.8,
                          "HITCH": 0.8, "CURL": 1.4, "SCREEN": 0.6,
                          "DEEP_POST": 0.6, "CORNER": 0.6, "FOUR_VERTS": 0.5, "DOUBLE_POST": 0.5, "DIVIDE": 0.5,
@@ -151,9 +151,9 @@ ATTAQUE = {
                          "Y_CROSS": 1.6, "DRAW": 0.6, "COUNTER": 0.8},
             "formations": {"GUN_FLEX": 3.5, "GUN_Y_OFF": 3.5, "SINGLEBACK_BUNCH": 3.0, "GUN_WING": 3.0,
                            "I_FORM_SLOT": 2.5, "GUN_TRIPS_TIGHT": 2.0, "SHOTGUN": 0.3, "TRIPS": 0.4, "SINGLEBACK": 0.6}},
-    "SPK": {"concepts": {"FOUR_VERTS": 1.8, "DAGGER": 1.6, "SWITCH_VERTICALS": 2.0, "DOUBLE_POST": 1.8, "DIVIDE": 1.8,
-                         "JET_SWEEP": 2.0, "JET_ACTION": 1.8, "PLAY_ACTION": 0.7, "BOOT": 0.7, "SCREEN": 0.5,
-                         "FL_SE_SCREEN": 0.5, "WR_TUNNEL_SCREEN": 0.5, "DRAW": 0.7},
+    "SPK": {"concepts": {"FOUR_VERTS": 1.3, "DAGGER": 1.6, "SWITCH_VERTICALS": 1.5, "DOUBLE_POST": 1.4, "DIVIDE": 1.4,
+                         "JET_SWEEP": 2.0, "JET_ACTION": 1.8, "PLAY_ACTION": 0.8, "BOOT": 0.8, "SCREEN": 0.8,
+                         "FL_SE_SCREEN": 0.8, "WR_TUNNEL_SCREEN": 0.8},
             "formations": {"GUN_TRIPS_OPEN": 1.8, "GUN_WING": 1.5, "TRIPS": 1.2}},
     "CTD": {"concepts": {"PLAY_ACTION": 1.6, "PA_SLIDE": 1.3, "PA_FLOOD": 1.3, "CURL": 1.3, "LEVELS": 1.5,
                          "DOUBLE_DIG": 1.6, "SALEM": 1.0, "SCREEN": 0.7},
@@ -293,7 +293,7 @@ MOTION = {
 # =====================================================================================================================
 # 6. PERSONNEL — ZPH en 10 personnel (4 WR) sur ses formations spread : le WR4 du banc prend la place du TE
 # =====================================================================================================================
-PERSONNEL_EQUIPE = {"ZPH": {f: "10" for f in ("SHOTGUN", "TRIPS", "GUN_QUADS", "GUN_TRIPS_OPEN", "GUN_STACK")}}
+PERSONNEL_EQUIPE = {"ZPH": {f: "10" for f in ("TRIPS", "GUN_QUADS", "GUN_TRIPS_OPEN", "GUN_STACK")}}
 
 # =====================================================================================================================
 # 7. DÉFENSE — couvertures du coordinateur (multiplicateurs), blitz, paquets, jeux de rush, fronts
@@ -308,7 +308,7 @@ DEFENSE = {
     "NVA": {"couvertures": {"COVER_2": 1.6, "COVER_4": 1.4, "MAN": 0.4}, "blitz": 0.8,
             "paquets": {"COVER_2": {"TAMPA_2": .45, "COVER_2_SINK": .20},
                         "COVER_4": {"COVER_6": .30, "MATCH_QUARTERS": .20, "COVER_8": .15}}},
-    "BST": {"couvertures": {"MAN": 3.5, "COVER_4": 0.8, "ZONE": 0.6}, "blitz": 0.7,
+    "BST": {"couvertures": {"MAN": 2.2, "COVER_4": 0.8, "ZONE": 0.7}, "blitz": 0.7,
             "paquets": {"MAN": {"PRESS_MAN": .50, "COVER_2_MAN": .20, "COVER_1_ROBBER": .10},
                         "COVER_4": {"COVER_6": .40, "MATCH_QUARTERS": .20}}},
     "ONX": {"couvertures": {"MAN": 1.4, "COVER_2": 1.3},

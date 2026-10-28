@@ -120,7 +120,8 @@ class TestSnap(unittest.TestCase):
         self.assertIsNone(idf.motion("CTX", 1234, 0))
 
     def test_personnel(self):
-        self.assertEqual(idf.personnel("ZPH", "SHOTGUN", "11"), "10")
+        self.assertEqual(idf.personnel("ZPH", "GUN_QUADS", "11"), "10")
+        self.assertEqual(idf.personnel("ZPH", "SHOTGUN", "11"), "11")
         self.assertEqual(idf.personnel("ZPH", "ACE", "12"), "12")
         self.assertEqual(idf.personnel("VEC", "SHOTGUN", "11"), "11")
         self.assertEqual(xp.compatibilite("10", {"RB": 3, "TE": 2, "WR": 4})[0], "PRIMARY")   # roster + banc de ZPH
@@ -130,7 +131,7 @@ class TestDefense(unittest.TestCase):
     def test_couvertures(self):
         poids = {"MAN": 1.0, "ZONE": 1.0, "COVER_2": 1.0, "COVER_4": 1.0}
         cov, blitz = idf.couvertures("BST", poids, 0.10)
-        self.assertGreater(cov["MAN"] / sum(cov.values()), 0.5)
+        self.assertGreater(cov["MAN"] / sum(cov.values()), 0.4)
         self.assertLess(blitz, 0.10)
         self.assertEqual(poids["MAN"], 1.0, "poids du coordinateur non modifiés")
         self.assertEqual(idf.couvertures("CTX", poids, 0.10), (poids, 0.10))
