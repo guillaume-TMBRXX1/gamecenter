@@ -10,7 +10,7 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.1 | Ce plan, photo de profil (`outils/promotion/`) | ✅ 13/10 (cette PR) |
 | 8.2 | Générateur — action du jour pour TikTok : accroche, enjeu, zones sûres, terrain agrandi, appel à l'action, légendes par réseau ; « Best play so far » (post épinglé n° 2) | ✅ 13/10 |
 | 8.3 | Qualité (tournage image par image, 1080×1920 natif, 60 images/s) ; résumé court ≈ 60 s (« Game in 60 seconds », post épinglé n° 3 ; le long seulement à la demande) ; « What is Snapline? » (post épinglé n° 1) | ✅ 13/10 |
-| 8.4 | Mesure — lien `snapline.live/tt` compté par le serveur (TikTok seulement, choix du 13/10) | **en attente** : pas de lien cliquable avant 1 000 abonnés (section 8) |
+| 8.4 | Mesure — lien `snapline.live/tt` compté par le serveur (TikTok seulement, choix du 13/10) | repris par l'étape 9.1 (`/tt`, `/ig`, `/yt`, `/r/…`, section 9) |
 | 8.4 bis | Adresse visible dans les vidéos (badge « snapline.live », carton « Type it in your browser ») et commentaire à épingler dans le `.txt` | ✅ 13/10 |
 | 8.5 | Instagram Reels et YouTube Shorts ; bilan après 2 semaines | à faire |
 | 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
@@ -94,7 +94,7 @@ Ensuite, le rythme de la section 2.
 - **Visites du site venues des réseaux** (étape 8.4) : `snapline.live/tt`, `/ig`, `/yt` redirigent vers l'accueil et
   sont comptés par le serveur (sans cookie). Search Console ne voit que Google (recherches, impressions, pages
   indexées) : il ne compte pas les visites venues de TikTok.
-- **Bilan du lundi** (≈ 10 min), tableau ci-dessous : on garde le créneau, le format et la longueur qui gardent le plus
+- **Bilan du lundi** : remplacé par celui de la section 9 (moins de 15 min). Ancien tableau : on garde le créneau, le format et la longueur qui gardent le plus
   de monde, on abandonne ce qui ne marche pas après 2 semaines.
 
 | Semaine | Vidéos | Vues | Durée moy. / % en entier | Abonnés | Clics `/tt` | Comptes créés | Remarque |
@@ -136,3 +136,34 @@ Un compte TikTok **personnel** n'a pas de lien cliquable avant **1 000 abonnés*
    « Show HN », Product Hunt, X / Bluesky.
 5. Plus tard, payant : TikTok **Promote** avec l'objectif « visites du site web », quand on sait quelles vidéos
    accrochent.
+
+## 9. Faire venir de vrais utilisateurs (plan validé le 28/10/2026)
+**Constat (Railway, 21-27/10)** : ≈ 68 ouvertures de l'accueil par jour (robots et Guillaume compris), **0 nouveau
+joueur** et **0 compte créé** en 7 jours ; le plan du site n'a que 2 adresses (`/`, `/legal`). 19 vidéos TikTok depuis
+le 13/10. **Compte Entreprise TikTok** : refusé tant que l'entreprise n'est pas vérifiée (28/10) ; on reste en compte
+personnel (lien cliquable à 1 000 abonnés) et on s'appuie sur Instagram et YouTube, cliquables tout de suite.
+
+Causes probables : pas de lien cliquable (la cause principale) ; peu de vues tant que les 2 premières secondes ne
+retiennent pas ; des équipes inventées qui ne parlent pas d'elles-mêmes (l'angle qui accroche : « l'IA décide ») ; rien
+qui donne envie d'aller voir **maintenant** ; une première visite trop dense ; pour Google, une seule page de contenu et
+presque aucun lien entrant (3 à 6 mois, même bien fait).
+
+| # | Étape | Guillaume | Claude (une PR) | Interrupteur | État |
+|---|---|---|---|---|---|
+| 9.0 | Diagnostic | Relever Cloudflare, Search Console, TikTok Studio (captures) | Analyse | — | en cours |
+| 9.1 | Mesure | Poser `GC_MESURE=1` (et `GC_STATS_EXCLURE`) ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 75) | `GC_MESURE` | PR ouverte |
+| 9.2 | Première visite | Valider les captures | Bandeau pour les nouveaux venus, « Watch live now » | `GC_ACCUEIL` | à faire |
+| 9.3 | Pages indexables | Renvoyer le plan du site | Équipes, records, saisons, matchs marquants ; données structurées | `GC_PAGES` | à faire |
+| 9.4 | Partage | — | Aperçu par match, lien vers une action | `GC_PARTAGE` | à faire |
+| 9.5 | Formats vidéo | Publier | « Who wins tomorrow? » (workflow « Vidéos ») | option du workflow | à faire |
+| 9.6 | Communautés | Publier (une tous les 2-3 jours), répondre | Textes prêts, un lien `/r/<source>` chacun, règles relues | — | après 9.1-9.3 |
+| 9.7 | Payant | Budget | Choix de la vidéo | — | plus tard |
+
+**Bilan du lundi (moins de 15 min)** : 5 min TikTok Studio (+ Instagram, YouTube) → vues, % regardé en entier,
+abonnés, meilleure vidéo ; 3 min `snapline.live/admin/stats` → « Copier la ligne » (colonnes du site déjà remplies) ;
+2 min Cloudflare (visites, 3 premières sources) ; 2 min Search Console (impressions, clics, pages indexées) ; 3 min :
+une décision (garder ou changer un format, un créneau, une accroche).
+
+| Semaine | Vidéos | Vues | % en entier | Abonnés | Visites | dont réseaux | Clics /tt /ig /yt | Nouveaux joueurs | Comptes | Actifs | Décision |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | | | | |
