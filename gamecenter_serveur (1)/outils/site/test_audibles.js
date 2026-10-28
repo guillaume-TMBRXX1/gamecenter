@@ -1,7 +1,7 @@
 // Checks avant le snap (moteur 12.2 novodecies, play.presnap — 16/10/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_audibles.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
 // Rejoue en temps simulé, sur le grand écran, un match dont les actions portent play.presnap : le dernier de
-// data/weeks ou des exhibitions qui en a au moins 3 audibles ; sinon un match réel qui reçoit des checks à tour de rôle
+// data/weeks ou des matchs de test (outils/site/matchs) qui en a au moins 3 audibles ; sinon un match réel qui reçoit des checks à tour de rôle
 // (audible juste vers la course et vers la passe, mauvais audible contre une pression simulée, rotation cachée,
 // motions avec rotation, « lock » en homme, « bump » en zone).
 // Vérifie, action par action : le QB fait son check sur le terrain (« CHECK » au-dessus de lui pendant l'avant-snap) ;
@@ -17,8 +17,8 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
 
 function feeds(){
   const all=[];
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`matchs/${f}`});
   for(const w of fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort().reverse()){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) all.push({file:path.join(dir,f),src:`${w}/${f}`});

@@ -1,6 +1,6 @@
 // La poche et la ligne offensive (moteur 12.2 vicies ter, étape 7.1 — 21/10/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_poche.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
-// Prend le dernier match de data/weeks (ou une exhibition) dont les passes portent play.pocket (QB qui monte, qui sort et
+// Prend le dernier match de data/weeks (ou un match de test, outils/site/matchs) dont les passes portent play.pocket (QB qui monte, qui sort et
 // lance en courant, sack) ; sinon un match réel qui en reçoit à tour de rôle. Ne dépend pas de l'heure.
 // Vérifie, sur le plan de chaque action (g.plan) : la ligne recule en fer à cheval (tackles plus profonds que le centre) ;
 // poche propre : le QB reste à son drop ; step up : il avance ; escape : il sort de plusieurs yards sur le côté et le
@@ -21,8 +21,8 @@ function feeds(){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) all.push({file:path.join(dir,f),src:`${w}/${f}`});
   }
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`matchs/${f}`});
   return all;
 }
 const duels=(o,d)=>{ const r=(i,pos)=>({id:`${d}_${pos}${i}`,name:`Rusher${pos}${i} ${pos==='EDGE'?'Edge':'Tackle'}${i}`,pos});

@@ -418,19 +418,6 @@
     font:500 12.5px/1.4 var(--f-ui);color:var(--ink-2)}
   .site-foot b{color:var(--ink);font-weight:700}
   .site-foot a{color:inherit}
-  .exh{margin-top:20px}
-  .st-conf{margin-bottom:16px}
-  .st-div{margin:14px 0 6px;font:700 13px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
-  .rail-btn[hidden]{display:none}
-  .exh.exh-flash .exh-card{animation:exhFlash 1.4s ease-out}
-  @keyframes exhFlash{0%,40%{box-shadow:0 0 0 3px var(--accent,#2b7cff)}100%{box-shadow:0 0 0 0 transparent}}
-  .exh-card{display:flex;align-items:center;gap:20px;padding:20px 24px;flex-wrap:wrap}
-  .exh-main{flex:1 1 320px;min-width:0}
-  .exh-main h3{margin:10px 0 6px;font:800 20px/1.2 var(--f-display);letter-spacing:.01em}
-  .exh-main h3 em{font-style:normal;color:var(--ink-3);margin:0 4px}
-  .exh-sub{margin:0;color:var(--ink-2);font-size:13px}
-  .exh-go{width:auto;padding:0 26px;flex:0 0 auto}
-  @media (max-width:560px){ .exh-go{width:100%} }
   .card{background:var(--card);border:1px solid var(--line);box-shadow:var(--edge),var(--lift);border-radius:var(--r-lg);padding:20px 22px;min-width:0}
   .card.rank{grid-column:span 2}
   .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
@@ -928,6 +915,71 @@
   .lg-manage{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   #viewLeagues .card-h{flex-wrap:wrap;row-gap:8px}#viewLeagues .seg button{white-space:nowrap}
   @media (max-width:760px){ .lg-grid{grid-template-columns:minmax(0,1fr)} }
+  /* ---------- Insights (section 77): this week's numbers for smarter bets ----------
+     Built by the script only when the server says the tab is on (#gf-server .insights): nothing here otherwise. */
+  .rail-btn .ins-lk{position:absolute;top:5px;right:9px;width:13px;height:13px;color:var(--ink-3)}
+  #viewInsights .ins-tabs{margin-top:14px}
+  .ins-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+  .ins-kpi .mt-st b{font:700 22px var(--f-display);letter-spacing:.02em}
+  .ins-kpi .mt-st small{color:var(--ink-3);font-size:11.5px}
+  .ins-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px;align-items:start;margin-top:14px}
+  .ins-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .ins-angles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 22px}
+  .ins-hint{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.45}
+  .ins-hint:first-child{border-top:0}
+  .ins-angles .ins-hint{border-top:0;border-left:2px solid var(--line);padding:6px 0 6px 12px}
+  .ins-hint i{flex-shrink:0;width:28px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 10.5px var(--f-display);font-style:normal;letter-spacing:.02em;background:var(--cyan-soft);color:var(--cyan)}
+  .ins-hint i.o{background:var(--pink-soft);color:var(--pink)}
+  .ins-hint small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+  .tst.ins td,.tst.ins th{white-space:nowrap;padding-left:6px;padding-right:6px}
+  .tst.ins thead th{letter-spacing:.06em}
+  .tst.ins .rt{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px}
+  .tst.ins .rt i{display:inline-block;height:6px;border-radius:3px;background:var(--cyan);opacity:.75}
+  .tst.ins .rt i.n{background:var(--pink)}
+  .ins-lk-v{font-weight:700}.ins-lk-v.p{color:var(--cyan)}.ins-lk-v.n{color:var(--pink)}
+  .h2h-pick{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:start}
+  .h2h-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .h2h-head{display:flex;align-items:center;gap:12px;min-height:46px}
+  .h2h-head .badge{width:46px;height:38px;font-size:13px}
+  .h2h-head h3{margin:0;font:700 19px var(--f-display);letter-spacing:.02em}
+  .h2h-head p{margin:2px 0 0;color:var(--ink-3);font-size:12.5px}
+  .h2h-list{display:flex;flex-wrap:wrap;gap:6px}
+  .h2h-list button{border:1px solid var(--line-2);background:var(--l2);color:var(--ink-2);border-radius:7px;font:700 11px var(--f-display);letter-spacing:.06em;height:30px;min-width:44px;padding:0 8px;cursor:pointer}
+  .h2h-list button:hover{border-color:var(--ink-3)}
+  .h2h-list button[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:var(--cyan-ink)}
+  .h2h-vs{align-self:center;font:700 15px var(--f-display);color:var(--ink-3)}
+  .h2h-row{display:grid;grid-template-columns:64px minmax(0,1fr) 150px minmax(0,1fr) 64px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .h2h-row:first-of-type{border-top:0}
+  .h2h-row .lab{text-align:center;color:var(--ink-2);font-size:12px}
+  .h2h-row .v{font:600 14px var(--f-mono)}.h2h-row .v.r{text-align:right}.h2h-row .v.best{color:var(--cyan)}
+  .h2h-bar{height:8px;border-radius:4px;background:var(--l3);position:relative;overflow:hidden}
+  .h2h-bar b{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--ink-3);opacity:.6}
+  .h2h-bar.l b{right:0}.h2h-bar.r b{left:0}.h2h-bar b.best{background:var(--cyan);opacity:1}
+  .h2h-meet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .h2h-meet .mt-st b{font:700 15px var(--f-display);letter-spacing:.02em}
+  .h2h-meet+.h2h-meet{margin-top:10px}
+  .rc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .rc-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .rc-item:first-of-type{border-top:0}.rc-item .grow{flex:1;min-width:0}
+  .rc-item small{color:var(--ink-3);display:block;font-size:12px}
+  .rc-item em{font:700 13px var(--f-mono);font-style:normal;color:var(--cyan);white-space:nowrap}
+  .ins-lock{position:relative;margin-top:14px}
+  .ins-lock .ins-blur{filter:blur(6px);pointer-events:none;user-select:none;opacity:.7}
+  .ins-pay{position:absolute;left:50%;top:90px;transform:translateX(-50%);width:min(460px,calc(100% - 24px));text-align:center;z-index:3;padding:24px 24px 20px}
+  .ins-pay h3{margin:6px 0 8px;font:700 22px var(--f-display);letter-spacing:.02em}
+  .ins-pay ul{text-align:left;margin:12px 0 16px;padding-left:18px;color:var(--ink-2);font-size:13.5px;line-height:1.6}
+  .ins-pay .cta{width:auto;padding:0 26px;opacity:.75;cursor:not-allowed;white-space:nowrap}
+  .ins-pay p{color:var(--ink-3);font-size:12px;margin:10px 0 0}
+  @media (max-width:980px){ .ins-angles,.rc-grid{grid-template-columns:minmax(0,1fr)} .ins-grid{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:760px){
+    .ins-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .h2h-pick{grid-template-columns:minmax(0,1fr)} .h2h-vs{justify-self:center}
+    .h2h-list{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+    .h2h-list button{flex:0 0 auto}
+    .h2h-row{grid-template-columns:46px minmax(0,1fr) 96px minmax(0,1fr) 46px;gap:6px;font-size:12px}
+    .h2h-row .v{font-size:12.5px}
+    .ins-pay{top:40px}
+  }
   /* ---------- Chat (bloc 3, étape 2): General ----------
      Built by the script only when the server says the chat is on (#gf-server .chat): nothing here otherwise.
      A side panel over the page (no scrim: the board stays usable) from 761 px; the whole screen on a phone. */
@@ -2114,9 +2166,6 @@
     </button>
     <button class="rail-btn" type="button" data-view="leagues">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3.5 19c.8-3 2.9-4.6 5.5-4.6s4.7 1.6 5.5 4.6M14.6 14.6c.6-.2 1.2-.3 1.9-.3 2 0 3.6 1.3 4.2 3.7"/></svg>Leagues
-    </button>
-    <button class="rail-btn" type="button" data-exh-go hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="12" rx="2"/><path d="M10.5 9v5l4-2.5z" fill="currentColor"/><path d="M8 20.5h8"/></svg>Exhibition
     </button>
     <button class="rail-btn" type="button" data-view="bets">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7a2 2 0 012-2h12a2 2 0 012 2v2.5a2.5 2.5 0 000 5V17a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.5a2.5 2.5 0 000-5z"/><path d="M14 6v12" stroke-dasharray="2 2.2"/></svg>My bets
@@ -6163,7 +6212,7 @@ let VIEW='live', SCH_FILTER='all', TEAM_SEL=null, PL_FOCUS=null;
 function setView(v){
   if(v==='leagues'&&VIEW!=='leagues'){ LG.at=0; LG.data={}; }   /* fresh list and leaderboard each time the tab opens */
   VIEW=v;
-  for(const k of ['live','schedule','standings','ranking','teams','myteam','history','leagues','bets','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  for(const k of ['live','schedule','standings','ranking','teams','myteam','history','leagues','bets','insights','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
   if(typeof adsForView==='function'&&ADS) adsForView(v);
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   renderView(true);
@@ -6180,6 +6229,7 @@ function renderView(force){
   else if(VIEW==='history') renderHistory(t);
   else if(VIEW==='leagues') renderLeagues(t);
   else if(VIEW==='bets') renderBets(t);
+  else if(VIEW==='insights') renderInsights(t,force);
   else if(VIEW==='settings') renderSettings(force);
 }
 /* ---------- Ranking: this week's players, position by position, game by game as each one ends ----------
@@ -6652,45 +6702,158 @@ function seasonRefresh(force){
   betTick(t);
   renderView(false);
 }
-/* ---------- Exhibition: matches played by the engine outside the schedule (no bets, no standings) ----------
-   Listed without a score (no spoiler); the GameFeed is fetched when the viewer asks for it and replayed on the big screen. */
-let EXH=[];
-async function exhibitionsLoad(){
-  try{ const r=await fetch('/api/exhibitions',{cache:'no-cache'}); if(!r.ok) return; EXH=((await r.json()).exhibitions||[]); }catch(e){ return; }
-  renderExhibitions();
+/* ---------- Insights (section 77): this week's numbers, from the games already final ----------
+   /api/insights is computed by the server on final games only (no spoiler) and fetched again each time a game ends.
+   Day recap: open to everyone. This week and Head-to-head: accounts the server lets in (pro); the others see a blurred
+   preview drawn with made-up numbers (the real ones never reach their browser). */
+const INS={on:!!(SERVER&&SERVER.insights),d:null,tok:null,busy:false,err:0,retry:0,tab:'week',a:null,b:null,day:null};
+const INS_KEY='gc-insights-v1';
+(()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
+const INS_SVG={tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M6.5 16v-4.5M11 16V8M15.5 16v-6M20 16V7.5"/><path d="M5 9l5-4 4.5 3 5.5-4"/></svg>',
+  lock:'<svg class="ins-lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>'};
+function insInit(){
+  if(!INS.on||document.getElementById('viewInsights')) return;
+  const bets=document.querySelector('.rail-btn[data-view="bets"]');
+  if(bets) bets.insertAdjacentHTML('beforebegin',`<button class="rail-btn" type="button" data-view="insights">${INS_SVG.tab}Insights<span class="ins-lkw">${INS_SVG.lock}</span></button>`);
+  const v=document.getElementById('viewBets');
+  if(v) v.insertAdjacentHTML('afterend','<section class="view" id="viewInsights" hidden aria-label="Insights"></section>');
+  document.addEventListener('click',e=>{ const t=e.target; if(!t.closest||!t.closest('#viewInsights')) return;
+    const tb=t.closest('[data-ins-tab]'); if(tb){ INS.tab=tb.dataset.insTab; insSave(); renderInsights(nowMs(),true); return; }
+    const pk=t.closest('[data-h2h]'); if(pk){ INS[pk.dataset.h2h]=pk.dataset.t; insSave(); renderInsights(nowMs(),true); return; }
+    const dy=t.closest('[data-ins-day]'); if(dy){ INS.day=dy.dataset.insDay; renderInsights(nowMs(),true); } });
 }
-function renderExhibitions(){
-  let box=document.getElementById('exhBox');
-  document.querySelectorAll('[data-exh-go]').forEach(b=>b.hidden=!EXH.length);
-  if(!EXH.length){ if(box) box.remove(); return; }
-  /* right under the live board (above the standings), and reachable from the rail */
-  if(!box){ box=document.createElement('section'); box.id='exhBox'; box.className='exh'; box.setAttribute('aria-label','Exhibition');
-    const grid=document.getElementById('liveGrid'); if(!grid) return; grid.after(box); }
-  box.innerHTML=EXH.map(x=>{ const A=TEAMS[x.away]||{name:x.away,abbr:x.away}, H=TEAMS[x.home]||{name:x.home,abbr:x.home};
-    const kinds=(x.adjust_kinds||[]).length, D=x.decisions||{};
-    /* engine intelligence (blocks A-D): what the coaches, QBs, receivers and defenders did that the viewer will see */
-    const dec=[D.gameplan_adjust?`${D.gameplan_adjust} game-plan adjustment${D.gameplan_adjust>1?'s':''}${D.counters?` (${D.counters} counter-move${D.counters>1?'s':''})`:''}`:'',D.bracket_throws?`${D.bracket_throws} throw${D.bracket_throws>1?'s':''} into a bracket`:'',
-      D.beyond_first_read?`${D.beyond_first_read} throws past the first read`:'',D.under_pressure?`${D.under_pressure} under pressure`:'',
-      D.scrambles?`${D.scrambles} scramble${D.scrambles>1?'s':''}`:'',D.throwaways?`${D.throwaways} throwaway${D.throwaways>1?'s':''}`:'',
-      D.contested?`${D.contested} contested catch${D.contested>1?'es':''}`:'',D.broken_up?`${D.broken_up} pass${D.broken_up>1?'es':''} broken up`:'',D.busts?`${D.busts} coverage bust${D.busts>1?'s':''}`:'',
-      D.safeties?`${D.safeties} safet${D.safeties>1?'ies':'y'}`:''].filter(Boolean).join(' · ');
-    return `<article class="card exh-card"><div class="exh-main"><span class="pt-tag">Exhibition</span>
-      <h3><span class="abbr">${esc(A.abbr)}</span> ${esc(A.name)} <em>@</em> <span class="abbr">${esc(H.abbr)}</span> ${esc(H.name)}</h3>
-      <p class="exh-sub">${esc(x.title||'')}${dec?` · ${esc(dec)}`:''}${x.adjustments?` · ${x.adjustments} in-game adjustments${kinds?` (${kinds} kinds)`:''}`:''}${x.concepts?` · ${x.concepts} play concepts`:''} · outside the schedule, no bets</p></div>
-      <button type="button" class="cta exh-go" data-exh="${esc(x.id)}">Watch the match</button></article>`; }).join('');
+function insSave(){ lsSet(INS_KEY,{tab:INS.tab,a:INS.a,b:INS.b}); }
+function insLockIcon(){ document.querySelectorAll('.rail-btn[data-view="insights"] .ins-lkw').forEach(s=>s.hidden=!!(INS.d&&INS.d.pro)); }
+async function insFetch(){
+  if(INS.busy) return; INS.busy=true;
+  const tok=PLAYER&&PLAYER.token||'';
+  try{ const d=await api('/insights'+(tok?'?token='+encodeURIComponent(tok):'')); INS.d=d; INS.tok=tok; INS.err=0; insLockIcon(); }
+  catch(e){ INS.err++; INS.retry=Date.now()+Math.min(60e3,5e3*INS.err); }
+  finally{ INS.busy=false; }
+  if(VIEW==='insights') renderInsights(nowMs(),true);
 }
-async function exhibitionOpen(id,btn){
-  if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
-  try{ const r=await fetch('/api/exhibitions/'+encodeURIComponent(id)); if(!r.ok) throw new Error('HTTP '+r.status); openReplayFeed(await r.json(),''); }
-  catch(e){ toastErr('This exhibition could not be loaded. Try again in a moment.'); }
-  finally{ if(btn){ btn.disabled=false; btn.textContent='Watch the match'; } }
+const insPct=v=>v==null?'—':Math.round(v*100)+'%';
+const insSg=v=>v==null?'—':(v>0?'+':v<0?MINUS:'')+Math.abs(v);
+const insRec=r=>`${r.w}-${r.l}${r.t?'-'+r.t:''}`;
+const insDots=f=>formDots((f||[]).join(''));
+const insName=a=>esc(TEAMS[a]?TEAMS[a].name:a);
+/* the locked preview: made-up numbers in the same shape (seeded, the same on every visit) */
+function insSample(){
+  let s=20261028; const rnd=()=>{ s=(s*1103515245+12345)%2147483648; return s/2147483648; };
+  const rows=Object.keys(SW.teams).sort().map(t=>{ const gp=12, w=Math.floor(rnd()*13), l=gp-w, aw=Math.floor(rnd()*13), ov=Math.floor(rnd()*13);
+    return {team:t,gp,w,l,t:0,ppg:+(18+rnd()*14).toFixed(1),papg:+(18+rnd()*14).toFixed(1),ats:[aw,gp-aw,0],ou:[ov,gp-ov],
+      luck:+(rnd()*6-3).toFixed(1),close:[Math.floor(rnd()*4),4],ypp:+(4.8+rnd()*2).toFixed(2),ypp_a:+(4.8+rnd()*2).toFixed(2),
+      pass:+(.45+rnd()*.25).toFixed(3),d3:+(.3+rnd()*.25).toFixed(3),rz:+(.4+rnd()*.4).toFixed(3),to:Math.round(rnd()*8-4),
+      xpl:+(1+rnd()*3).toFixed(1),sk:+(1+rnd()*3).toFixed(1),form:['W','L','W','W','L'],rating:+(rnd()*16-8).toFixed(1)}; });
+  rows.sort((a,b)=>b.rating-a.rating);
+  const t=rows.map(r=>r.team);
+  return {league:{games:144,ppg:50.2,home_w:.52,fav_w:.61,over:.48},rows,
+    hints:[{kind:'ats',text:`${t[0]} covers the spread 9 of 12`,sub:'Beats the engine line more often than not.'},
+      {kind:'luck',text:`${t[5]} has won 2.4 more games than the engine expected`,sub:'Results ahead of the play.'},
+      {kind:'ou',text:`Unders hit in 9 of 12 ${t[9]} games`,sub:'Their games run lower than the engine total.'}]};
 }
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-exh]'); if(b){ exhibitionOpen(b.dataset.exh,b); } });
-document.addEventListener('click',e=>{ if(!(e.target.closest&&e.target.closest('[data-exh-go]'))) return;
-  closeDrawer(); setView('live');
-  requestAnimationFrame(()=>{ const box=document.getElementById('exhBox'); if(!box) return;
-    box.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'center'});
-    box.classList.remove('exh-flash'); void box.offsetWidth; box.classList.add('exh-flash'); }); });
+function insWeekHTML(D){
+  const L=D.league, R=D.rows;
+  if(!R.length) return '<div class="card"><p class="st-empty"><b>No final games yet</b>The numbers fill in as soon as the first games of the week are final.</p></div>';
+  const mx=Math.max(1,...R.map(r=>Math.abs(r.rating)));
+  const kpi=[['Points / game',L.ppg==null?'—':L.ppg,'both teams together'],
+    ['Home teams win',insPct(L.home_w),L.home_w==null?'':L.home_w<.5?'no home edge this week':'home field helps'],
+    ['Favorites win',insPct(L.fav_w),L.fav_w==null?'':L.fav_w<.55?'underdogs win often':'favorites hold up'],
+    ['Overs hit',insPct(L.over),L.over==null?'vs the engine total':L.over>.55?'totals set too low':L.over<.45?'totals set too high':'totals about right']]
+    .map(([k,v,s])=>`<div class="mt-st"><span class="label">${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  const ic={ats:'ATS',ou:'O/U',luck:'±W'};
+  const hints=D.hints.length?`<div class="ins-angles">${D.hints.map(h=>`<div class="ins-hint"><i class="${h.kind==='ou'?'o':''}">${ic[h.kind]||'•'}</i><div>${esc(h.text)}<small>${esc(h.sub||'')}</small></div></div>`).join('')}</div>`
+    :'<p class="st-none">Angles appear once teams have played 8 games this week.</p>';
+  const rows=R.map((r,i)=>`<tr><td class="rk${i===0?' top':''}">${i+1}</td><th scope="row"><span class="badge">${esc(r.team)}</span>${insName(r.team)}</th>
+    <td><span class="rt"><i class="${r.rating<0?'n':''}" style="width:${Math.max(3,Math.round(Math.abs(r.rating)/mx*46))}px"></i>${insSg(r.rating)}</span></td>
+    <td>${insRec(r)}</td><td>${r.ppg}</td><td>${r.papg}</td><td>${r.ats[0]}-${r.ats[1]}${r.ats[2]?'-'+r.ats[2]:''}</td><td>${r.ou[0]}-${r.ou[1]}</td>
+    <td>${r.ypp==null?'—':r.ypp} · ${r.ypp_a==null?'—':r.ypp_a}</td><td><span class="ins-lk-v ${r.luck>=1.5?'n':r.luck<=-1.5?'p':''}">${insSg(r.luck)}</span></td><td>${insDots(r.form)}</td></tr>`).join('');
+  return `<div class="ins-kpi">${kpi}</div>
+    <div class="card"><div class="card-h"><h2>Betting angles</h2><span class="label">Updated after each game · 8+ games per team</span></div>${hints}
+      <p class="np-note">Trends from this week's games only. They hint, they don't guarantee.</p></div>
+    <div class="card" style="margin-top:14px"><div class="card-h"><h2>Power table</h2><span class="label">Rating = points better than an average team, schedule-adjusted</span></div>
+      <div class="st-scroll"><table class="tst stand ins"><thead><tr><th>#</th><th scope="col">Team</th><th>Rating</th><th>W-L</th><th title="Points scored per game">Pts/g</th><th title="Points allowed per game">Opp/g</th><th title="Record against the spread">ATS</th><th title="Overs-unders against the engine total">O-U</th><th title="Yards per play, offense · defense">Yds/play</th><th>Luck</th><th>Last 5</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="np-note"><b>Luck</b> = wins minus the wins the engine's pre-game odds expected. Big plus: results ahead of the play. Big minus: the opposite.</p></div>`;
+}
+function insH2HHTML(D,t){
+  const R=D.rows; if(R.length<2) return '<div class="card"><p class="st-empty"><b>No final games yet</b>Pick two teams once the first games of the week are final.</p></div>';
+  const by={}; for(const r of R) by[r.team]=r;
+  const fav=PLAYER&&PLAYER.fav_team;
+  if(!by[INS.a]) INS.a=by[fav]?fav:R[0].team;
+  if(!by[INS.b]||INS.b===INS.a) INS.b=R.find(r=>r.team!==INS.a).team;
+  const A=INS.a, B=INS.b, a=by[A], b=by[B], teams=R.map(r=>r.team).sort();
+  const list=(sel,k,other)=>`<div class="h2h-list" role="group" aria-label="${k==='a'?'First':'Second'} team">${teams.map(x=>`<button type="button" data-h2h="${k}" data-t="${esc(x)}" aria-pressed="${x===sel}"${x===other?' disabled':''} title="${insName(x)}">${esc(x)}</button>`).join('')}</div>`;
+  const side=x=>`<div class="h2h-head"><span class="badge">${esc(x.team)}</span><div><h3>${insName(x.team)}</h3><p>${insRec(x)} · rating ${insSg(x.rating)} · ${insDots(x.form)}</p></div></div>`;
+  const pa=(w,l)=>w/((w+l)||1);
+  const def=[['Rating',r=>r.rating,1,insSg],['Points / game',r=>r.ppg,1],['Allowed / game',r=>r.papg,-1],['Yards / play',r=>r.ypp,1],['Yards / play allowed',r=>r.ypp_a,-1],
+    ['3rd down',r=>r.d3,1,insPct],['Red zone TD',r=>r.rz,1,insPct],['Turnover margin',r=>r.to,1,insSg],['Big plays / game',r=>r.xpl,1],['Sacks / game',r=>r.sk,1],
+    ['Covers the spread',r=>pa(r.ats[0],r.ats[1]),1,(v,r)=>`${r.ats[0]}-${r.ats[1]}`],['Overs',r=>pa(r.ou[0],r.ou[1]),0,(v,r)=>`${r.ou[0]}-${r.ou[1]}`],
+    ['Close games (≤ 8)',r=>pa(r.close[0],r.close[1]-r.close[0]),1,(v,r)=>`${r.close[0]}-${r.close[1]-r.close[0]}`],['Pass rate (style)',r=>r.pass,0,insPct]];
+  const rows=def.map(([lab,f,dir,fmt])=>{ const va=f(a)||0, vb=f(b)||0, m=Math.max(Math.abs(va),Math.abs(vb))||1, F=fmt||(v=>v==null?'—':v);
+    const ba=dir&&(dir>0?va>vb:va<vb), bb=dir&&(dir>0?vb>va:vb<va);
+    return `<div class="h2h-row"><span class="v${ba?' best':''}">${F(f(a),a)}</span><span class="h2h-bar l"><b class="${ba?'best':''}" style="width:${Math.round(Math.abs(va)/m*100)}%"></b></span>
+      <span class="lab">${lab}</span><span class="h2h-bar r"><b class="${bb?'best':''}" style="width:${Math.round(Math.abs(vb)/m*100)}%"></b></span><span class="v r${bb?' best':''}">${F(f(b),b)}</span></div>`; }).join('');
+  const meets=SCHED.filter(g=>g.home&&((g.home===A&&g.away===B)||(g.home===B&&g.away===A)));
+  const meet=meets.length?meets.map(g=>{ const o=g.odds||{}, st=gStatus(g,t), fin=st==='final'&&g.result;
+      const when=new Date(g.ko).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Brussels'});
+      const cells=[[fin?'Result':st==='live'?'Status':'Kickoff',fin?`${g.away} ${g.result.away} – ${g.result.home} ${g.home}`:st==='live'?'Live now':`${when}`],
+        ['Engine win chance',o.p_home!=null?`${g.home} ${insPct(o.p_home)}`:'—'],
+        ['Spread',o.spread_home!=null?`${g.home} ${o.spread_home>0?'+':o.spread_home<0?MINUS:''}${Math.abs(o.spread_home)}`:'—'],['Total',o.total!=null?o.total:'—']];
+      return `<div class="h2h-meet">${cells.map(([k,v])=>`<div class="mt-st"><span class="label">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>`; }).join('')
+    :'<p class="st-none">They don\'t meet in the regular season this week.</p>';
+  const reads=[];
+  if(Math.abs(a.luck-b.luck)>=2){ const l=a.luck>b.luck?a:b; reads.push(`${l.team} has been luckier (${insSg(l.luck)} wins vs expected): the record flatters it more than the play.`); }
+  if(a.ypp!=null&&b.ypp!=null){ const ea=a.ypp-b.ypp_a, eb=b.ypp-a.ypp_a;
+    reads.push(`${ea>=eb?A:B} has the better offense-vs-defense match-up in yards per play (${A} ${a.ypp} vs ${b.ypp_a} allowed · ${B} ${b.ypp} vs ${a.ypp_a} allowed).`); }
+  const no=a.ou[0]+a.ou[1]+b.ou[0]+b.ou[1];
+  if(no){ const ov=(a.ou[0]+b.ou[0])/no; reads.push(`Overs hit in ${insPct(ov)} of their games this week${ov>=.6?': the total leans over':ov<=.4?': the total leans under':''}.`); }
+  const ca=pa(a.ats[0],a.ats[1]), cb=pa(b.ats[0],b.ats[1]);
+  if(Math.abs(ca-cb)>=.25){ const c=ca>cb?a:b; reads.push(`${c.team} covers the spread far more often (${c.ats[0]}-${c.ats[1]}): the line has been slow to catch up.`); }
+  return `<div class="card"><div class="h2h-pick"><div class="h2h-side">${side(a)}${list(A,'a',B)}</div><span class="h2h-vs" aria-hidden="true">VS</span><div class="h2h-side">${side(b)}${list(B,'b',A)}</div></div></div>
+    <div class="ins-grid"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
+    <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}</div>
+    <div class="card"><div class="card-h"><h2>What it points to</h2></div>${reads.map(r=>`<div class="ins-hint"><i aria-hidden="true">→</i><div>${esc(r)}</div></div>`).join('')}
+    <p class="np-note">Reads from this week's numbers, not a guarantee.</p></div></div></div>`;
+}
+function insRecapHTML(D){
+  const days=Object.keys(D.recaps||{});
+  if(!days.length) return '<div class="card" style="margin-top:14px"><p class="st-empty"><b>No final games yet</b>The day recap fills in as soon as the first games are final.</p></div>';
+  if(!days.includes(INS.day)) INS.day=days[days.length-1];
+  const r=D.recaps[INS.day], name=d=>new Date(d+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'long',timeZone:'UTC'});
+  const best=r.top.pass[0];
+  const kpi=[['Games',r.games,'final'],['Points / game',r.ppg,'both teams together'],['Upsets',r.n_upsets,'the underdog won'],['Best passing game',best?best.yds+' yds':'—',best?esc(best.name):'']]
+    .map(([k,v,s])=>`<div class="mt-st"><span class="label">${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  const rp=id=>`<button class="link" type="button" data-sched="${esc(id)}">Replay</button>`;
+  const ups=r.upsets.length?r.upsets.map(u=>`<div class="rc-item"><span class="badge">${esc(u.winner)}</span><div class="grow"><b>${insName(u.winner)}</b> beat ${esc(u.loser)} ${esc(u.score)}<small>Underdog at +${u.ml}</small></div>${rp(u.game)}</div>`).join('')
+    :'<p class="st-none">No upset: every favorite won.</p>';
+  const lab={pass:'Passing',rush:'Rushing',rec:'Receiving'};
+  const perf=['pass','rush','rec'].map(k=>(r.top[k]||[]).map(p=>`<div class="rc-item"><span class="badge">${esc(p.team)}</span><div class="grow"><b>${esc(p.name)}</b><small>${lab[k]} · vs ${esc(p.vs)}</small></div><em>${p.yds} yds</em></div>`).join('')).join('');
+  const gm=(g,l)=>`<div class="rc-item"><div class="grow"><b>${esc(g.away)} ${g.as} – ${g.hs} ${esc(g.home)}</b><small>${l}</small></div>${rp(g.id)}</div>`;
+  return `<div class="seg ins-tabs" role="tablist" aria-label="Day">${days.map(d=>`<button type="button" role="tab" data-ins-day="${d}" aria-selected="${d===INS.day}">${name(d)}</button>`).join('')}</div>
+    <div class="ins-kpi" style="margin-top:14px">${kpi}</div>
+    <div class="rc-grid"><div class="card"><div class="card-h"><h2>Upsets</h2><span class="label">Longest prices first</span></div>${ups}</div>
+    <div class="card"><div class="card-h"><h2>Performances</h2><span class="label">Best single game</span></div>${perf||'<p class="st-none">—</p>'}</div>
+    <div class="card"><div class="card-h"><h2>Games of the day</h2></div>${gm(r.shootout,'Highest-scoring game')}${gm(r.thriller,'Closest game')}</div></div>`;
+}
+function renderInsights(t,force){
+  const el=document.getElementById('viewInsights'); if(!el) return;
+  const finals=SCHED.reduce((n,g)=>n+(gStatus(g,t)==='final'?1:0),0), tok=PLAYER&&PLAYER.token||'';
+  if((!INS.d||INS.d.final!==finals||INS.tok!==tok)&&!INS.busy&&Date.now()>=INS.retry) insFetch();
+  const D=INS.d;
+  const key=['ins',D?D.final:'-',D&&D.pro,INS.tab,INS.a,INS.b,INS.day,INS.err>0&&!D,INS.tab==='h2h'?SCHED.map(g=>gStatus(g,t)[0]).join(''):''].join('|');
+  if(!force&&el._k===key) return; el._k=key;
+  const head=`<div class="view-head"><h2>Insights</h2><p class="eyebrow">Week ${SW.week.index} · from the ${D?D.final:finals} game${(D?D.final:finals)===1?'':'s'} already played · updates as each game ends · play money only</p>
+    <div class="seg ins-tabs" role="tablist" aria-label="Insights">${[['week','This week'],['h2h','Head-to-head'],['recap','Day recap']].map(([k,l])=>`<button type="button" role="tab" data-ins-tab="${k}" aria-selected="${INS.tab===k}">${l}</button>`).join('')}</div></div>`;
+  if(!D){ el.innerHTML=head+(INS.err?'<div class="card"><p class="st-empty"><b>Insights could not be loaded</b>Trying again in a moment.</p></div>':'<div class="card"><p class="st-none">Loading…</p></div>'); return; }
+  if(INS.tab==='recap'){ el.innerHTML=head+insRecapHTML(D); return; }
+  if(D.pro){ el.innerHTML=head+`<div style="margin-top:14px">${INS.tab==='h2h'?insH2HHTML(D,t):insWeekHTML(D)}</div>`; return; }
+  const S=insSample(), body=INS.tab==='h2h'?insH2HHTML(S,t):insWeekHTML(S);
+  el.innerHTML=head+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert>${body}</div>
+    <div class="card ins-pay" role="note"><span class="label">Insights · Pro</span><h3>Bet smarter this week</h3>
+      <ul><li>Power table: ratings, luck, records against the spread and the total</li><li>Betting angles, updated after each game</li><li>Head-to-head: any two teams, side by side</li></ul>
+      <button class="cta" type="button" disabled>Unlock · €4.99</button>
+      <p><b>Coming soon.</b> One payment unlocks it all. The Day recap stays free. Play money only: this is a preview with made-up numbers.</p></div></div>`;
+}
 function seasonBoot(){
   for(const a in SW.teams) TEAMS[a]={abbr:a,name:SW.teams[a].name.replace(/[<>&"'`]/g,''),rec:''};
   const real=Date.now();
@@ -6704,7 +6867,7 @@ function seasonBoot(){
   seasonRefresh(true);
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ chatInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); exhibitionsLoad(); pushInit(); watchFromUrl(); joinFromUrl(); }
+  if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); }
 }
 
 
@@ -8383,7 +8546,7 @@ async function chatSend(X){
 }
 
 /* ---- a game's room (étape 3): in the big screen, standard view or « Bigger field » ---- */
-/* the room of a game of this week (a board, a live game, a replay from the schedule); none for exhibitions or a file */
+/* the room of a game of this week (a board, a live game, a replay from the schedule); none for a file loaded by hand */
 function mcRoom(g){
   if(!CHAT_ON||!g||!g.gf||!g.gf.game||!SW||!SW.week) return null;
   const id=g.gf.game.id; return id&&SCHED_BY[id]?`m:${SW.week.start}:${id}`:null;

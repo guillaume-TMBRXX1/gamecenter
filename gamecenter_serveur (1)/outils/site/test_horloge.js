@@ -2,7 +2,7 @@
 // ecran-2 du 15/10 : temps réel ; ecran-1 : 14/10)
 // — test navigateur (Playwright, crochet de test).
 //   node outils/site/test_horloge.js [GameFeed avec l'horloge réelle]     (depuis « gamecenter_serveur (1) »)
-// Rejoue en temps simulé, sur le grand écran, un match de l'horloge réelle (par défaut : la dernière exhibition dont les
+// Rejoue en temps simulé, sur le grand écran, un match de l'horloge réelle (par défaut : le dernier match de test (outils/site/matchs) dont les
 // actions portent play.clock) auquel moteur/ecran.py ajoute play.show s'il n'y est pas.
 // Vérifie : avant un snap où l'horloge tournait, elle descend en continu de show.c0 à clock_start (jamais de saut) et le
 // chrono des 40 s descend jusqu'à la valeur du snap ; horloge arrêtée : elle ne bouge pas avant le snap ; pendant
@@ -17,7 +17,7 @@ let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c
 
 function feed(){
   let file=process.argv[2];
-  if(!file){ const ex=path.join(ROOT,'data','exhibitions');
+  if(!file){ const ex=path.join(__dirname,'matchs');
     for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()){
       const F=JSON.parse(fs.readFileSync(path.join(ex,f),'utf8')); if(F.plays.some(P=>P.clock&&P.clock.timeouts)){ file=path.join(ex,f); break; } } }
   if(!file) throw new Error('aucun GameFeed avec l\'horloge réelle');

@@ -219,7 +219,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   texte « Pass thrown away », « X scramble, +7 ». **Site** : la route animée suit le receveur choisi ; « · off his
   first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
   semaines produites avant (sans `play.decision`).
-- **Exhibition** : `outils/exhibition/simuler_exhibition.py` joue avec les décisions (`--sans-decisions` : moteur V21).
+- **Exhibition** (retirée le 28/10/2026, section 77) : `outils/exhibition/simuler_exhibition.py` jouait avec les décisions (`--sans-decisions` : moteur V21).
   Depuis V25 : CTX @ VEC (`exh-v25-ctx-vec`, remplace MNL @ VEC V24), choisi parmi 40 candidats pour ses plans de
   jeu et ses ajustements du bloc D (quick game et protection contre le blitz, bascule hors du double, brackets et leurs
   rotations), avec les duels receveur / défenseur et les décisions du QB ; `--remplace <id>` retire l'ancienne exhibition.
@@ -353,7 +353,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (« Fin de programme ») et `outils/moteur/rapport_validation_complete.json`.
 - Corrigé : l'ordre d'affichage de deux ajustements défensifs V21 simultanés dépendait du hachage de Python (GameFeed
   non reproductible octet par octet ; jeu inchangé).
-- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`) : GameFeeds du moteur complet (notes et staffs de
+- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`, retirée le 28/10/2026, section 77) : GameFeeds du moteur complet (notes et staffs de
   la dernière semaine ; depuis le 17/10/2026 jusqu'à la dernière cellule 12.2, voir section 59) dans un artefact, à
   charger sur le site (« Load GameFeed »).
 
@@ -804,7 +804,7 @@ créés = débranchés), la page reste lourde.
   forcément et sont listées « à enrichir » (workflow « Commentaire audio » pour leur ajouter des prises) ; le test du
   repli fait taire le match à l'antenne pendant la mesure (sa phrase passait aussi par la voix de l'appareil).
 - **Cellule 427 du notebook** (Game Center du notebook, `NGS_TEMPLATE` : copie allégée du site, sans serveur, recherche,
-  paris en ligne ni exhibitions). Après un changement de rendu de `gamecenter_source.html` : `python3 outils/regen427.py`
+  paris en ligne ni Insights). Après un changement de rendu de `gamecenter_source.html` : `python3 outils/regen427.py`
   (essai) puis `--ecrire`. L'outil reporte les changements du site depuis le commit noté dans la cellule
   (« Synchronisé avec gamecenter_source.html @ … »), bloc par bloc, là où il retrouve leur code une seule fois ; il liste
   les blocs refusés (partie du site seulement, ou à reporter à la main). `--historique` rejoue les synchronisations
@@ -2180,6 +2180,35 @@ avec les pénalités ; l'audit le classe bloquant (« après la pénalité ») e
   (`DRIVE_MAX_ACTIONS`, jamais atteint). Les drives de moins de 20 actions ne changent pas (3 matchs de référence
   contrôlés), le hasard non plus. Interrupteur `GC_DRIVE_LONG` (`0` : coupure à 20 actions, à l'identique).
 
+### 77. Onglet « Insights » et retrait d'Exhibition (28/10/2026)
+**Insights** (barre latérale, avant « My bets ») : les statistiques de la semaine en cours pour parier plus
+intelligemment, calculées par le serveur (`moteur/insights.py`, `/api/insights`) sur les **seuls matchs terminés** à
+l'heure du serveur (jamais un résultat avant la fin du match). Gardées en mémoire et recalculées dès qu'un match se
+termine (≈ 0,2 s pour 240 matchs) : le site redemande les chiffres à chaque match fini.
+- **This week** : quatre chiffres de la ligue (points par match, victoires à domicile, des favoris, overs) ;
+  **Betting angles** (six indices au plus, deux par genre, sur 8 matchs ou plus d'une équipe : contre le spread ≥ 70 %,
+  over / under ≥ 70 %, chance ≥ 1,5 victoire) ; **Power table** (rating = marge moyenne corrigée du calendrier, SRS ;
+  bilan, points marqués / encaissés, ATS, O-U, yards par action attaque · défense, Luck, 5 derniers matchs).
+  Luck = victoires moins les victoires attendues par les cotes du moteur d'avant-match.
+- **Head-to-head** : deux listes de franchises, un clic change l'équipe (autant de fois qu'on veut ; une équipe ne se
+  choisit pas contre elle-même) ; 14 statistiques côte à côte, leur match de la semaine (résultat ou coup d'envoi,
+  chance de victoire du moteur, spread, total) et quelques lectures.
+- **Day recap** : un onglet par jour joué : matchs, points, surprises (plus grosses cotes d'abord), meilleure performance
+  d'un match (passe, course, réception), match le plus prolifique et le plus serré, avec Replay.
+- **Cadenas** : le Day recap est ouvert à tous (gratuit pour de bon). This week et Head-to-head sont réservés aux
+  comptes listés dans `GC_INSIGHTS_USERS` (pseudos séparés par des virgules, sans tenir compte des majuscules ;
+  un invité n'y a jamais accès). Les autres voient un aperçu flouté dessiné avec des **chiffres factices** : l'API ne
+  leur envoie ni le tableau, ni les indices, ni les chiffres de la ligue. Le bouton « Unlock · €4.99 » est inactif
+  (« Coming soon ») : paiement unique à brancher plus tard, quand l'audience sera là.
+- Interrupteur `GC_INSIGHTS` (`off` : ni bouton, ni vue, ni API ; le site d'avant, sans Exhibition).
+- Tests : `moteur/tests/test_insights.py` (calcul, matchs finis seulement, accès, interrupteur) et
+  `outils/site/test_insights.js` (invité, compte hors liste, compte autorisé, téléphone 390 px, interrupteur).
+
+**Exhibition retirée** : l'onglet, `/api/exhibitions`, `data/exhibitions`, `outils/exhibition/` et le workflow
+« GameFeeds d'exhibition » (`.github/workflows/gamefeeds.yml`). Les deux matchs (`exh-v41`, `exh-v42`) ne sont plus
+servis : ils restent des matchs de test des suites navigateur (`outils/site/matchs/`). Le bouton « Load GameFeed » du
+replay reste.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2300,7 +2329,8 @@ README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `
 statistiques d'audience, README section 50) · `GC_HIST_DEPUIS` (première semaine comptée dans History, défaut 2,
 README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
-section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours).
+section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_INSIGHTS` (`off` : pas
+d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui ont tout l'onglet), section 77.
 
 ## Test
 
