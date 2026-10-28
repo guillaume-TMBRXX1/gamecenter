@@ -45,7 +45,7 @@ def _brancher_identite(ns):
     """Relit moteur/identite_franchises.py et exécute la cellule d'identité (12.2 vicies septies) telle qu'elle est
     dans le notebook : le moteur chargé une fois sert à chaque réglage (module ou cellule)."""
     import contextlib, importlib, io
-    importlib.reload(ns["moteur"].identite_franchises)
+    importlib.reload(importlib.import_module("moteur.identite_franchises"))
     nb = json.load(open(rc.NOTEBOOK, encoding="utf-8"))
     src = next("".join(c["source"]) for c in nb["cells"]
                if c["cell_type"] == "code" and CELLULE_IDENTITE in "".join(c["source"])[:400])
