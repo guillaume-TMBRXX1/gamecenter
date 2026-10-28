@@ -2133,7 +2133,53 @@ Rien ne change dans le moteur ni dans le site : un outil de mesure, et des fiche
 - **Tests** : `moteur/tests/test_identite_playbooks.py` (deux matchs fabriqués : classement, situations, sens
   d'attaque, défense attribuée, exclusifs, signatures, écarts, rapport).
 
-### 75. Mesure de l'audience : liens courts et tableau de bord (promotion, étape 9.1 — 28/10/2026)
+### 75. Refonte des playbooks — étape 2 : l'identité de jeu des franchises (27-28/10/2026)
+Fiches validées par Guillaume le 27/10 (`programme/Refonte_playbooks_fiches.md`, avec les décisions). Cellule
+**12.2 vicies septies** (après les blessures), module `moteur/identite_franchises.py`. Interrupteur `GC_IDENTITE`
+(allumé ; `0` : moteur d'avant à l'identique, contrôlé par la cellule sur 3 matchs). Les semaines publiées ne changent
+pas ; les équipes de LEAGUE non plus.
+- **Correction** : les préférences de formation de l'extension (12.2 decies, 22 formations) n'étaient appliquées qu'à
+  CTX, VEC, AEG et MNL ; elles le sont aux 24.
+- **Playbook d'identité** (enveloppe de `franchise_playbook`) : multiplicateurs de concepts et de formations par
+  franchise (`ATTAQUE`) ; le budget course / passe du coordinateur ne change pas. **Plays exclusifs** (`EXCLUSIFS`,
+  110 : 4 à 6 par franchise) : combinaisons formation × concept existants créées pour une seule franchise, ou play de
+  l'extension réservé à sa franchise ; les autres le perdent sans perte de poids pour le concept. **Feuille d'appel**
+  de la franchise (`SITUATIONS` : zone rouge d'APX, court de GMB…), **menu** resserré de PLS (`MENU`), **motion**
+  (`MOTION`, 8 franchises, flux « id-motion »), **ZPH en 10 personnel** sur ses formations spread (le WR4 du banc
+  prend la place du TE), **défense** (`DEFENSE` : couvertures et blitz du coordinateur, paquets, rush, fronts).
+- **Sortis de la réserve** de l'extension : `SALEM` (passe à trois niveaux, famille de SAIL ; GRZ, CTD) et
+  `SPILL_PROTECTION` (pression à 5 contre la course, effet par classe de course `PAQUET_COURSE` ; GRZ, FRG). Le site
+  dessine SALEM (tables `CONCEPT_ROUTE`, `PASS_ASSIGN`, `TARGET_DEFAULT`, cellule 427).
+- **Systèmes réels** de référence (`SYSTEMES`) : Walsh (AXM), Leach (ZPH), Mike Shanahan (TDL), Kyle Shanahan / McVay
+  (MRG), Air Coryell (NVA)…
+- **Mesure** (semaine de test, 276 matchs, 3 graines) : écart moyen à la ligue 0,111-0,115 (avant 0,064), aucune paire
+  sous 0,05 (avant 14 sous 0,04), 352 plays joués dont 121 par une seule franchise (avant 248 dont 4), 3 signatures ou
+  plus pour toutes les franchises sauf CTX (« Adapt » : pas de dominante, par fiche) et parfois ONX. Points par match
+  53,0 (avant 54,1) : à recaler avec le reste à l'étape 3 (calibration, cotes, audit, temps du samedi).
+- **Étape 3 (28/10)** : `python3 outils/moteur/equilibre_identite.py` joue le test d'équilibre de 12.3 (2 208 matchs,
+  mêmes graines) identité coupée puis allumée (`--coupe` réutilise un passage coupé, `--boucle` pour régler) :
+  victoires de 0,421 à 0,576 (coupée : 0,405 à 0,617, BST hors limite), toutes les mesures de la ligue dans les
+  tolérances de `rapport_calibration.TOLERANCES` (points 52,6 -> 53,6), 277 ms par match (coupée 274). Réglage : ZPH
+  garde le 10 personnel hors du SHOTGUN de base, SPK moins de verticales et de jet sweeps, AXM un jeu court moins appuyé,
+  BST moins de courses ; identités tenues (écart moyen 0,109, paire la plus proche 0,044).
+- **Outils** : `python3 outils/moteur/semaine_identite.py` (semaine de test : moteur chargé une fois, ≈ 8 min, puis
+  ≈ 30 s par semaine ; `--identite on/off`, `--graine`, `--garder` ; `--boucle dossier` pour régler le module sans
+  recharger le notebook) ; `node outils/site/capture_identite.js <GameFeed> <sortie>` (captures : SALEM, ZPH en 10
+  personnel, un exclusif).
+- **Tests** : `moteur/tests/test_identite_franchises.py` (tables connues du moteur, exclusifs, playbook d'identité,
+  feuille d'appel, motion déterministe, personnel, défense, SALEM et SPILL_PROTECTION) ; la cellule vérifie budgets,
+  exclusifs jouables et réservés, déterminisme, GameFeed valides, interrupteur coupé.
+
+### 76. Correctif : un drive n'est plus coupé à 20 actions (28/10/2026)
+Trouvé par le calcul d'essai de la semaine du 02/11 (refonte des playbooks, étape 3) : un drive de GMB de 20 actions
+finissait par 1er & but aux 8 (holding défensif accepté sur un 4e essai), puis le ballon passait à l'adversaire au même
+endroit. `simulate_drive_franchise` (12.2) et ses enveloppes ont `max_plays = 20` par défaut ; la boucle qui s'arrête à
+20 actions laisse le résultat par défaut, `TURNOVER_ON_DOWNS`. Rare (1 drive sur 1 155 matchs publiés), plus probable
+avec les pénalités ; l'audit le classe bloquant (« après la pénalité ») et la semaine ne serait pas publiée.
+- Cellule **12.2 vicies octies** (après l'identité) : le drive d'une franchise reçoit `max_plays = 60`
+  (`DRIVE_MAX_ACTIONS`, jamais atteint). Les drives de moins de 20 actions ne changent pas (3 matchs de référence
+  contrôlés), le hasard non plus. Interrupteur `GC_DRIVE_LONG` (`0` : coupure à 20 actions, à l'identique).
+### 77. Mesure de l'audience : liens courts et tableau de bord (promotion, étape 9.1 — 28/10/2026)
 **Décisions de Guillaume (28/10)** : plan de l'étape 9 validé (`programme/Promotion.md`, section 9) ; on commence par
 mesurer. Le serveur compte lui-même ce que Cloudflare et Search Console ne voient pas : les clics sur les liens des
 réseaux et les nouveaux joueurs. Reprend l'étape 8.4 (lien `/tt`), élargie à Instagram, YouTube et aux publications.
@@ -2291,7 +2337,7 @@ statistiques d'audience, README section 50) · `GC_HIST_DEPUIS` (première semai
 README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
-courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 75) · `GC_STATS_EXCLURE`
+courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord).
 
 ## Test

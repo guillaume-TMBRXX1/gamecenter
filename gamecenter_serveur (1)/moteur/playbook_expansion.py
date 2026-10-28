@@ -90,10 +90,10 @@ ALIAS = {
                "FLAT": "FLAT"},
 }
 
-# éléments de la base laissés en réserve, avec la raison (rien n'est inventé)
+# éléments de la base laissés en réserve, avec la raison (rien n'est inventé). SALEM et SPILL_PROTECTION en sont
+# sortis le 27/10/2026 (refonte des playbooks, étape 2), avec la définition validée par Guillaume (concept SALEM,
+# paquet SPILL_PROTECTION ci-dessous) ; ils ne sont appelés que par moteur.identite_franchises (GRZ, CTD, FRG).
 RESERVE = {
-    "SALEM": "concept de passe sans structure de routes dans la base (aucune définition sûre) : en attente d'une définition",
-    "SPILL_PROTECTION": "terme de la liste « pressure » sans définition dans la base : en attente",
     "10_PERSONNEL": "4 WR exigés, les rosters actuels en ont 3 : formations 10 bloquées par compatibilite() (étape 6)",
     "SPECIAL_TEAMS": "équipes spéciales (§21) : hors playbook offensif / défensif, à traiter avec les règles de jeu",
     "RUN_FITS / BLOCKING / ARCHETYPES": "vocabulaire d'exécution (§10, §13, §22-23) : déjà porté par les blocs A-E",
@@ -332,6 +332,10 @@ CONCEPTS = {
                          "plan": {"PROFONDS"}, "pa": True},
     "PA_FLOOD":         {"famille": P, "porteur": "PLAY_ACTION", "ancre": "PLAY_ACTION", "modif": (3, 1.3), "nom": "PA Flood",
                          "plan": {"PROFONDS"}, "pa": True},
+    # ---- SALEM (27/10/2026, définition validée par Guillaume) : trois niveaux côté fort, famille de SAIL — un go
+    #      dégage le haut, le slot court un dig à 12 yards, un flat sert de sortie ; part prise sur SAIL (12.2 ter)
+    "SALEM":            {"famille": P, "porteur": "CROSS",       "ancre": "SAIL",        "modif": (2, 1.1), "nom": "Salem",
+                         "plan": {"BATTRE_ZONE"}},
 }
 for _c, _d in list(CONCEPTS.items()):
     if _d.get("rpo"):
@@ -359,6 +363,7 @@ PROGRESSIONS = {
     "SWITCH_VERTICALS": [("WR3", "WHEEL"), ("WR1", "SEAM"), ("WR2", "GO"), ("RB", "FLAT")],
     "PA_SLIDE":         [("WR2", "DEEP_CROSS"), ("WR1", "POST"), ("TE", "FLAT"), ("RB", "FLAT")],
     "PA_FLOOD":         [("WR3", "OUT"), ("WR1", "GO"), ("TE", "FLAT"), ("RB", "DRAG")],
+    "SALEM":            [("WR3", "DIG"), ("TE", "FLAT"), ("WR1", "GO"), ("RB", "DRAG")],
     # côté lancer des RPO : jeu rapide, sans le RB (il porte la feinte)
     "RPO_INSIDE_ZONE_THROW":  [("WR3", "SLANT"), ("WR1", "HITCH"), ("TE", "STICK")],
     "RPO_READ_THROW":         [("WR3", "STICK"), ("WR1", "HITCH"), ("TE", "FLAT")],
@@ -389,6 +394,7 @@ DESSIN_PASSE = {
     "SWITCH_VERTICALS": ({8: "SEAM", 9: "GO", 10: "WHEEL", 5: "BLOCK", 7: "FLAT"}, "GO"),
     "PA_SLIDE":         ({8: "POST", 9: "DEEP_CROSS", 10: "DIG", 5: "FLAT", 7: "FAKE"}, "DEEP_CROSS"),
     "PA_FLOOD":         ({8: "GO", 9: "GO", 10: "OUT", 5: "FLAT", 7: "FAKE"}, "OUT"),
+    "SALEM":            ({8: "GO", 9: "POST", 10: "DIG", 5: "FLAT", 7: "DRAG"}, "DIG"),
     "RPO_INSIDE_ZONE_THROW":  ({8: "HITCH", 9: "HITCH", 10: "SLANT", 5: "STICK", 7: "FAKE"}, "SLANT"),
     "RPO_READ_THROW":         ({8: "HITCH", 9: "GO", 10: "STICK", 5: "FLAT", 7: "FAKE"}, "STICK"),
     "RPO_ALERT_THROW":        ({8: "GO", 9: "STALK", 10: "BUBBLE", 5: "STICK", 7: "FAKE"}, "GO"),
@@ -1072,7 +1078,15 @@ PAQUETS = {
     # ---- contre la course (appel BOX_STACK) ----
     "BOX_ROBBER":      ("BOX_STACK", "homme", [("Cover 1 Robber", 1.0)], 4, "1-high", {}),
     "BOX_SKY":         ("BOX_STACK", "zone", [("Cover 3 Sky", 1.0)], 4, "1-high, safety down", {}),
+    # ---- SPILL_PROTECTION (27/10/2026, définition validée par Guillaume) : pression à 5 où les défenseurs du bord
+    #      plongent à l'intérieur des blocs et renvoient la course vers la touche, où un défenseur libre l'attend ;
+    #      contient le QB (scramble), fort contre power / counter, plus faible contre la passe rapide (court)
+    "SPILL_PROTECTION": (("BOX_STACK", "BLITZ"), "zone", [("Cover 3 Sky", 1.0)], 5, "1-high, safety down",
+                         {"scramble": 0.6, "court": 0.10}),
 }
+# effet d'un paquet sur une course (yards, par classe de course) : seulement les paquets qui jouent la course
+PAQUET_COURSE = {"SPILL_PROTECTION": {"gap": -0.5, "inside": -0.2, "option": -0.2, "qb": -0.3, "outside": 0.3,
+                                      "perimeter": 0.3}}
 # les deux derniers sont des variantes d'appel BOX_STACK : mêmes coquilles que COVER_1_ROBBER / COVER_3_SKY
 ALIAS["concepts"].update({"BOX_ROBBER": "COVER_1_ROBBER contre la course", "BOX_SKY": "COVER_3_SKY contre la course"})
 
@@ -1592,10 +1606,13 @@ def lecture_option(concept, concept_defensif, qb, graine, n):
 # =====================================================================================================================
 # 11. EFFETS — courses (yards) et passes (appel transmis à moteur.decider_passe)
 # =====================================================================================================================
-def effet_course(concept, front=None, motion=None, shift=None, mouvement_yards=0.0, suite=False):
-    """Yards ajoutés à une course (déterministe sauf le mouvement, déjà tiré) : front, motion, shift, enchaînement."""
+def effet_course(concept, front=None, motion=None, shift=None, mouvement_yards=0.0, suite=False, paquet=None):
+    """Yards ajoutés à une course (déterministe sauf le mouvement, déjà tiré) : front, motion, shift, enchaînement,
+    paquet qui joue la course (PAQUET_COURSE)."""
     cl = CLASSE_COURSE.get(concept, "inside")
     d = 0.0
+    if paquet in PAQUET_COURSE:
+        d += PAQUET_COURSE[paquet].get(cl, 0.0)
     if front:
         d += FRONTS[front]["course"].get(cl, 0.0)
     if motion:

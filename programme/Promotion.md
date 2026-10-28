@@ -151,7 +151,7 @@ presque aucun lien entrant (3 à 6 mois, même bien fait).
 | # | Étape | Guillaume | Claude (une PR) | Interrupteur | État |
 |---|---|---|---|---|---|
 | 9.0 | Diagnostic | Relever Cloudflare, Search Console, TikTok Studio (captures) | Analyse | — | en cours |
-| 9.1 | Mesure | Poser `GC_MESURE=1` (et `GC_STATS_EXCLURE`) ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 75) | `GC_MESURE` | PR ouverte |
+| 9.1 | Mesure | Poser `GC_MESURE=1` (et `GC_STATS_EXCLURE`) ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 77) | `GC_MESURE` | PR ouverte |
 | 9.2 | Première visite | Valider les captures | Bandeau pour les nouveaux venus, « Watch live now » | `GC_ACCUEIL` | à faire |
 | 9.3 | Pages indexables | Renvoyer le plan du site | Équipes, records, saisons, matchs marquants ; données structurées | `GC_PAGES` | à faire |
 | 9.4 | Partage | — | Aperçu par match, lien vers une action | `GC_PARTAGE` | à faire |

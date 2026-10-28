@@ -93,7 +93,12 @@ async function server(){
       // tableau de profondeur et rapport des blessures : un absent de la semaine
       const RS=F.game[B.team].roster.map(r=>Object.assign({},r,{status:'active'})); RS[0]=Object.assign(RS[0],{status:'out',absence:{part:'knee',weeks_left:2}});
       const T2={abbr:F.game[B.team].abbr||'X',roster:RS}, box=document.createElement('div');
+      /* sans les blessés réels de la semaine en cours (injuries.in_week, montrés une fois leur action jouée : le
+         nombre dépendait de l'heure du test) — ils sont vérifiés à part juste après */
+      const SW0=G.season.sw(), keep0=SW0.injuries;
+      SW0.injuries=Object.assign({},keep0||{},{in_week:[]});
       box.innerHTML=G.depthChartHTML(T2)+G.injuryReportHTML(T2);
+      SW0.injuries=keep0;
       out.depthOut=box.querySelectorAll('.dc-p.out').length; out.depthTxt=/OUT · knee/.test(box.innerHTML);
       out.report=box.querySelectorAll('table.inj tbody tr').length; out.reportTxt=/Out · 2 wks/.test(box.innerHTML);
       // blessé pendant la semaine (23/10) : une fois son action jouée, « out » jusqu'à la fin de la semaine, sans
