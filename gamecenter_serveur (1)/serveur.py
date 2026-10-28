@@ -838,7 +838,9 @@ def api_feed(gid: str):
 
 
 @app.get("/", response_class=HTMLResponse)
-def page():
+def page(request: Request = None):
+    if request is not None and mesure_on():         # mesure de l'audience (étape 9.1) : rien sans GC_MESURE=1
+        compter_visite(request)
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
@@ -930,9 +932,18 @@ def legal():
          .replace("__ADS__", "on" if ADS_CLIENT else "off"))
     if chat_mode() != "off":                         # règles du chat et données gardées : seulement chat allumé
         s = _legal_chat(s)
+    if mesure_on():                                  # mesure de l'audience (étape 9.1) : la page le dit
+        s = s.replace(_LEGAL_CF_FIN, _LEGAL_CF_FIN + _LEGAL_MESURE, 1)
     if CF_ANALYTICS:
         s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-cache"})
+
+
+_LEGAL_CF_FIN = "collects the page, the referring site, the country and the type of browser and device.</p>"
+_LEGAL_MESURE = ("\n    <p>Our server also counts, for each day, how many times the home page is opened, the name of the site "
+                 "the visitor came from (for example \u201cgoogle\u201d or \u201ctiktok\u201d) and how many times our short "
+                 "links are used (<code>snapline.live/tt</code>, <code>/ig</code>, <code>/yt</code>). These are totals "
+                 "only: no cookie is set and no IP address or identifier is kept for them.</p>")
 
 
 def _legal_chat(s):
@@ -967,6 +978,215 @@ def sitemap(request: Request):
 def og_image():
     return FileResponse(os.path.join(HERE, "static", "og.png"), media_type="image/png",
                         headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ------------------------------------------------------------------ mesure de l'audience (promotion, étape 9.1)
+# GC_MESURE=1 : liens courts comptés (/tt, /ig, /yt, /r/<source>) qui renvoient à l'accueil, accueil compté par jour et
+# par site d'origine (nom du site seulement : « google », « tiktok »…), tableau de bord /admin/stats (GC_ADMIN_KEY).
+# Rien que des totaux par jour : ni cookie, ni adresse IP, ni identifiant (pas de consentement à demander ; /legal le
+# dit). Sans la variable : rien n'est compté, ces adresses répondent 404 et /legal est inchangée.
+# GC_STATS_EXCLURE = pseudos des comptes à ne pas compter (les siens, séparés par des virgules).
+def mesure_on():
+    return os.environ.get("GC_MESURE", "").strip() == "1"
+
+
+LIENS_COURTS = ("tt", "ig", "yt")                    # TikTok, Instagram, YouTube (bios des réseaux)
+_SOURCE_RE = re.compile(r"[a-z0-9][a-z0-9-]{0,23}")  # /r/<source> : hn, reddit-sideproject, ph…
+_ROBOT_RE = re.compile(r"bot|crawl|spider|slurp|preview|scan|monitor|uptime|lighthouse|headless|python|curl|wget|"
+                       r"httpx|go-http|java/|okhttp|axios|node-fetch|facebookexternalhit|embedly|whatsapp|telegram|"
+                       r"discord|skype", re.I)
+# Site d'origine (en-tête Referer) → source : un des noms de l'adresse (www.google.be → google), quelques adresses
+# exactes, sinon « autre ». Les applications Android envoient « android-app://com.zhiliaoapp.musically » (TikTok).
+_SOURCES_NOM = {"google": "google", "bing": "bing", "duckduckgo": "duckduckgo", "yahoo": "yahoo", "ecosia": "ecosia",
+                "qwant": "qwant", "brave": "brave", "tiktok": "tiktok", "musically": "tiktok", "instagram": "instagram",
+                "facebook": "facebook", "fb": "facebook", "youtube": "youtube", "reddit": "reddit",
+                "ycombinator": "hackernews", "producthunt": "producthunt", "twitter": "x", "bsky": "bluesky",
+                "linkedin": "linkedin", "operationsports": "operationsports"}
+_SOURCES_ADRESSE = {"t.co": "x", "x.com": "x", "youtu.be": "youtube"}
+
+
+def _jour(ms=None):
+    return datetime.fromtimestamp((time.time() if ms is None else ms / 1000), TZ).strftime("%Y-%m-%d")
+
+
+def _robot(req):
+    ua = req.headers.get("user-agent") or ""
+    return not ua or bool(_ROBOT_RE.search(ua))
+
+
+def source_visite(referer, hote=""):
+    """Nom de la source d'une visite d'après son Referer : direct, site (une page de Snapline), google, tiktok… autre."""
+    from urllib.parse import urlparse
+    try:
+        h = (urlparse(referer or "").hostname or "").lower()
+    except ValueError:
+        h = ""
+    if not h:
+        return "direct"
+    h = h[4:] if h.startswith("www.") else h
+    if h in {d for d in (DOMAINE, (hote or "").split(":")[0].lower()) if d}:
+        return "site"
+    if h in _SOURCES_ADRESSE:
+        return _SOURCES_ADRESSE[h]
+    for nom in h.split("."):
+        if nom in _SOURCES_NOM:
+            return _SOURCES_NOM[nom]
+    return "autre"
+
+
+def compter(*cles, jour=None):
+    """+1 sur chaque total du jour (heure de Bruxelles). Une erreur de la base ne gêne jamais la page."""
+    j = jour or _jour()
+    try:
+        with _db_lock, db() as c:
+            c.executemany("INSERT INTO stats_day(day, k, n) VALUES(?,?,1) ON CONFLICT(day, k) DO UPDATE SET n = n + 1",
+                          [(j, k) for k in cles])
+    except sqlite3.Error as e:
+        print("mesure :", e)
+
+
+def compter_visite(req):
+    """Accueil ouvert : « robot » pour les robots (moteurs, aperçus de liens, sondes), sinon « visite » et sa source.
+    Les préchargements du navigateur (Sec-Purpose: prefetch) ne comptent pas."""
+    if req.method != "GET" or "prefetch" in (req.headers.get("sec-purpose") or req.headers.get("purpose") or ""):
+        return
+    if _robot(req):
+        compter("robot")
+    else:
+        compter("visite", "visite:" + source_visite(req.headers.get("referer"), req.headers.get("host")))
+
+
+with db() as _c:
+    _c.execute("CREATE TABLE IF NOT EXISTS stats_day(day TEXT, k TEXT, n INTEGER, PRIMARY KEY(day, k))")
+
+
+def _lien_court(req, src):
+    if not mesure_on() or not _SOURCE_RE.fullmatch(src or ""):
+        raise HTTPException(404)
+    if req.method == "GET" and not _robot(req):
+        compter("lien:" + src)
+    return RedirectResponse("/", status_code=302, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
+
+
+@app.get("/tt")
+def lien_tt(request: Request):
+    return _lien_court(request, "tt")
+
+
+@app.get("/ig")
+def lien_ig(request: Request):
+    return _lien_court(request, "ig")
+
+
+@app.get("/yt")
+def lien_yt(request: Request):
+    return _lien_court(request, "yt")
+
+
+@app.get("/r/{src}")
+def lien_r(request: Request, src: str):
+    return _lien_court(request, src)
+
+
+def _semaines(n, now=None):
+    """Les n dernières semaines (lundi 00:00 → lundi suivant, heure de Bruxelles), la plus récente d'abord."""
+    d = datetime.fromtimestamp((time.time() if now is None else now / 1000), TZ)
+    lundi = datetime(d.year, d.month, d.day, tzinfo=TZ) - timedelta(days=d.weekday())
+    out = []
+    for i in range(n):
+        a = lundi - timedelta(weeks=i)
+        b = a + timedelta(weeks=1)
+        b = datetime(b.year, b.month, b.day, tzinfo=TZ)   # changement d'heure : minuit du lundi suivant
+        out.append((a.strftime("%Y-%m-%d"), int(a.timestamp() * 1000), int(b.timestamp() * 1000)))
+    return out
+
+
+def stats_admin(n_semaines=12, now=None):
+    """Tableau de bord : par semaine, les totaux comptés (visites, sources, liens courts) et ce que la base sait déjà
+    depuis le début (nouveaux joueurs, comptes, joueurs actifs, paris, ligues, rappels, messages du chat)."""
+    n_semaines = max(1, min(52, int(n_semaines)))
+    exclus = [login_key(x) for x in os.environ.get("GC_STATS_EXCLURE", "").split(",") if x.strip()]
+    with db() as c:
+        ids = [r[0] for r in c.execute("SELECT id FROM players WHERE login IN (%s)" % ",".join("?" * len(exclus)),
+                                       exclus)] if exclus else []
+        hors = (" AND %s NOT IN (" + ",".join("?" * len(ids)) + ")") if ids else ""
+        tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+
+        def un(sql, col, *args):
+            q = sql + (hors % col if ids else "")
+            return c.execute(q, args + tuple(ids)).fetchone()[0] or 0
+
+        def actifs(a, b):
+            q = "SELECT player FROM bets WHERE pt >= ? AND pt < ?"
+            args = [a, b]
+            if "chat_messages" in tables:
+                q += " UNION SELECT player FROM chat_messages WHERE adm = 0 AND created >= ? AND created < ?"
+                args += [a, b]
+            return len({r[0] for r in c.execute(q, args)} - set(ids))
+
+        totaux = {r["day"] + "|" + r["k"]: r["n"] for r in c.execute("SELECT day, k, n FROM stats_day")}
+        depuis = c.execute("SELECT MIN(day) FROM stats_day").fetchone()[0]
+        semaines = []
+        for debut, a, b in _semaines(n_semaines, now):
+            jours = {(datetime.fromtimestamp(a / 1000, TZ) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)}
+            comptes = {}
+            for cle, v in totaux.items():
+                j, k = cle.split("|", 1)
+                if j in jours:
+                    comptes[k] = comptes.get(k, 0) + v
+            semaines.append({
+                "debut": debut,
+                "visites": comptes.get("visite", 0), "robots": comptes.get("robot", 0),
+                "sources": {k[7:]: v for k, v in comptes.items() if k.startswith("visite:")},
+                "liens": {k[5:]: v for k, v in comptes.items() if k.startswith("lien:")},
+                "joueurs": un("SELECT COUNT(*) FROM players WHERE created >= ? AND created < ?", "id", a, b),
+                "comptes": un("SELECT COUNT(*) FROM players WHERE acct_at >= ? AND acct_at < ?", "id", a, b),
+                "actifs": actifs(a, b),
+                "paris": un("SELECT COUNT(*) FROM bets WHERE pt >= ? AND pt < ?", "player", a, b),
+                "ligues": un("SELECT COUNT(*) FROM leagues WHERE created >= ? AND created < ?", "owner", a, b),
+                "adhesions": un("SELECT COUNT(*) FROM league_members m JOIN leagues l ON l.id = m.league "
+                                "WHERE m.player != l.owner AND m.joined >= ? AND m.joined < ?", "m.player", a, b),
+                "rappels": un("SELECT COUNT(*) FROM push_subs WHERE created >= ? AND created < ?", "player", a, b),
+                "messages": un("SELECT COUNT(*) FROM chat_messages WHERE adm = 0 AND created >= ? AND created < ?",
+                               "player", a, b) if "chat_messages" in tables else 0,
+            })
+        total = {
+            "joueurs": un("SELECT COUNT(*) FROM players WHERE 1", "id"),
+            "comptes": un("SELECT COUNT(*) FROM players WHERE login IS NOT NULL", "id"),
+            "ligues": un("SELECT COUNT(*) FROM leagues WHERE 1", "owner"),
+            "rappels": un("SELECT COUNT(*) FROM push_subs WHERE 1", "player"),
+        }
+    return {"depuis": depuis, "exclus": len(ids), "semaines": semaines, "total": total}
+
+
+@app.post("/api/admin/stats")
+async def api_admin_stats(req: Request):
+    """Tableau de bord (GC_ADMIN_KEY ; seulement avec GC_MESURE=1). {key, semaines (12 par défaut)}."""
+    if not mesure_on():
+        raise HTTPException(404)
+    body = await _json(req)
+    ip = _ip(req)
+    if _too_many_fails((("admin-stats", ip), 10)):
+        raise HTTPException(429, "too_many")
+    admin = os.environ.get("GC_ADMIN_KEY", "")
+    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+        _note_fail(("admin-stats", ip))
+        raise HTTPException(403, "forbidden")
+    try:
+        n = int(body.get("semaines") or 12)
+    except (TypeError, ValueError):
+        n = 12
+    return JSONResponse(stats_admin(n), headers={"Cache-Control": "no-store"})
+
+
+@app.get("/admin/stats", response_class=HTMLResponse)
+def admin_stats_page():
+    """Tableau de bord de la promotion (en français : pour l'administrateur). La clé est tapée dans la page."""
+    if not mesure_on():
+        raise HTTPException(404)
+    with open(os.path.join(HERE, "static", "admin_stats.html"), encoding="utf-8") as fh:
+        return HTMLResponse(fh.read(), headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
+                                                "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"})
 
 
 @app.get("/api/time")
