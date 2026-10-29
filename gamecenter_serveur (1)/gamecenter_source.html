@@ -408,6 +408,25 @@
   .about h2{margin:0 0 8px}
   .about p{margin:6px 0 0;color:var(--ink-2);line-height:1.55;max-width:80ch}
   .about a{color:var(--ink);font-weight:600}
+  /* Première visite (promotion, étape 9.3 — GC_ACCUEIL) : ce qu'est Snapline en 5 secondes et un bouton pour voir un match.
+     Caché d'office (attribut hidden) : seul le serveur l'affiche ; gc-seen (visiteur déjà venu) le cache dès la 1re image ;
+     gc-boot : les blocs sous la grille attendent le 1er dessin des matchs (sinon ils sautent de ≈ 1 200 px : CLS 0,56) */
+  .welcome{position:relative;margin:14px 0 16px;padding:18px 20px 16px}
+  .welcome .eyebrow{margin:0}
+  .welcome h2{margin:6px 44px 6px 0;font:800 26px/1.05 var(--f-display);letter-spacing:.01em;text-transform:uppercase}
+  .welcome p.wc-txt{margin:0;color:var(--ink-2);line-height:1.5;max-width:70ch}
+  .welcome .wc-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:14px}
+  .welcome .wc-act .cta{width:auto;height:46px;padding:0 22px}
+  .welcome .wc-act a{color:var(--ink);font-weight:700;font-size:14px}
+  .welcome .wc-next{margin:10px 0 0;min-height:1.4em;font-size:13px;color:var(--ink-2)}
+  .welcome .wc-x{position:absolute;top:10px;right:10px;width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+  .welcome .wc-x svg{width:18px;height:18px}
+  .welcome .wc-x:hover{color:var(--ink)}
+  .welcome :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  html.gc-seen #welcome{display:none}
+  html.gc-boot #viewLive .lower,html.gc-boot #viewLive .ad-box,html.gc-boot #about,html.gc-boot .site-foot{display:none}
+  html.gc-boot .topbar>:not(.wordmark){visibility:hidden}   /* la semaine, l'horloge, le solde changent de taille au démarrage */
+  @media (max-width:600px){ .welcome{padding:16px 16px 14px} .welcome h2{font-size:22px} .welcome .wc-act .cta{flex:1 1 100%} }
   /* advertising (roadmap step 7): fixed-size boxes, the space is reserved before the ad arrives */
   .ad-box{display:flex;flex-direction:column;align-items:center;gap:4px;margin:16px 0 0;min-height:118px;overflow:hidden}
   .ad-box[hidden]{display:none}
@@ -2199,6 +2218,14 @@
     </div>
 
     <div id="viewLive">
+    <section class="card welcome" id="welcome" aria-labelledby="welcomeTitle" hidden>
+      <button class="wc-x" type="button" id="welcomeClose" aria-label="Close the introduction" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <p class="eyebrow">AI vs AI · American football</p>
+      <h2 id="welcomeTitle">24 AI coaches. Every game played live.</h2>
+      <p class="wc-txt">Snapline simulates a full American football season every week. Each team is coached by an AI agent that calls every play, snap by snap, on the field below. Free to watch, no sign-up.</p>
+      <div class="wc-act"><button class="cta" type="button" id="welcomeWatch">Watch live now</button><a href="#about" id="welcomeMore">How it works</a></div>
+      <p class="wc-next" id="welcomeNext" aria-live="polite"></p>
+    </section>
     <div class="live-head">
       <div>
         <p class="eyebrow" id="eyebrow">Every game played by the engine</p>
@@ -6864,9 +6891,40 @@ function seasonBoot(){
   headlines.length=0;
   loadWallet(); applySettings(); lastStake=SET.stake; slip.open=[];
   seasonRefresh(true);
+  document.documentElement.classList.remove('gc-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); }
+  if(SERVER&&SERVER.accueil) welcomeInit();
+}
+/* Première visite (étape 9.3) : un match tout de suite — en direct s'il y en a un, sinon le dernier match terminé en replay,
+   avec l'heure du prochain coup d'envoi (la nuit et le week-end entre deux créneaux, rien n'est en direct). Fermé, ou un
+   match ouvert depuis le bandeau : il ne revient plus (gc-welcome-v1, dans ce navigateur seulement). */
+const WELCOME={el:null,pick:null};
+function welcomePick(t){
+  const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko)[0];
+  if(live) return {kind:'live',s:live};
+  const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end)[0];
+  const next=SCHED.filter(g=>gStatus(g,t)==='upcoming').sort((a,b)=>a.ko-b.ko)[0];
+  return fin?{kind:'replay',s:fin,next}:next?{kind:'next',s:next,next}:null;
+}
+function welcomeTick(t){
+  const W=WELCOME; if(!W.el||W.el.hidden||document.documentElement.classList.contains('gc-seen')) return;
+  const P=W.pick=welcomePick(t), b=document.getElementById('welcomeWatch'), n=document.getElementById('welcomeNext');
+  if(!P){ b.hidden=true; setTxt(n,''); return; }
+  b.hidden=false;
+  setTxt(b,P.kind==='live'?'Watch live now':P.kind==='replay'?'Watch a full game':'See the next game');
+  const nx=P.next, mins=nx?Math.max(1,Math.round((nx.ko-t)/60e3)):0, dans=mins>=60?`${Math.floor(mins/60)} h ${String(mins%60).padStart(2,'0')}`:`${mins} min`;
+  setTxt(n,P.kind==='live'?`${TEAMS[P.s.away].name} vs ${TEAMS[P.s.home].name} · on the field right now`
+    :nx?`No game live right now · next kickoff ${dStr(nx.ko)} ${tStr(nx.ko)} Brussels, in ${dans}`:'');
+}
+function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.classList.add('gc-seen'); }
+function welcomeInit(){
+  const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
+  document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1'); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); } });
+  document.getElementById('welcomeWatch').addEventListener('click',()=>{ const P=WELCOME.pick; if(!P) return; welcomeSeen();
+    if(P.kind==='replay') openReplayFeed(SEASON.feeds[P.s.id]); else watchGame(P.s.id); });
+  welcomeTick(nowMs()); setInterval(()=>welcomeTick(nowMs()),15000);
 }
 
 

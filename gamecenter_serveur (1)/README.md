@@ -2273,6 +2273,33 @@ des vidéos avant tout le reste (`programme/Promotion.md`, section 9).
 - **Tests** : `moteur/tests/test_videos.py` (accroches, l'action avant les cartons, durées, interrupteur qui rend les
   plans d'avant) ; tournage vérifié à la main (images à 0, 0,5, 1, 2, 3 et 5 s).
 
+### 81. Première visite : ce qu'est Snapline en 5 secondes, un match tout de suite (promotion, étape 9.3 — 29/10/2026)
+**Constat (29/10)** : un nouveau venu (depuis TikTok, Reddit…) arrivait sur « KICKOFF SOON » et des cotes, sans une
+phrase pour dire ce qu'est le site ; la nuit et entre deux créneaux, aucun match en direct. Cloudflare : CLS mauvais
+sur près de la moitié des visites — mesuré à **0,58** sur téléphone et **0,56** sur ordinateur : la grille des matchs
+reste vide ≈ 5 s, puis ≈ 1 200 px de tuiles poussent « Power rankings », « What is Snapline? » et le pied de page.
+- **Interrupteur `GC_ACCUEIL=1`** (`serveur.py`, `accueil_on`) : sans lui, la page d'avant à l'identique (le bandeau
+  reste caché par son attribut `hidden`, aucun script ajouté). Dans le notebook (cellule 427, sans serveur) : rien.
+- **Le bandeau** (`#welcome`, en haut de Live) : « AI vs AI · American football », « 24 AI coaches. Every game played
+  live. », une phrase (une saison complète chaque semaine, une IA appelle chaque jeu, gratuit, sans inscription), un
+  bouton et « How it works » (vers « What is Snapline? »). Le bouton (`welcomePick`) : **Watch live now** s'il y a un
+  match en direct (il s'ouvre sur le grand écran, `watchGame`) ; sinon **Watch a full game** (le dernier match terminé,
+  en replay) avec « No game live right now · next kickoff Tue 27 Oct 10:00 Brussels, in 3 h 58 » ; sinon **See the next
+  game**. Fermé (croix) ou un match ouvert depuis le bandeau : il ne revient plus (`gc-welcome-v1`, dans le navigateur ;
+  une préférence d'affichage, pas un traçage). Caché aussi pour qui a déjà une clé de joueur (`gc-player-v1`).
+- **Dès la 1re image** : le serveur ajoute un court script au `<head>` qui décide avant l'affichage (`gc-seen` : déjà
+  venu, pas de bandeau ; `gc-boot` : au démarrage, les blocs sous la grille — classements, publicité de l'accueil,
+  « What is Snapline? », pied de page — attendent son 1er dessin, et les boutons de la barre du haut dont la taille
+  change, invisibles, gardent leur place). `seasonBoot` retire `gc-boot` après le 1er dessin ; le script le retire de
+  toute façon après 10 s (la page reste lisible si le site ne démarre pas). Sans JavaScript (robots qui lisent le HTML) :
+  tout est visible, rien n'est retenu.
+- **CLS** (mesuré par `layout-shift`, `outils/site/test_accueil.js`) : **0,012** sur téléphone (0,58 avant), **0,011**
+  sur ordinateur (0,56 avant) ; bon en dessous de 0,1.
+- **Tests** : `moteur/tests/test_accueil.py` (interrupteur : page identique sans, bandeau, script et `accueil` avec),
+  `outils/site/test_accueil.js` (groupe site : trois serveurs, horloge fixée — sans `GC_ACCUEIL`, la nuit, pendant un
+  créneau ; bandeau dès la 1re image, replay ou direct sur le grand écran, prochain coup d'envoi, fermeture retenue,
+  focus, déjà venu, CLS < 0,1 ordinateur et téléphone, 390 px, mode sombre ; `SHOTS=<dossier>` pour les captures).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2424,7 +2451,8 @@ README section 52) · `GC_EDITEUR`,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
-ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80).
+ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
+CLS de l'accueil, section 81).
 
 ## Test
 
