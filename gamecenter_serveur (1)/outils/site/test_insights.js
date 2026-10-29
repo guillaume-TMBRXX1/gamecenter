@@ -1,4 +1,4 @@
-// Onglet Insights (section 77, 28/10/2026) et retrait d'Exhibition — test navigateur (Playwright + serveur réel).
+// Onglet Insights (section 78, 28/10/2026) et retrait d'Exhibition — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_insights.js          (depuis « gamecenter_serveur (1) » ; Python + fastapi/uvicorn, Playwright)
 // Horloge du serveur au milieu de la dernière semaine (GC_DEMO_AT), GC_INSIGHTS_USERS=Analyste.
 // Vérifie : plus d'Exhibition (barre latérale, /api/exhibitions) ; sans accès (invité, compte hors liste) : cadenas,

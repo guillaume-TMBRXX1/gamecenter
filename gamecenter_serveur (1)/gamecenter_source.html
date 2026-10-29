@@ -915,7 +915,7 @@
   .lg-manage{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   #viewLeagues .card-h{flex-wrap:wrap;row-gap:8px}#viewLeagues .seg button{white-space:nowrap}
   @media (max-width:760px){ .lg-grid{grid-template-columns:minmax(0,1fr)} }
-  /* ---------- Insights (section 77): this week's numbers for smarter bets ----------
+  /* ---------- Insights (section 78): this week's numbers for smarter bets ----------
      Built by the script only when the server says the tab is on (#gf-server .insights): nothing here otherwise. */
   .rail-btn .ins-lk{position:absolute;top:5px;right:9px;width:13px;height:13px;color:var(--ink-3)}
   #viewInsights .ins-tabs{margin-top:14px}
@@ -6702,7 +6702,7 @@ function seasonRefresh(force){
   betTick(t);
   renderView(false);
 }
-/* ---------- Insights (section 77): this week's numbers, from the games already final ----------
+/* ---------- Insights (section 78): this week's numbers, from the games already final ----------
    /api/insights is computed by the server on final games only (no spoiler) and fetched again each time a game ends.
    Day recap: open to everyone. This week and Head-to-head: accounts the server lets in (pro); the others see a blurred
    preview drawn with made-up numbers (the real ones never reach their browser). */

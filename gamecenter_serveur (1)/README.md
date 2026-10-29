@@ -219,7 +219,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   texte « Pass thrown away », « X scramble, +7 ». **Site** : la route animée suit le receveur choisi ; « · off his
   first read » dans le play-by-play quand le QB a lancé au-delà de sa première lecture. Rien ne change pour les
   semaines produites avant (sans `play.decision`).
-- **Exhibition** (retirée le 28/10/2026, section 77) : `outils/exhibition/simuler_exhibition.py` jouait avec les décisions (`--sans-decisions` : moteur V21).
+- **Exhibition** (retirée le 28/10/2026, section 78) : `outils/exhibition/simuler_exhibition.py` jouait avec les décisions (`--sans-decisions` : moteur V21).
   Depuis V25 : CTX @ VEC (`exh-v25-ctx-vec`, remplace MNL @ VEC V24), choisi parmi 40 candidats pour ses plans de
   jeu et ses ajustements du bloc D (quick game et protection contre le blitz, bascule hors du double, brackets et leurs
   rotations), avec les duels receveur / défenseur et les décisions du QB ; `--remplace <id>` retire l'ancienne exhibition.
@@ -353,7 +353,7 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (« Fin de programme ») et `outils/moteur/rapport_validation_complete.json`.
 - Corrigé : l'ordre d'affichage de deux ajustements défensifs V21 simultanés dépendait du hachage de Python (GameFeed
   non reproductible octet par octet ; jeu inchangé).
-- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`, retirée le 28/10/2026, section 77) : GameFeeds du moteur complet (notes et staffs de
+- Action « GameFeeds d'exhibition » (`outils/exhibition/gamefeeds.py`, retirée le 28/10/2026, section 78) : GameFeeds du moteur complet (notes et staffs de
   la dernière semaine ; depuis le 17/10/2026 jusqu'à la dernière cellule 12.2, voir section 59) dans un artefact, à
   charger sur le site (« Load GameFeed »).
 
@@ -2179,8 +2179,44 @@ avec les pénalités ; l'audit le classe bloquant (« après la pénalité ») e
 - Cellule **12.2 vicies octies** (après l'identité) : le drive d'une franchise reçoit `max_plays = 60`
   (`DRIVE_MAX_ACTIONS`, jamais atteint). Les drives de moins de 20 actions ne changent pas (3 matchs de référence
   contrôlés), le hasard non plus. Interrupteur `GC_DRIVE_LONG` (`0` : coupure à 20 actions, à l'identique).
+### 77. Mesure de l'audience : liens courts et tableau de bord (promotion, étape 9.1 — 28/10/2026)
+**Décisions de Guillaume (28/10)** : plan de l'étape 9 validé (`programme/Promotion.md`, section 9) ; on commence par
+mesurer. Le serveur compte lui-même ce que Cloudflare et Search Console ne voient pas : les clics sur les liens des
+réseaux et les nouveaux joueurs. Reprend l'étape 8.4 (lien `/tt`), élargie à Instagram, YouTube et aux publications.
+- **Rien ne change tant que `GC_MESURE=1` n'est pas posé** : rien n'est compté, `/tt`, `/ig`, `/yt`, `/r/…`,
+  `/admin/stats` et `/api/admin/stats` répondent 404, `/legal` est inchangée. Le site lui-même ne change pas
+  (`gamecenter_source.html` intact, cellule 427 inchangée).
+- **Liens courts** : `snapline.live/tt`, `/ig`, `/yt` (bios TikTok, Instagram, YouTube) et `/r/<source>` (une
+  publication : `/r/hn`, `/r/reddit-sideproject`, `/r/ph`… — minuscules, chiffres et tirets, 24 caractères au plus)
+  renvoient à l'accueil (302, `noindex`) et comptent un clic (`lien:<source>`), sauf les robots et les aperçus de liens.
+- **Visites** : chaque ouverture de l'accueil (`GET /`) compte `visite` et `visite:<source>` ; la source est le **nom**
+  du site d'origine (en-tête `Referer`, `source_visite`) : `google`, `bing`, `duckduckgo`, `tiktok` (aussi l'application
+  Android `com.zhiliaoapp.musically`), `instagram`, `facebook`, `youtube`, `reddit`, `hackernews`, `producthunt`, `x`,
+  `bluesky`, `linkedin`, `operationsports`…, sinon `autre` ; `direct` sans en-tête (adresse tapée, favori, navigateur de
+  TikTok qui ne dit rien) ; `site` depuis une page de Snapline. Les **robots** (moteurs, aperçus de liens, sondes,
+  navigateurs sans écran comme celui du workflow « Vidéos », User-Agent vide) comptent `robot` à part ; les
+  préchargements (`Sec-Purpose: prefetch`) et `HEAD` ne comptent pas. Ce sont des ouvertures de page, pas des
+  visiteurs uniques (aucun identifiant).
+- **RGPD** : rien que des totaux par jour (table `stats_day` : jour de Bruxelles, clé, nombre) ; ni cookie, ni adresse
+  IP, ni identifiant, ni adresse complète du site d'origine : pas de consentement à demander. `/legal` le dit (phrase
+  ajoutée sous *Audience statistics*, seulement avec `GC_MESURE=1`).
+- **Tableau de bord** `/admin/stats` (en français, clé `GC_ADMIN_KEY` tapée dans la page, gardée dans l'onglet ; 10
+  essais faux par adresse en 15 min ; `noindex`) : tuiles de la semaine en cours (visites, venues des réseaux, clics,
+  nouveaux joueurs, comptes créés, joueurs actifs ; écart avec la semaine d'avant), **ligne du bilan du lundi** (la
+  semaine finie, à coller dans `programme/Promotion.md`, bouton « Copier la ligne »), 12 semaines (visites, robots,
+  réseaux, liens, joueurs, comptes, actifs, paris, ligues, adhésions, rappels, messages du chat), sources et liens
+  courts sur 6 semaines. Semaines du lundi au dimanche, heure de Bruxelles. Les **joueurs** (clé créée au premier pari
+  ou à la première cloche), **comptes**, **actifs** (au moins un pari ou un message du chat), paris, ligues, rappels et
+  messages viennent de la base : ils sont comptés **depuis le début**, sans attendre la mesure. `GC_STATS_EXCLURE` :
+  pseudos de comptes à ne pas compter (les siens), séparés par des virgules.
+- **API** : `POST /api/admin/stats` `{key, semaines}` (1 à 52, 12 par défaut) → `{depuis, exclus, semaines: [{debut,
+  visites, robots, sources, liens, joueurs, comptes, actifs, paris, ligues, adhesions, rappels, messages}], total}`.
+- **Tests** : `moteur/tests/test_mesure.py` (interrupteur, sources, visites et robots, liens courts, clé et essais,
+  semaines et changement d'heure, totaux tirés de la base et comptes exclus, page légale), `outils/site/test_mesure.js`
+  (groupe site : deux serveurs, avec et sans `GC_MESURE` ; redirections, visite venue de TikTok, robot à part, tableau
+  de bord, session, téléphone 390 px, mode sombre, page légale ; `SHOTS=<dossier>` pour les captures).
 
-### 77. Onglet « Insights » et retrait d'Exhibition (28/10/2026)
+### 78. Onglet « Insights » et retrait d'Exhibition (28/10/2026)
 **Insights** (barre latérale, avant « My bets ») : les statistiques de la semaine en cours pour parier plus
 intelligemment, calculées par le serveur (`moteur/insights.py`, `/api/insights`) sur les **seuls matchs terminés** à
 l'heure du serveur (jamais un résultat avant la fin du match). Gardées en mémoire et recalculées dès qu'un match se
@@ -2329,8 +2365,10 @@ README section 46) · `GC_ADSENSE_CLIENT`, `GC_ADSENSE_SLOTS` (publicités) · `
 statistiques d'audience, README section 50) · `GC_HIST_DEPUIS` (première semaine comptée dans History, défaut 2,
 README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
-section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_INSIGHTS` (`off` : pas
-d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui ont tout l'onglet), section 77.
+section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
+courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
+(pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
+ont tout l'onglet), section 78.
 
 ## Test
 

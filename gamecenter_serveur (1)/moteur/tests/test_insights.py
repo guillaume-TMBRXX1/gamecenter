@@ -1,4 +1,4 @@
-"""Onglet Insights (README section 77) : moteur/insights.py et /api/insights.
+"""Onglet Insights (README section 78) : moteur/insights.py et /api/insights.
 
   Calcul      bilans, contre le spread, over / under, chance, force (SRS), indices (seuils), récap du jour
   Direct      seuls les matchs terminés comptent (aucun résultat, aucune action d'un match en cours ou à venir)

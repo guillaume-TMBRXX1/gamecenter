@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tableau de bord · Snapline</title>
+<script>(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")})();</script>
+<style>
+  :root{--bg:#F4F6FA;--card:#fff;--ink:#121726;--ink-2:#4A5468;--line:#DDE3EE;--accent:#1E5C78;--bad:#B23A2F;--ok:#2F7A4A}
+  :root[data-theme="dark"]{--bg:#0B0E1A;--card:#141A2B;--ink:#EEF2FA;--ink-2:#AEB8CC;--line:#262F45;--accent:#2EE6FF;--bad:#FF7A6E;--ok:#6FD39A}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+  h1{font-size:24px;margin:0 0 4px} h2{font-size:17px;margin:0 0 10px}
+  p,li,small{color:var(--ink-2)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 14px}
+  label{display:block;font-weight:600;margin:0 0 4px;color:var(--ink)}
+  input,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;box-sizing:border-box}
+  textarea{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+  button{font:inherit;font-weight:600;min-height:40px;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .row > div{flex:1 1 180px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .tile b{display:block;font-size:26px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .tile span{font-size:13px;color:var(--ink-2)}
+  .tile .d{font-size:12px}
+  .up{color:var(--ok)} .down{color:var(--bad)}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:12px;color:var(--ink-2);font-weight:600}
+  .acts{display:flex;gap:6px;flex-wrap:wrap}
+  #out{min-height:1.5em;font-weight:600}
+  #out.err{color:var(--bad)} #out.ok{color:var(--ok)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Tableau de bord</h1>
+  <p>Visites, liens courts et joueurs, semaine par semaine (du lundi au dimanche, heure de Bruxelles). Clé :
+    <code>GC_ADMIN_KEY</code> (gardée dans cet onglet seulement, effacée à sa fermeture).</p>
+
+  <section id="login">
+    <form id="keyForm" class="row">
+      <div><label for="key">Clé d'administration</label><input id="key" type="password" autocomplete="off" required></div>
+      <button type="submit">Ouvrir</button>
+    </form>
+  </section>
+
+  <p id="out" role="status" aria-live="polite"></p>
+
+  <div id="app" hidden>
+    <section>
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="margin:0">Cette semaine <small id="wk"></small></h2>
+        <div class="acts"><button type="button" id="reload">Actualiser</button><button type="button" id="logout">Fermer la session</button></div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <p id="note" style="margin:10px 0 0"></p>
+    </section>
+
+    <section>
+      <h2>Ligne du bilan du lundi</h2>
+      <p style="margin-top:0">La semaine qui vient de finir, à coller dans le tableau de <code>programme/Promotion.md</code>
+        (section 9) ; compléter les colonnes des réseaux avec TikTok Studio.</p>
+      <textarea id="bilan" rows="2" readonly aria-label="Ligne du bilan"></textarea>
+      <div class="row" style="margin-top:8px"><button type="button" id="copy">Copier la ligne</button></div>
+    </section>
+
+    <section>
+      <h2>Semaine par semaine</h2>
+      <div class="scroll"><table id="weeks"></table></div>
+    </section>
+
+    <section>
+      <h2>D'où viennent les visites</h2>
+      <p style="margin-top:0">Site d'origine de la page d'accueil. « direct » : adresse tapée, favori, ou application qui
+        ne dit pas d'où elle vient (souvent le navigateur de TikTok) ; « site » : une autre page de Snapline.</p>
+      <div class="scroll"><table id="sources"></table></div>
+    </section>
+
+    <section>
+      <h2>Liens courts</h2>
+      <p style="margin-top:0"><code>snapline.live/tt</code>, <code>/ig</code>, <code>/yt</code> (bios des réseaux) et
+        <code>/r/&lt;source&gt;</code> (une publication : <code>/r/hn</code>, <code>/r/reddit-sideproject</code>…).</p>
+      <div class="scroll"><table id="links"></table></div>
+    </section>
+  </div>
+</main>
+<script>
+(function(){
+  "use strict";
+  var KEY_STORE="gc-admin-stats-key", NB=12, COLS=6;
+  var $=function(id){ return document.getElementById(id); };
+  var key=""; try{ key=sessionStorage.getItem(KEY_STORE)||""; }catch(e){}
+  var ERR={forbidden:"Clé refusée.",too_many:"Trop d'essais : attendre 15 min."};
+  var RESEAUX=["tiktok","instagram","youtube"];
+
+  function say(t,cls){ var o=$("out"); o.textContent=t||""; o.className=cls||""; }
+  function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  function jour(s){ var p=s.split("-"); return p[2]+"/"+p[1]; }
+  function somme(o){ var n=0; for(var k in o) n+=o[k]; return n; }
+  function reseaux(w){ return RESEAUX.reduce(function(n,k){ return n+(w.sources[k]||0); },0); }
+  function liens(w,k){ return w.liens[k]||0; }
+
+  function call(){
+    return fetch("/api/admin/stats",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,semaines:NB}),cache:"no-store"})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+        if(!r.ok) throw new Error(ERR[j.detail]||("Erreur "+r.status+(j.detail?" : "+j.detail:"")));
+        return j; }); });
+  }
+
+  function table(t,head,rows){
+    t.textContent="";
+    var tr=el("tr"); head.forEach(function(h){ tr.appendChild(el("th",null,h)); });
+    var th=el("thead"); th.appendChild(tr); t.appendChild(th);
+    var tb=el("tbody");
+    rows.forEach(function(r){ var x=el("tr"); r.forEach(function(v){ x.appendChild(el("td",null,String(v))); }); tb.appendChild(x); });
+    if(!rows.length){ var x=el("tr"), td=el("td",null,"Rien encore."); td.colSpan=head.length; x.appendChild(td); tb.appendChild(x); }
+    t.appendChild(tb);
+  }
+
+  function tile(label,v,avant){
+    var d=el("div","tile"); d.appendChild(el("b",null,String(v))); d.appendChild(el("span",null,label));
+    var diff=v-avant, s=el("div","d "+(diff>0?"up":diff<0?"down":""),(diff>0?"+":"")+diff+" par rapport à la semaine d'avant");
+    d.appendChild(s); return d;
+  }
+
+  function parCle(ws,champ){
+    var cles={}; ws.forEach(function(w){ for(var k in w[champ]) cles[k]=(cles[k]||0)+w[champ][k]; });
+    return Object.keys(cles).sort(function(a,b){ return cles[b]-cles[a]||(a<b?-1:1); });
+  }
+
+  function draw(j){
+    var ws=j.semaines, w=ws[0], p=ws[1]||ws[0];
+    $("wk").textContent="(depuis le lundi "+jour(w.debut)+")";
+    var tl=$("tiles"); tl.textContent="";
+    tl.appendChild(tile("visites (hors robots)",w.visites,p.visites));
+    tl.appendChild(tile("venues des réseaux",reseaux(w),reseaux(p)));
+    tl.appendChild(tile("clics sur les liens courts",somme(w.liens),somme(p.liens)));
+    tl.appendChild(tile("nouveaux joueurs",w.joueurs,p.joueurs));
+    tl.appendChild(tile("comptes créés",w.comptes,p.comptes));
+    tl.appendChild(tile("joueurs actifs",w.actifs,p.actifs));
+    $("note").textContent=(j.depuis?"Visites et liens comptés depuis le "+jour(j.depuis)+" ; ":"Visites et liens : rien de compté encore ; ")
+      +"joueurs, comptes et actifs depuis le début. Total : "+j.total.joueurs+" joueurs, "+j.total.comptes+" comptes, "
+      +j.total.ligues+" ligues, "+j.total.rappels+" appareils avec rappels"+(j.exclus?" ("+j.exclus+" compte(s) exclu(s) : GC_STATS_EXCLURE)":"")+".";
+    var b=p===w?w:p;
+    $("bilan").value="| "+jour(b.debut)+" | | | | | "+b.visites+" | "+reseaux(b)+" | "+liens(b,"tt")+" / "+liens(b,"ig")+" / "+liens(b,"yt")
+      +" | "+b.joueurs+" | "+b.comptes+" | "+b.actifs+" | |";
+    table($("weeks"),["Semaine","Visites","Robots","Réseaux","Liens","Joueurs","Comptes","Actifs","Paris","Ligues","Adhésions","Rappels","Messages"],
+      ws.map(function(x){ return [jour(x.debut),x.visites,x.robots,reseaux(x),somme(x.liens),x.joueurs,x.comptes,x.actifs,x.paris,x.ligues,x.adhesions,x.rappels,x.messages]; }));
+    var cols=ws.slice(0,COLS), head=["Source"].concat(cols.map(function(x){ return jour(x.debut); }));
+    table($("sources"),head,parCle(cols,"sources").map(function(k){ return [k].concat(cols.map(function(x){ return x.sources[k]||0; })); }));
+    table($("links"),["Lien"].concat(head.slice(1)),parCle(cols,"liens").map(function(k){
+      return [(k.length===2&&"tt ig yt".indexOf(k)>=0?"/":"/r/")+k].concat(cols.map(function(x){ return x.liens[k]||0; })); }));
+  }
+
+  function load(){ return call().then(function(j){ $("login").hidden=true; $("app").hidden=false; draw(j); }); }
+
+  $("keyForm").addEventListener("submit",function(e){ e.preventDefault(); key=$("key").value; $("key").value="";
+    load().then(function(){ try{ sessionStorage.setItem(KEY_STORE,key); }catch(_){} say("Session ouverte.","ok"); })
+      .catch(function(err){ key=""; say(err.message,"err"); }); });
+  $("reload").addEventListener("click",function(){ load().then(function(){ say("À jour.","ok"); }).catch(function(e){ say(e.message,"err"); }); });
+  $("logout").addEventListener("click",function(){ key=""; try{ sessionStorage.removeItem(KEY_STORE); }catch(_){} $("app").hidden=true; $("login").hidden=false; say("Session fermée."); });
+  $("copy").addEventListener("click",function(){ var t=$("bilan"); t.select();
+    (navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(function(){ say("Ligne copiée.","ok"); },
+      function(){ try{ document.execCommand("copy"); say("Ligne copiée.","ok"); }catch(e){ say("Copie impossible : sélectionner la ligne à la main.","err"); } }); });
+  if(key) load().catch(function(){ key=""; try{ sessionStorage.removeItem(KEY_STORE); }catch(_){} });
+})();
+</script>
+</body>
+</html>
