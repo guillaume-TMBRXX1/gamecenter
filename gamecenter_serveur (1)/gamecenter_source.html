@@ -408,6 +408,25 @@
   .about h2{margin:0 0 8px}
   .about p{margin:6px 0 0;color:var(--ink-2);line-height:1.55;max-width:80ch}
   .about a{color:var(--ink);font-weight:600}
+  /* Première visite (promotion, étape 9.3 — GC_ACCUEIL) : ce qu'est Snapline en 5 secondes et un bouton pour voir un match.
+     Caché d'office (attribut hidden) : seul le serveur l'affiche ; gc-seen (visiteur déjà venu) le cache dès la 1re image ;
+     gc-boot : les blocs sous la grille attendent le 1er dessin des matchs (sinon ils sautent de ≈ 1 200 px : CLS 0,56) */
+  .welcome{position:relative;margin:14px 0 16px;padding:18px 20px 16px}
+  .welcome .eyebrow{margin:0}
+  .welcome h2{margin:6px 44px 6px 0;font:800 26px/1.05 var(--f-display);letter-spacing:.01em;text-transform:uppercase}
+  .welcome p.wc-txt{margin:0;color:var(--ink-2);line-height:1.5;max-width:70ch}
+  .welcome .wc-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:14px}
+  .welcome .wc-act .cta{width:auto;height:46px;padding:0 22px}
+  .welcome .wc-act a{color:var(--ink);font-weight:700;font-size:14px}
+  .welcome .wc-next{margin:10px 0 0;min-height:1.4em;font-size:13px;color:var(--ink-2)}
+  .welcome .wc-x{position:absolute;top:10px;right:10px;width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+  .welcome .wc-x svg{width:18px;height:18px}
+  .welcome .wc-x:hover{color:var(--ink)}
+  .welcome :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  html.gc-seen #welcome{display:none}
+  html.gc-boot #viewLive .lower,html.gc-boot #viewLive .ad-box,html.gc-boot #about,html.gc-boot .site-foot{display:none}
+  html.gc-boot .topbar>:not(.wordmark){visibility:hidden}   /* la semaine, l'horloge, le solde changent de taille au démarrage */
+  @media (max-width:600px){ .welcome{padding:16px 16px 14px} .welcome h2{font-size:22px} .welcome .wc-act .cta{flex:1 1 100%} }
   /* advertising (roadmap step 7): fixed-size boxes, the space is reserved before the ad arrives */
   .ad-box{display:flex;flex-direction:column;align-items:center;gap:4px;margin:16px 0 0;min-height:118px;overflow:hidden}
   .ad-box[hidden]{display:none}
@@ -2203,7 +2222,7 @@
   <main class="main">
     <div class="topbar">
       <span class="wordmark">Game<span>Center</span></span>
-      <button class="chip-btn" type="button" id="weekChip" data-view-go="schedule">Season IV · Week 12
+      <button class="chip-btn" type="button" id="weekChip" data-view-go="schedule">This week
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <button class="chip-btn snd-btn theme-btn" type="button" id="themeBtn" aria-label="Switch dark mode" title="Dark mode"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button>
@@ -2218,21 +2237,28 @@
       <div class="search-pop card" id="searchPop" hidden><ul id="searchList" role="listbox" aria-label="Search results"></ul></div>
       </div>
       <div class="grow"></div>
-      <span class="engine" id="engineTxt"><i class="dot"></i>Sim engine <b>V3</b> · 5 boards</span>
-      <button class="wallet-pill" type="button" data-drawer><span>Balance</span><b data-balance>$4,280.50</b></button>
-      <div class="avatar" aria-label="Operator One">O1</div>
+      <span class="engine" id="engineTxt"><i class="dot"></i>Sim engine <b>V3</b></span>
+      <button class="wallet-pill" type="button" data-drawer><span>Balance</span><b data-balance>$0.00</b></button>
     </div>
 
     <div id="viewLive">
+    <section class="card welcome" id="welcome" aria-labelledby="welcomeTitle" hidden>
+      <button class="wc-x" type="button" id="welcomeClose" aria-label="Close the introduction" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <p class="eyebrow">AI vs AI · American football</p>
+      <h2 id="welcomeTitle">24 AI coaches. Every game played live.</h2>
+      <p class="wc-txt">Snapline simulates a full American football season every week. Each team is coached by an AI agent that calls every play, snap by snap, on the field below. Free to watch, no sign-up.</p>
+      <div class="wc-act"><button class="cta" type="button" id="welcomeWatch">Watch live now</button><a href="#about" id="welcomeMore">How it works</a></div>
+      <p class="wc-next" id="welcomeNext" aria-live="polite"></p>
+    </section>
     <div class="live-head">
       <div>
-        <p class="eyebrow" id="eyebrow"><b>Sunday night slate</b> · 5 games live · prime time played by the engine · 11.8K watching</p>
+        <p class="eyebrow" id="eyebrow">Every game played by the engine</p>
         <h1><i class="dot pulse" aria-hidden="true"></i><span class="h1-txt" id="h1txt">Live <span class="now">now</span></span></h1>
       </div>
       <div class="seg" role="tablist" aria-label="Board filter">
-        <button type="button" role="tab" data-seg="live" aria-selected="true">Live <span class="cnt">5</span></button>
-        <button type="button" role="tab" data-seg="upcoming" aria-selected="false">Upcoming <span class="cnt">7</span></button>
-        <button type="button" role="tab" data-seg="results" aria-selected="false">Results <span class="cnt">4</span></button>
+        <button type="button" role="tab" data-seg="live" aria-selected="true">Live <span class="cnt"></span></button>
+        <button type="button" role="tab" data-seg="upcoming" aria-selected="false">Upcoming <span class="cnt"></span></button>
+        <button type="button" role="tab" data-seg="results" aria-selected="false">Results <span class="cnt"></span></button>
       </div>
     </div>
 
@@ -2257,8 +2283,8 @@
     <div class="ad-box" id="adHome" data-ad="home" hidden></div>
     <section class="card about" id="about" aria-labelledby="aboutTitle">
       <h2 id="aboutTitle">What is Snapline?</h2>
-      <p>Snapline is free, live American football played by a simulation. Twenty-four teams, each coached by an AI agent, play a full season every week: the regular season, two semifinals and the Grand Final. Every game is played snap by snap on the live board, with the score, win probability, play calls and commentary.</p>
-      <p>Back your picks with play money (no real money, ever), follow the standings, power rankings and player careers, set a reminder before kickoff, start a private league with your friends, and replay any finished game on the big screen.</p>
+      <p>Snapline is free, live American football played by a simulation. <a href="/teams">Twenty-four teams</a>, each coached by an AI agent, play a full season every week: the regular season, two semifinals and the Grand Final. Every game is played snap by snap on the live board, with the score, win probability, play calls and commentary.</p>
+      <p>Back your picks with play money (no real money, ever), follow the standings, power rankings and player careers, set a reminder before kickoff, start a private league with your friends, and replay any finished game on the big screen or read its <a href="/games">written recap</a>.</p>
       <p>Snapline is for adults (18+). Play money only: it can never be bought, cashed out or exchanged for a prize. <a href="/legal">Rules, privacy &amp; legal</a></p>
     </section>
     </div>
@@ -2272,22 +2298,22 @@
     <section class="view" id="viewBets" hidden aria-label="My bets"></section>
     <section class="view" id="viewSettings" hidden aria-label="Settings"></section>
     <div class="ad-box" id="adPage" data-ad="page" hidden></div>
-    <footer class="site-foot"><b>Play money · No real winnings · 18+</b><a href="/legal">Rules, privacy &amp; legal</a><button type="button" class="link" id="privacyBtn" hidden>Privacy choices</button></footer>
+    <footer class="site-foot"><b>Play money · No real winnings · 18+</b><a href="/teams">The 24 franchises</a><a href="/games">Results &amp; recaps</a><a href="/legal">Rules, privacy &amp; legal</a><button type="button" class="link" id="privacyBtn" hidden>Privacy choices</button></footer>
   </main>
 
   <aside class="slip-col" id="slipCol" aria-label="Wallet and bet slip">
     <section class="card wallet">
       <div class="w-top"><span class="label">Balance</span><span class="label">Play money</span></div>
-      <div class="bal" data-balance>$4,280.50</div>
-      <div class="bal-sub"><span class="delta" id="balDelta">+$482.00</span><span>this week</span></div>
+      <div class="bal" data-balance>$0.00</div>
+      <div class="bal-sub"><span class="delta" id="balDelta">+$0.00</span><span>this week</span></div>
       <div class="pl">
         <div class="pl-bars" id="plBars"></div>
         <div class="pl-days" id="plDays"></div>
-        <div class="pl-read"><span id="plLabel">Net this week</span><b id="plVal">+$482</b></div>
+        <div class="pl-read"><span id="plLabel">Net this week</span><b id="plVal">+$0</b></div>
       </div>
       <div class="kpis">
-        <div class="kpi"><b id="kpiBets">87</b><span>Bets</span></div>
-        <div class="kpi"><b id="kpiHit">54%</b><span>Hit rate</span></div>
+        <div class="kpi"><b id="kpiBets">0</b><span>Bets</span></div>
+        <div class="kpi"><b id="kpiHit">—</b><span>Hit rate</span></div>
         <div class="kpi"><b id="kpiOpen">1</b><span>Open</span></div>
       </div>
     </section>
@@ -2318,7 +2344,7 @@
 <div class="scrim" id="scrim"></div>
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle"></div>
 <div class="toast" id="toast" hidden role="status"></div>
-<div class="srv-pill" role="status">Reconnecting to the GameCenter server…</div>
+<div class="srv-pill" role="status">Reconnecting to Snapline…</div>
 <div class="onair" id="onAir" hidden aria-live="polite"><b>On air</b><span></span></div>
 <input type="file" id="gfFile" accept=".json,application/json" hidden>
 
@@ -6975,13 +7001,44 @@ function seasonBoot(){
     const c=lsGet('gc-clock-v1');   /* resume the preview clock where the viewer left it (same week, within 12 h) */
     if(c&&c.week===SW.week.start&&isFinite(c.base)&&isFinite(c.at)&&real-c.at<12*3600e3&&c.base+(real-c.at)<W_END+3600e3){ CLOCK.base=c.base; CLOCK.at=c.at; } }
   document.getElementById('weekChip').firstChild.textContent=`Week ${SW.week.index} · ${wRange()} `;
-  document.getElementById('engineTxt').innerHTML=`<i class="dot"></i>Sim engine <b>V3</b> · 4 franchises`;
+  document.getElementById('engineTxt').innerHTML=`<i class="dot"></i>Sim engine <b>V3</b> · ${Object.keys(SW.teams).length} franchises`;
   headlines.length=0;
   loadWallet(); applySettings(); lastStake=SET.stake; slip.open=[];
   seasonRefresh(true);
+  document.documentElement.classList.remove('gc-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); }
+  if(SERVER&&SERVER.accueil) welcomeInit();
+}
+/* Première visite (étape 9.3) : un match tout de suite — en direct s'il y en a un, sinon le dernier match terminé en replay,
+   avec l'heure du prochain coup d'envoi (la nuit et le week-end entre deux créneaux, rien n'est en direct). Fermé, ou un
+   match ouvert depuis le bandeau : il ne revient plus (gc-welcome-v1, dans ce navigateur seulement). */
+const WELCOME={el:null,pick:null};
+function welcomePick(t){
+  const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko)[0];
+  if(live) return {kind:'live',s:live};
+  const fin=SCHED.filter(g=>gStatus(g,t)==='final').sort((a,b)=>b.end-a.end)[0];
+  const next=SCHED.filter(g=>gStatus(g,t)==='upcoming').sort((a,b)=>a.ko-b.ko)[0];
+  return fin?{kind:'replay',s:fin,next}:next?{kind:'next',s:next,next}:null;
+}
+function welcomeTick(t){
+  const W=WELCOME; if(!W.el||W.el.hidden||document.documentElement.classList.contains('gc-seen')) return;
+  const P=W.pick=welcomePick(t), b=document.getElementById('welcomeWatch'), n=document.getElementById('welcomeNext');
+  if(!P){ b.hidden=true; setTxt(n,''); return; }
+  b.hidden=false;
+  setTxt(b,P.kind==='live'?'Watch live now':P.kind==='replay'?'Watch a full game':'See the next game');
+  const nx=P.next, mins=nx?Math.max(1,Math.round((nx.ko-t)/60e3)):0, dans=mins>=60?`${Math.floor(mins/60)} h ${String(mins%60).padStart(2,'0')}`:`${mins} min`;
+  setTxt(n,P.kind==='live'?`${TEAMS[P.s.away].name} vs ${TEAMS[P.s.home].name} · on the field right now`
+    :nx?`No game live right now · next kickoff ${dStr(nx.ko)} ${tStr(nx.ko)} Brussels, in ${dans}`:'');
+}
+function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.classList.add('gc-seen'); }
+function welcomeInit(){
+  const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
+  document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1'); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); } });
+  document.getElementById('welcomeWatch').addEventListener('click',()=>{ const P=WELCOME.pick; if(!P) return; welcomeSeen();
+    if(P.kind==='replay') openReplayFeed(SEASON.feeds[P.s.id]); else watchGame(P.s.id); });
+  welcomeTick(nowMs()); setInterval(()=>welcomeTick(nowMs()),15000);
 }
 
 

@@ -24,6 +24,10 @@ s'affiche au ralenti, rien d'important dans les zones couvertes par l'interface 
 légende (.txt) a trois blocs : TikTok, Instagram, YouTube Shorts. Jamais de paris dans les textes (README section 46).
 Étape 8.3 (13/10) : tournage image par image à 60 images/s en 1080×1920 natif (filmer.js), encodage plus généreux ;
 le résumé est court par défaut (≈ 60 s, le long seulement avec --long) ; « What is Snapline? » (presentation).
+Étape 9.2 (28/10, « accroche ») : la 1re seconde décide (TikTok Studio : départ à 0:01, 1,55 s regardées en moyenne).
+Chaque vidéo s'ouvre sur une action déjà en mouvement (filmée à partir du snap, sans l'attente d'avant le snap), avec
+une accroche en grand sur deux lignes (« 0:06 left. One call to win it ») ; les cartons de statistiques viennent après
+la 1re action ; l'action du jour dure ≈ 12 s. GC_VIDEO_ACCROCHE=0 : les vidéos d'avant, à l'identique.
 """
 import argparse
 import glob
@@ -45,9 +49,11 @@ import choisir as C  # noqa: E402
 
 PHASE = {"regular": "Regular season", "semifinal": "Conference final", "ai_bowl": "Grand Final"}
 ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
-HASHTAGS = "#americanfootball #football #simulation #ai"
+ACCROCHE = os.environ.get("GC_VIDEO_ACCROCHE", "1").strip() != "0"   # étape 9.2 ; « 0 » : les vidéos d'avant
+HASHTAGS = "#americanfootball #footballtiktok #ai #simulation" if ACCROCHE else "#americanfootball #football #simulation #ai"
 FIN = {"type": "card", "kicker": "24 AI coaches · 1 league · live", "title": "snapline.live",
-       "sub": "No human calls the plays. Watch the next game live — free, a new game every 30 min.", "dur": 2.2}
+       "sub": "No human calls the plays. Watch the next game live — free, a new game every 30 min.",
+       "dur": 1.5 if ACCROCHE else 2.2}
 EPINGLE = "Watch the next game live → snapline.live (free, a new game every 30 min) 🏈"
 
 
@@ -90,6 +96,45 @@ def legendes(accroche, detail, quest, tag, titre_yt):
             f"=== Pinned comment (TikTok) ===\n{EPINGLE}\n\n"
             f"=== Instagram ===\n{corps}\n\n{HASHTAGS} {tag} #snapline #gameday #footballseason\n\n"
             f"=== YouTube Shorts ===\n{yt} #Shorts\n\n{corps}\n\n{HASHTAGS} {tag}")
+
+
+def accroche(why, P):
+    """Étape 9.2 : l'accroche de la 1re seconde, en anglais, qui promet sans dévoiler le résultat : la décision de l'IA
+    ou l'enjeu (« 4th & 9. The AI goes for it », « 0:06 left. One call to win it »). Jamais de mot de paris."""
+    t = (P.get("call") or {}).get("type")
+    quand = "Overtime" if (P.get("quarter") or 1) >= 5 else f"{C._temps(P)} left"
+    if "gamble" in why:
+        return f"4th & {P.get('to_go')}. The AI goes for it"
+    if why.startswith("game-winning takeaway"):
+        return f"{quand}. Can the AI defense hold?"
+    if why.startswith("game-winning"):
+        return f"{quand}. One call to win it"
+    if "return" in why:
+        return "Watch this return"
+    if "interception" in why or "fumble" in why:
+        return "Watch the AI defense read it"
+    if "2-point" in why:
+        return "The AI goes for two"
+    if "-yard field goal" in why:
+        return f"The AI kicks it from {why.split('-yard field goal')[0].split()[-1]}"
+    if "-yard play" in why:
+        return "The AI dials up a deep shot" if t == "pass" else "The AI finds the gap"
+    return "Watch the AI's call"
+
+
+def ouvrir_sur_l_action(seg, hook):
+    """Étape 9.2 : toutes les actions filmées à partir du snap (sans l'attente d'avant le snap) ; la 1re action passe
+    avant tout carton, avec l'accroche en grand (hook). Sans GC_VIDEO_ACCROCHE : le plan tel quel."""
+    if not ACCROCHE:
+        return seg
+    seg = [dict(x, snap=True) if x["type"] == "play" else
+           dict(x, dur=min(x["dur"], 2.8)) if x["type"] == "stats" else x for x in seg]   # les chiffres, plus vite
+    k = next((n for n, x in enumerate(seg) if x["type"] == "play"), None)
+    if k is None:
+        return seg
+    premiere = seg.pop(k)
+    premiere["top"] = dict(premiere.get("top") or {}, title=hook, hook=True)
+    return [premiere] + seg
 
 
 def titre_action(why, P):
@@ -195,13 +240,19 @@ def plan_action(doc, feeds, jour, a=None):
     sw = C.bascule(F, a["index"], g)
     top_ralenti = ({"kicker": f"AI replay · {sw['team']} win probability", "title": f"{sw['avant']}% → {sw['apres']}%", "sub": match}
                    if sw else {"kicker": kicker, "title": hook, "sub": match})
-    seg = [{"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"), "after": 1.8},
+    seg = [{"type": "play", "index": a["index"], "speed": 1, "label": horloge(P), "text": P.get("text"),
+            "after": 0.7 if ACCROCHE else 1.8},
            {"type": "play", "index": a["index"], "speed": 0.5, "label": "0.5×", "text": P.get("text"),
-            "after": 1.0, "top": top_ralenti},
+            "after": 0.5 if ACCROCHE else 1.0, "top": top_ralenti},
            dict(FIN)]
     top = {"kicker": kicker, "title": hook, "sub": match}
     info = {"type": "meilleure" if meilleure else "action", "game": g["id"], "index": a["index"], "why": a["why"],
             "note": a["note"], "jour": d.date().isoformat(), "enjeu": hook, "bascule": sw}
+    if ACCROCHE:
+        info["accroche"] = accroche(a["why"], P)
+        seg[0]["top"] = top                                            # la pastille reste dans le plan (cachée à l'écran)
+        seg = ouvrir_sur_l_action(seg, info["accroche"])
+        top = seg[0]["top"]
     titre = titre_action(raison(a["why"]), P)
     quand = "Best play so far" if meilleure else f"Play of the day ({d.strftime('%-d %B')})"
     legende = legendes(f"{hook}… {titre} 🏈",
@@ -243,6 +294,8 @@ def plan_resume(doc, feeds, gid=None, long=False):
     seg.append({"type": "card", "kicker": "Final" + (" · OT" if any((P.get("quarter") or 0) >= 5 for P in F["plays"]) else ""),
                 "title": f"{g['away']} {fs['away']} – {fs['home']} {g['home']}",
                 "sub": f"{names[gagnant]} win · no human called a single play · snapline.live", "dur": 3.5 if long else 3.0})
+    if not long:
+        seg = ouvrir_sur_l_action(seg, f"{names['away']} vs {names['home']}: the game in 60 seconds")
     top = (seg[0]["top"] if not long else
            {"kicker": kicker, "title": f"{g['away']} @ {g['home']}", "sub": PHASE.get(g["phase"], "")})
     info = {"type": "resume" if long else "resume_court", "game": gid, "plays": idx, "spectacle": C.spectacle(F, g)}
@@ -270,6 +323,7 @@ def plan_presentation(choix, semaines):
                             "sub": f"{g['away']} @ {g['home']} · {PHASE.get(g['phase'], '')}"}})
     seg.append({"type": "card", "kicker": "Free to watch", "title": "snapline.live",
                 "sub": "Type it in your browser · free · a new AI-coached game every 30 min", "dur": 2.5})
+    seg = ouvrir_sur_l_action(seg, PRESENTATION[0])                     # « 24 teams. / 24 AI coaches. »
     info = {"type": "presentation", "plays": [{"game": a["game"], "index": a["index"], "why": a["why"]} for a in choix]}
     legende = legendes("What is Snapline? 🏈 24 teams, 24 AI coaches, every game simulated and played live.",
                        "A full season every week, with replays, records and private leagues with friends.",
@@ -324,6 +378,10 @@ def plan_joueur(res, doc):
     seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
                              {"kicker": "AI vs AI · player of the week", "title": j["name"]})
     seg.append(dict(FIN))
+    if stats and stats[0]["v"]:
+        seg = ouvrir_sur_l_action(seg, f"{j['name']}: {stats[0]['v']:,} {stats[0]['l'].lower()}")
+    else:
+        seg = ouvrir_sur_l_action(seg, f"{j['name']}, player of the week")
     info = {"type": "joueur", "player": j["id"], "name": j["name"], "team": j["team"], "score": res["score"],
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
     ligne = " · ".join(f"{x['v']:,} {x['l']}" for x in stats[:3] if x["v"])
@@ -331,7 +389,12 @@ def plan_joueur(res, doc):
                        f"{ligne} in {j['games']} games.",
                        "Who's your MVP this week?", "#playeroftheweek",
                        f"Player of the week: {j['name']}, {ligne} | AI football")
-    return seg[1]["top"] if len(seg) > 2 else {"kicker": "", "title": "", "sub": ""}, seg, info, legende
+    return _top(seg), seg, info, legende
+
+
+def _top(seg):
+    """Le bandeau du haut au début de la vidéo : celui de la 1re action."""
+    return next((x["top"] for x in seg if x["type"] == "play"), {"kicker": "", "title": "", "sub": ""})
 
 
 def plan_champion(res, doc):
@@ -349,6 +412,7 @@ def plan_champion(res, doc):
                              {"kicker": "AI vs AI · road to the title", "title": nom})
     seg.append({"type": "card", "kicker": "Champions", "title": f"{t} {res['score'][0]}–{res['score'][1]} {o}",
                 "sub": "Coached by AI from the first snap · a new season starts Monday on snapline.live", "dur": 2.6})
+    seg = ouvrir_sur_l_action(seg, f"{nom} win the Grand Final")
     info = {"type": "champion", "team": t, "opp": o, "score": list(res["score"]), "titles": res["titres"],
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
     legende = legendes(f"{nom} win the Grand Final 🏆",
@@ -356,7 +420,7 @@ def plan_champion(res, doc):
                        f"Title number {res['titres']}.",
                        "Who takes the crown next week?", "#grandfinal",
                        f"{nom} win the Grand Final, {res['score'][0]}–{res['score'][1]} | AI football")
-    return seg[1]["top"] if len(seg) > 2 else {"kicker": "", "title": "", "sub": ""}, seg, info, legende
+    return _top(seg), seg, info, legende
 
 
 # étape 8.6 b : match hors norme (choisir.match_hors_norme), franchise (choisir.franchise_de_la_semaine)
@@ -386,6 +450,7 @@ def plan_chiffres(res, doc, feeds):
     prol = " · OT" if r.get("overtime") or any((P.get("quarter") or 0) >= 5 for P in F["plays"]) else ""
     seg.append({"type": "card", "kicker": "Final" + prol, "title": score,
                 "sub": "Two AI coaches, one wild game · watch the next one on snapline.live", "dur": 2.6})
+    seg = ouvrir_sur_l_action(seg, f"{chiffre} in one game")
     info = {"type": "chiffres", "game": g["id"], "kind": res["kind"], "value": res["value"], "previous": res["previous"],
             "plays": [x["index"] for x in seg if x["type"] == "play"]}
     detail = (f"New all-time record (previous: {res['previous']})." if res["previous"] is not None
@@ -393,7 +458,7 @@ def plan_chiffres(res, doc, feeds):
     legende = legendes(f"{chiffre} in one game 🤯 {score}", f"{detail} {PHASE.get(g['phase'], '')}, {jour}.",
                        "Where was the defense?", "#record",
                        f"{chiffre} in one game: {score} | AI football")
-    return seg[1]["top"] if len(seg) > 2 else {"kicker": "", "title": "", "sub": ""}, seg, info, legende
+    return _top(seg), seg, info, legende
 
 
 def plan_franchise(res, doc):
@@ -417,6 +482,7 @@ def plan_franchise(res, doc):
     seg += _segments_actions(res["actions"], {a["dossier"]: C.charger_semaine(a["dossier"])[0] for a in res["actions"]},
                              {"kicker": "AI vs AI · franchise story", "title": nom})
     seg.append(dict(FIN))
+    seg = ouvrir_sur_l_action(seg, f"The story of the {nom}")
     info = {"type": "franchise", "team": t, "bilan": b, "legende": j and {"id": j["id"], "name": j["name"]},
             "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
     star = ""
@@ -427,8 +493,7 @@ def plan_franchise(res, doc):
                        f"{b['seasons']} seasons, {bilan}, {b['titles']} title{'s' if b['titles'] != 1 else ''}.{star}",
                        "Which franchise should we feature next?", "#franchise",
                        f"The story of the {nom} | AI football")
-    top = next((x["top"] for x in seg if x["type"] == "play"), {"kicker": "", "title": "", "sub": ""})
-    return top, seg, info, legende
+    return _top(seg), seg, info, legende
 
 
 # ------------------------------------------------------------------ tournage
@@ -441,6 +506,9 @@ def serveur(port):
     for _ in range(240):
         try:
             urllib.request.urlopen(f"http://localhost:{port}/api/time", timeout=2)
+            # la 1re page d'un serveur neuf prend 15 à 25 s (semaines à lire) : ouverte ici une fois, le navigateur
+            # de filmer.js (30 s au plus pour la charger) la reçoit ensuite en ≈ 2 s
+            urllib.request.urlopen(f"http://localhost:{port}/", timeout=180).read()
             return p, data
         except Exception:
             time.sleep(0.5)

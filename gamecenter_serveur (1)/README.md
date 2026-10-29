@@ -2244,8 +2244,63 @@ termine (≈ 0,2 s pour 240 matchs) : le site redemande les chiffres à chaque m
 « GameFeeds d'exhibition » (`.github/workflows/gamefeeds.yml`). Les deux matchs (`exh-v41`, `exh-v42`) ne sont plus
 servis : ils restent des matchs de test des suites navigateur (`outils/site/matchs/`). Le bouton « Load GameFeed » du
 replay reste.
+### 80. Accroche des vidéos : l'action dès la 1re image (promotion, étape 9.2 — 28/10/2026)
+**Constat (TikTok Studio, 28/10)** : la vidéo la plus vue (joueur de la semaine, 646 vues) est regardée **1,55 s** en
+moyenne, **0,6 %** jusqu'au bout, la plupart partent à **0:01**. Elle s'ouvrait sur 3,4 s de carton de statistiques
+immobile ; l'action du jour, sur ≈ 2 s de joueurs alignés avant le snap. **Décision de Guillaume (28/10)** : l'accroche
+des vidéos avant tout le reste (`programme/Promotion.md`, section 9).
+- **Interrupteur `GC_VIDEO_ACCROCHE`** (variable du tournage, `outils/video/faire_video.py`) : allumé par défaut ;
+  `GC_VIDEO_ACCROCHE=0` rend les vidéos d'avant à l'identique (plans, durées, mots-dièse). Le site ne change pas.
+- **L'action d'abord** (`ouvrir_sur_l_action`) : toutes les actions sont filmées **à partir du snap** (`snap: true`
+  dans le plan ; `filmer.js` attend le snap sans filmer, comme pour le ralenti) ; la 1re action passe **avant** tout
+  carton (joueur de la semaine, champion, match hors norme, franchise : le carton de statistiques vient après, 2,8 s au
+  lieu de 3,4 à 3,6). Le score et le journal de l'IA sont posés avant la 1re image (ce que l'IA a lu et appelé avant le
+  snap est déjà écrit ; la lecture du QB se tape après le snap).
+- **L'accroche en grand** (`accroche`, sans dévoiler le résultat, jamais de mot de paris) sur deux lignes, coupées après
+  la 1re phrase (sinon au mot le plus proche du milieu), à la place de la pastille « AI vs AI » de la 1re action : « 4th & 9. / The AI goes for it », « 0:06
+  left. / One call to win it », « 0:06 left. / Can the AI defense hold? », « Watch this return », « Watch the AI defense
+  read it », « The AI goes for two », « The AI kicks it from 57 », « The AI dials up a deep shot » / « The AI finds the
+  gap », sinon « Watch the AI's call ». Joueur de la semaine : « Elio Falkner: / 2,235 receiving yards » ; champion :
+  « … win the Grand Final » ; match hors norme : « 102 points in one game » ; franchise : « The story of the … » ;
+  résumé court : « … vs …: / the game in 60 seconds » ; présentation : « 24 teams. / 24 AI coaches. ». L'enjeu
+  (« ONX down 13–19 · 0:06 left ») reste dans le bandeau de score et la légende.
+- **Plus court** : action du jour ≈ **12,8 s** au lieu de 16,3 (le 27/10 : après l'action 0,7 s au lieu de 1,8, après le
+  ralenti 0,5 au lieu de 1,0, carton final 1,5 s au lieu de 2,2) — plus de vidéos vues en entier, la boucle repart.
+- **Mots-dièse** : `#americanfootball #footballtiktok #ai #simulation` (au lieu de `#football`).
+- **Tournage plus sûr** : `faire_video.py` ouvre une fois la page du serveur de tournage avant de lancer le navigateur
+  (la 1re page d'un serveur neuf prend 15 à 25 s, près des 30 s que `filmer.js` lui laisse ; ensuite ≈ 2 s).
+- **Objectifs** (bilan du lundi) : durée moyenne regardée **> 5 s**, **> 10 %** regardé en entier.
+- **Tests** : `moteur/tests/test_videos.py` (accroches, l'action avant les cartons, durées, interrupteur qui rend les
+  plans d'avant) ; tournage vérifié à la main (images à 0, 0,5, 1, 2, 3 et 5 s).
 
-### 79. Insights, plus de données : historique des face-à-face, écart à la ligne, joueurs en forme (29/10/2026)
+### 81. Première visite : ce qu'est Snapline en 5 secondes, un match tout de suite (promotion, étape 9.3 — 29/10/2026)
+**Constat (29/10)** : un nouveau venu (depuis TikTok, Reddit…) arrivait sur « KICKOFF SOON » et des cotes, sans une
+phrase pour dire ce qu'est le site ; la nuit et entre deux créneaux, aucun match en direct. Cloudflare : CLS mauvais
+sur près de la moitié des visites — mesuré à **0,58** sur téléphone et **0,56** sur ordinateur : la grille des matchs
+reste vide ≈ 5 s, puis ≈ 1 200 px de tuiles poussent « Power rankings », « What is Snapline? » et le pied de page.
+- **Interrupteur `GC_ACCUEIL=1`** (`serveur.py`, `accueil_on`) : sans lui, la page d'avant à l'identique (le bandeau
+  reste caché par son attribut `hidden`, aucun script ajouté). Dans le notebook (cellule 427, sans serveur) : rien.
+- **Le bandeau** (`#welcome`, en haut de Live) : « AI vs AI · American football », « 24 AI coaches. Every game played
+  live. », une phrase (une saison complète chaque semaine, une IA appelle chaque jeu, gratuit, sans inscription), un
+  bouton et « How it works » (vers « What is Snapline? »). Le bouton (`welcomePick`) : **Watch live now** s'il y a un
+  match en direct (il s'ouvre sur le grand écran, `watchGame`) ; sinon **Watch a full game** (le dernier match terminé,
+  en replay) avec « No game live right now · next kickoff Tue 27 Oct 10:00 Brussels, in 3 h 58 » ; sinon **See the next
+  game**. Fermé (croix) ou un match ouvert depuis le bandeau : il ne revient plus (`gc-welcome-v1`, dans le navigateur ;
+  une préférence d'affichage, pas un traçage). Caché aussi pour qui a déjà une clé de joueur (`gc-player-v1`).
+- **Dès la 1re image** : le serveur ajoute un court script au `<head>` qui décide avant l'affichage (`gc-seen` : déjà
+  venu, pas de bandeau ; `gc-boot` : au démarrage, les blocs sous la grille — classements, publicité de l'accueil,
+  « What is Snapline? », pied de page — attendent son 1er dessin, et les boutons de la barre du haut dont la taille
+  change, invisibles, gardent leur place). `seasonBoot` retire `gc-boot` après le 1er dessin ; le script le retire de
+  toute façon après 10 s (la page reste lisible si le site ne démarre pas). Sans JavaScript (robots qui lisent le HTML) :
+  tout est visible, rien n'est retenu.
+- **CLS** (mesuré par `layout-shift`, `outils/site/test_accueil.js`) : **0,012** sur téléphone (0,58 avant), **0,011**
+  sur ordinateur (0,56 avant) ; bon en dessous de 0,1.
+- **Tests** : `moteur/tests/test_accueil.py` (interrupteur : page identique sans, bandeau, script et `accueil` avec),
+  `outils/site/test_accueil.js` (groupe site : trois serveurs, horloge fixée — sans `GC_ACCUEIL`, la nuit, pendant un
+  créneau ; bandeau dès la 1re image, replay ou direct sur le grand écran, prochain coup d'envoi, fermeture retenue,
+  focus, déjà venu, CLS < 0,1 ordinateur et téléphone, 390 px, mode sombre ; `SHOTS=<dossier>` pour les captures).
+
+### 82. Insights, plus de données : historique des face-à-face, écart à la ligne, joueurs en forme (29/10/2026)
 Ajouts choisis par Guillaume (onglet Insights, section 78), toujours sur les seuls matchs terminés :
 - **Head-to-head** : **historique des confrontations** (`/api/insights/h2h`, comptes de `GC_INSIGHTS_USERS`) : toutes
   les rencontres terminées depuis la semaine `GC_HIST_DEPUIS` (comme History), bilan de la série, points et écart moyens,
@@ -2317,6 +2372,54 @@ jobs:
 
 ---
 
+### 79. AdSense refusé (« contenu à faible valeur ») : accueil sans valeurs de maquette et pages des franchises (29/10/2026)
+**Constat** : Google AdSense a refusé `snapline.live` (« annonces sur des pages sans contenu d'éditeur », « contenu à
+faible valeur informative »). Le site est une seule page dessinée en JavaScript : le plan du site ne comptait que `/` et
+`/legal`, le HTML de l'accueil environ 260 mots (dont 120 de texte : « What is Snapline? ») et des valeurs de maquette
+visibles avant le chargement du script. **Demande de Guillaume (29/10)** : d'abord retirer ces valeurs, puis les pages
+des franchises.
+- **Accueil** (`gamecenter_source.html`) : plus de valeurs inventées dans le HTML d'origine — solde `$4,280.50` →
+  `$0.00`, `+$482` → `+$0`, `87 Bets` → `0`, `54%` → `—`, compteurs Live / Upcoming / Results vides, surtitre « Sunday
+  night slate · 11.8K watching » → « Every game played by the engine », « Season IV · Week 12 » → « This week », « 5
+  boards » retiré ; avatar factice « O1 / Operator One » supprimé de l'en-tête ; « Sim engine V3 · 4 franchises »
+  (resté de la semaine 1) → nombre réel de franchises ; « Reconnecting to the GameCenter server… » → « Reconnecting
+  to Snapline… ». Le script remplace toujours ces valeurs dès le chargement (rien ne change à l'écran ensuite). Liens
+  vers `/teams` dans « What is Snapline? » et le pied de page.
+- **Pages des franchises** (`pages_franchises.py`, rendues par le serveur, lisibles sans JavaScript, style de `/legal`,
+  clair / sombre) : **`/teams`** (les 24 franchises par conférence et division, « How the league works ») et
+  **`/teams/<nom>`** (`/teams/cortex-foxes` ; `/teams/ctx` y renvoie, 301). Chaque page : texte écrit pour la
+  franchise (devise, trois paragraphes, points forts et faibles — `TEXTES`, en anglais, ≥ 120 mots), identité,
+  coordinateurs, notes des unités, titulaires (effectif du début de semaine), histoire de la franchise (semaines
+  **terminées** seulement : saisons, bilan, playoffs, finales, titres) et ses Grand Finals, rivaux de division, lien
+  vers le direct. ≈ 600 mots par page. Ajoutées au plan du site (27 adresses). Pas de publicité sur ces pages pour
+  l'instant.
+- **À faire par Guillaume** : attendre que Google ait exploré les nouvelles pages (Search Console → Sitemaps →
+  renvoyer `/sitemap.xml`, puis *Inspection de l'URL* sur `/teams`) avant de redemander l'examen AdSense. Suite
+  prévue : comptes rendus écrits des matchs, récapitulatifs de semaine, guides.
+- **Tests** : `moteur/tests/test_franchises.py` (un texte par franchise, pages, échappement, routes, plan du site).
+  Cellule 427 : rien à reporter (partie du site seulement).
+
+### 80. Comptes rendus écrits des matchs (AdSense, suite — 29/10/2026)
+**Demande de Guillaume (29/10)** : après les pages des franchises (section 79), un compte rendu écrit pour chaque match.
+- **Pages** (`comptes_rendus.py`, rendues par le serveur, lisibles sans JavaScript, style de `/legal`) :
+  **`/games/<id>`** (compte rendu d'un match), **`/weeks/<n>`** (résultats d'une semaine par tour, playoffs, résumé de
+  la saison quand elle est terminée : champion, meilleur bilan, leaders) et **`/games`** (derniers matchs, toutes les
+  semaines). **Matchs terminés seulement** : un match à venir ou en cours répond 404 et n'est pas dans le plan du site.
+- **Le compte rendu** (≈ 640 à 1 000 mots, 860 en moyenne sur les 1 155 matchs du dépôt) : tableau de marque par quart ;
+  récit en six paragraphes — scénario (match nul, dernière seconde, remontée, large victoire, bataille défensive,
+  festival offensif, match serré ; surprise ou favori d'après les cotes d'avant-match), déroulé (premiers points,
+  mi-temps, dernier quart), action décisive (la plus grande hausse de probabilité de victoire en faveur du gagnant,
+  hors fin du temps), joueur du match et autres performances, plan de jeu des deux staffs (et ce qu'a fait le joueur
+  ciblé), conséquences (bilans de la semaine, qualification, titre ; quatrièmes tentés ; blessures sérieuses) — puis
+  résumé des points, statistiques d'équipe (yards, troisièmes et quatrièmes, pertes de balle, sacks, possession) et
+  feuilles individuelles. Les actions sont racontées d'après leurs champs (passeur, porteur, gain), pas le texte du
+  direct (parfois coupé). Les tournures varient d'un match à l'autre, fixées par l'identifiant du match.
+- **Liens** : « Latest games » (6 derniers comptes rendus) sur chaque page de franchise ; « Results & recaps » dans le
+  pied de page du site, des pages franchises et « What is Snapline? ». Plan du site : `/games`, `/weeks/<n>`, et
+  chaque match terminé (≈ 1 100 adresses avec les semaines du dépôt). Comptes rendus gardés en mémoire (64).
+- **Tests** : `moteur/tests/test_comptes_rendus.py` (tous les matchs d'une semaine : points du résumé = score final,
+  texte propre ; finale ; rien avant la fin d'un match ; page de semaine et index ; lien depuis la franchise).
+
 ## Lancer en local
 
 ```bash
@@ -2369,6 +2472,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
 | GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
+| GET | `/teams`, `/teams/<nom>` | pages des franchises, lisibles sans JavaScript (section 79) |
+| GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
@@ -2388,7 +2493,8 @@ README section 52) · `GC_EDITEUR`,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
-ont tout l'onglet), section 78.
+ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
+CLS de l'accueil, section 81).
 
 ## Test
 

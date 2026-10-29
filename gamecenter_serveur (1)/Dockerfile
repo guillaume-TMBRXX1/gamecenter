@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY serveur.py gamecenter_source.html ./
+COPY serveur.py pages_franchises.py comptes_rendus.py gamecenter_source.html ./
 # moteur/histoire.py : histoire de la ligue, records, carrières (bloc 2, étape 5 ; bibliothèque standard seulement)
 COPY moteur ./moteur
 COPY static ./static
