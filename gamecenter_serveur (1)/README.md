@@ -2297,6 +2297,33 @@ jobs:
 
 ---
 
+### 79. AdSense refusé (« contenu à faible valeur ») : accueil sans valeurs de maquette et pages des franchises (29/10/2026)
+**Constat** : Google AdSense a refusé `snapline.live` (« annonces sur des pages sans contenu d'éditeur », « contenu à
+faible valeur informative »). Le site est une seule page dessinée en JavaScript : le plan du site ne comptait que `/` et
+`/legal`, le HTML de l'accueil environ 260 mots (dont 120 de texte : « What is Snapline? ») et des valeurs de maquette
+visibles avant le chargement du script. **Demande de Guillaume (29/10)** : d'abord retirer ces valeurs, puis les pages
+des franchises.
+- **Accueil** (`gamecenter_source.html`) : plus de valeurs inventées dans le HTML d'origine — solde `$4,280.50` →
+  `$0.00`, `+$482` → `+$0`, `87 Bets` → `0`, `54%` → `—`, compteurs Live / Upcoming / Results vides, surtitre « Sunday
+  night slate · 11.8K watching » → « Every game played by the engine », « Season IV · Week 12 » → « This week », « 5
+  boards » retiré ; avatar factice « O1 / Operator One » supprimé de l'en-tête ; « Sim engine V3 · 4 franchises »
+  (resté de la semaine 1) → nombre réel de franchises ; « Reconnecting to the GameCenter server… » → « Reconnecting
+  to Snapline… ». Le script remplace toujours ces valeurs dès le chargement (rien ne change à l'écran ensuite). Liens
+  vers `/teams` dans « What is Snapline? » et le pied de page.
+- **Pages des franchises** (`pages_franchises.py`, rendues par le serveur, lisibles sans JavaScript, style de `/legal`,
+  clair / sombre) : **`/teams`** (les 24 franchises par conférence et division, « How the league works ») et
+  **`/teams/<nom>`** (`/teams/cortex-foxes` ; `/teams/ctx` y renvoie, 301). Chaque page : texte écrit pour la
+  franchise (devise, trois paragraphes, points forts et faibles — `TEXTES`, en anglais, ≥ 120 mots), identité,
+  coordinateurs, notes des unités, titulaires (effectif du début de semaine), histoire de la franchise (semaines
+  **terminées** seulement : saisons, bilan, playoffs, finales, titres) et ses Grand Finals, rivaux de division, lien
+  vers le direct. ≈ 600 mots par page. Ajoutées au plan du site (27 adresses). Pas de publicité sur ces pages pour
+  l'instant.
+- **À faire par Guillaume** : attendre que Google ait exploré les nouvelles pages (Search Console → Sitemaps →
+  renvoyer `/sitemap.xml`, puis *Inspection de l'URL* sur `/teams`) avant de redemander l'examen AdSense. Suite
+  prévue : comptes rendus écrits des matchs, récapitulatifs de semaine, guides.
+- **Tests** : `moteur/tests/test_franchises.py` (un texte par franchise, pages, échappement, routes, plan du site).
+  Cellule 427 : rien à reporter (partie du site seulement).
+
 ## Lancer en local
 
 ```bash
@@ -2349,6 +2376,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
 | GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
+| GET | `/teams`, `/teams/<nom>` | pages des franchises, lisibles sans JavaScript (section 79) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
