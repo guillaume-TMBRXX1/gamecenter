@@ -2244,7 +2244,7 @@ termine (≈ 0,2 s pour 240 matchs) : le site redemande les chiffres à chaque m
 « GameFeeds d'exhibition » (`.github/workflows/gamefeeds.yml`). Les deux matchs (`exh-v41`, `exh-v42`) ne sont plus
 servis : ils restent des matchs de test des suites navigateur (`outils/site/matchs/`). Le bouton « Load GameFeed » du
 replay reste.
-### 79. Accroche des vidéos : l'action dès la 1re image (promotion, étape 9.2 — 28/10/2026)
+### 80. Accroche des vidéos : l'action dès la 1re image (promotion, étape 9.2 — 28/10/2026)
 **Constat (TikTok Studio, 28/10)** : la vidéo la plus vue (joueur de la semaine, 646 vues) est regardée **1,55 s** en
 moyenne, **0,6 %** jusqu'au bout, la plupart partent à **0:01**. Elle s'ouvrait sur 3,4 s de carton de statistiques
 immobile ; l'action du jour, sur ≈ 2 s de joueurs alignés avant le snap. **Décision de Guillaume (28/10)** : l'accroche
@@ -2396,7 +2396,7 @@ README section 52) · `GC_EDITEUR`,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
-ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 79).
+ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80).
 
 ## Test
 
