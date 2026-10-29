@@ -854,6 +854,8 @@ def page(request: Request = None):
         srv["chat"] = chat_mode()
     if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
         srv["insights"] = True
+    if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
+        srv["accueil"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -865,11 +867,29 @@ def page(request: Request = None):
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
     if CF_ANALYTICS:                                 # statistiques d'audience : rien sans GC_CF_ANALYTICS
         s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
+    if accueil_on():
+        s = s.replace(_ACCUEIL_CACHE, _ACCUEIL_CACHE[:-len(" hidden>")] + ">", 1).replace("</title>", "</title>\n" + _ACCUEIL_TETE, 1)
     if ADS_CLIENT:                                   # publicités (bloc 2 bis) : rien sans GC_ADSENSE_CLIENT
         s = s.replace("</title>", '</title>\n<meta name="google-adsense-account" content="' + ADS_CLIENT + '">\n'
                       '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS_CLIENT
                       + '" crossorigin="anonymous"></script>', 1)
     return HTMLResponse(s, headers={"Cache-Control": "no-store"})
+
+
+# Première visite (promotion, étape 9.3, README section 81) : GC_ACCUEIL=1 montre le bandeau des nouveaux venus (ce
+# qu'est Snapline, un bouton pour voir un match tout de suite) et retient les blocs sous la grille des matchs jusqu'à son
+# 1er dessin (CLS). Le script du <head> décide avant la 1re image : bandeau caché pour qui est déjà venu (gc-welcome-v1
+# ou gc-player-v1 dans le navigateur), blocs retenus au plus 10 s (si le site ne démarre pas, la page reste lisible).
+# Sans la variable : la page d'avant, à l'identique (le bandeau reste caché, aucun script).
+def accueil_on():
+    return os.environ.get("GC_ACCUEIL", "").strip() == "1"
+
+
+_ACCUEIL_CACHE = '<section class="card welcome" id="welcome" aria-labelledby="welcomeTitle" hidden>'
+_ACCUEIL_TETE = ("<script>(function(){var d=document.documentElement;d.classList.add('gc-boot');"
+                 "setTimeout(function(){d.classList.remove('gc-boot');},10000);"
+                 "try{if(localStorage.getItem('gc-welcome-v1')||localStorage.getItem('gc-player-v1'))d.classList.add('gc-seen');}"
+                 "catch(e){}})();</script>")
 
 
 # Référencement (bloc 2, étape 8) : robots.txt, plan du site, image de partage (Open Graph, 1200×630)

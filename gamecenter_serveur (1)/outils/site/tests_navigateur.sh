@@ -95,6 +95,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js
   lancer "Site : publicités, mentions, page légale" node outils/site/test_publicites.js
   lancer "Site : mesure de l'audience (liens courts, tableau de bord)" node outils/site/test_mesure.js
+  lancer "Site : première visite (bandeau, Watch live now, CLS)" node outils/site/test_accueil.js
   lancer "Notebook : Game Center (cellule 427)" node outils/site/test_cellule427.js
   lancer "Audio : musique" node outils/audio/test_musique_v04.js 8108
   lancer "Audio : commentaire enregistré" node outils/audio/test_commentaire_v02.js data/weeks 8104 "${SEM[@]}"

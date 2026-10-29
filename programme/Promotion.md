@@ -167,8 +167,8 @@ presque aucun lien entrant (3 à 6 mois, même bien fait).
 |---|---|---|---|---|---|
 | 9.0 | Diagnostic | Captures Cloudflare, Search Console, TikTok Studio | Analyse (ci-dessus) | — | ✅ 28/10 |
 | 9.1 | Mesure | `GC_MESURE=1` posé ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 77) | `GC_MESURE` | ✅ 28/10 |
-| 9.2 | Accroche des vidéos | Publier ; comparer la durée regardée et le % en entier | Action en mouvement dès la 1re image, accroche en grand, cartons après la 1re action, ≈ 12 s (README section 80) | `GC_VIDEO_ACCROCHE` | PR ouverte |
-| 9.3 | Première visite | Valider les captures | Bandeau pour les nouveaux venus, « Watch live now », correctif du CLS | `GC_ACCUEIL` | à faire |
+| 9.2 | Accroche des vidéos | Publier ; comparer la durée regardée et le % en entier | Action en mouvement dès la 1re image, accroche en grand, cartons après la 1re action, ≈ 12 s (README section 80) | `GC_VIDEO_ACCROCHE` | ✅ 29/10 |
+| 9.3 | Première visite | Valider les captures ; poser `GC_ACCUEIL=1` | Bandeau pour les nouveaux venus, « Watch live now » ou un replay, CLS 0,58 → 0,01 (README section 81) | `GC_ACCUEIL` | PR ouverte |
 | 9.4 | Communautés | Publier (une tous les 2-3 jours), répondre | Textes prêts (Show HN, Reddit…), un lien `/r/<source>` chacun, règles relues | — | à faire |
 | 9.5 | Pages indexables | Renvoyer le plan du site | Équipes, records, saisons, matchs marquants ; données structurées | `GC_PAGES` | à faire |
 | 9.6 | Partage | — | Aperçu par match, lien vers une action | `GC_PARTAGE` | à faire |
