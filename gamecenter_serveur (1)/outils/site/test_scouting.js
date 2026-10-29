@@ -1,6 +1,6 @@
 // Appel de jeu qui apprend (moteur 12.2 vicies semel, play.scout — 19/10/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_scouting.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
-// Rejoue en temps simulé, sur le grand écran, un match dont les actions portent play.scout : une exhibition ou le dernier
+// Rejoue en temps simulé, sur le grand écran, un match dont les actions portent play.scout : un match de test (outils/site/matchs) ou le dernier
 // match de data/weeks qui a au moins 3 lectures et 1 cassure ; sinon un match réel qui en reçoit à tour de rôle
 // (lecture juste et fausse, de la course et de la passe, tendance cassée par un play action et par une course).
 // Ne dépend pas de l'heure : le match est rejoué de bout en bout, quel que soit le match à l'antenne.
@@ -18,8 +18,8 @@ const num=(v,d)=>typeof v==='number'&&isFinite(v)?v:(d||0);
 
 function feeds(){
   const all=[];
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`matchs/${f}`});
   for(const w of fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort().reverse()){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) all.push({file:path.join(dir,f),src:`${w}/${f}`});

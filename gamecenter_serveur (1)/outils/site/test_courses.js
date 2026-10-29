@@ -1,7 +1,7 @@
 // Jeu de course dessiné (moteur bloc F, 12.2 quindecies — 14/10/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_courses.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
 // Rejoue en temps simulé, sur le grand écran, un match dont les courses portent play.run (box, side, hole, read,
-// contact) : le dernier de data/weeks ou des exhibitions ; sinon un match réel dont les courses reçoivent un play.run à
+// contact) : le dernier de data/weeks ou des matchs de test (outils/site/matchs) ; sinon un match réel dont les courses reçoivent un play.run à
 // tour de rôle (8 et 9 dans la boîte, boîte légère, cutback, rebond, bloquée, plaquage cassé).
 // Vérifie, course par course : au snap, autant de défenseurs dans la boîte (moins de 7 yards de la ligne, ± 7,5 yards du
 // ballon) que le moteur ; le porteur passe par le côté choisi (gauche / droite de l'attaque) ; cutback : il finit de
@@ -19,8 +19,8 @@ function feedAvecCourses(){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) all.push({file:path.join(dir,f),src:`${w}/${f}`});
   }
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort()) all.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort()) all.push({file:path.join(ex,f),src:`matchs/${f}`});
   for(const {file,src} of all){
     const F=JSON.parse(fs.readFileSync(file,'utf8'));
     const K=F.plays.filter(P=>P.run&&P.call.side!=null);   /* feeds made before the lateral alignment (14/10) are skipped */
