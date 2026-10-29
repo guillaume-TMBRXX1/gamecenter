@@ -27,11 +27,12 @@ retoucher : ils sont écrits à la première personne, c'est Guillaume qui parle
 
 | Jour | Où | Lien à publier | Pourquoi dans cet ordre |
 |---|---|---|---|
-| J0 (mar. ou mer.) | Hacker News, « Show HN » | `https://snapline.live` | Le public le plus large ; aime les projets techniques à essayer sans inscription |
-| J+2 | Reddit r/SideProject | `https://snapline.live/r/reddit-sideproject` | Fait pour montrer un projet et recevoir des retours |
+| Dès maintenant | Hacker News : créer le compte | — | Un compte tout neuf voit souvent ses posts bloqués : y lire et commenter normalement pendant une semaine, sans parler de Snapline |
+| J0 (mar. ou mer.) | Reddit r/SideProject | `https://snapline.live/r/reddit-sideproject` | Compte Reddit depuis 2025 ; la communauté est faite pour montrer un projet et recevoir des retours. On corrige ce qu'ils signalent avant HN |
+| J+2 | Communautés de simulation de football (après accord des modérateurs) | `/r/reddit-simfootball`, `/r/reddit-footballgm`, `/r/fofc` | Le public le plus proche ; écrire aux modérateurs dès J0 |
 | J+4 | Reddit r/InternetIsBeautiful | `https://snapline.live/r/reddit-iib` | Grand public ; seulement si le compte Reddit respecte la règle des 90/10 (section 3) |
-| J+6 | Communautés de simulation de football (après accord des modérateurs) | `/r/reddit-simfootball`, `/r/reddit-footballgm`, `/r/fofc` | Le public le plus proche, mais les règles sont à confirmer |
-| J+9 | Product Hunt | `https://snapline.live/r/ph` | À préparer (images, premier commentaire) ; mieux après quelques retours |
+| J+7 (mar. ou mer.) | Hacker News, « Show HN » | `https://snapline.live` | Le public le plus large, une seule chance : quand le compte a une semaine d'historique et que les retours de Reddit sont corrigés |
+| J+10 | Product Hunt | `https://snapline.live/r/ph` | À préparer (images, premier commentaire) ; mieux après quelques retours |
 | Au fil de l'eau | Indie Hackers, AlternativeTo, X / Bluesky | `/r/ih`, `/r/alternativeto`, `/r/x`, `/r/bluesky` | Liens entrants durables (référencement) |
 
 Après chaque publication : noter la date, le lien et le résultat (votes, commentaires, visites de `/admin/stats`) dans la
@@ -51,8 +52,9 @@ et de guides : la session de Claude n'a pas accès au site lui-même) :
   « the best »…).
 
 **À vérifier par Guillaume** : relire la page [showhn.html](https://news.ycombinator.com/showhn.html) et les
-[guidelines](https://news.ycombinator.com/newsguidelines.html) le jour même. Le compte HN doit avoir un peu d'historique :
-un compte tout neuf voit souvent ses posts bloqués.
+[guidelines](https://news.ycombinator.com/newsguidelines.html) le jour même. Le compte HN est créé une semaine avant
+(Guillaume n'en a pas encore, 29/10) et a servi à lire et commenter d'autres sujets : un compte tout neuf voit souvent
+ses posts bloqués.
 
 **Comment publier** : news.ycombinator.com → *submit* → titre, URL `https://snapline.live`, puis le texte ci-dessous
 **en premier commentaire** (c'est l'usage quand on met une URL).
@@ -81,9 +83,12 @@ a real staff makes:
   read and break them;
 - pre-snap reads and audibles, QB progressions under pressure, fatigue and rotations, injuries and penalties.
 
-The engine is written in Python and runs once a week on GitHub Actions to produce the whole week of games. The site is
-FastAPI + SQLite, with a single-page canvas front end. Games are computed ahead, but the server only reveals each play
-when it happens on the clock, so a live game really is live for the viewer.
+The engine is written in Python and runs once a week to produce the whole week of games. The site is FastAPI + SQLite,
+with a single-page canvas front end. Games are computed ahead, but the server only reveals each play when it happens on
+the clock, so a live game really is live for the viewer.
+
+Full disclosure: I built this with a lot of help from an AI coding assistant. I decided what the league should be and
+how the coaches should think, checked every result, and the assistant wrote much of the code.
 
 I'd love feedback on two things: does the play-by-play feel like football, and is it clear what the AI decided and why?
 ```
@@ -115,8 +120,7 @@ Each team is run by AI coordinators (decision models, not chatbots): they decide
 their play calling during the game, keep a scouting file on each opponent, and try to break their own tendencies when
 the defense starts reading them.
 
-Stack: a Python simulation engine that runs once a week on GitHub Actions, a FastAPI + SQLite server, and a single-page
-canvas front end.
+Stack: a Python simulation engine that runs once a week, a FastAPI + SQLite server, and a single-page canvas front end.
 
 What I'd like to know:
 1. Is it clear in the first 5 seconds what the site is?
@@ -179,7 +183,7 @@ with the box score; History keeps records and player careers across seasons.
 I'd really value the opinion of people who know sims: what feels off, what's missing, what would you want to see?
 ```
 
-### 3.5 Product Hunt (vers J+9)
+### 3.5 Product Hunt (vers J+10)
 
 **Règles relevées** (guides de 2026, pas la page officielle) : interdit de demander des votes, même en message privé ;
 les votes de comptes très récents ou suspects sont retirés ; les commentaires comptent plus que le nombre de votes ; on
@@ -223,12 +227,35 @@ peut programmer le lancement jusqu'à un mois à l'avance.
    On purpose: no real league, team or player. Everything is invented, so the teams can build their own history.
    ```
 
-4. **Une question sur les cotes ou l'argent visibles sur le site** → **à valider par Guillaume** (section 5, point 1).
+4. **Une question sur les cotes ou l'argent visibles sur le site** (option A, décision du 29/10) :
 
-5. **« Is it open source? / Can I coach a team? »** → **réponses à donner par Guillaume** (section 5, point 2). Pour
-   l'instant, on peut suivre une équipe et recevoir un rappel avant ses matchs.
+   ```
+   There's an optional play-money mode (no real money, nothing can be bought or won, 18+). Snapline is about watching
+   the AI coaches: you can ignore it.
+   ```
 
-6. **Une critique** (lent, confus, moche…) :
+   Rien de plus, même si la discussion continue : ni « bet », ni « odds », ni « gambling » dans nos messages.
+
+5. **« Is it open source? »** (décision du 29/10 : ne pas parler du dépôt) :
+
+   ```
+   I'm keeping the focus on the league itself for now, so I'm not sharing the code here.
+   ```
+
+   **« Can I coach a team? »** :
+
+   ```
+   Not yet. For now you can pick a favorite team and get a reminder before its games.
+   ```
+
+6. **« Did you use AI to build it? »** (sur Reddit ; c'est déjà dit sur HN) :
+
+   ```
+   Yes, a lot: an AI coding assistant wrote much of the code. I designed the league and the coaches' logic, and I
+   checked the results game after game.
+   ```
+
+7. **Une critique** (lent, confus, moche…) :
 
    ```
    Thanks, that's really useful. [Ce que je vais changer, ou pourquoi c'est ainsi.]
@@ -236,17 +263,12 @@ peut programmer le lancement jusqu'à un mois à l'avance.
 
    Puis noter la critique pour le bilan du lundi.
 
-## 5. Décisions à prendre par Guillaume avant J0
+## 5. Décisions de Guillaume (29/10)
 
-1. **Les cotes à l'écran.** Les visiteurs des communautés verront les cotes et le solde en argent fictif, et quelqu'un
-   demandera ce que c'est. Notre règle interdit d'en parler sur les réseaux. Deux options :
-   - **A (conseillée)** : une réponse courte et honnête, sans le mot « paris » : *« There's an optional play-money mode
-     (no real money, nothing can be bought or won, 18+). Snapline is about watching the AI coaches: you can ignore
-     it. »* ;
-   - **B** : ne pas répondre à cette question.
-2. **Code source et participation** : le dépôt est public sur GitHub. Le dire, ou non ? Et peut-on « coacher » une
-   équipe un jour, ou non ?
-3. **Le compte** : Guillaume a-t-il des comptes HN et Reddit avec un peu d'historique ? Sinon, les créer dès
-   maintenant et participer normalement quelques jours avant J0.
-4. **L'aide d'une IA pour le code** : la mentionner ou non dans le texte de HN ? Le public de HN pose souvent la
-   question, et y répondre franchement est mieux reçu.
+1. **Les cotes à l'écran** : option A. Une réponse courte et honnête si quelqu'un demande (section 4, réponse n° 4),
+   jamais le mot « paris ».
+2. **Le code source** : ne pas dire que le dépôt est public (section 4, réponse n° 5). Les textes ne nomment pas GitHub.
+3. **Les comptes** : un compte Reddit depuis 2025, pas de compte Hacker News. D'où le calendrier : Reddit d'abord, et
+   un compte HN créé tout de suite qui sert une semaine avant le Show HN.
+4. **L'aide d'une IA** : dite franchement dans le texte de HN (section 3.1), et sur Reddit si on pose la question
+   (section 4, réponse n° 6).
