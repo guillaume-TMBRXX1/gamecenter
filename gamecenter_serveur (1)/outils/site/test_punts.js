@@ -1,7 +1,7 @@
 // Punts avec retour (moteur 12.2 sexdecies — 14/10/2026) — test navigateur (Playwright + serveur réel, crochet de test).
 //   node outils/site/test_punts.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
 // Rejoue en temps simulé, sur le grand écran, un match avec punts retournés : le dernier match de data/weeks (ou des
-// exhibitions) qui a un retour et une autre issue (fair catch, ballon arrêté…) ; sinon (semaines calculées avant les
+// matchs de test, outils/site/matchs) qui a un retour et une autre issue (fair catch, ballon arrêté…) ; sinon (semaines calculées avant les
 // retours de punt) un match réel dont les punts reçoivent une issue à tour de rôle (retour, fair catch, ballon arrêté,
 // sortie, touchback, grand retour).
 // Vérifie : chaque punt est joué (bannière PUNT · RETURN n YDS / FAIR CATCH / DOWNED / OUT OF BOUNDS / TOUCHBACK /
@@ -20,8 +20,8 @@ function feeds(){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) out.push({file:path.join(dir,f),src:`${w}/${f}`});
   }
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort()) out.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort()) out.push({file:path.join(ex,f),src:`matchs/${f}`});
   return out;
 }
 function feedAvecPunts(){

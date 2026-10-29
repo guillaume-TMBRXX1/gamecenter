@@ -26,6 +26,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse, RedirectResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from moteur import histoire as _histoire
+from moteur import insights as _insights
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 # Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
@@ -848,6 +849,8 @@ def page(request: Request = None):
         srv["ads"] = {"client": ADS_CLIENT, "slots": ADS_SLOTS}
     if chat_mode() != "off":                         # chat (section « chat ») : sans lui, la page ne le dessine pas
         srv["chat"] = chat_mode()
+    if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
+        srv["insights"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -2975,30 +2978,49 @@ def admin_chat_page():
                                                 "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"})
 
 
-# ------------------------------------------------------------------ exhibitions (matchs hors calendrier)
-EXH_DIR = os.path.join(HERE, "data", "exhibitions")     # produits par outils/exhibition/simuler_exhibition.py, dans le dépôt
-_EXH_ID = re.compile(r"^[a-z0-9-]{3,60}$")
+# ------------------------------------------------------------------ Insights (README section 78)
+# Statistiques de la semaine en cours, calculées sur les seuls matchs terminés (moteur/insights.py), gardées tant
+# qu'aucun nouveau match ne se termine. Le récap du jour est ouvert à tous ; « This week » et « Head-to-head » aux
+# comptes de GC_INSIGHTS_USERS (pseudos séparés par des virgules) : les autres reçoivent seulement le récap, l'aperçu
+# du site est dessiné avec des chiffres factices. GC_INSIGHTS=off : ni onglet ni API (le site d'avant).
+_INS_CACHE, _INS_LOCK = {}, threading.Lock()
 
 
-@app.get("/api/exhibitions")
-def api_exhibitions():
-    """Liste des matchs d'exhibition (sans score : pas de spoiler)."""
-    try:
-        with open(os.path.join(EXH_DIR, "index.json"), encoding="utf-8") as fh:
-            idx = json.load(fh)
-    except Exception:
-        idx = {"exhibitions": []}
-    return JSONResponse(idx, headers={"Cache-Control": "no-cache"})
+def insights_on():
+    return os.environ.get("GC_INSIGHTS", "on").strip().lower() not in ("off", "0", "non", "no")
 
 
-@app.get("/api/exhibitions/{gid}")
-def api_exhibition(gid: str):
-    if not _EXH_ID.match(gid):
-        raise HTTPException(404)
-    p = os.path.join(EXH_DIR, gid + ".json")
-    if not os.path.isfile(p):
-        raise HTTPException(404)
-    return FileResponse(p, media_type="application/json", headers={"Cache-Control": "no-cache"})
+def insights_pro(p):
+    """Le compte p a-t-il tout l'onglet ? (pseudo dans GC_INSIGHTS_USERS ; un invité, jamais)"""
+    if not p or not p.get("login"):
+        return False
+    noms = {login_key(x) for x in os.environ.get("GC_INSIGHTS_USERS", "").split(",") if x.strip()}
+    return p["login"] in noms
+
+
+def insights_data(w, t):
+    """Les statistiques de la semaine w à l'instant t (matchs terminés seulement), en cache par nombre de matchs finis."""
+    finis = sorted((g for g in w.sched if w.status(g, t) == "final" and g.get("result")), key=lambda g: (g["ko"], g["id"]))
+    cle = (w.start, len(finis))
+    with _INS_LOCK:
+        d = _INS_CACHE.get(cle)
+        if d is None:
+            d = _insights.calculer([(g, w.feed(g["id"])) for g in finis])
+            _INS_CACHE.clear(); _INS_CACHE[cle] = d
+    return d, len(finis)
+
+
+@app.get("/api/insights")
+def api_insights(token: str = ""):
+    if not insights_on():
+        raise HTTPException(404, "insights_off")
+    w = _need_week(); t = now_ms()
+    d, n = insights_data(w, t)
+    pro = insights_pro(player_by_token(token) if token else None)
+    out = {"week": w.start, "now": t, "final": n, "games": len(w.sched), "pro": pro, "recaps": d["recaps"]}
+    if pro:
+        out.update(league=d["league"], rows=d["rows"], hints=d["hints"])
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")

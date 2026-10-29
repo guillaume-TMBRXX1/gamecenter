@@ -1,6 +1,6 @@
 // Mémoire d'une semaine à l'autre (moteur 12.2 vicies bis, idée 6 — 21/10/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_memoire.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
-// Prend le dernier match de data/weeks (ou une exhibition) dont des lectures viennent du film (play.scout.def.film) avec
+// Prend le dernier match de data/weeks (ou un match de test, outils/site/matchs) dont des lectures viennent du film (play.scout.def.film) avec
 // une cassure « on tape » et un rapport d'avant-match (game.scout_film) ; sinon un match réel qui en reçoit à tour de rôle.
 // Ne dépend pas de l'heure : le match est rejoué de bout en bout, quel que soit le match à l'antenne.
 // Vérifie : bulle « KEY · … » avec la seconde ligne « SCOUTED · N GAMES » seulement quand la lecture vient surtout du
@@ -20,8 +20,8 @@ function feeds(){
     const dir=path.join(WEEKS,w,'games');
     for(const f of fs.readdirSync(dir).sort()) all.push({file:path.join(dir,f),src:`${w}/${f}`});
   }
-  const ex=path.join(ROOT,'data','exhibitions');
-  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`exhibitions/${f}`});
+  const ex=path.join(__dirname,'matchs');
+  if(fs.existsSync(ex)) for(const f of fs.readdirSync(ex).filter(f=>f.startsWith('exh-')).sort().reverse()) all.push({file:path.join(ex,f),src:`matchs/${f}`});
   return all;
 }
 function feedAvecFilm(){

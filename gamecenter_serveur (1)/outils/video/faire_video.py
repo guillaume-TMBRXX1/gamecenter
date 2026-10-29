@@ -506,6 +506,9 @@ def serveur(port):
     for _ in range(240):
         try:
             urllib.request.urlopen(f"http://localhost:{port}/api/time", timeout=2)
+            # la 1re page d'un serveur neuf prend 15 à 25 s (semaines à lire) : ouverte ici une fois, le navigateur
+            # de filmer.js (30 s au plus pour la charger) la reçoit ensuite en ≈ 2 s
+            urllib.request.urlopen(f"http://localhost:{port}/", timeout=180).read()
             return p, data
         except Exception:
             time.sleep(0.5)

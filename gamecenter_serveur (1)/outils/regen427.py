@@ -1,6 +1,6 @@
 """Cellule 427 du notebook (site embarqué, NGS_TEMPLATE) : reporte les changements de gamecenter_source.html.
 
-Le Game Center du notebook est une copie allégée du site (sans serveur, recherche, paris en ligne, exhibitions…),
+Le Game Center du notebook est une copie allégée du site (sans serveur, recherche, paris en ligne, Insights…),
 retouchée à la main. On ne la régénère pas d'un bloc : on y reporte les changements du site depuis la dernière
 synchronisation (commit noté dans la cellule), bloc par bloc. Un bloc est appliqué s'il retrouve son code UNE fois dans
 la cellule (n'importe où : les sections n'y sont pas dans le même ordre), au besoin avec moins de contexte. Les autres
