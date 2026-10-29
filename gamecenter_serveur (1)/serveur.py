@@ -27,6 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from moteur import histoire as _histoire
 from moteur import insights as _insights
+import pages_franchises as _franchises
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 # Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
@@ -963,17 +964,57 @@ def _origine(request):
     return "https://" + DOMAINE if DOMAINE else str(request.base_url).rstrip("/")
 
 
+# Pages des franchises (AdSense, 29/10/2026 : pages écrites, lisibles sans JavaScript — pages_franchises.py) : /teams
+# et /teams/<nom> (« cortex-foxes » ; l'abréviation « ctx » y renvoie). Effectif et notes de la semaine en cours (début
+# de semaine), histoire des semaines TERMINÉES seulement (pas de spoiler).
+def _franchises_tete():
+    return "\n" + _cf_beacon(CF_ANALYTICS) + "\n" if CF_ANALYTICS else ""
+
+
+@app.get("/teams", response_class=HTMLResponse)
+def teams_index(request: Request):
+    d = _need_week().doc
+    s = _franchises.page_index(d["teams"], d["week"].get("league"), _origine(request), _franchises_tete())
+    return HTMLResponse(s, headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/teams/{nom}", response_class=HTMLResponse)
+def teams_page(nom: str, request: Request):
+    d = _need_week().doc
+    teams = d["teams"]
+    par_slug = {_franchises.slug(t["name"]): a for a, t in teams.items()}
+    if nom not in par_slug:
+        a = nom.upper()
+        if a in teams:
+            return RedirectResponse("/teams/" + _franchises.slug(teams[a]["name"]), status_code=301)
+        raise HTTPException(404)
+    a = par_slug[nom]
+    h = league_history(now_ms(), True)
+    histo = next((f for f in h.get("franchises") or [] if f.get("team") == a), None)
+    s = _franchises.page_equipe(a, teams, d["week"].get("league"), histo, h.get("seasons"), _origine(request),
+                                _franchises_tete())
+    return HTMLResponse(s, headers={"Cache-Control": "public, max-age=3600"})
+
+
 @app.get("/robots.txt")
 def robots(request: Request):
     txt = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /audio/ecoute\n\nSitemap: " + _origine(request) + "/sitemap.xml\n"
     return Response(txt, media_type="text/plain", headers={"Cache-Control": "public, max-age=86400"})
 
 
+def _sitemap_teams():
+    w = current_week()
+    return list(w.doc["teams"].values()) if w is not None else []
+
+
 @app.get("/sitemap.xml")
 def sitemap(request: Request):
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
            "  <url><loc>" + _origine(request) + "/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>\n"
-           "  <url><loc>" + _origine(request) + "/legal</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>\n</urlset>\n")
+           "  <url><loc>" + _origine(request) + "/teams</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n"
+           + "".join("  <url><loc>" + _origine(request) + "/teams/" + _franchises.slug(t["name"]) + "</loc><changefreq>weekly</changefreq>"
+                     "<priority>0.7</priority></url>\n" for t in _sitemap_teams())
+           + "  <url><loc>" + _origine(request) + "/legal</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>\n</urlset>\n")
     return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
