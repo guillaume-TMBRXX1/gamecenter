@@ -17,6 +17,8 @@
 // appelle le jeu (coordinateur, lecture de la défense, 4e essai, scouting, appel, lecture du QB) tapé en direct ; la
 // probabilité de victoire qui bascule ; le résultat frappé en grand avec un « punch » de caméra. Toutes les animations
 // suivent l'horloge pilotée (requestAnimationFrame + performance.now) : même rendu à chaque tournage.
+// Étape 9.2 (28/10, accroche) : une action {snap:true} est filmée à partir du snap (comme le ralenti : pas d'images de
+// l'attente d'avant le snap) ; un bandeau {hook:true} montre l'accroche en grand sur deux lignes, sans la pastille.
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path');
 const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined);
@@ -48,6 +50,8 @@ const CSS=`
   #vidTop .vt{font:900 38px/.98 'Big Shoulders Display',Archivo,system-ui;text-transform:uppercase;margin-top:9px;white-space:nowrap;letter-spacing:.005em}
   #vidTop .vt span{display:inline-block;transform-origin:0 80%}
   #vidTop .vs{display:none}
+  #vidTop.hook .vk{display:none}
+  #vidTop.hook .vt{font-size:40px;line-height:.92;margin-top:-6px;text-shadow:0 3px 14px rgba(0,0,0,.55)}
   #vidBug{top:${FT-36}px;left:18px;width:auto;display:flex;align-items:stretch;border-radius:12px;overflow:hidden;background:var(--vglass);
     border:1px solid var(--vline);backdrop-filter:blur(8px);font:800 13px/1 'Big Shoulders Display',Archivo,system-ui}
   #vidBug .t{display:flex;align-items:center;gap:6px;padding:6px 9px;border-top:3px solid var(--tc)}
@@ -176,9 +180,15 @@ function frappe(P){                                         // le résultat frap
     const tick=()=>{ const now=performance.now(); for(let i=A.length-1;i>=0;i--){ const a=A[i], q=Math.min(1,(now-a.t0)/a.dur); a.f(q); if(q>=1) A.splice(i,1); } requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
     const ease=q=>1-Math.pow(1-q,3), back=q=>{ const c=1.7; return 1+(c+1)*Math.pow(q-1,3)+c*Math.pow(q-1,2); };
-    window.__vidTop=(t,pop)=>{ const el=document.getElementById('vidTop');
-      el.innerHTML=`<div class="vk"><i></i>${e(t.kicker)}</div><div class="vt">${String(t.title||'').split(' ').map(w=>`<span>${e(w)}</span>`).join(' ')}</div><div class="vs">${e(t.sub)}</div>`;
-      const vt=el.querySelector('.vt'); for(let f=38;f>22&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px';   /* le titre tient sur une ligne */
+    window.__vidTop=(t,pop)=>{ const el=document.getElementById('vidTop'); el.classList.toggle('hook',!!t.hook);
+      /* l'accroche (étape 9.2) : deux lignes, coupées après la 1re phrase (« 0:06 left. » / « One call to win it ») */
+      let lignes=t.hook?String(t.title||'').split(/(?<=[.:,]) /).reduce((a,x)=>a.length<2?a.concat(x):(a[1]+=' '+x,a),[]):[String(t.title||'')];
+      if(t.hook&&lignes.length===1){ const w=lignes[0].split(' '); let k=1, best=1e9;   /* sans ponctuation : coupée au plus près du milieu */
+        for(let i=1;i<w.length;i++){ const d=Math.abs(w.slice(0,i).join(' ').length-w.slice(i).join(' ').length); if(d<best){ best=d; k=i; } }
+        if(w.length>1) lignes=[w.slice(0,k).join(' '),w.slice(k).join(' ')]; }
+      el.innerHTML=`<div class="vk"><i></i>${e(t.kicker)}</div><div class="vt">${lignes.map(l=>l.split(' ').map(w=>`<span>${e(w)}</span>`).join(' ')).join('<br>')}</div><div class="vs">${e(t.sub)}</div>`;
+      const vt=el.querySelector('.vt');
+      for(let f=t.hook?40:38;f>22&&vt.scrollWidth>vt.clientWidth;f-=2) vt.style.fontSize=f+'px';   /* chaque ligne tient sur une ligne */
       if(pop){ const ws=[...vt.querySelectorAll('span')]; ws.forEach((s,k)=>{ s.style.opacity=0; s.style.transform='translateY(8px) scale(.6)';
         setTimeout(()=>window.__vidAnim(260,q=>{ s.style.opacity=Math.min(1,q*2); s.style.transform=`translateY(${8*(1-ease(q))}px) scale(${.6+.4*back(q)})`; }),70*k); }); } };
     window.__vidTop(t,true); },[top,esc.toString(),LOGO]);
@@ -196,7 +206,7 @@ function frappe(P){                                         // le résultat frap
     await vueNormale(); await resserrer(); await attendre(1500); await verifier(); };
 
   /* le bandeau de score, le journal de l'IA et sa probabilité de victoire, pour une action */
-  const montrerHud=(h,lent,label)=>p.evaluate(([h,lent,label,W])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
+  const montrerHud=(h,lent,label,ecrit)=>p.evaluate(([h,lent,label,W,ecrit])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
     const bug=document.getElementById('vidBug'), B=h.bug;
     bug.innerHTML=`<div class="t" style="--tc:${tc(B.away)}"><em>${B.away}</em><b>${B.as}</b></div><div class="t" style="--tc:${tc(B.home)}"><em>${B.home}</em><b>${B.hs}</b></div><div class="c">${label||''}</div>`;
     const hud=document.getElementById('vidHud'); hud.style.setProperty('--tc',tc(h.off));
@@ -218,9 +228,10 @@ function frappe(P){                                         // le résultat frap
         if(q<1&&!/<\/b>$/.test(out)&&(out.match(/<b>/g)||[]).length>(out.match(/<\/b>/g)||[]).length) out+='</b>';
         el.innerHTML='› '+out+(q<1?'<span class="vh-c"></span>':''); }),delai); };
     let k0=0;
-    h.lines.forEach((L,k)=>{ if(lent){ els[k].innerHTML='› '+L.t; return; } if(!L.post) taper(L,k,(k0++)*380+120); });
+    /* filmé à partir du snap (étape 9.2) : ce que l'IA a lu et appelé avant le snap est déjà écrit */
+    h.lines.forEach((L,k)=>{ if(lent||(ecrit&&!L.post)){ els[k].innerHTML='› '+L.t; return; } if(!L.post) taper(L,k,(k0++)*380+120); });
     window.__vidHudPost=()=>{ if(lent) return; let j=0; h.lines.forEach((L,k)=>{ if(L.post) taper(L,k,(j++)*300); }); window.__vidHudPost=()=>{}; };
-  },[h,lent,label,W]);
+  },[h,lent,label,W,ecrit]);
   /* le résultat : la probabilité bascule, le mot est frappé en grand, la caméra donne un coup de zoom */
   const resultat=(h,fr,lent)=>p.evaluate(([h,fr,lent])=>{ const C=getComputedStyle(document.documentElement), tc=a=>(C.getPropertyValue('--t-'+a.toLowerCase())||'').trim()||'#2EE6FF';
     const ease=q=>1-Math.pow(1-q,3);
@@ -300,13 +311,13 @@ function frappe(P){                                         // le résultat frap
       continue;
     }
     if(s.feed&&s.feed!==feedOuvert) await ouvrir(s.feed,s.index);
-    const h=hud(F,s.index,plan.coaches), fr=frappe(F.plays[s.index]), lent=(s.speed||1)<1;
+    const h=hud(F,s.index,plan.coaches), fr=frappe(F.plays[s.index]), lent=(s.speed||1)<1, auSnap=lent||!!s.snap;
     await p.evaluate(([s])=>{ const G=window.__gc, g=G.replayGame(); G.rpSeek(g,s.index); g.speed=s.speed||1; g.paused=false;
-      if(s.top) window.__vidTop(s.top,true); },[s]);
-    if(lent) for(let k=0;k<600;k++){                          // ralenti : il reprend au snap, sans images de l'avant-snap
+      if(s.top) window.__vidTop(s.top,!s.top.hook); },[s]);   // l'accroche est là dès la 1re image
+    await montrerHud(h,lent,s.label,auSnap);                  // avant l'attente : la 1re image a déjà le score et le journal
+    if(auSnap) for(let k=0;k<600;k++){                        // ralenti (et étape 9.2) : il reprend au snap, sans images de l'avant-snap
       if(await p.evaluate(i=>{ const g=window.__gc.replayGame(); return g.idx!==i||g.phase!=='presnap'; },s.index)) break;
       await attendre(50); }
-    await montrerHud(h,lent,s.label);
     const a=now(); let snap=null, res=null;
     for(let k=0;k<50*FPS;k++){                                // au plus 50 s par action
       await pas();

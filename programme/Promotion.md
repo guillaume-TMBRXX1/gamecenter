@@ -67,8 +67,7 @@ regardé), une question en légende.
 ## 4. Légende, hashtags, musique
 
 - **Légende** : une phrase d'accroche + une question (« Would you go for it? ») + `snapline.live`. 3 à 5 hashtags au
-  plus : `#americanfootball #football #simulation #ai #playoftheday` (`#nfl` possible pendant la saison, pour être
-  trouvé). Depuis l'étape 8.2, le `.txt` de chaque vidéo a trois blocs prêts à copier : TikTok, Instagram, YouTube
+  plus : `#americanfootball #footballtiktok #ai #simulation #playoftheday` (depuis l'étape 9.2 ; plus de `#nfl`). Depuis l'étape 8.2, le `.txt` de chaque vidéo a trois blocs prêts à copier : TikTok, Instagram, YouTube
   Shorts.
 - **Musique** : le son du stade reste le son original de la vidéo (d'autres peuvent le réutiliser). Option : un son
   tendance à **5-10 %** du volume, ajouté dans l'éditeur de TikTok au moment de publier.
@@ -148,16 +147,37 @@ retiennent pas ; des équipes inventées qui ne parlent pas d'elles-mêmes (l'an
 qui donne envie d'aller voir **maintenant** ; une première visite trop dense ; pour Google, une seule page de contenu et
 presque aucun lien entrant (3 à 6 mois, même bien fait).
 
+**Diagnostic (captures du 28/10)** : la cause principale n'est pas le lien, c'est **la 1re seconde** des vidéos.
+- TikTok (28 jours) : 4 800 vues, 73 visites du profil (1,5 %), 40 j'aime, 1 partage ; 109 abonnés (Nigeria 18 %,
+  France 6 %, États-Unis 5 % ; 74 % de femmes ; 300 comptes suivis : surtout des abonnements rendus, pas des fans de
+  football). Vidéo la plus vue (joueur de la semaine, 646 vues) : **1,55 s** regardées en moyenne, **0,6 %** jusqu'au
+  bout, départ à **0:01**, 97,5 % depuis « Pour toi » ; ses spectateurs regardent aussi Kim Kardashian ou Disney+ :
+  TikTok n'a pas encore trouvé notre public.
+- Cloudflare (30 jours, sans robots, chiffres échantillonnés) : 100 visites, 90 % directes, 10 % Google ; Belgique
+  70 %, États-Unis 30 % ; 60 % sur ordinateur ; une seule page (`/`) ; chargement 3,2 s, CLS mauvais sur près de la
+  moitié des visites.
+- Search Console (3 mois) : 22 impressions, 10 clics, une seule recherche (« snapline ») ; 1 page indexée, 4 non
+  indexées ; plan du site lu le 24/10 (2 pages).
+- À faire par Guillaume, sans code : ne plus suivre de comptes en masse ; regarder et commenter vraiment quelques vidéos
+  de football américain chaque jour depuis le compte ; publier les mêmes vidéos sur Instagram et YouTube Shorts.
+
+**Nouvel ordre (validé le 28/10)** : l'accroche des vidéos d'abord, les communautés avant le référencement.
+
 | # | Étape | Guillaume | Claude (une PR) | Interrupteur | État |
 |---|---|---|---|---|---|
-| 9.0 | Diagnostic | Relever Cloudflare, Search Console, TikTok Studio (captures) | Analyse | — | en cours |
-| 9.1 | Mesure | Poser `GC_MESURE=1` (et `GC_STATS_EXCLURE`) ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 77) | `GC_MESURE` | PR ouverte |
-| 9.2 | Première visite | Valider les captures | Bandeau pour les nouveaux venus, « Watch live now » | `GC_ACCUEIL` | à faire |
-| 9.3 | Pages indexables | Renvoyer le plan du site | Équipes, records, saisons, matchs marquants ; données structurées | `GC_PAGES` | à faire |
-| 9.4 | Partage | — | Aperçu par match, lien vers une action | `GC_PARTAGE` | à faire |
-| 9.5 | Formats vidéo | Publier | « Who wins tomorrow? » (workflow « Vidéos ») | option du workflow | à faire |
-| 9.6 | Communautés | Publier (une tous les 2-3 jours), répondre | Textes prêts, un lien `/r/<source>` chacun, règles relues | — | après 9.1-9.3 |
-| 9.7 | Payant | Budget | Choix de la vidéo | — | plus tard |
+| 9.0 | Diagnostic | Captures Cloudflare, Search Console, TikTok Studio | Analyse (ci-dessus) | — | ✅ 28/10 |
+| 9.1 | Mesure | `GC_MESURE=1` posé ; `snapline.live/ig`, `/yt` dans les bios | Liens courts comptés, visites par source, `/admin/stats` (README section 77) | `GC_MESURE` | ✅ 28/10 |
+| 9.2 | Accroche des vidéos | Publier ; comparer la durée regardée et le % en entier | Action en mouvement dès la 1re image, accroche en grand, cartons après la 1re action, ≈ 12 s (README section 78) | `GC_VIDEO_ACCROCHE` | PR ouverte |
+| 9.3 | Première visite | Valider les captures | Bandeau pour les nouveaux venus, « Watch live now », correctif du CLS | `GC_ACCUEIL` | à faire |
+| 9.4 | Communautés | Publier (une tous les 2-3 jours), répondre | Textes prêts (Show HN, Reddit…), un lien `/r/<source>` chacun, règles relues | — | à faire |
+| 9.5 | Pages indexables | Renvoyer le plan du site | Équipes, records, saisons, matchs marquants ; données structurées | `GC_PAGES` | à faire |
+| 9.6 | Partage | — | Aperçu par match, lien vers une action | `GC_PARTAGE` | à faire |
+| 9.7 | « Who wins tomorrow? » | Publier | Nouveau format du workflow « Vidéos » | option du workflow | à faire |
+| 9.8 | Payant | Budget | Choix de la vidéo | — | plus tard |
+
+**Objectifs de l'étape 9.2** (TikTok Studio, vidéo par vidéo) : durée moyenne regardée de 1,5 s à **plus de 5 s**,
+**plus de 10 %** regardé en entier. Hashtags : `#americanfootball #footballtiktok #ai #simulation` (plus de `#nfl` :
+rien qui laisse croire à un lien avec la NFL).
 
 **Bilan du lundi (moins de 15 min)** : 5 min TikTok Studio (+ Instagram, YouTube) → vues, % regardé en entier,
 abonnés, meilleure vidéo ; 3 min `snapline.live/admin/stats` → « Copier la ligne » (colonnes du site déjà remplies) ;
