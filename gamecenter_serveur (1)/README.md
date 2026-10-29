@@ -2379,6 +2379,27 @@ des franchises.
 - **Tests** : `moteur/tests/test_franchises.py` (un texte par franchise, pages, échappement, routes, plan du site).
   Cellule 427 : rien à reporter (partie du site seulement).
 
+### 80. Comptes rendus écrits des matchs (AdSense, suite — 29/10/2026)
+**Demande de Guillaume (29/10)** : après les pages des franchises (section 79), un compte rendu écrit pour chaque match.
+- **Pages** (`comptes_rendus.py`, rendues par le serveur, lisibles sans JavaScript, style de `/legal`) :
+  **`/games/<id>`** (compte rendu d'un match), **`/weeks/<n>`** (résultats d'une semaine par tour, playoffs, résumé de
+  la saison quand elle est terminée : champion, meilleur bilan, leaders) et **`/games`** (derniers matchs, toutes les
+  semaines). **Matchs terminés seulement** : un match à venir ou en cours répond 404 et n'est pas dans le plan du site.
+- **Le compte rendu** (≈ 640 à 1 000 mots, 860 en moyenne sur les 1 155 matchs du dépôt) : tableau de marque par quart ;
+  récit en six paragraphes — scénario (match nul, dernière seconde, remontée, large victoire, bataille défensive,
+  festival offensif, match serré ; surprise ou favori d'après les cotes d'avant-match), déroulé (premiers points,
+  mi-temps, dernier quart), action décisive (la plus grande hausse de probabilité de victoire en faveur du gagnant,
+  hors fin du temps), joueur du match et autres performances, plan de jeu des deux staffs (et ce qu'a fait le joueur
+  ciblé), conséquences (bilans de la semaine, qualification, titre ; quatrièmes tentés ; blessures sérieuses) — puis
+  résumé des points, statistiques d'équipe (yards, troisièmes et quatrièmes, pertes de balle, sacks, possession) et
+  feuilles individuelles. Les actions sont racontées d'après leurs champs (passeur, porteur, gain), pas le texte du
+  direct (parfois coupé). Les tournures varient d'un match à l'autre, fixées par l'identifiant du match.
+- **Liens** : « Latest games » (6 derniers comptes rendus) sur chaque page de franchise ; « Results & recaps » dans le
+  pied de page du site, des pages franchises et « What is Snapline? ». Plan du site : `/games`, `/weeks/<n>`, et
+  chaque match terminé (≈ 1 100 adresses avec les semaines du dépôt). Comptes rendus gardés en mémoire (64).
+- **Tests** : `moteur/tests/test_comptes_rendus.py` (tous les matchs d'une semaine : points du résumé = score final,
+  texte propre ; finale ; rien avant la fin d'un match ; page de semaine et index ; lien depuis la franchise).
+
 ## Lancer en local
 
 ```bash
@@ -2432,6 +2453,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
 | GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
 | GET | `/teams`, `/teams/<nom>` | pages des franchises, lisibles sans JavaScript (section 79) |
+| GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
