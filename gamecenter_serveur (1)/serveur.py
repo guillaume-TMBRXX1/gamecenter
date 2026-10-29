@@ -20,6 +20,7 @@ Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/a
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
 import bisect, hashlib, hmac, html, json, os, re, secrets, sqlite3, threading, time, uuid, math
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
@@ -28,6 +29,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from moteur import histoire as _histoire
 from moteur import insights as _insights
 import pages_franchises as _franchises
+import comptes_rendus as _recaps
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 # Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
@@ -971,6 +973,21 @@ def _franchises_tete():
     return "\n" + _cf_beacon(CF_ANALYTICS) + "\n" if CF_ANALYTICS else ""
 
 
+def _derniers_matchs(a, t, n=6):
+    """Les n derniers matchs terminés d'une franchise (semaines ouvertes), pour sa page."""
+    out = []
+    for w in reversed(_semaines_ouvertes(t)):
+        jeux = sorted((g for g in w.sched if a in (g["home"], g["away"]) and w.status(g, t) == "final"),
+                      key=lambda g: g["end"], reverse=True)
+        for g in jeux:
+            r = g.get("result") or {}
+            out.append({"id": g["id"], "texte": f"Week {w.doc['week']['index']} · "
+                        + _recaps.titre_match(g, r.get("home", 0), r.get("away", 0), w.doc["teams"])})
+            if len(out) >= n:
+                return out
+    return out
+
+
 @app.get("/teams", response_class=HTMLResponse)
 def teams_index(request: Request):
     d = _need_week().doc
@@ -992,14 +1009,117 @@ def teams_page(nom: str, request: Request):
     h = league_history(now_ms(), True)
     histo = next((f for f in h.get("franchises") or [] if f.get("team") == a), None)
     s = _franchises.page_equipe(a, teams, d["week"].get("league"), histo, h.get("seasons"), _origine(request),
-                                _franchises_tete())
+                                _franchises_tete(), _derniers_matchs(a, now_ms()))
     return HTMLResponse(s, headers={"Cache-Control": "public, max-age=3600"})
+
+
+# Comptes rendus des matchs (AdSense, 29/10/2026 — comptes_rendus.py) : /games (les semaines, derniers matchs),
+# /weeks/<n> (résultats d'une semaine) et /games/<id> (compte rendu écrit). Matchs TERMINÉS seulement : un match à
+# venir ou en cours répond 404, une semaine pas encore ouverte aussi. Un compte rendu ne change plus : gardé en mémoire.
+_RECAPS, _RECAPS_MAX = OrderedDict(), 64
+_JOURS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+
+def _semaines_ouvertes(t):
+    return [w for w in sorted(load_weeks().values(), key=lambda w: w.monday) if w.open <= t]
+
+
+def _match(gid, t):
+    for w in _semaines_ouvertes(t):
+        g = w.by.get(gid)
+        if g is not None:
+            return (w, g) if w.status(g, t) == "final" else (None, None)
+    return None, None
+
+
+def _recap_contexte(w, g):
+    d = w.doc
+    ko = datetime.fromtimestamp(g["ko"] / 1000, TZ)
+    ctx = {"semaine": d["week"]["index"], "date": f"{_JOURS[ko.weekday()]} {ko.day} {ko.strftime('%B %Y')}"}
+    conf = {a: c for c, ds in (d["week"].get("league") or {}).items() for l in ds.values() for a in l}
+    if g["phase"] == "semifinal" and conf.get(g["home"]):
+        ctx["conference"] = conf[g["home"]]
+    if g["phase"] == "regular":                      # bilans de la semaine après ce match (tours précédents compris)
+        b = {g["home"]: [0, 0, 0], g["away"]: [0, 0, 0]}
+        for x in w.reg:
+            if x["slot"] > g["slot"]:
+                continue
+            r = x.get("result") or {}
+            for s, o in (("home", "away"), ("away", "home")):
+                if x[s] in b:
+                    b[x[s]][0 if r.get(s, 0) > r.get(o, 0) else 1 if r.get(s, 0) < r.get(o, 0) else 2] += 1
+        ctx["bilans"] = {"home": tuple(b[g["home"]]), "away": tuple(b[g["away"]])}
+    return ctx
+
+
+@app.get("/games/{gid}", response_class=HTMLResponse)
+def game_recap(gid: str, request: Request):
+    w, g = _match(gid, now_ms())
+    if g is None:
+        raise HTTPException(404)
+    cle = (w.folder, gid, _origine(request), CF_ANALYTICS)
+    s = _RECAPS.get(cle)
+    if s is None:
+        s = _recaps.page_match(g, w.feed(gid), _feuille(w, gid), w.doc["teams"], _recap_contexte(w, g),
+                               _origine(request), _franchises_tete())
+        _RECAPS[cle] = s
+        while len(_RECAPS) > _RECAPS_MAX:
+            _RECAPS.popitem(last=False)
+    return HTMLResponse(s, headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/weeks/{index}", response_class=HTMLResponse)
+def week_results(index: int, request: Request):
+    t = now_ms()
+    w = next((w for w in _semaines_ouvertes(t) if w.doc["week"]["index"] == index), None)
+    if w is None:
+        raise HTTPException(404)
+    jeux = [g for g in w.sched if w.status(g, t) == "final"]
+    resume = None
+    if w.status(w.final, t) == "final":
+        resume = next((x for x in league_history(t, True).get("seasons") or [] if x.get("week") == index), None)
+        resume = resume or {"champion": w.doc.get("champion"), "runner_up": w.doc.get("runner_up")}
+    s = _recaps.page_semaine(index, jeux, len(w.sched), w.doc["teams"], resume, _origine(request), _franchises_tete())
+    return HTMLResponse(s, headers={"Cache-Control": "public, max-age=600"})
+
+
+@app.get("/games", response_class=HTMLResponse)
+def games_index(request: Request):
+    t = now_ms()
+    ws = _semaines_ouvertes(t)
+    sem = []
+    for w in reversed(ws):
+        fin = w.status(w.final, t) == "final"
+        n = sum(1 for g in w.sched if w.status(g, t) == "final")
+        if n:
+            sem.append({"index": w.doc["week"]["index"], "champion": w.doc.get("champion") if fin else None,
+                        "played": n, "total": len(w.sched)})
+    derniers = []
+    for w in reversed(ws):
+        derniers += sorted((g for g in w.sched if w.status(g, t) == "final"), key=lambda g: g["end"], reverse=True)
+        if len(derniers) >= 12:
+            break
+    teams = ws[-1].doc["teams"] if ws else {}
+    s = _recaps.page_index(sem, derniers[:12], teams, _origine(request), _franchises_tete())
+    return HTMLResponse(s, headers={"Cache-Control": "public, max-age=600"})
 
 
 @app.get("/robots.txt")
 def robots(request: Request):
     txt = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /audio/ecoute\n\nSitemap: " + _origine(request) + "/sitemap.xml\n"
     return Response(txt, media_type="text/plain", headers={"Cache-Control": "public, max-age=86400"})
+
+
+def _sitemap_recaps():
+    """/games, /weeks/<n> et /games/<id> des matchs terminés."""
+    t = now_ms()
+    out = ["/games"]
+    for w in _semaines_ouvertes(t):
+        jeux = [g["id"] for g in w.sched if w.status(g, t) == "final"]
+        if jeux:
+            out.append("/weeks/" + str(w.doc["week"]["index"]))
+            out += ["/games/" + gid for gid in jeux]
+    return out
 
 
 def _sitemap_teams():
@@ -1014,6 +1134,7 @@ def sitemap(request: Request):
            "  <url><loc>" + _origine(request) + "/teams</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n"
            + "".join("  <url><loc>" + _origine(request) + "/teams/" + _franchises.slug(t["name"]) + "</loc><changefreq>weekly</changefreq>"
                      "<priority>0.7</priority></url>\n" for t in _sitemap_teams())
+           + "".join("  <url><loc>" + _origine(request) + u + "</loc></url>\n" for u in _sitemap_recaps())
            + "  <url><loc>" + _origine(request) + "/legal</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>\n</urlset>\n")
     return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=86400"})
 

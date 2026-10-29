@@ -479,7 +479,7 @@ THEME = ('<script>(function(){var p="auto";try{p=localStorage.getItem("gc-theme"
 
 PIED = ('<footer><p class="pm">Play money · No real winnings · 18+</p><p>Snapline is an American football simulation: '
         'the teams and players are fictional and every game is played by a computer engine. '
-        '<a href="/">Watch the games live</a> · <a href="/teams">All franchises</a> · '
+        '<a href="/">Watch the games live</a> · <a href="/teams">All franchises</a> · <a href="/games">Results &amp; recaps</a> · '
         '<a href="/legal">Rules, privacy &amp; legal</a></p></footer>')
 
 e = html.escape
@@ -537,7 +537,7 @@ def page_index(teams, league, origine, tete=""):
                  "their coaching philosophies, conferences and divisions.", "/teams", "\n".join(parts), origine, tete)
 
 
-def page_equipe(a, teams, league, histo, saisons, origine, tete=""):
+def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None):
     """/teams/<nom> : présentation écrite, identité, staff, notes des unités, titulaires, histoire et division."""
     t = teams[a]
     nom, tc = t["name"], COULEURS.get(a, "#1E5C78")
@@ -601,6 +601,10 @@ def page_equipe(a, teams, league, histo, saisons, origine, tete=""):
             res = "won" if s["champion"] == a else "lost"
             li.append(f"<li>Week {s['week']}: {res} the Grand Final against the {e(adv_n)}</li>")
         parts.append(f"<section><h2>Grand Finals</h2><ul>{''.join(li)}</ul></section>")
+    if recents:                                      # derniers matchs terminés : liens vers les comptes rendus
+        li = "".join(f'<li><a href="/games/{e(r["id"])}">{e(r["texte"])}</a></li>' for r in recents)
+        parts.append(f"<section><h2>Latest games</h2><p>Written recaps of the {e(nom)}' most recent games.</p>"
+                     f"<ul>{li}</ul></section>")
     rivaux = [x for x in ((league or {}).get(conf) or {}).get(div) or [] if x != a and x in teams]
     if rivaux:
         li = "".join(f'<li><a href="/teams/{slug(teams[x]["name"])}">{e(teams[x]["name"])}</a> — '
