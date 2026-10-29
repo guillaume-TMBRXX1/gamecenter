@@ -2244,6 +2244,34 @@ termine (≈ 0,2 s pour 240 matchs) : le site redemande les chiffres à chaque m
 « GameFeeds d'exhibition » (`.github/workflows/gamefeeds.yml`). Les deux matchs (`exh-v41`, `exh-v42`) ne sont plus
 servis : ils restent des matchs de test des suites navigateur (`outils/site/matchs/`). Le bouton « Load GameFeed » du
 replay reste.
+### 80. Accroche des vidéos : l'action dès la 1re image (promotion, étape 9.2 — 28/10/2026)
+**Constat (TikTok Studio, 28/10)** : la vidéo la plus vue (joueur de la semaine, 646 vues) est regardée **1,55 s** en
+moyenne, **0,6 %** jusqu'au bout, la plupart partent à **0:01**. Elle s'ouvrait sur 3,4 s de carton de statistiques
+immobile ; l'action du jour, sur ≈ 2 s de joueurs alignés avant le snap. **Décision de Guillaume (28/10)** : l'accroche
+des vidéos avant tout le reste (`programme/Promotion.md`, section 9).
+- **Interrupteur `GC_VIDEO_ACCROCHE`** (variable du tournage, `outils/video/faire_video.py`) : allumé par défaut ;
+  `GC_VIDEO_ACCROCHE=0` rend les vidéos d'avant à l'identique (plans, durées, mots-dièse). Le site ne change pas.
+- **L'action d'abord** (`ouvrir_sur_l_action`) : toutes les actions sont filmées **à partir du snap** (`snap: true`
+  dans le plan ; `filmer.js` attend le snap sans filmer, comme pour le ralenti) ; la 1re action passe **avant** tout
+  carton (joueur de la semaine, champion, match hors norme, franchise : le carton de statistiques vient après, 2,8 s au
+  lieu de 3,4 à 3,6). Le score et le journal de l'IA sont posés avant la 1re image (ce que l'IA a lu et appelé avant le
+  snap est déjà écrit ; la lecture du QB se tape après le snap).
+- **L'accroche en grand** (`accroche`, sans dévoiler le résultat, jamais de mot de paris) sur deux lignes, coupées après
+  la 1re phrase (sinon au mot le plus proche du milieu), à la place de la pastille « AI vs AI » de la 1re action : « 4th & 9. / The AI goes for it », « 0:06
+  left. / One call to win it », « 0:06 left. / Can the AI defense hold? », « Watch this return », « Watch the AI defense
+  read it », « The AI goes for two », « The AI kicks it from 57 », « The AI dials up a deep shot » / « The AI finds the
+  gap », sinon « Watch the AI's call ». Joueur de la semaine : « Elio Falkner: / 2,235 receiving yards » ; champion :
+  « … win the Grand Final » ; match hors norme : « 102 points in one game » ; franchise : « The story of the … » ;
+  résumé court : « … vs …: / the game in 60 seconds » ; présentation : « 24 teams. / 24 AI coaches. ». L'enjeu
+  (« ONX down 13–19 · 0:06 left ») reste dans le bandeau de score et la légende.
+- **Plus court** : action du jour ≈ **12,8 s** au lieu de 16,3 (le 27/10 : après l'action 0,7 s au lieu de 1,8, après le
+  ralenti 0,5 au lieu de 1,0, carton final 1,5 s au lieu de 2,2) — plus de vidéos vues en entier, la boucle repart.
+- **Mots-dièse** : `#americanfootball #footballtiktok #ai #simulation` (au lieu de `#football`).
+- **Tournage plus sûr** : `faire_video.py` ouvre une fois la page du serveur de tournage avant de lancer le navigateur
+  (la 1re page d'un serveur neuf prend 15 à 25 s, près des 30 s que `filmer.js` lui laisse ; ensuite ≈ 2 s).
+- **Objectifs** (bilan du lundi) : durée moyenne regardée **> 5 s**, **> 10 %** regardé en entier.
+- **Tests** : `moteur/tests/test_videos.py` (accroches, l'action avant les cartons, durées, interrupteur qui rend les
+  plans d'avant) ; tournage vérifié à la main (images à 0, 0,5, 1, 2, 3 et 5 s).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
@@ -2396,7 +2424,7 @@ README section 52) · `GC_EDITEUR`,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
-ont tout l'onglet), section 78.
+ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80).
 
 ## Test
 

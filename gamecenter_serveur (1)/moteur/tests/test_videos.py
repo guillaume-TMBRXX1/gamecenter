@@ -4,6 +4,7 @@ stade (outils/video/faire_video.py, sans filmer : le tournage est vérifié à l
     python -m unittest discover -s moteur/tests -t .        (depuis « gamecenter_serveur (1) »)
 """
 import glob
+import importlib
 import json
 import os
 import re
@@ -160,7 +161,9 @@ class TestSemaineReelle(unittest.TestCase):
         self.assertEqual(seg[1]["speed"], 0.5)
         self.assertIn("win probability", seg[1]["top"]["kicker"])
         self.assertEqual(seg[-1]["title"], "snapline.live")
-        self.assertEqual(top["title"], info["enjeu"])
+        self.assertEqual(top["title"], info["accroche"])                  # étape 9.2 : l'accroche en grand
+        self.assertTrue(top["hook"] and all(x["snap"] for x in seg if x["type"] == "play"))
+        self.assertLessEqual(seg[0]["after"] + seg[1]["after"] + seg[-1]["dur"], 3.0)   # ≈ 12 s au lieu de 16 à 21
         textes = [leg, str(top), str(seg)]
         g, seg, top, info, leg2 = V.plan_resume(self.doc, self.feeds)
         textes += [leg2, str(top), str(seg)]
@@ -243,8 +246,9 @@ class TestSemaineReelle(unittest.TestCase):
             g = next(x for x in doc["schedule"] if x["id"] == a["game"])
             self.assertTrue(C._implique(a["play"], g, j))
         top, seg, info, leg = V.plan_joueur(r, doc)
-        self.assertEqual(seg[0]["type"], "stats")
-        self.assertEqual(len(seg[0]["stats"]), 4)
+        self.assertEqual([x["type"] for x in seg[:2]], ["play", "stats"])      # étape 9.2 : l'action d'abord
+        self.assertEqual(len(seg[1]["stats"]), 4)
+        self.assertTrue(top["hook"] and top["title"].startswith(j["name"]))
         self.assertEqual(seg[-1]["title"], "snapline.live")
         ko = min(datetime.fromisoformat(g["kickoff"]) for g in doc["schedule"])
         self.assertIsNone(C.joueur_de_la_semaine(d, ko))
@@ -262,7 +266,7 @@ class TestSemaineReelle(unittest.TestCase):
             self.assertIn(g["phase"], ("semifinal", "ai_bowl"))
             self.assertIn(c["team"], (g["home"], g["away"]))
         top, seg2, info, leg2 = V.plan_champion(c, doc)
-        self.assertEqual(seg2[0]["stats"][0]["v"], f"{c['score'][0]}–{c['score'][1]}")
+        self.assertEqual(seg2[1]["stats"][0]["v"], f"{c['score'][0]}–{c['score'][1]}")
         self.assertGreater(c["score"][0], c["score"][1])
         for t in (leg, leg2, str(seg), str(seg2)):
             self.assertIsNone(PARIS.search(t), PARIS.search(t))
@@ -290,7 +294,7 @@ class TestSemaineReelle(unittest.TestCase):
                 self.assertGreaterEqual(r["value"], C.SEUIL_POINTS)
             doc, feeds = C.charger_semaine(d)
             top, seg, info, leg = V.plan_chiffres(r, doc, feeds)
-            self.assertEqual(seg[0]["type"], "stats")
+            self.assertEqual([x["type"] for x in seg[:2]], ["play", "stats"])
             idx = [x["index"] for x in seg if x["type"] == "play"]
             self.assertEqual(idx, sorted(idx))
             self.assertTrue(all(feeds[r["game"]]["plays"][i]["result"] in ("touchdown", "field_goal_good")
@@ -320,7 +324,7 @@ class TestSemaineReelle(unittest.TestCase):
             g = next(x for x in w["schedule"] if x["id"] == a["game"])
             self.assertIn(f["team"], (g["home"], g["away"]))
         top, seg, info, leg = V.plan_franchise(f, doc)
-        self.assertEqual(seg[0]["type"], "stats")
+        self.assertEqual(seg[0]["type"], "play" if f["actions"] else "stats")
         self.assertEqual(seg[-1]["title"], "snapline.live")
         for t in (leg, str(seg)):
             self.assertIsNone(PARIS.search(t), PARIS.search(t))
@@ -343,3 +347,58 @@ class TestSemaineReelle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAccroche(unittest.TestCase):
+    """Étape 9.2 : l'accroche de la 1re seconde (promet sans dévoiler, jamais de mot de paris), l'action avant les
+    cartons, et l'interrupteur GC_VIDEO_ACCROCHE=0 qui rend les vidéos d'avant."""
+    def test_textes(self):
+        P = action("pass", "complete", gain=12, down=4, to_go=9, q=4, clock=6)
+        cas = {"4th-and-9 gamble · touchdown": "4th & 9. The AI goes for it",
+               "game-winning score · touchdown": "0:06 left. One call to win it",
+               "game-winning takeaway · interception": "0:06 left. Can the AI defense hold?",
+               "kick return touchdown": "Watch this return", "54-yard return": "Watch this return",
+               "interception": "Watch the AI defense read it", "2-point conversion": "The AI goes for two",
+               "57-yard field goal": "The AI kicks it from 57", "62-yard play": "The AI dials up a deep shot",
+               "momentum swing": "Watch the AI's call"}
+        for why, attendu in cas.items():
+            self.assertEqual(V.accroche(why, P), attendu, why)
+            self.assertIsNone(PARIS.search(V.accroche(why, P)))
+        self.assertEqual(V.accroche("62-yard play", action("run", "run", gain=62)), "The AI finds the gap")
+        self.assertEqual(V.accroche("game-winning score", action("run", "touchdown", q=5)), "Overtime. One call to win it")
+
+    def test_l_action_d_abord(self):
+        seg = [{"type": "stats", "dur": 3.4}, {"type": "play", "top": {"kicker": "k", "title": "t"}},
+               {"type": "play"}, {"type": "card", "dur": 1.5}]
+        out = V.ouvrir_sur_l_action(seg, "Hook. Here")
+        self.assertEqual([x["type"] for x in out], ["play", "stats", "play", "card"])
+        self.assertEqual(out[0]["top"], {"kicker": "k", "title": "Hook. Here", "hook": True})
+        self.assertEqual(out[1]["dur"], 2.8)
+        self.assertTrue(all(x["snap"] for x in out if x["type"] == "play"))
+        self.assertNotIn("snap", seg[1])                                       # le plan d'origine n'est pas touché
+        self.assertEqual(V.ouvrir_sur_l_action([{"type": "card", "dur": 2}], "x"), [{"type": "card", "dur": 2}])
+
+    def test_interrupteur(self):
+        avant = os.environ.get("GC_VIDEO_ACCROCHE")
+        try:
+            os.environ["GC_VIDEO_ACCROCHE"] = "0"
+            W = importlib.reload(V)
+            self.assertFalse(W.ACCROCHE)
+            self.assertEqual(W.HASHTAGS, "#americanfootball #football #simulation #ai")
+            self.assertEqual(W.FIN["dur"], 2.2)
+            seg = [{"type": "stats", "dur": 3.4}, {"type": "play"}]
+            self.assertIs(W.ouvrir_sur_l_action(seg, "x"), seg)
+            if SEMAINES:
+                doc, feeds = C.charger_semaine(SEMAINES[-1])
+                jour = C.jour_du_match(doc["schedule"][0])
+                g, seg, top, info, leg = W.plan_action(doc, feeds, jour)
+                self.assertEqual(top["title"], info["enjeu"])
+                self.assertNotIn("accroche", info)
+                self.assertEqual([x.get("after") for x in seg[:2]], [1.8, 1.0])
+                self.assertFalse(any(x.get("snap") for x in seg))
+        finally:
+            if avant is None:
+                os.environ.pop("GC_VIDEO_ACCROCHE", None)
+            else:
+                os.environ["GC_VIDEO_ACCROCHE"] = avant
+            importlib.reload(V)
