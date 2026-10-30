@@ -2320,6 +2320,59 @@ Ajouts choisis par Guillaume (onglet Insights, section 78), toujours sur les seu
   complétée à 40 avant les yards après réception : une vingtaine d'actions de 40 yards ou plus par semaine de 240
   matchs (≈ 1 par match en NFL). Pas changé ici (moteur, cotes et calibrage).
 
+### 83. Dessin naturel des actions sur le terrain : passes, course après la réception, interceptions (30/10/2026)
+Audit demandé par Guillaume (« certaines actions ne paraissent pas naturelles »). 40 matchs réels de `data/weeks` (10 par
+semaine, du 05/10 au 26/10, 5 167 actions) rejoués dans le site à 60 images par seconde d'écran, avec les temps
+d'écran de `play.show` (section 74). Aucun GameFeed ne porte `play.tracks` : tout ce qu'on voit est dessiné par le site
+(`planScrimmage`). Ce qui a été mesuré et ce qui en venait :
+- **Ballon invisible sur les passes courtes** (site) : pour ne pas placer l'attrapé au-delà du gain, une correction
+  ramenait l'attrapé plus tôt, sans tenir compte du lancer. Résultat : 207 réceptions sur 1 817 (11 %) attrapées *avant*
+  le lancer, avec le ballon dans les mains du receveur dès le snap (57 des 81 réceptions à 0 yard ou moins). S'y
+  ajoutaient des passes de 20 yards en 2 images, un vol à 22 yd/s et un ballon plat que cachaient les pions.
+  12 % des passes volaient moins de 0,3 s.
+- **Interception vers le centre / réception en diagonale** (moteur et site) : le site choisit le point d'attrapé sur
+  sa route, alors que le moteur tire la fin de l'action (`spot.y`, cellule 448 `lateral_for_play`, hasard séparé)
+  autour de *son* point d'attrapé (±4 yards sur une interception). Le site traçait une ligne droite entre les deux :
+  47 % des retours d'interception se rapprochaient du centre de plus de 3 yards, et après la réception l'écart
+  latéral médian était de 0,27 yard par yard gagné (jusqu'à 45°).
+- **Receveur qui s'arrête seul** (site) : pas de plaqueur sur une passe, seulement une attirance des défenseurs vers
+  le porteur (70–80 %) et un arrêt net. 40 % des réceptions de 20 yards et plus finissaient sans défenseur à 3 yards.
+  Les courses (bloc F, section 12.2 quindecies) ont déjà leur plaqueur.
+- **Sauts** (site) : couverture homme attribuée sans regarder le côté (un défenseur traversait 19 yards en 0,45 s),
+  défenseurs qui bondissaient vers le point d'attrapé, joueur qui récupère un fumble téléporté en 0,03 s, joueurs
+  ramenés d'un coup quand l'attirance vers le porteur s'arrête. Des pointes de 60 à plus de 500 yd/s.
+
+Correction, **dans le rendu seulement** (`gamecenter_source.html`, `JEU_FLUIDE`). Ni le moteur, ni les résultats, ni les
+scores, ni les cotes ne changent :
+- le ballon part toujours avant l'attrapé et reste en l'air **0,42 s d'écran au moins** (le QB lance plus tôt), avec un
+  léger arc. Sur un gain court, c'est la route du receveur ciblé qui est raccourcie (vers l'avant seulement ; derrière
+  la ligne sur un écran). L'attrapé laisse le temps de la course qui suit (12 yd/s) ;
+- après la réception et sur un retour d'interception, le porteur file **droit vers l'en-but**. Il ne rejoint
+  `spot.y` que dans la mesure où l'action suivante en a besoin (`hashKeep` : n'importe où du bon côté du hash mark
+  où le ballon sera placé ; `spot.y` exact entre les hash marks), et la dérive vient en dernier (au plus ~1 yard de
+  côté pour 2 vers l'avant quand il y a la place). Sortie en touche : inchangée. Ses dernières foulées sont plus
+  lentes ;
+- sur une réception (et une course sans `play.run`), le défenseur qui y arrive le plus facilement est sur le porteur
+  quand il s'arrête (anneau rouge), aussi vite que lui. Sans course après l'attrapé, il est plaqué tout de suite ;
+- couverture homme : chaque receveur va au défenseur libre le plus proche, qui le rejoint sur ses premières foulées.
+  Sur une course, les receveurs bloquent le défenseur de champ arrière le plus proche ;
+- d'une image à l'autre, aucun joueur ne va plus vite que ses propres images clés, que le porteur ou que 11 yd/s
+  (`smoothMoves`). Le fumble se perd assez tôt pour la course jusqu'au point de récupération.
+
+Mesuré sur les mêmes 40 matchs (avant → après) : passes sans vol visible 207 → 0 · vols de moins de 0,3 s 317 → 0 (le
+plus court : 0,34 s) · retours d'interception vers le centre de plus de 3 yards 37/79 → 10/79 · écart latéral après la
+réception 0,27 → 0 yard par yard (médiane), 0,38 → 0,21 (90e centile) · réceptions de 20 yards et plus finies sans
+défenseur à 3 yards 82/204 → 24/204 · vitesse maximale d'un joueur 56 → 19 yd/s (90e centile), 586 → 31 (99e) ·
+courses arrêtées sans défenseur 8 → 2 sur 1 816. Pas changé : la vitesse des longs gains, qui vient des tables de yards
+(chantier séparé, voir la section 82).
+
+**Interrupteur** : `GC_JEU_FLUIDE=0` → le serveur l'écrit dans la page (`fluide_off`) et le site dessine comme avant,
+**à l'identique** : contrôlé image par image sur 8 matchs (1 271 actions), positions de tous les joueurs et du ballon.
+Le Game Center du notebook (cellule 427) dessine le nouveau. Test : `outils/site/test_actions.js` (dans
+`tests_navigateur.sh`) rejoue trois matchs de la dernière semaine qui ont une interception : chaque passe se voit
+partir, le receveur file droit, le retour d'interception ne part pas au centre, un défenseur est sur le receveur à
+l'arrêt, aucun saut, interrupteur coupé = dessin d'avant (par le crochet de test `__gc.fluide`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2494,7 +2547,8 @@ section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jou
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
-CLS de l'accueil, section 81).
+CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
+section 83).
 
 ## Test
 

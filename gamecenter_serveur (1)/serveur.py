@@ -856,11 +856,13 @@ def page(request: Request = None):
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
+    if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
+        srv["fluide_off"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
-                      "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
+                      "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,fluide:v=>{if(v!==undefined)JEU_FLUIDE=!!v;return JEU_FLUIDE;},psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
@@ -881,6 +883,12 @@ def page(request: Request = None):
 # 1er dessin (CLS). Le script du <head> décide avant la 1re image : bandeau caché pour qui est déjà venu (gc-welcome-v1
 # ou gc-player-v1 dans le navigateur), blocs retenus au plus 10 s (si le site ne démarre pas, la page reste lisible).
 # Sans la variable : la page d'avant, à l'identique (le bandeau reste caché, aucun script).
+# Dessin naturel des actions sur le terrain (section 83, 30/10/2026) : actif par défaut ; GC_JEU_FLUIDE=0 rend le dessin
+# d'avant, à l'identique (passes, course après la réception, interceptions, couverture homme, fumbles).
+def jeu_fluide_on():
+    return os.environ.get("GC_JEU_FLUIDE", "").strip() != "0"
+
+
 def accueil_on():
     return os.environ.get("GC_ACCUEIL", "").strip() == "1"
 
