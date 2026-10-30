@@ -2388,6 +2388,41 @@ la liste.
 - Interrupteur `GC_SCHEDULE_PLUS` (`off` : le calendrier d'avant). Tests : `moteur/tests/test_schedule.py`
   (interrupteur), `outils/site/test_schedule.js` (filtre, panneau, bulletin, téléphone, interrupteur).
 
+### 85. Actions longues et retours d'interception (30/10/2026)
+Constat (semaine du 26/10) : les tables de yards de la V0.2 (`calculate_run_yards`, `calculate_pass_yards`, toujours
+le socle du moteur) bornent une course à 25 yards et une passe complétée à 40 ; par match, 0,64 course de 20 yards et
+plus, aucune de 40, 0,07 passe complétée de 40 (≈ 1, 0,2 et 1 en NFL). Retour d'une interception tiré entre −5 et 0
+yard (12.2 quinquies) : le défenseur s'arrêtait aussitôt, même seul, et aucun pick-six.
+- **Module** `moteur/actions_longues.py` (tests `moteur/tests/test_actions_longues.py`), branché par la cellule
+  **12.2 vicies novies** :
+  - course : le porteur qui a passé le 2e rideau (gain ≥ 8) peut s'échapper, sa vitesse et son agilité contre celles des
+    safeties, CB et LB ; yards en plus d'une loi exponentielle (moyenne 30) ;
+  - passe : la passe profonde (≥ 16) peut filer ; une réception plus courte peut devenir une longue course (YAC) ;
+  - **moyenne inchangée** (choix de Guillaume) : un gain moyen perd en espérance `P_RABOT` yards (course 0,6 entre 2 et
+    10 yards, passe 2,3 entre 4 et 18) : yards par course et par passe comme avant ;
+  - interception : le ballon est intercepté à la profondeur de la route de la cible, puis ramené selon la vitesse du
+    défenseur qui couvrait contre la poursuite de l'attaque (souvent quelques yards, parfois très loin). Jusqu'à l'en-but :
+    **pick-six** (6 points pour la défense, sa transformation, puis son coup d'envoi, comme un retour de punt ; pas en
+    prolongation). Dans l'en-but sans retour : touchback.
+  - Flux de hasard dédiés (« longues », « longues-int ») : le hasard du moteur n'est pas consommé.
+- **GameFeed** (additif) : `play.int_return` = {air, return, td, touchback, returner} ; pick-six : point d'arrivée dans
+  l'en-but de l'attaque, 6 points à la défense dès l'action, `try_follows`, texte « Pick-six! X, N yds ». Temps d'écran
+  **ecran-4** (`moteur/ecran.py`) : une course ou une réception de plus de 18 yards et un retour d'interception gardent
+  plus d'animation (16 yards par seconde d'écran en plus, 2,4 s au plus) ; un match reste ≈ 20 min.
+- **Site** : bandeau « PICK-SIX · TOUCHDOWN » et effet « Pick six », sons du touchdown, commentaire ; long retour :
+  « INTERCEPTED · N-YD RETURN ». Le dessin suit déjà le point d'arrivée (section 83). **Audit** (`audit_moteur.py`) :
+  un pick-six compte 6 points pour la défense puis sa transformation.
+- **Mesures** (banc `outils/moteur/semaine_longues.py`, semaines de 276 matchs, puis le calcul complet de la semaine du
+  02/11 sur une copie des données, 38 min 43 s) — par match : courses de 40 yards et plus 0 → 0,20, passes de 40 yards
+  et plus 0,07 → 1,07, de 20 yards et plus 5,1 → 6,4 ; yards par course 5,97 → 5,86 et par passe 11,14 → 11,21 ;
+  interceptions : retour moyen 10,1 yards, 24 pick-six (≈ 8 à 9 % des interceptions sur les semaines d'essai) ;
+  points 53,8 → 52,1 (gains plus dispersés pour la même moyenne : un peu plus de séries sans premier essai) ; overs
+  47,5 % (55,8 % la semaine d'avant). Audit : 0 anomalie bloquante.
+- Interrupteur `GC_ACTIONS_LONGUES` (`0` : moteur d'avant, à l'identique, contrôlé dans la cellule). Le calcul du samedi
+  31/10 a été sauté pour que la semaine du 02/11 profite du chantier (calcul du dimanche 01/11) ; le samedi revient ici.
+- Tests : `moteur/tests/test_actions_longues.py`, `moteur/tests/test_ecran.py`, `outils/site/test_actions_longues.js`
+  (matchs d'essai `outils/site/matchs/longues-*.json`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2563,7 +2598,8 @@ courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/st
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
-section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84).
+section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
+`GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85).
 
 ## Test
 

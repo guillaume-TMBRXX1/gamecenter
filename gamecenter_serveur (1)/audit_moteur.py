@@ -100,6 +100,12 @@ def check_game(A, week, g_sched, feed):
         if prt and (r != "punt" or scorer is None or scorer == p["offense"] or (dh or da) != 6
                     or (not p.get("try_follows") and a["status"] == "live")):
             bad(s, f"touchdown sur retour de punt mal compté ({dh}/{da}) : 6 points pour le receveur, puis sa transformation")
+        pis = r == "interception" and bool((p.get("int_return") or {}).get("td"))   # pick-six (12.2 vicies novies)
+        if pis and (scorer is None or scorer == p["offense"] or (dh or da) != 6
+                    or (not p.get("try_follows") and a["status"] == "live")):
+            bad(s, f"pick-six mal compté ({dh}/{da}) : 6 points pour la défense, puis sa transformation")
+        if r == "interception" and not pis and (dh or da):
+            bad(s, f"interception sans touchdown mais des points ({dh}/{da})")
         if r == "touchdown" and not scorer:
             bad(s, "touchdown sans points")
         if r == "field_goal_good" and (scorer != p["offense"] or (dh or da) != 3):
@@ -111,7 +117,8 @@ def check_game(A, week, g_sched, feed):
         if r in ("pat_good", "two_point_good") and (scorer != p["offense"] or (dh or da) != (1 if r == "pat_good" else 2)):
             bad(s, f"transformation réussie mal comptée ({r} : {dh}/{da})")
         if r in ("pat_good", "pat_missed", "two_point_good", "two_point_failed"):
-            prev_prt = prev is not None and (prev.get("punt_return") or {}).get("td")
+            prev_prt = prev is not None and ((prev.get("punt_return") or {}).get("td")
+                                             or (prev["result"] == "interception" and (prev.get("int_return") or {}).get("td")))
             if prev is None or not prev.get("try_follows") or not (
                     (prev["result"] == "touchdown" and prev["offense"] == p["offense"])
                     or (prev_prt and prev["offense"] != p["offense"])):
