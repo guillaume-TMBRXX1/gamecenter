@@ -614,6 +614,40 @@
   .modal.theater .onair{position:absolute}
   .modal.theater .field>.chip-play{left:calc(66px + env(safe-area-inset-left,0px))}   /* clear of the exit button */
   .modal.theater .third{top:calc(70px + env(safe-area-inset-top,0px))}   /* the 3rd / 4th down banner sits under the commentary */
+  /* Quick bet (section 86, 30/10/2026): the slip's picks docked at the bottom of the big screen — stake, returns and
+     the place button without closing the match. In « Bigger field » it floats top right, over the field. */
+  .qb{position:sticky;bottom:-6px;z-index:40;margin:8px -6px -6px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    background:color-mix(in srgb,var(--l2) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line-2);
+    border-radius:0 0 var(--r-lg) var(--r-lg);box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+  .qb-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .qb-h{display:flex;flex-direction:column;gap:2px;flex:1 1 240px;min-width:0}
+  .qb-h .label{display:flex;gap:8px;align-items:center}
+  .qb-h .label b{color:var(--cyan);font-weight:700}
+  .qb-picks{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
+  .qb-picks::-webkit-scrollbar{display:none}
+  .qb-pk{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;max-width:260px;height:30px;padding:0 4px 0 10px;border-radius:999px;
+    background:var(--l3);border:1px solid var(--line-2);font-size:12px;white-space:nowrap}
+  .qb-pk span{overflow:hidden;text-overflow:ellipsis}
+  .qb-pk b{font:600 12px var(--f-mono);color:var(--ink)}
+  .qb-pk.off{opacity:.55} .qb-pk.chg b{color:var(--amber,#ffb020)}
+  .qb-pk .x{width:22px;height:22px;border-radius:50%;border:0;background:none;color:var(--ink-3);display:grid;place-items:center;cursor:pointer;padding:0}
+  .qb-pk .x:hover{color:var(--ink);background:var(--l2)} .qb-pk .x svg{width:12px;height:12px}
+  .qb .seg{flex-shrink:0}
+  .qb .stake{width:96px;height:38px}
+  .qb-ret{display:flex;flex-direction:column;font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;min-width:76px}
+  .qb-ret b{font:600 14px var(--f-mono);color:var(--ink);text-transform:none;letter-spacing:0}
+  .qb .cta{height:40px;padding:0 18px;font-size:13px;white-space:nowrap}
+  .qb .cta:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .qb-note{flex-basis:100%;font-size:11px;color:var(--ink-3);margin:-2px 0 0}
+  .qb-note.chg{color:var(--amber,#ffb020)}
+  @media (prefers-reduced-motion:no-preference){ .qb{animation:qbIn .28s cubic-bezier(.2,.8,.2,1)} .qb.pop .qb-h .label b{animation:qbPop .5s} }
+  @keyframes qbIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes qbPop{0%{transform:scale(1)}35%{transform:scale(1.35);text-shadow:0 0 12px var(--cyan)}100%{transform:scale(1)}}
+  .modal.theater .qb{position:absolute;bottom:auto;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));
+    left:auto;margin:0;width:min(520px,calc(100% - 140px));border:1px solid var(--line-2);border-radius:14px;
+    background:color-mix(in srgb,var(--card) 90%,transparent);color:var(--ink);padding:10px 12px;box-shadow:0 12px 36px rgba(0,0,0,.35)}
+  .modal.theater .qb .qb-h{flex-basis:100%}
+  @media (max-width:640px){ .qb .qb-h{flex-basis:100%} .qb .cta{flex:1 1 auto} }
   @media (orientation:portrait) and (max-width:899px){
     /* phone held upright: the match is turned sideways and fills the screen */
     .modal.theater .m-panel,:root .modal.theater .m-panel{inset:auto;top:0;left:0;width:100dvh;height:100vw;transform-origin:0 0;
@@ -1155,6 +1189,9 @@
   .delta.neg{color:var(--pink)}
   .odd.sm{height:32px;padding:0 9px;font-size:11.5px;gap:6px;min-width:76px}
   .sch-bet{display:inline-flex;gap:6px;justify-content:flex-end}
+  .sch-sgp{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 0;font-size:12px;color:var(--ink-2);min-height:0}
+  .sch-sgp:empty{display:none}
+  .sch-sgp b{font-family:var(--f-mono);color:var(--cyan)} .sch-sgp .chg{color:var(--amber,#ffb020)}
   .sch-teams{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .sch-teams button{border:1.5px solid var(--tc);background:color-mix(in srgb,var(--tc) 9%,var(--l1));color:var(--ink);border-radius:8px;font:700 11px var(--f-display);letter-spacing:.06em;height:30px;min-width:44px;padding:0 9px;cursor:pointer;transition:background-color .15s,color .15s,transform .12s}
   .sch-teams button:not([data-tm]){--tc:var(--line-2);background:var(--l2);color:var(--ink-2)}
@@ -4214,6 +4251,9 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
   if(w&&w.feeds&&w.rosters) for(const id in w.feeds){ const gm=w.feeds[id]&&w.feeds[id].game; if(!gm) continue;
     for(const side of ['home','away']){ const t=gm[side]; if(t&&typeof t.roster==='string'&&t.roster[0]==='@') t.roster=w.rosters[t.roster.slice(1)]||[]; } }
   return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
+/* section 86 (30/10/2026): Same Game Combos (GC_SAME_GAME=off: combos as before) and the quick bet on the big screen
+   (GC_PARI_RAPIDE=off: the page as before) */
+const SG_ON=!!SEASON&&(!SERVER||SERVER.same_game!==false), QB_ON=!!SEASON&&(!SERVER||SERVER.quick_bet!==false);
 const games=SEASON?[]:[
   BOOT_FEED ? makeReplayGame(LIVE_ID,BOOT_FEED,{viewers:'4.8K',mode:'live'}) : makeGame('g1','VAN','SOV',{hs:21,as:17,q:3,clock:522,poss:'away',losOwn:34,down:2,toGo:6,edge:1.5,viewers:'4.8K'}),
   makeGame('g2','ICO','DRF',{hs:10,as:9,q:2,clock:675,poss:'home',losOwn:45,down:1,toGo:10,edge:-1,viewers:'2.1K'}),
@@ -4283,7 +4323,8 @@ function refreshOddsUI(g){
   });
 }
 /*@ui-end*/
-function syncPressed(){ document.querySelectorAll('.odd[data-key]').forEach(el=>el.setAttribute('aria-pressed', slipHas(el.dataset.key)?'true':'false')); }
+function syncPressed(){ document.querySelectorAll('.odd[data-key]').forEach(el=>el.setAttribute('aria-pressed', slipHas(el.dataset.key)?'true':'false'));
+  if(SG_ON) document.querySelectorAll('[data-sgp]').forEach(el=>{ const h=sgpHint(el.dataset.sgp); if(el.innerHTML!==h) el.innerHTML=h; }); }
 function togglePick(key){
   if(SEASON){ seasonToggle(key); return; }
   const i=slip.picks.findIndex(p=>p.key===key);
@@ -5864,6 +5905,7 @@ function openModal(id){
       </aside>
     </div>
     <div class="m-lower">${statsHTML(g)}</div>
+    ${QB_ON?'<div class="qb" id="qb" role="region" aria-label="Quick bet" hidden></div>':''}
   </div>`;
   modal.classList.toggle('theater',theaterOn());
   document.body.classList.toggle('gc-match',theaterOn());
@@ -5871,6 +5913,7 @@ function openModal(id){
   modal.hidden=false; document.body.style.overflow='hidden';
   modalView=new FieldView(modal.querySelector('.field'),g,70,1.4); views.push(modalView); bindPlayerPick(modalView);
   refreshOddsUI(g); syncPressed(); updateGameUI(g); renderFeed(g); renderWP(g); renderPower(g); renderStats(g);
+  if(QB_ON) qbRender();
   if(g.chip && g.phase!=='play') showChip(g);
   modal.querySelector('[data-close]').focus();
   if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
@@ -6091,6 +6134,7 @@ document.addEventListener('click',e=>{
   const tab=t.closest('.slip-tabs [data-tab]'); if(tab){ slip.tab=tab.dataset.tab; renderSlip(); return; }
   const rm=t.closest('[data-rm]'); if(rm){ togglePick(rm.dataset.rm); return; }
   const q=t.closest('[data-q]'); if(q){ lastStake=+q.dataset.q; slip.picks.forEach(p=>p.stake=lastStake); slip.comboStake=lastStake; renderSlip(); saveSlip(); return; }
+  if(t.closest('[data-sgpgo]')){ slip.mode='combo'; if(!(slip.comboStake>0)) slip.comboStake=SET.stake; slip.tab='slip'; renderSlip(); saveSlip(); syncPressed(); if(isDrawerMode()) openDrawer(); return; }
   const sm=t.closest('[data-slipmode]'); if(sm){ slip.mode=sm.dataset.slipmode; if(!(slip.comboStake>0)) slip.comboStake=SEASON?SET.stake:lastStake; renderSlip(); saveSlip(); return; }
   if(t.closest('[data-discard]')){ slip.picks=[]; slip.restored=false; renderSlip(); syncPressed(); saveSlip(); return; }
   if(t.closest('#place')){
@@ -6510,7 +6554,8 @@ function schMarketsHTML(s,t){
       <div class="sch-wpbar"><i data-tm="${s.away}" style="flex:${pa}"></i>${pt?`<i class="tie" style="flex:${pt}"></i>`:''}<i data-tm="${s.home}" style="flex:${ph}"></i></div>
       <div class="sch-wpl"><span><span class="abbr">${A.abbr}</span> ${Math.round(pa*100)}%</span>${pt?`<span class="tie">Tie ${Math.round(pt*100)}%</span>`:''}<span>${Math.round(ph*100)}% <span class="abbr">${H.abbr}</span></span></div></div>
     <div class="sch-mks">${col('Moneyline','ml','away','home')}${col('Spread','sp','away','home')}${col('Total','tot','over','under')}</div>
-    <p class="sch-note">Pre-game prices from the engine · tap one to add it to your slip · live prices from kickoff on the big screen</p></div></div>`;
+    ${SG_ON?`<p class="sch-sgp" data-sgp="${esc(s.id)}">${sgpHint(s.id)}</p>`:''}
+    <p class="sch-note">Pre-game prices from the engine · tap one to add it to your slip${SG_ON?' · pick 2 or 3 of them for a Same Game Combo':''} · live prices from kickoff on the big screen</p></div></div>`;
 }
 /* open / close a game's markets without redrawing the schedule: the panel slides (CSS), one open at a time */
 function schToggleBet(id){
@@ -7330,7 +7375,7 @@ function lockText(w){ return {opens:openText(),final:'Game over · market closed
 /* ---------- the wallet: a ledger of bets; balance and results are worked out at time t ---------- */
 let WAL={bets:[]}, WAL_KEY='', SEEN=new Set(), STORE_OK=true;
 function walletKey(){ return 'gc-wallet-v1:'+SW.week.start+':'+(CLOCK.demo?'preview':'real'); }
-function validBet(b){ return b&&typeof b.key==='string'&&isFinite(b.price)&&isFinite(b.stake)&&b.stake>=MIN_STAKE&&isFinite(b.pt)&&(b.key==='combo'?Array.isArray(b.legs)&&b.legs.length>=2&&b.legs.every(l=>l&&typeof l.key==='string'&&!!SCHED_BY[l.key.split(':')[0]]):b.key.startsWith('fut:')?!!FUT_M[b.key.split(':')[1]]:!!SCHED_BY[b.key.split(':')[0]]); }
+function validBet(b){ return b&&typeof b.key==='string'&&isFinite(b.price)&&isFinite(b.stake)&&b.stake>=MIN_STAKE&&isFinite(b.pt)&&(b.key==='combo'||b.key==='sgp'?Array.isArray(b.legs)&&b.legs.length>=2&&b.legs.every(l=>l&&typeof l.key==='string'&&!!SCHED_BY[l.key.split(':')[0]]):b.key.startsWith('fut:')?!!FUT_M[b.key.split(':')[1]]:!!SCHED_BY[b.key.split(':')[0]]); }
 function loadWallet(){
   if(SERVER){ WAL_KEY='server'; WAL={bets:[]}; return; }
   WAL_KEY=walletKey(); const d=lsGet(WAL_KEY);
@@ -7362,6 +7407,13 @@ function settleLeg(key,line,t){
    product of the winning legs (a pushed leg counts 1); all pushed = stake back. A cashed-out bet returns its cash-out. */
 function settle(b,t){
   if(b.cash&&t>=b.cash.at) return {st:'cashed',sat:b.cash.at,ret:b.cash.amt};
+  if(b.legs&&b.key==='sgp'){            /* Same Game Combo: a tie pushes the moneyline, the rest pays its price together */
+    const rs=b.legs.map(l=>settleLeg(l.key,l.line,t)), at=Math.max(b.pt,...rs.map(r=>r.at));
+    if(rs.some(r=>r.res==='lost')) return {st:'lost',sat:at,ret:0};
+    if(rs.some(r=>r.res==null)) return {st:'open',sat:0,ret:0};
+    const pl=b.legs.find((l,i)=>rs[i].res==='push');
+    return {st:'won',sat:at,ret:r2(b.stake*(pl?(+pl.push_price||1):legDec(b)))};
+  }
   if(b.legs){
     let prod=1, pend=false, allPush=true, last=0;
     for(const l of b.legs){ const r=settleLeg(l.key,l.line,t);
@@ -7380,6 +7432,9 @@ const CASH_FEE=0.05;
 function cashValue(b,t){
   if(settle(b,t).st!=='open') return {amt:null,why:'settled'};
   if(!placeable(t)) return {amt:null,why:'closed'};
+  if(b.key==='sgp'){ const s=SCHED_BY[b.legs[0].key.split(':')[0]];       /* before kickoff only: the price has not moved */
+    if(!s||gStatus(s,t)!=='upcoming') return {amt:null,why:'sgp'};
+    const amt=r2(b.stake*(1-CASH_FEE)); return amt>=0.01?{amt,why:null}:{amt:null,why:'zero'}; }
   let f=1;
   for(const l of (b.legs||[b])){ const r=settleLeg(l.key,l.line,t);
     if(r.res==='won'){ f*=legDec(l); continue; } if(r.res==='push') continue;
@@ -7390,7 +7445,7 @@ function cashValue(b,t){
   const amt=r2(b.stake*f*(1-CASH_FEE));
   return amt>=0.01?{amt,why:null}:{amt:null,why:'zero'};
 }
-function cashWhy(w){ return {line:'Line has moved',live:'Paused while games are live',settled:'Settled',closed:'Market closed',final:'Game over',seeds:'Not open yet',opens:'Not open yet'}[w]||'Not available now'; }
+function cashWhy(w){ return {sgp:'Before kickoff only',line:'Line has moved',live:'Paused while games are live',settled:'Settled',closed:'Market closed',final:'Game over',seeds:'Not open yet',opens:'Not open yet'}[w]||'Not available now'; }
 function ledger(t){
   const rows=WAL.bets.filter(b=>SERVER||b.pt<=t).map(b=>Object.assign({},b,settle(b,t))).sort((a,b)=>b.pt-a.pt);
   let staked=0, back=0, won=0, lost=0, open=0, atRisk=0; const day=[0,0,0,0,0,0,0];
@@ -7452,12 +7507,96 @@ const ST_LAB={open:'Open',won:'Won',lost:'Lost',push:'Push',cashed:'Cashed out'}
 /* ---------- combos (roadmap step 2): 2 to 6 picks, one per game, no futures, one stake ---------- */
 const COMBO_MIN=2, COMBO_MAX=6;
 function comboOn(){ return slip.mode==='combo'&&slip.picks.length>=COMBO_MIN; }
+/* ---------- Same Game Combo (section 86, 30/10/2026): 2 or 3 picks of one game, one per market, before kickoff.
+   The prices are not multiplied (Win GRZ and GRZ −0.5 are nearly the same bet): the chance that every pick wins
+   together comes from the engine's own chances (moneyline and spread are thresholds on the margin, the total is tied
+   to it by a Gaussian copula), with the margin of an ordinary combo. Same sums as moteur/meme_match.py — the server
+   works the price out again when the bet is placed. GC_SAME_GAME=off (#gf-server .same_game false): combos as before. */
+const SG_MAX=3, SG_RHO=-0.05, SG_PMIN=.01, SG_GAIN=1.02, SG_DMAX=30, SG_FLOOR=.025, SG_STEPS=400;
+function sgErf(x){ const s=x<0?-1:1; x=Math.abs(x);       /* erfc of Numerical Recipes (error < 1.2e-7) */
+  const t=1/(1+0.5*x), y=1-t*Math.exp(-x*x-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+  return s*y; }
+const sgPhi=x=>x===Infinity?1:x===-Infinity?0:0.5*(1+sgErf(x/Math.SQRT2));
+function sgPhiInv(p){
+  if(p<=0) return -Infinity; if(p>=1) return Infinity;
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239],
+        b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+        c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+        d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+  let x; const q=Math.min(p,1-p);
+  if(q<0.02425){ const r=Math.sqrt(-2*Math.log(q)); x=(((((c[0]*r+c[1])*r+c[2])*r+c[3])*r+c[4])*r+c[5])/((((d[0]*r+d[1])*r+d[2])*r+d[3])*r+1); if(p>0.5) x=-x; }
+  else { const r=p-0.5, r2=r*r; x=(((((a[0]*r2+a[1])*r2+a[2])*r2+a[3])*r2+a[4])*r2+a[5])*r/(((((b[0]*r2+b[1])*r2+b[2])*r2+b[3])*r2+b[4])*r2+1); }
+  const e=sgPhi(x)-p; return x-e*Math.sqrt(2*Math.PI)*Math.exp(x*x/2);      /* one Newton step */
+}
+function sgModel(o){
+  const pt=+o.p_tie||0, ph=+o.p_home, G={0:1-(1-ph)*(1-pt),1:ph*(1-pt)}, ks=Math.floor(-o.spread_home)+1;
+  const fair=(pr,side,other)=>{ const x=1/decOf(pr[side]), y=1/decOf(pr[other]); return x/(x+y); };
+  const pc=o.p_home_cover!=null?+o.p_home_cover:fair(o.spread_prices,'home','away');
+  if(!(ks in G)) G[ks]=pc;
+  const pts=Object.keys(G).map(Number).sort((x,y)=>x-y); for(let i=1;i<pts.length;i++) G[pts[i]]=Math.min(G[pts[i]],G[pts[i-1]]);
+  const po=o.p_over!=null?+o.p_over:fair(o.total_prices,'over','under');
+  let rho=o.corr_mt!=null?+o.corr_mt:(o.spread_home<0?SG_RHO:-SG_RHO); rho=Math.max(-0.9,Math.min(0.9,rho));
+  return {G,ks,po,rho,ph,pc}; }
+function sgJoint(m,lo,hi,tot){
+  const glo=lo==null?1:m.G[lo], ghi=hi==null?0:m.G[hi+1], pm=glo-ghi;
+  if(pm<=1e-12) return 0;
+  const k=lo!=null&&hi!=null?Math.max(pm,Math.min(SG_FLOOR*(hi-lo+1),glo,1-ghi))/pm:1;
+  if(tot==null) return pm*k;
+  const c=sgPhiInv(1-m.po), sq=Math.sqrt(1-m.rho*m.rho), ua=1-glo, du=(glo-ghi)/SG_STEPS; let acc=0;
+  for(let i=0;i<SG_STEPS;i++){ const z=sgPhiInv(Math.min(1-1e-12,Math.max(1e-12,ua+(i+0.5)*du))), pov=1-sgPhi((c-m.rho*z)/sq); acc+=tot==='over'?pov:1-pov; }
+  return acc*du*k; }
+/* legs = [[market, side]], decs = decimal prices → {price_dec, push_price, p} or {refus} (the server's reasons) */
+function sgpPrice(o,legs,decs){
+  if(legs.length<2||legs.length>SG_MAX) return {refus:'legs'};
+  if(new Set(legs.map(l=>l[0])).size!==legs.length) return {refus:'same_market'};
+  const m=sgModel(o), tl=legs.find(l=>l[0]==='tot'), tot=tl?tl[1]:null; let lo=null, hi=null;
+  for(const [mk,sd] of legs){ if(mk==='tot') continue;
+    const [a,b]= mk==='ml' ? (sd==='home'?[1,null]:[null,-1]) : (sd==='home'?[m.ks,null]:[null,m.ks-1]);
+    if(a!=null) lo=lo==null?a:Math.max(lo,a); if(b!=null) hi=hi==null?b:Math.min(hi,b); }
+  if(lo!=null&&hi!=null&&lo>hi) return {refus:'impossible'};
+  const pAll=sgJoint(m,lo,hi,tot); if(pAll<SG_PMIN) return {refus:'impossible'};
+  const pj=(mk,sd)=>{ const p=mk==='ml'?m.ph:mk==='sp'?m.pc:m.po; return sd==='home'||sd==='over'?p:1-p; };
+  let V=1; legs.forEach(([mk,sd],i)=>V*=decs[i]*pj(mk,sd));
+  let push=null, pTie=0;
+  if(legs.some(l=>l[0]==='ml')){
+    const rest=legs.map((l,i)=>[l,decs[i]]).filter(([l])=>l[0]!=='ml'), rl=rest.map(x=>x[0]);
+    if(rl.every(([mk,sd])=>mk!=='sp'||(sd==='home'?0>=m.ks:0<=m.ks-1))) pTie=sgJoint(m,0,0,tot);
+    if(rest.length===1) push=rest[0][1];
+    else { const r=sgpPrice(o,rl,rest.map(x=>x[1])); if(r.refus) return {refus:r.refus}; push=r.price_dec; } }
+  let D=(V-pTie*(push||0))/pAll;
+  if(D<=Math.max(...decs)*SG_GAIN) return {refus:'redundant'};
+  if(legs.length===3) for(let i=0;i<3;i++){ const r=sgpPrice(o,legs.filter((_,j)=>j!==i),decs.filter((_,j)=>j!==i)); if(D<=(r.price_dec||0)*SG_GAIN) return {refus:'redundant'}; }
+  D=Math.min(D,SG_DMAX);
+  const out={price_dec:Math.round(D*1e4)/1e4,p:Math.round(pAll*1e5)/1e5}; if(push!=null) out.push_price=Math.round(push*1e4)/1e4; return out; }
+const SG_WHY={legs:'A Same Game Combo takes 2 or 3 picks',same_market:'One pick per market in a Same Game Combo',redundant:'These picks add nothing to each other · drop one',impossible:"These picks can't all win together",sgp_live:'Same Game Combos close at kickoff',sgp_na:'Same Game Combo not priced for this game',sgp_price:'The Same Game Combo price changed · check it and place again'};
+/* Schedule panel (section 84): what the slip makes of this game's picks */
+function sgpHint(gid){
+  const n=slip.picks.filter(p=>p.key.split(':')[0]===gid).length, sg=n>=COMBO_MIN?sgpSlip():null;
+  if(!n) return '';
+  if(!sg||sg.gid!==gid) return n>=COMBO_MIN?'<span>Only picks of this game make a Same Game Combo · your slip has others</span>':'<span>Add a second pick of this game for a Same Game Combo</span>';
+  if(sg.why) return `<span class="chg">${esc(sg.why)}</span>`;
+  return `<span>Same Game Combo · ${n} legs at <b>${fmtO(amOf(sg.r.price_dec))}</b></span><button type="button" class="link" data-sgpgo>${comboOn()?'Open the slip':'Bet it as one'} →</button>`; }
+/* the slip as a Same Game Combo: every pick from one game → {gid, s, why, r}; otherwise null (an ordinary combo) */
+function sgpSlip(t){
+  const ps=slip.picks; if(!SG_ON||ps.length<COMBO_MIN||ps.some(p=>p.key.startsWith('fut:'))) return null;
+  const gids=new Set(ps.map(p=>p.key.split(':')[0])); if(gids.size!==1) return null;
+  const gid=[...gids][0], s=SCHED_BY[gid], f=s&&SEASON.feeds[gid], o=f&&f.game.pregame_odds, out={gid,s,why:'',r:null};
+  if(ps.length>SG_MAX) out.why='A Same Game Combo takes 3 picks at most';
+  else if(!s||gStatus(s,t==null?nowMs():t)!=='upcoming') out.why=SG_WHY.sgp_live;
+  else if(!o||o.p_home==null||o.spread_home==null||o.total==null) out.why=SG_WHY.sgp_na;
+  else { out.r=sgpPrice(o,ps.map(p=>p.key.split(':').slice(1)),ps.map(p=>decOf(p.pending?p.pending.price:p.price))); if(out.r.refus) out.why=SG_WHY[out.r.refus]||'Not available'; }
+  return out; }
 function comboCheck(){
-  const ps=slip.picks; if(ps.length<COMBO_MIN) return 'Add at least 2 picks for a combo'; if(ps.length>COMBO_MAX) return 'A combo takes 6 picks at most';
+  const ps=slip.picks; if(ps.length<COMBO_MIN) return 'Add at least 2 picks for a combo';
+  const sg=sgpSlip(); if(sg) return sg.why;
+  if(ps.length>COMBO_MAX) return 'A combo takes 6 picks at most';
   if(ps.some(p=>p.key.startsWith('fut:'))) return "Futures can't go in a combo · remove them or place singles";
   const g=ps.map(p=>p.key.split(':')[0]); if(new Set(g).size!==g.length) return 'One pick per game in a combo';
   return ''; }
-function comboDec(){ return slip.picks.reduce((a,p)=>a*decOf(p.pending?p.pending.price:p.price),1); }
+function comboDec(){ const sg=sgpSlip(); if(sg&&sg.r&&sg.r.price_dec) return sg.r.price_dec; return slip.picks.reduce((a,p)=>a*decOf(p.pending?p.pending.price:p.price),1); }
+/* what an open bet returns if it wins: a combo multiplies its legs; a Same Game Combo has its own price */
+function betDec(r){ return r.legs&&r.key!=='sgp'?r.legs.reduce((a,l)=>a*legDec(l),1):legDec(r); }
+const betKind=r=>r.key==='sgp'?'Same Game Combo':'Combo';
 function legsHTML(r,t,past){
   if(!r.legs) return '';
   return `<ul class="legs">${r.legs.map(l=>{ const x=past?null:settleLeg(l.key,l.line,t).res;
@@ -7505,7 +7644,7 @@ function seasonRenderSlip(){
   withFocus(()=>{
     if(onSlip){
       const banner = slip.restored && slip.picks.length ? `<div class="restored"><span>Slip restored from your last visit</span><button class="link" type="button" data-discard>Discard</button></div>` : '';
-      const modes = slip.picks.length>=COMBO_MIN ? `<div class="seg slip-mode" role="tablist" aria-label="Bet type">${[['single','Singles'],['combo','Combo']].map(([k,l])=>`<button type="button" role="tab" data-slipmode="${k}" aria-selected="${(combo?'combo':'single')===k}">${l}</button>`).join('')}</div>` : '';
+      const modes = slip.picks.length>=COMBO_MIN ? `<div class="seg slip-mode" role="tablist" aria-label="Bet type">${[['single','Singles'],['combo',sgpSlip(t)?'Same Game Combo':'Combo']].map(([k,l])=>`<button type="button" role="tab" data-slipmode="${k}" aria-selected="${(combo?'combo':'single')===k}">${l}</button>`).join('')}</div>` : '';
       const cards = slip.picks.map(p=>{ const sid='stake-'+p.key.replace(/[^a-z0-9]/gi,'-'), pr=p.pending?p.pending.price:p.price;
         const px = p.closed ? `<span class="pk-p off">${ICON.lock}</span>` : p.pending ? `<span class="pk-p chg"><s>${fmtO(p.price)}</s> ${fmtO(p.pending.price)}</span>` : `<span class="pk-p${p.moved?' mv-'+p.moved:''}">${fmtO(p.price)}</span>`;
         const note = paused(p) ? `<div class="pk-note off">Futures pause while games are live · the pick stays here until the slot is over</div>` : p.closed ? `<div class="pk-note off">${esc(lockText(p.closed))} · remove this pick</div>` : p.pending ? `<div class="pk-note chg">${p.pending.line!==p.line?'Line moved to '+esc(p.pending.title.replace(/^.* (?=[+−O U]|PK)/,'')):'Price moved'} · accept the new odds to place it</div>` : '';
@@ -7513,19 +7652,20 @@ function seasonRenderSlip(){
         return `<div class="pk${p.closed?' closed':''}${combo?' leg':''}"><div class="pk-top"><div><div class="pk-t">${esc(p.pending?p.pending.title:p.title)}</div><div class="pk-s">${esc(p.sub)}</div></div>${px}<button class="x" type="button" data-rm="${p.key}" aria-label="Remove ${esc(p.title)}">${ICON.x}</button></div>${stake}${note}</div>`;
       }).join('');
       let comboCard='';
-      if(combo){ const d=comboDec(), why=comboCheck(), cs=slip.comboStake||0;
-        comboCard=`<div class="pk combo"><div class="combo-h"><div><div class="pk-t">${slip.picks.length}-leg combo</div><div class="pk-s">Every pick must win · one stake</div></div><b>${fmtO(amOf(d))}</b></div>
+      if(combo){ const d=comboDec(), why=comboCheck(), cs=slip.comboStake||0, sg=sgpSlip(t);
+        comboCard=`<div class="pk combo${sg?' sgp':''}"><div class="combo-h"><div><div class="pk-t">${slip.picks.length}-leg ${sg?'Same Game Combo':'combo'}</div><div class="pk-s">${sg?'Priced together · these picks move with each other':'Every pick must win · one stake'}</div></div><b>${why&&sg?'—':fmtO(amOf(d))}</b></div>
           <div class="pk-stake"><label class="stake" for="stake-combo"><span>$</span><input id="stake-combo" type="text" inputmode="decimal" value="${cs||''}" data-stake="combo" aria-label="Stake for the combo"></label><div class="ret">Returns<b data-ret="combo">${why?'—':money(cs*d)}</b></div></div>
           ${why?`<div class="pk-note chg">${esc(why)}</div>`:''}</div>`; }
       slipList.innerHTML = banner + (slip.picks.length ? modes + cards + comboCard : `<div class="empty"><b>Your slip is empty</b>Tap any price on the board, the schedule or the futures table.</div>`);
     } else {
       const open=L.rows.filter(r=>r.st==='open');
-      slipList.innerHTML = (open.length ? open.map(r=>`<div class="pk"><div class="pk-top"><div><div class="pk-t">${esc(r.title)}</div><div class="pk-s">${esc(r.legs?'Combo · every leg must win':r.sub)}</div></div><span class="pk-p">${fmtO(r.price)}</span></div>
-        ${legsHTML(r,t)}<div class="ob-row"><span class="status-t">OPEN</span><span>Stake <b>${money(r.stake)}</b></span><span class="ret-o">Returns <b>${money(r2(r.stake*(r.legs?r.legs.reduce((a,l)=>a*legDec(l),1):legDec(r))))}</b></span></div><div class="pk-note">${esc(betContext(r,t))}</div><div class="co-row">${cashHTML(r,t)}</div></div>`).join('')
+      slipList.innerHTML = (open.length ? open.map(r=>`<div class="pk"><div class="pk-top"><div><div class="pk-t">${esc(r.title)}</div><div class="pk-s">${esc(r.legs?betKind(r)+' · every leg must win':r.sub)}</div></div><span class="pk-p">${fmtO(r.price)}</span></div>
+        ${legsHTML(r,t)}<div class="ob-row"><span class="status-t">OPEN</span><span>Stake <b>${money(r.stake)}</b></span><span class="ret-o">Returns <b>${money(r2(r.stake*betDec(r)))}</b></span></div><div class="pk-note">${esc(betContext(r,t))}</div><div class="co-row">${cashHTML(r,t)}</div></div>`).join('')
         : `<div class="empty"><b>No open bets</b>Placed bets show here until they settle.</div>`) + `<button class="link ob-all" type="button" data-view-go="bets">All bets this week →</button>`;
     }
   });
   seasonTotals();
+  if(QB_ON) qbRender();
 }
 function seasonTotals(){
   const t=nowMs(), L=ledger(t); balance=L.balance;
@@ -7550,6 +7690,7 @@ function seasonTotals(){
   document.getElementById('fabN').textContent=slip.picks.length;
   document.getElementById('fabR').textContent=money(r2(rt));
   document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(L.balance));
+  if(QB_ON) qbSync(btn,rt);
   const fine=document.querySelector('#slipFoot .fine');
   if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · $${BANKROLL.toLocaleString('en-US')} play money a week${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
 }
@@ -7563,11 +7704,12 @@ function seasonPlace(){
     const st=r2(slip.comboStake||0);
     if(comboCheck()||!placeable(t)||!(st>=MIN_STAKE)||st>L.balance+1e-9) return;
     if(SERVER){ serverPlace([],slip.picks.slice()); return; }
-    const legs=slip.picks.map(p=>({key:p.key,price:p.price,line:p.line,title:p.title,sub:p.sub})), d=legs.reduce((a,l)=>a*decOf(l.price),1);
-    WAL.bets.push({id:'c'+t.toString(36)+Math.random().toString(36).slice(2,6),key:'combo',legs,price:amOf(d),line:null,stake:st,pt:t,title:`${legs.length}-leg combo`,sub:legs.map(l=>l.title).join(' · ')});
+    const sg=sgpSlip(t), legs=slip.picks.map(p=>({key:p.key,price:p.price,line:p.line,title:p.title,sub:p.sub})), d=sg?sg.r.price_dec:legs.reduce((a,l)=>a*decOf(l.price),1);
+    if(sg&&sg.r.push_price) legs.forEach(l=>{ if(l.key.split(':')[1]==='ml') l.push_price=sg.r.push_price; });
+    WAL.bets.push({id:'c'+t.toString(36)+Math.random().toString(36).slice(2,6),key:sg?'sgp':'combo',legs,price:amOf(d),dec:sg?d:undefined,line:null,stake:st,pt:t,title:`${legs.length}-leg ${sg?'Same Game Combo':'combo'}`,sub:legs.map(l=>l.title).join(' · ')});
     saveWallet(); slip.picks=[]; slip.tab='open'; slip.restored=false;
     renderSlip(); syncPressed(); saveSlip(); walletRender(t); renderView(true);
-    sfxUi('placed'); toast(`Combo placed · ${legs.length} legs at ${fmtO(amOf(d))} · ${money(st)}`); return;
+    sfxUi('placed'); toast(`${sg?'Same Game Combo':'Combo'} placed · ${legs.length} legs at ${fmtO(amOf(d))} · ${money(st)}`); return;
   }
   const picks=slip.picks.filter(p=>!p.closed);
   let st=0; picks.forEach(p=>st+=p.stake);
@@ -7580,6 +7722,41 @@ function seasonPlace(){
   sfxUi('placed');
   toast(`Bet placed · ${picks.length} bet${picks.length>1?'s':''} · ${money(r2(st))}`);
 }
+
+/* ---------- quick bet on the big screen (section 86, 30/10/2026): the slip's picks, one stake, returns and the
+   place button docked under the match (standard view) or over it, top right (« Bigger field ») — no need to close
+   the match to place a bet. Same rules and same button as the slip (#place). */
+let QB_SIG='', QB_N=0;
+function qbRender(){
+  const el=modal.hidden?null:document.getElementById('qb'); if(!el) return;
+  const ps=slip.picks; if(!ps.length){ el.hidden=true; QB_SIG=''; QB_N=0; return; }
+  const combo=comboOn(), sg=sgpSlip(), sig=ps.map(p=>p.key+p.price+(p.pending?p.pending.price:'')+(p.closed||'')).join(',')+'|'+combo+'|'+(sg?sg.why:'');
+  if(sig!==QB_SIG){ QB_SIG=sig;
+    const chips=ps.map(p=>{ const pr=p.pending?p.pending.price:p.price;
+      return `<span class="qb-pk${p.closed?' off':p.pending?' chg':''}" title="${esc(p.sub)}"><span>${esc(p.pending?p.pending.title:p.title)}</span><b>${p.closed?'—':fmtO(pr)}</b><button class="x" type="button" data-rm="${p.key}" aria-label="Remove ${esc(p.title)}">${ICON.x}</button></span>`; }).join('');
+    const modes=ps.length>=COMBO_MIN?`<div class="seg" role="tablist" aria-label="Bet type">${[['single','Singles'],['combo',sg?'Same Game':'Combo']].map(([k,l])=>`<button type="button" role="tab" data-slipmode="${k}" aria-selected="${(combo?'combo':'single')===k}">${l}</button>`).join('')}</div>`:'';
+    const why=combo?comboCheck():'', pend=ps.some(p=>p.pending);
+    el.innerHTML=`<div class="qb-in"><div class="qb-h"><span class="label">Your slip <b>${ps.length} pick${ps.length>1?'s':''}</b>${combo?`<span>· ${sg?'Same Game Combo':'combo'} ${why?'':fmtO(amOf(comboDec()))}</span>`:''}</span><div class="qb-picks">${chips}</div></div>
+      ${modes}<label class="stake" for="qbStake"><span>$</span><input id="qbStake" type="text" inputmode="decimal" data-qbstake aria-label="${combo?'Stake for the combo':'Stake for each pick'}"></label>
+      <div class="qb-ret">Returns<b data-qbret>—</b></div><button class="cta" type="button" data-qbplace>Place bet</button>
+      ${why?`<p class="qb-note chg">${esc(why)}</p>`:pend?`<p class="qb-note chg">A price moved · accept the new odds to place</p>`:''}</div>`;
+    if(ps.length>QB_N){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    QB_N=ps.length; }
+  el.hidden=false;
+  qbSync(document.getElementById('place'));
+}
+function qbSync(btn,rt){
+  const el=document.getElementById('qb'); if(!el||el.hidden||!btn||!slip.picks.length) return;
+  const b=el.querySelector('[data-qbplace]'), r=el.querySelector('[data-qbret]'), inp=el.querySelector('[data-qbstake]');
+  if(b){ b.textContent=btn.textContent; b.disabled=btn.disabled; }
+  if(r) r.textContent=rt!=null?money(r2(rt)):document.getElementById('tRet').textContent;
+  if(inp&&document.activeElement!==inp){ const v=comboOn()?slip.comboStake:(slip.picks.every(p=>p.stake===slip.picks[0].stake)?slip.picks[0].stake:null); inp.value=v?String(v):''; inp.placeholder=v==null&&!comboOn()?'Mixed':''; }
+}
+document.addEventListener('input',e=>{ const inp=e.target.closest&&e.target.closest('[data-qbstake]'); if(!inp) return;
+  const v=parseFloat(inp.value.replace(',','.')), x=isFinite(v)&&v>0?Math.round(v*100)/100:0;
+  if(comboOn()) slip.comboStake=x; else slip.picks.forEach(p=>p.stake=x);
+  BET_SIG=''; renderSlip(); saveSlip(); });
+document.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closest('[data-qbplace]'); if(!t||t.disabled) return; e.stopPropagation(); seasonPlace(); },true);
 
 /* ---------- wallet card, settlement, clock moved back ---------- */
 function walletRender(t){
@@ -7636,9 +7813,9 @@ function renderBets(t){
   const tr=rows.map(r=>{ const gid=r.key.startsWith('fut:')||r.legs?null:r.key.split(':')[0], s=gid&&SCHED_BY[gid], gs=s&&gStatus(s,t);
     const go= s&&gs!=='upcoming' ? `<button class="link" type="button" data-sched="${gid}">${gs==='live'?'Watch':'Replay'}</button>` : '';
     return `<tr class="bt-${r.st}"><td class="tl bt-when">${esc(dStr(r.pt))}<small>${esc(tStr(r.pt))}</small></td>
-      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?'Combo':r.sub)} · ${esc(betContext(r,t))}</small>${legsHTML(r,t)}</th>
+      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?betKind(r):r.sub)} · ${esc(betContext(r,t))}</small>${legsHTML(r,t)}</th>
       <td>${fmtO(r.price)}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]}</span></td>
-      <td class="bt-ret">${r.st==='open'?money(r2(r.stake*(r.legs?r.legs.reduce((a,l)=>a*legDec(l),1):legDec(r)))):money(r.ret)}${r.st==='open'?'<small>to return</small>':''}</td><td><div class="bt-acts">${cashHTML(r,t)}${go}</div></td></tr>`; }).join('');
+      <td class="bt-ret">${r.st==='open'?money(r2(r.stake*betDec(r))):money(r.ret)}${r.st==='open'?'<small>to return</small>':''}</td><td><div class="bt-acts">${cashHTML(r,t)}${go}</div></td></tr>`; }).join('');
   el.innerHTML=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${SW.week.index}</b> · $${BANKROLL.toLocaleString('en-US')} of play money · resets Monday 00:00 Brussels${CLOCK.demo?' · <b>preview wallet</b> (kept apart from real time)':''}</p>${SERVER?histSeg():''}</div>
     <div class="bt-kpis">
       <div class="card bt-k"><span class="label">Balance</span><b>${money(L.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>
@@ -8292,7 +8469,7 @@ async function api(path,opt){
   return body;
 }
 function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),dec:b.price_dec,line:b.line,stake:b.stake,pt:b.pt,title:b.title,sub:b.sub,
-  legs:b.legs?b.legs.map(l=>({key:l.key,price:amOf(l.price_dec),dec:l.price_dec,line:l.line,title:l.title,sub:l.sub})):null,
+  legs:b.legs?b.legs.map(l=>({key:l.key,price:amOf(l.price_dec),dec:l.price_dec,line:l.line,title:l.title,sub:l.sub,push_price:l.push_price})):null,
   cash:b.cashed_at!=null?{at:b.cashed_at,amt:b.cashed_amt}:null}; }
 async function serverWalletLoad(){
   if(!PLAYER||!PLAYER.token){ WAL={bets:[]}; return; }
@@ -8307,11 +8484,11 @@ async function ensurePlayer(){
 }
 async function serverPlace(picks,comboLegs){
   const btn=document.getElementById('place'); btn.disabled=true; btn.textContent='Placing…';
-  const wire=p=>({key:p.key,price_dec:Math.round(decOf(p.price)*1e4)/1e4,line:p.line,title:p.title,sub:p.sub});
+  const wire=p=>({key:p.key,price_dec:Math.round(decOf(p.price)*1e4)/1e4,line:p.line,title:p.title,sub:p.sub}), sg=comboLegs?sgpSlip():null;
   try{
     await ensurePlayer();
     const body={token:PLAYER.token,picks:picks.map(p=>Object.assign(wire(p),{stake:r2(p.stake)})),
-                combos:comboLegs?[{stake:r2(slip.comboStake||0),legs:comboLegs.map(wire)}]:[]};
+                combos:comboLegs?[Object.assign({stake:r2(slip.comboStake||0),legs:comboLegs.map(wire)},sg&&sg.r?{price_dec:sg.r.price_dec}:{})]:[]};
     const res=await api('/bets',{method:'POST',body:JSON.stringify(body)});
     const done=new Set();
     for(const b of res.accepted){ WAL.bets.push(fromServerBet(b)); if(b.legs) b.legs.forEach(l=>done.add(l.key)); else done.add(b.key); }
@@ -8323,6 +8500,7 @@ async function serverPlace(picks,comboLegs){
     for(const x of res.rejected){
       if(x.combo!=null){
         if(x.reason==='legs_changed') x.legs.forEach(legFix);
+        else if(SG_WHY[x.reason]) other=SG_WHY[x.reason].replace(' · ',': ')+'.';
         else other={balance:'Stake exceeds your balance on the server.',stake:`Minimum stake $${MIN_STAKE}.`,same_game:'One pick per game in a combo.',futures:"Futures can't go in a combo.",legs:'A combo takes 2 to 6 picks.'}[x.reason]||'The server refused this combo.';
         continue; }
       const p=slip.picks.find(q=>q.key===x.key); if(!p) continue;
@@ -8331,7 +8509,7 @@ async function serverPlace(picks,comboLegs){
     if(!slip.picks.length) slip.tab='open';
     const n=res.accepted.length, st=res.accepted.reduce((s,b)=>s+b.stake,0); HIST.at=0;
     BET_SIG=''; renderSlip(); syncPressed(); saveSlip(); walletRender(nowMs()); renderView(true);
-    if(n){ sfxUi('placed'); const c=res.accepted.find(b=>b.legs); toast(c?`Combo placed · ${c.legs.length} legs at ${fmtO(amOf(c.price_dec))} · ${money(c.stake)}`:`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
+    if(n){ sfxUi('placed'); const c=res.accepted.find(b=>b.legs); toast(c?`${betKind(c)} placed · ${c.legs.length} legs at ${fmtO(amOf(c.price_dec))} · ${money(c.stake)}`:`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
     if(moved||closed||other) toastErr([moved?`${moved} price${moved>1?'s':''} moved: accept the new odds to place ${moved>1?'them':'it'}.`:'',closed?`${closed} market${closed>1?'s':''} closed.`:'',other].filter(Boolean).join(' '));
   }catch(e){ toastErr(`The bet was not placed: ${e.message}. Check your connection and place it again.`); renderSlip(); }
 }
@@ -8365,7 +8543,7 @@ function pastHTML(){
   const hit=d.won+d.lost?Math.round(d.won/(d.won+d.lost)*100)+'%':'—';
   const tr=d.bets.slice().sort((a,b)=>b.pt-a.pt).map(r=>{ const legs=r.legs?{legs:r.legs.map(l=>({title:l.title,price:amOf(l.price_dec)}))}:{};
     return `<tr class="bt-${r.st}"><td class="tl bt-when">${esc(dStr(r.pt))}<small>${esc(tStr(r.pt))}</small></td>
-      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?'Combo':r.sub)}</small>${legsHTML(legs,0,true)}</th>
+      <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?betKind(r):r.sub)}</small>${legsHTML(legs,0,true)}</th>
       <td>${fmtO(amOf(r.price_dec))}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]||r.st}</span></td><td class="bt-ret">${money(r.ret)}</td></tr>`; }).join('');
   return head+`<div class="bt-kpis">
       <div class="card bt-k"><span class="label">Final balance</span><b>${money(d.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>

@@ -2423,6 +2423,44 @@ yard (12.2 quinquies) : le défenseur s'arrêtait aussitôt, même seul, et aucu
 - Tests : `moteur/tests/test_actions_longues.py`, `moteur/tests/test_ecran.py`, `outils/site/test_actions_longues.js`
   (matchs d'essai `outils/site/matchs/longues-*.json`).
 
+### 86. Combinés sur un même match et pari rapide depuis l'écran d'un match (30/10/2026)
+Demande de Guillaume : « des combos sur un seul match (Win GRZ + spread + over), deux ou trois », et confirmer un pari
+sans fermer le match qu'on regarde (vue normale ou Bigger field).
+- **Same Game Combo** (`moteur/meme_match.py`, tests `moteur/tests/test_meme_match.py`) : 2 ou 3 sélections d'un même
+  match, une par marché (moneyline, spread, total), **avant le coup d'envoi**. Les cotes ne sont pas multipliées
+  (« Win GRZ » et « GRZ −0,5 » sont presque le même pari) : la probabilité que tout gagne ensemble vient des probabilités
+  du moteur publiées pour chaque sélection (les cotes simples ne changent pas) :
+  - moneyline et spread sont des seuils sur l'écart M (victoire domicile = M ≥ 1, domicile −2,5 = M ≥ 3…) : deux seuils
+    donnent un intervalle (« gagne de 1 à 2 points »), P = G(lo) − G(hi + 1) avec G(k) = P(M ≥ k) connu à 0, 1 et à la
+    ligne du spread, sans autre hypothèse ;
+  - le total est lié à l'écart par une copule gaussienne, ρ = −0,05 vu du favori (mesuré sur 1 155 matchs joués : presque
+    indépendants ; les 50 simulations d'une affiche sont trop peu pour un ρ par match, ± 0,14) ;
+  - **marge** d'un combiné ordinaire : espérance = produit des (cote × probabilité juste) des sélections, rien en plus ;
+  - **égalité** (≈ 4 % des matchs) : la moneyline est remboursée et le combiné paie les autres sélections à leur cote
+    ensemble, calculée au moment du pari (`push_price`, comptée dans la cote du combiné) ;
+  - **plancher** : un intervalle borné des deux côtés vaut au moins 2,5 % par point d'écart (bruit des 50 simulations ;
+    la cote ne fait que baisser) ; cote plafonnée à 30 ;
+  - **refusés** : impossible (perdre et couvrir −2,5), ou qui n'ajoute rien à sa meilleure sélection ou à une paire
+    (victoire + spread du même favori ; cote ≤ 1,02 × la meilleure).
+  Vérifié sur des matchs simulés (200 000) : l'espérance tombe sur la marge visée à 0,3 % près. Rendement sur les 1 155
+  matchs joués (tous les combinés possibles) : victoire + total 0,94, spread + total 0,92, victoire + spread 0,83,
+  trois sélections 0,76 (cotes médianes 3,6 à 20 : beaucoup de bruit), aucun avantage pour le joueur.
+- **Serveur** : un combiné dont toutes les sélections sont du même match est un Same Game Combo (`key` « sgp ») ; la
+  page envoie la cote qu'elle affiche, le serveur la recalcule (refus `sgp_price` avec la bonne si elle diffère) ;
+  refus `sgp_live` (coup d'envoi passé), `redundant`, `impossible`, `same_market`. **Cash-out** : avant le coup d'envoi
+  (mise − 5 %), plus ensuite (cotes en direct sans écart ni total liés). Règlement, historique, classement : comme les
+  autres paris.
+- **Site** : la page calcule la même cote (`sgpPrice`, contrôlée contre le serveur sur 11 160 combinés :
+  `outils/site/test_meme_match.js`) ; le bulletin passe en « Same Game Combo » quand ses sélections sont d'un seul match ;
+  le panneau d'un match du Schedule (section 84) annonce la cote dès deux prix choisis, « Bet it as one » ; sinon le
+  message dit pourquoi (n'ajoute rien, impossible, coup d'envoi passé).
+- **Pari rapide** : sur le grand écran d'un match, les sélections du bulletin apparaissent dans une barre en bas (vue
+  normale) ou en haut à droite par-dessus le terrain (Bigger field) : mise, gain possible, Singles / Combo et le même
+  bouton que le bulletin (prix qui bouge : « Accept new odds »). Plus besoin de fermer le match.
+- Interrupteurs : `GC_SAME_GAME=off` (combinés d'un même match refusés comme avant, page d'avant), `GC_PARI_RAPIDE=off`
+  (pas de barre sur le grand écran). Tests : `moteur/tests/test_meme_match.py`, `moteur/tests/test_serveur.py`
+  (MemeMatch), `outils/site/test_meme_match.js`, `outils/site/test_pari_rapide.js`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2599,7 +2637,8 @@ courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/st
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
-`GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85).
+`GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86.
 
 ## Test
 

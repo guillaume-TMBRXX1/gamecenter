@@ -93,6 +93,8 @@ if [ $SITE = 1 ]; then
   lancer "Site : Insights (semaine, face-à-face, récap du jour, cadenas) et retrait d.Exhibition" node outils/site/test_insights.js
   lancer "Site : calendrier filtré par franchise, paris sous un match" node outils/site/test_schedule.js
   lancer "Site : actions longues, retours d.interception et pick-six" node outils/site/test_actions_longues.js
+  lancer "Site : Same Game Combo, même cote dans la page et sur le serveur" node outils/site/test_meme_match.js
+  lancer "Site : Same Game Combo (Schedule, bulletin) et pari rapide sur le grand écran" node outils/site/test_pari_rapide.js
   lancer "Site : chat, salon General (signaler, masquer, effacer, administration)" node outils/site/test_chat.js
   lancer "Site : chat d.un match (synchronisé à l.action, Bigger field) et bouclier anti-spoiler" node outils/site/test_chat_match.js
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js
