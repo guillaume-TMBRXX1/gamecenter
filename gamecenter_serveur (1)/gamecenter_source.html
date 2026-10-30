@@ -3855,7 +3855,7 @@ function planFromFeed(g,P){
 }
 function rpKind(P){
   const r=P.result;
-  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)) return 'td';
+  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)||(P.int_return&&P.int_return.td)) return 'td';
   if(r==='field_goal_good'||r==='safety'||r==='pat_good'||r==='two_point_good') return 'score';
   if(r==='interception'||r==='fumble_lost'||r==='field_goal_missed'||r==='punt'||P.possession_change==='downs') return 'to';
   return 'play';
@@ -3995,7 +3995,9 @@ function rpChip0(P){
   if(P.fumble&&P.fumble.lost===false&&r!=='touchdown'&&r!=='safety') return {t:'FUMBLE · RECOVERED',c:'bad'};   /* 12.2 vicies */
   switch(r){
     case 'touchdown': return {t:'TOUCHDOWN',c:'td'};
-    case 'interception': return {t:'INTERCEPTED',c:'hot'};
+    case 'interception': { const ir=P.int_return;   /* engine 12.2 vicies novies: interception return, pick-six */
+      if(ir&&ir.td) return {t:'PICK-SIX · TOUCHDOWN',c:'td'};
+      return ir&&num(ir.return,0)>=20?{t:'INTERCEPTED · '+num(ir.return,0)+'-YD RETURN',c:'hot'}:{t:'INTERCEPTED',c:'hot'}; }
     case 'fumble_lost': return {t:'FUMBLE LOST',c:'hot'};
     case 'field_goal_good': return {t:'FIELD GOAL',c:'good'};
     case 'safety': return {t:'SAFETY · 2 PTS',c:'hot'};
@@ -4088,8 +4090,9 @@ function rpResolve(g){
   g.feed.unshift(rpFeedItem(g,P)); while(g.feed.length>40) g.feed.pop();
   g.hs=A.score.home; g.as=A.score.away;
   g.chip=rpChip(P); g.lastText=String(P.text||'');
-  if(P.result==='touchdown'||(P.punt_return&&P.punt_return.td)) g.tdFlash='Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety'; else if(P.result==='two_point_good') g.tdFlash='Two points';
-  if(P.result==='interception') g.toFlash='Interception'; else if(P.result==='fumble_lost') g.toFlash='Fumble';
+  const pick6=!!(P.int_return&&P.int_return.td);
+  if(P.result==='touchdown'||(P.punt_return&&P.punt_return.td)||pick6) g.tdFlash=pick6?'Pick six':'Touchdown'; else if(P.result==='field_goal_good') g.tdFlash='Field goal'; else if(P.result==='safety') g.tdFlash='Safety'; else if(P.result==='two_point_good') g.tdFlash='Two points';
+  if(P.result==='interception'&&!pick6) g.toFlash='Interception'; else if(P.result==='fumble_lost') g.toFlash='Fumble';
   g.shake=shakeLevel(P.result,num(P.gain,0));
   g.clock=num(P.clock_end,g.clock);
 }
@@ -7947,7 +7950,11 @@ function playLine(g,P){
       text = P.call&&P.call.type==='pass' ? V([`Touchdown ${nick(off)}! ${sur(qb)} finds ${car} from ${yds(tdY)} out!`,`${sur(qb)} throws… caught! ${car}, touchdown, ${yds(tdY)}!`,`Touchdown! ${car} hauls it in, ${yds(tdY)} from ${sur(qb)}!`])
         : V([`Touchdown ${nick(off)}! ${car} takes it in from ${yds(tdY)}!`,`${car}… into the end zone! Touchdown, ${yds(tdY)}!`,`He's in! ${car}, ${yds(tdY)} out, touchdown ${nick(off)}!`]);
       text+=' '+scoreLine(g); break;
-    case 'interception': prio=3; text=V([`Intercepted! ${def} picks off ${sur(qb)}!`,`${sur(qb)} throws… and it's picked! ${def} with the interception!`,`Turnover! ${def} jumps the route and takes it away!`]); break;
+    case 'interception': { prio=3; const ir=P.int_return||{}, ry=num(ir.return,0);   /* 12.2 vicies novies */
+      if(ir.td){ text=V([`Pick-six! ${def} picks off ${sur(qb)} and takes it ${yds(ry)} the other way! Touchdown ${nick(dfT)}!`,`Intercepted… and he's gone! ${def}, ${yds(ry)}, pick-six!`])+' '+scoreLine(g); break; }
+      text=V([`Intercepted! ${def} picks off ${sur(qb)}!`,`${sur(qb)} throws… and it's picked! ${def} with the interception!`,`Turnover! ${def} jumps the route and takes it away!`]);
+      if(ry>=20) text+=' '+V([`And he brings it back ${yds(ry)}!`,`${yds(ry)} on the return!`]);
+      break; }
     case 'fumble_lost': prio=3; text=V([`Fumble! ${car} puts it on the ground — ${nick(dfT)} recover!`,`He lost the ball! ${nick(dfT)} have it!`,`Fumble, and ${nick(dfT)} come up with it!`]); break;
     case 'field_goal_good': prio=2; text=V([`The kick is up… and it's good! ${String(P.text).replace(/^.*?(\d+) yds.*$/,'$1')} yards.`,`${car} splits the uprights. Three points ${nick(off)}.`]); text+=' '+scoreLine(g); break;
     case 'safety': prio=3; text = P.safety_via==='sack' ? V([`Sacked in the end zone! ${def||'The pass rush'} gets ${sur(qb)} — that's a safety!`,`${sur(qb)} goes down in his own end zone! Safety, two points ${nick(dfT)}!`])
@@ -8114,7 +8121,7 @@ function audioResolve(g){
   if(g!==FOCUS||!g.cur) return;
   if(AM){ const h=g.hist||[]; AM.resolve(g,g.cur,h.length?h[h.length-1]:null,playLine(g,g.cur)); return; }
   const P=g.cur, r=P.result, gain=num(P.gain,0), st=P.after&&P.after.status;
-  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)){ sfx('horn'); sfx('roar',0,1,3.2); }
+  if(r==='touchdown'||(P.punt_return&&P.punt_return.td)||(P.int_return&&P.int_return.td)){ sfx('horn'); sfx('roar',0,1,3.2); }
   else if(r==='interception'||r==='fumble_lost'){ sfx('ooh'); sfx('roar',.5,.85,2.4); sfx('whistle',.9); }
   else if(r==='field_goal_good'){ sfx('roar',0,.7,2); }
   else if(r==='safety'){ sfx('hit',0,1.2); sfx('roar',.05,1,3); sfx('whistle',.6); }

@@ -20,12 +20,15 @@ Checks avant le snap (play.presnap, 16/10/2026) : l'audible coûte des secondes 
 le temps couru par le moteur ; horloge arrêtée : ajoutées au chrono utilisé) ; une motion, un audible ou une réponse à la
 motion gardent au moins AVANT_CHECK s d'écran avant le snap, une défense qui se déguise AVANT_DEGUISE s, le temps de les voir.
 Coups d'envoi, transformations : pas de chrono, horloge arrêtée.
+ecran-4 (30/10/2026, actions longues, README section 85) : une course ou une réception de plus de LONG yards et un retour
+d'interception (play.int_return) gardent plus de temps d'animation, à LONG_VITESSE yards par seconde d'écran en plus
+(LONG_MAX s au plus) : une échappée de 70 yards ne se joue plus en 3,3 s.
 Durée garantie : pauses de retransmission comprises (PAUSES : 10 s entre deux quarts-temps, 40 s à la mi-temps), un
 match ne dépasse pas BUDGET s ; au-delà, les temps où l'horloge est arrêtée et qui ne sont pas fixés par la règle
 (chrono horloge arrêtée, pauses, mise en place des coups de pied) sont raccourcis jusqu'à leurs minimums.
 """
 
-VERSION = "ecran-3"
+VERSION = "ecran-4"
 
 CHRONO = 10             # chrono d'avant-snap (s)
 TEMPS_MORT_AFFICHE = 15  # décompte d'un temps mort (s affichées)…
@@ -41,6 +44,7 @@ AVANT_SPECIAL = {"kickoff": 2.0, "extra_point": 1.5, "two_point": 1.8}
 # l'animation de l'action (s) ; l'horloge s'écoule du temps de jeu du moteur pendant ce temps
 ACTION = {"run": 3.3, "pass": 3.8, "punt": 4.0, "kickoff": 4.0, "field_goal": 3.1, "extra_point": 2.5,
           "two_point": 3.4, "kneel": 1.8, "spike": 1.3}
+LONG, LONG_VITESSE, LONG_MAX = 18, 16.0, 2.4      # ecran-4 : actions longues
 ETIREMENT = (0.9, 1.15)  # l'animation suit un peu le temps de jeu (rapport au temps de jeu moyen PT_MOYEN)
 PT_MOYEN = 5.5
 APRES = 0.8              # pause après l'action
@@ -63,6 +67,11 @@ def _naturelle(p):
         a += min(2.6, (kr.get("return") or 0) / 16)
     if t == "punt" and pr:
         a += min(2.8, (pr.get("return") or 0) / 13) if pr.get("result") == "return" else 0 if pr.get("result") == "fair_catch" else 0.5
+    r, ir = p.get("result"), p.get("int_return") or {}
+    if r in ("run", "complete", "touchdown") and t in ("run", "pass"):
+        a += min(LONG_MAX, max(0, (p.get("gain") or 0) - LONG) / LONG_VITESSE)
+    elif r == "interception" and ir:
+        a += min(LONG_MAX, (ir.get("return") or 0) / LONG_VITESSE)
     return a
 
 
