@@ -989,7 +989,29 @@
   .ins-pay ul{text-align:left;margin:12px 0 16px;padding-left:18px;color:var(--ink-2);font-size:13.5px;line-height:1.6}
   .ins-pay .cta{width:auto;padding:0 26px;opacity:.75;cursor:not-allowed;white-space:nowrap}
   .ins-pay p{color:var(--ink-3);font-size:12px;margin:10px 0 0}
-  @media (max-width:980px){ .ins-angles,.rc-grid{grid-template-columns:minmax(0,1fr)} .ins-grid{grid-template-columns:minmax(0,1fr)} }
+  .ins-edge{border-color:var(--cyan)}.ins-edge b{color:var(--cyan)}
+  .ins-series{padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:2px}
+  .ins-series b{display:block;font:700 20px var(--f-display);letter-spacing:.02em}
+  .ins-series small{color:var(--ink-3);font-size:12px}
+  .ins-wk{flex:0 0 46px;font:700 14px var(--f-display);color:var(--ink-2)}.ins-wk small{display:block;font:500 11px var(--f-ui);color:var(--ink-3)}
+  .rc-item b u{text-decoration:none;color:var(--cyan)}
+  .ins-sub{display:flex;align-items:center;gap:8px;margin:12px 0 4px;font:600 10.5px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .ins-sub:first-child{margin-top:0}.ins-sub .badge{width:34px;height:22px;font-size:10.5px;letter-spacing:.04em;text-transform:none}
+  .ins-duel{display:grid;grid-template-columns:72px minmax(0,1fr) 22px minmax(0,1fr) 82px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+  .ins-duel .lab{color:var(--ink-3);font-size:12px}.ins-duel .vs{color:var(--ink-3);text-align:center;font-size:11px}
+  .ins-duel i{font-style:normal;font:700 10.5px var(--f-ui);letter-spacing:.04em;text-align:center;border-radius:6px;padding:4px 6px;background:var(--l3);color:var(--ink-3)}
+  .ins-duel i.o{background:var(--cyan-soft);color:var(--cyan)}.ins-duel i.d{background:var(--pink-soft);color:var(--pink)}
+  .ins-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 22px}
+  .ins-pls{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}.ins-pls>div+div{margin-top:10px}
+  .ins-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 22px}
+  .ins-pl{display:flex;align-items:center;gap:10px;width:100%;padding:8px 0;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+  .ins-pl:hover b,.ins-pl:hover .grow{color:var(--cyan)}
+  .ins-pl .ins-pos{flex:0 0 38px;font:700 10.5px var(--f-display);letter-spacing:.06em;color:var(--ink-3)}
+  .ins-pl .grow{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ins-pl small{flex:0 0 auto;color:var(--ink-3);font-size:11.5px}
+  .ins-pl em,.rc-item em.up,.rc-item em.down{font:700 12.5px var(--f-mono);font-style:normal;white-space:nowrap}
+  .ins-pl em.up,.rc-item em.up{color:var(--cyan)}.ins-pl em.down,.rc-item em.down{color:var(--pink)}
+  .ins-cb b{color:var(--ink)}
+  @media (max-width:980px){ .ins-angles,.rc-grid,.ins-three{grid-template-columns:minmax(0,1fr)} .ins-grid{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:760px){
     .ins-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
     .h2h-pick{grid-template-columns:minmax(0,1fr)} .h2h-vs{justify-self:center}
@@ -998,6 +1020,8 @@
     .h2h-row{grid-template-columns:46px minmax(0,1fr) 96px minmax(0,1fr) 46px;gap:6px;font-size:12px}
     .h2h-row .v{font-size:12.5px}
     .ins-pay{top:40px}
+    .ins-two{grid-template-columns:minmax(0,1fr)}
+    .ins-duel{grid-template-columns:58px minmax(0,1fr) 18px minmax(0,1fr) 66px;gap:5px;font-size:11.5px}
   }
   /* ---------- Chat (bloc 3, étape 2): General ----------
      Built by the script only when the server says the chat is on (#gf-server .chat): nothing here otherwise.
@@ -6732,7 +6756,7 @@ function seasonRefresh(force){
    /api/insights is computed by the server on final games only (no spoiler) and fetched again each time a game ends.
    Day recap: open to everyone. This week and Head-to-head: accounts the server lets in (pro); the others see a blurred
    preview drawn with made-up numbers (the real ones never reach their browser). */
-const INS={on:!!(SERVER&&SERVER.insights),d:null,tok:null,busy:false,err:0,retry:0,tab:'week',a:null,b:null,day:null};
+const INS={on:!!(SERVER&&SERVER.insights),d:null,tok:null,busy:false,err:0,retry:0,tab:'week',a:null,b:null,day:null,pair:{},pairBusy:null};
 const INS_KEY='gc-insights-v1';
 (()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
 const INS_SVG={tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M6.5 16v-4.5M11 16V8M15.5 16v-6M20 16V7.5"/><path d="M5 9l5-4 4.5 3 5.5-4"/></svg>',
@@ -6746,7 +6770,8 @@ function insInit(){
   document.addEventListener('click',e=>{ const t=e.target; if(!t.closest||!t.closest('#viewInsights')) return;
     const tb=t.closest('[data-ins-tab]'); if(tb){ INS.tab=tb.dataset.insTab; insSave(); renderInsights(nowMs(),true); return; }
     const pk=t.closest('[data-h2h]'); if(pk){ INS[pk.dataset.h2h]=pk.dataset.t; insSave(); renderInsights(nowMs(),true); return; }
-    const dy=t.closest('[data-ins-day]'); if(dy){ INS.day=dy.dataset.insDay; renderInsights(nowMs(),true); } });
+    const dy=t.closest('[data-ins-day]'); if(dy){ INS.day=dy.dataset.insDay; renderInsights(nowMs(),true); return; }
+    const ip=t.closest('[data-ins-pl]'); if(ip){ openRosterCard(ip.dataset.pt,ip.dataset.insPl,e.clientX,e.clientY); } });
 }
 function insSave(){ lsSet(INS_KEY,{tab:INS.tab,a:INS.a,b:INS.b}); }
 function insLockIcon(){ document.querySelectorAll('.rail-btn[data-view="insights"] .ins-lkw').forEach(s=>s.hidden=!!(INS.d&&INS.d.pro)); }
@@ -6763,6 +6788,69 @@ const insSg=v=>v==null?'—':(v>0?'+':v<0?MINUS:'')+Math.abs(v);
 const insRec=r=>`${r.w}-${r.l}${r.t?'-'+r.t:''}`;
 const insDots=f=>formDots((f||[]).join(''));
 const insName=a=>esc(TEAMS[a]?TEAMS[a].name:a);
+/* head-to-head of a pair (pro): every past meeting and the players to watch, fetched when the pair is picked */
+async function insPairFetch(A,B,k){
+  if(INS.pairBusy===k) return; INS.pairBusy=k;
+  try{ INS.pair[k]=await api(`/insights/h2h?a=${A}&b=${B}&token=${encodeURIComponent(PLAYER&&PLAYER.token||'')}`); }
+  catch(e){ INS.pair[k]={meetings:[],players:{},err:true}; }
+  finally{ INS.pairBusy=null; }
+  if(VIEW==='insights'&&INS.tab==='h2h') renderInsights(nowMs(),true);
+}
+/* rating line of a game: what the ratings make the home spread (home edge = this week's average home margin, ±3 at most) */
+function insRatingLine(D,by,g){ const h=by[g.home], a=by[g.away]; if(!h||!a) return null;
+  const hfa=Math.max(-3,Math.min(3,(D.league&&D.league.home_margin)||0));
+  return Math.round(-(h.rating-a.rating+hfa)*2)/2; }
+const insLine=(team,v)=>v==null?'—':`${team} ${v>0?'+':v<0?MINUS:''}${Math.abs(v)}`;
+function insMeetHTML(D,by,g,t){
+  const o=g.odds||{}, st=gStatus(g,t), fin=st==='final'&&g.result;
+  const when=new Date(g.ko).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Brussels'});
+  const cells=[[fin?'Result':st==='live'?'Status':'Kickoff',fin?`${g.away} ${g.result.away} – ${g.result.home} ${g.home}`:st==='live'?'Live now':when],
+    ['Engine win chance',o.p_home!=null?`${g.home} ${insPct(o.p_home)}`:'—'],['Spread',insLine(g.home,o.spread_home)],['Total',o.total!=null?o.total:'—']];
+  if(fin){ const m=g.result.home-g.result.away;
+    if(o.spread_home!=null){ const v=m+o.spread_home; cells.push(['Covered',v>0?g.home:v<0?g.away:'Push']); }
+    if(o.total!=null){ const s=g.result.home+g.result.away; cells.push(['Over / under',s>o.total?'Over':s<o.total?'Under':'Push']); } }
+  else{ const rl=insRatingLine(D,by,g);
+    if(rl!=null&&o.spread_home!=null){ const gap=o.spread_home-rl;
+      cells.push(['Ratings line',insLine(g.home,rl)]);
+      cells.push(['Edge vs the line',Math.abs(gap)<1?'None (under 1 pt)':`${gap>0?g.home:g.away} · ${Math.abs(gap)} pts`]); } }
+  return `<div class="h2h-meet">${cells.map(([k,v])=>`<div class="mt-st${k==='Edge vs the line'&&!/^None/.test(v)?' ins-edge':''}"><span class="label">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
+}
+function insHistHTML(P,A,B){
+  if(!P) return '<p class="st-none">Loading…</p>';
+  const M=P.meetings||[]; if(!M.length) return '<p class="st-none">They have never met yet.</p>';
+  let wa=0,wb=0,ti=0,tot=0,mar=0,ov=0,un=0,ca=0,cb=0;
+  for(const m of M){ const sa=m.home===A?m.hs:m.as, sb=m.home===A?m.as:m.hs; if(sa>sb) wa++; else if(sb>sa) wb++; else ti++;
+    tot+=m.hs+m.as; mar+=Math.abs(m.hs-m.as);
+    if(m.total!=null){ if(m.hs+m.as>m.total) ov++; else if(m.hs+m.as<m.total) un++; }
+    if(m.spread_home!=null){ const v=m.hs-m.as+m.spread_home, hw=v>0, aw=v<0; if(hw) (m.home===A?ca++:cb++); if(aw) (m.away===A?ca++:cb++); } }
+  const lead=wa===wb?`Series tied ${wa}-${wb}${ti?'-'+ti:''}`:`${wa>wb?A:B} leads ${Math.max(wa,wb)}-${Math.min(wa,wb)}${ti?'-'+ti:''}`;
+  const rows=M.map(m=>{ const hw=m.hs>m.as, aw=m.as>m.hs, v=m.spread_home!=null?m.hs-m.as+m.spread_home:null, s=m.hs+m.as;
+    const day=new Date(m.kickoff).toLocaleDateString('en-GB',{weekday:'short',timeZone:'Europe/Brussels'});
+    return `<div class="rc-item"><span class="ins-wk">W${m.week}<small>${day}${m.phase&&m.phase!=='regular'?' · PO':''}</small></span><div class="grow"><b>${aw?'<u>':''}${esc(m.away)} ${m.as}${aw?'</u>':''} – ${hw?'<u>':''}${m.hs} ${esc(m.home)}${hw?'</u>':''}</b>
+      <small>${insLine(m.home,m.spread_home)}${v!=null?` · ${v>0?esc(m.home)+' covered':v<0?esc(m.away)+' covered':'push'}`:''}${m.total!=null?` · O/U ${m.total} · ${s>m.total?'over':s<m.total?'under':'push'}`:''}</small></div>${SCHED_BY[m.id]?`<button class="link" type="button" data-sched="${esc(m.id)}">Replay</button>`:''}</div>`; }).join('');
+  return `<div class="ins-series"><b>${esc(lead)}</b><small>${M.length} game${M.length>1?'s':''} · ${(tot/M.length).toFixed(1)} pts per game · margin ${(mar/M.length).toFixed(1)} · vs spread ${A} ${ca}-${cb} ${B} · overs ${ov}-${un}</small></div>${rows}`;
+}
+function insDuelHTML(D,a,b){
+  const R=D.rows, avg=k=>{ const v=R.map(r=>r[k]).filter(x=>x!=null); return v.length?v.reduce((s,x)=>s+x,0)/v.length:0; };
+  const P=avg('pya'),Pa=avg('pya_a'),Y=avg('ypc'),Ya=avg('ypc_a'),K=avg('skr'),Ka=avg('skr_a');
+  const f2=v=>v==null?'—':(+v).toFixed(1), pc1=v=>v==null?'—':(v*100).toFixed(1)+'%';
+  const duel=(x,y)=>[
+    ['Passing',`${x.team} ${f2(x.pya)} yds/att`,`${y.team} D allows ${f2(y.pya_a)}`,(x.pya-P)+(y.pya_a-Pa),.3],
+    ['Running',`${x.team} ${f2(x.ypc)} yds/carry`,`${y.team} D allows ${f2(y.ypc_a)}`,(x.ypc-Y)+(y.ypc_a-Ya),.3],
+    ['Pressure',`${x.team} sacked on ${pc1(x.skr_a)}`,`${y.team} sacks on ${pc1(y.skr)}`,-((y.skr-K)+(x.skr_a-Ka)),.01]];
+  const row=(x,y)=>duel(x,y).map(([k,l,r,sc,th])=>{ const e=sc>th?x.team:sc<-th?y.team:null;
+    return `<div class="ins-duel"><span class="lab">${k}</span><span>${esc(l)}</span><span class="vs">vs</span><span>${esc(r)}</span><i class="${e?(e===x.team?'o':'d'):''}">${e?'Edge '+esc(e):'Even'}</i></div>`; }).join('');
+  return `<h3 class="ins-sub">${esc(a.team)} with the ball</h3>${row(a,b)}<h3 class="ins-sub">${esc(b.team)} with the ball</h3>${row(b,a)}
+    <p class="np-note">Each side against this week's league average: an edge goes to the offense when it beats the average and the defense allows more than it.</p>`;
+}
+function insPlayersHTML(P,A,B){
+  if(!P) return '<p class="st-none">Loading…</p>';
+  const pl=(x,team)=>`<button type="button" class="ins-pl" data-ins-pl="${esc(x.id)}" data-pt="${esc(team)}"><span class="ins-pos">${esc(x.pos)}</span><span class="grow">${esc(x.name)}</span><small>OVR ${x.ovr==null?'—':x.ovr}</small><em class="${x.form>0?'up':'down'}">${x.form>0?'▲':'▼'} ${insSg(x.form)}</em></button>`;
+  const col=team=>{ const p=(P.players||{})[team]||{hot:[],cold:[]};
+    return `<div><h3 class="ins-sub"><span class="badge">${esc(team)}</span>In form</h3>${p.hot.length?p.hot.map(x=>pl(x,team)).join(''):'<p class="st-none">No starter in great form.</p>'}
+      <h3 class="ins-sub">Key players off form</h3>${p.cold.length?p.cold.map(x=>pl(x,team)).join(''):'<p class="st-none">No key player off form.</p>'}</div>`; };
+  return `<div class="ins-pls">${col(A)}${col(B)}</div><p class="np-note">Form this week, from −3 to +3: it raises or lowers what a player does on the field. Tap a name for his card.</p>`;
+}
 /* the locked preview: made-up numbers in the same shape (seeded, the same on every visit) */
 function insSample(){
   let s=20261028; const rnd=()=>{ s=(s*1103515245+12345)%2147483648; return s/2147483648; };
@@ -6770,14 +6858,27 @@ function insSample(){
     return {team:t,gp,w,l,t:0,ppg:+(18+rnd()*14).toFixed(1),papg:+(18+rnd()*14).toFixed(1),ats:[aw,gp-aw,0],ou:[ov,gp-ov],
       luck:+(rnd()*6-3).toFixed(1),close:[Math.floor(rnd()*4),4],ypp:+(4.8+rnd()*2).toFixed(2),ypp_a:+(4.8+rnd()*2).toFixed(2),
       pass:+(.45+rnd()*.25).toFixed(3),d3:+(.3+rnd()*.25).toFixed(3),rz:+(.4+rnd()*.4).toFixed(3),to:Math.round(rnd()*8-4),
-      xpl:+(1+rnd()*3).toFixed(1),sk:+(1+rnd()*3).toFixed(1),form:['W','L','W','W','L'],rating:+(rnd()*16-8).toFixed(1)}; });
+      xpl:+(1+rnd()*3).toFixed(1),sk:+(1+rnd()*3).toFixed(1),form:['W','L','W','W','L'],rating:+(rnd()*16-8).toFixed(1),
+      atsm:+(rnd()*12-6).toFixed(1),pya:+(5+rnd()*2).toFixed(2),pya_a:+(5+rnd()*2).toFixed(2),ypc:+(3.5+rnd()*2).toFixed(2),ypc_a:+(3.5+rnd()*2).toFixed(2),skr:+(.04+rnd()*.06).toFixed(3),skr_a:+(.04+rnd()*.06).toFixed(3)}; });
   rows.sort((a,b)=>b.rating-a.rating);
   const t=rows.map(r=>r.team);
-  return {league:{games:144,ppg:50.2,home_w:.52,fav_w:.61,over:.48},rows,
+  const fake=n=>({id:'x',name:n,pos:'WR',ovr:80,form:2});
+  return {league:{games:144,ppg:50.2,home_w:.52,fav_w:.61,over:.48,home_margin:1},rows,
+    pair:{meetings:[1,2,3,4].map(i=>({id:'s'+i,week:5-i,kickoff:'2026-10-0'+i+'T13:00:00+02:00',home:t[0],away:t[1],hs:20+i,as:24-i,spread_home:-2.5,total:47.5})),
+      players:Object.fromEntries(t.map(x=>[x,{hot:[fake('Sample Player'),fake('Sample Player')],cold:[fake('Sample Player')]}]))},
     hints:[{kind:'ats',text:`${t[0]} covers the spread 9 of 12`,sub:'Beats the engine line more often than not.'},
       {kind:'luck',text:`${t[5]} has won 2.4 more games than the engine expected`,sub:'Results ahead of the play.'},
       {kind:'ou',text:`Unders hit in 9 of 12 ${t[9]} games`,sub:'Their games run lower than the engine total.'}]};
 }
+function insMarketHTML(R){
+  const m=R.filter(r=>r.atsm!=null&&r.ats[0]+r.ats[1]>=MIN_ATS_GAMES); if(m.length<6) return '';
+  const s=[...m].sort((a,b)=>b.atsm-a.atsm), li=(r,cls)=>`<div class="rc-item"><span class="badge">${esc(r.team)}</span><div class="grow"><b>${insName(r.team)}</b><small>${r.ats[0]}-${r.ats[1]}${r.ats[2]?'-'+r.ats[2]:''} against the spread</small></div><em class="${cls}">${insSg(r.atsm)} pts</em></div>`;
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><h2>Market vs results</h2><span class="label">Average margin against the engine line, per game</span></div>
+    <div class="ins-two"><div><h3 class="ins-sub">Beating the line · underrated</h3>${s.slice(0,5).map(r=>li(r,'up')).join('')}</div>
+    <div><h3 class="ins-sub">Short of the line · overrated</h3>${s.slice(-5).reverse().map(r=>li(r,'down')).join('')}</div></div>
+    <p class="np-note">+6 pts: the team beat its spread by 6 points a game on average, so the line has been too low on it.</p></div>`;
+}
+const MIN_ATS_GAMES=4;
 function insWeekHTML(D){
   const L=D.league, R=D.rows;
   if(!R.length) return '<div class="card"><p class="st-empty"><b>No final games yet</b>The numbers fill in as soon as the first games of the week are final.</p></div>';
@@ -6797,6 +6898,7 @@ function insWeekHTML(D){
   return `<div class="ins-kpi">${kpi}</div>
     <div class="card"><div class="card-h"><h2>Betting angles</h2><span class="label">Updated after each game · 8+ games per team</span></div>${hints}
       <p class="np-note">Trends from this week's games only. They hint, they don't guarantee.</p></div>
+    ${insMarketHTML(R)}
     <div class="card" style="margin-top:14px"><div class="card-h"><h2>Power table</h2><span class="label">Rating = points better than an average team, schedule-adjusted</span></div>
       <div class="st-scroll"><table class="tst stand ins"><thead><tr><th>#</th><th scope="col">Team</th><th>Rating</th><th>W-L</th><th title="Points scored per game">Pts/g</th><th title="Points allowed per game">Opp/g</th><th title="Record against the spread">ATS</th><th title="Overs-unders against the engine total">O-U</th><th title="Yards per play, offense · defense">Yds/play</th><th>Luck</th><th>Last 5</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="np-note"><b>Luck</b> = wins minus the wins the engine's pre-game odds expected. Big plus: results ahead of the play. Big minus: the opposite.</p></div>`;
@@ -6820,13 +6922,9 @@ function insH2HHTML(D,t){
     return `<div class="h2h-row"><span class="v${ba?' best':''}">${F(f(a),a)}</span><span class="h2h-bar l"><b class="${ba?'best':''}" style="width:${Math.round(Math.abs(va)/m*100)}%"></b></span>
       <span class="lab">${lab}</span><span class="h2h-bar r"><b class="${bb?'best':''}" style="width:${Math.round(Math.abs(vb)/m*100)}%"></b></span><span class="v r${bb?' best':''}">${F(f(b),b)}</span></div>`; }).join('');
   const meets=SCHED.filter(g=>g.home&&((g.home===A&&g.away===B)||(g.home===B&&g.away===A)));
-  const meet=meets.length?meets.map(g=>{ const o=g.odds||{}, st=gStatus(g,t), fin=st==='final'&&g.result;
-      const when=new Date(g.ko).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Brussels'});
-      const cells=[[fin?'Result':st==='live'?'Status':'Kickoff',fin?`${g.away} ${g.result.away} – ${g.result.home} ${g.home}`:st==='live'?'Live now':`${when}`],
-        ['Engine win chance',o.p_home!=null?`${g.home} ${insPct(o.p_home)}`:'—'],
-        ['Spread',o.spread_home!=null?`${g.home} ${o.spread_home>0?'+':o.spread_home<0?MINUS:''}${Math.abs(o.spread_home)}`:'—'],['Total',o.total!=null?o.total:'—']];
-      return `<div class="h2h-meet">${cells.map(([k,v])=>`<div class="mt-st"><span class="label">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>`; }).join('')
-    :'<p class="st-none">They don\'t meet in the regular season this week.</p>';
+  const meet=meets.length?meets.map(g=>insMeetHTML(D,by,g,t)).join(''):'<p class="st-none">They don\'t meet in the regular season this week.</p>';
+  let P=D.pair||null;
+  if(!P){ const k=[A,B].sort().join('|')+'|'+D.final; P=INS.pair[k]||null; if(!P) insPairFetch(A,B,k); }
   const reads=[];
   if(Math.abs(a.luck-b.luck)>=2){ const l=a.luck>b.luck?a:b; reads.push(`${l.team} has been luckier (${insSg(l.luck)} wins vs expected): the record flatters it more than the play.`); }
   if(a.ypp!=null&&b.ypp!=null){ const ea=a.ypp-b.ypp_a, eb=b.ypp-a.ypp_a;
@@ -6836,10 +6934,24 @@ function insH2HHTML(D,t){
   const ca=pa(a.ats[0],a.ats[1]), cb=pa(b.ats[0],b.ats[1]);
   if(Math.abs(ca-cb)>=.25){ const c=ca>cb?a:b; reads.push(`${c.team} covers the spread far more often (${c.ats[0]}-${c.ats[1]}): the line has been slow to catch up.`); }
   return `<div class="card"><div class="h2h-pick"><div class="h2h-side">${side(a)}${list(A,'a',B)}</div><span class="h2h-vs" aria-hidden="true">VS</span><div class="h2h-side">${side(b)}${list(B,'b',A)}</div></div></div>
-    <div class="ins-grid"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
-    <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}</div>
+    <div class="ins-grid"><div class="card"><div class="card-h"><h2>Head-to-head history</h2><span class="label">Every meeting since week ${esc(String((SERVER&&SERVER.hist_since)||2))}</span></div>${insHistHTML(P,A,B)}</div>
+    <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}
+      <p class="np-note"><b>Ratings line</b> = the spread the power ratings suggest. A gap of a point or more against the engine line points to the side the ratings like.</p></div></div></div>
+    <div class="ins-grid"><div class="ins-col"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
+      <div class="card"><div class="card-h"><h2>Strength match-up</h2><span class="label">Offense against defense</span></div>${insDuelHTML(D,a,b)}</div></div>
+    <div class="ins-col"><div class="card"><div class="card-h"><h2>Players to watch</h2><span class="label">Starters' form this week</span></div>${insPlayersHTML(P,A,B)}</div>
     <div class="card"><div class="card-h"><h2>What it points to</h2></div>${reads.map(r=>`<div class="ins-hint"><i aria-hidden="true">→</i><div>${esc(r)}</div></div>`).join('')}
     <p class="np-note">Reads from this week's numbers, not a guarantee.</p></div></div></div>`;
+}
+function insBigHTML(B,rp){
+  if(!B) return '';
+  const kind={pass:'TD catch',run:'TD run'};
+  const it=(x,txt,sub,yd)=>`<div class="rc-item"><span class="badge">${esc(x.team)}</span><div class="grow"><b>${txt}</b><small>${sub}</small></div>${yd!=null?`<em>${yd} yds</em>`:''}${rp(x.game)}</div>`;
+  const td=(B.td||[]).map(x=>it(x,esc(x.name),`${kind[x.kind]||'TD'} · vs ${esc(x.vs)}`,x.yds)).join('')||'<p class="st-none">No touchdown yet.</p>';
+  const fg=(B.fg||[]).map(x=>it(x,`${esc(x.team)} field goal`,`vs ${esc(x.vs)}`,x.yds)).join('')||'<p class="st-none">No field goal yet.</p>';
+  const it2=(B.int||[]).map(x=>it(x,esc(x.name),`Picked off ${x.qb?esc(x.qb):esc(x.vs)} · vs ${esc(x.vs)}`,null)).join('')||'<p class="st-none">No interception.</p>';
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><h2>Big plays</h2><span class="label">${B.n_int||0} interception${B.n_int===1?'':'s'} on the day</span></div>
+    <div class="ins-three"><div><h3 class="ins-sub">Longest touchdowns</h3>${td}</div><div><h3 class="ins-sub">Longest field goals</h3>${fg}</div><div><h3 class="ins-sub">Interceptions</h3>${it2}</div></div></div>`;
 }
 function insRecapHTML(D){
   const days=Object.keys(D.recaps||{});
@@ -6855,11 +6967,13 @@ function insRecapHTML(D){
   const lab={pass:'Passing',rush:'Rushing',rec:'Receiving'};
   const perf=['pass','rush','rec'].map(k=>(r.top[k]||[]).map(p=>`<div class="rc-item"><span class="badge">${esc(p.team)}</span><div class="grow"><b>${esc(p.name)}</b><small>${lab[k]} · vs ${esc(p.vs)}</small></div><em>${p.yds} yds</em></div>`).join('')).join('');
   const gm=(g,l)=>`<div class="rc-item"><div class="grow"><b>${esc(g.away)} ${g.as} – ${g.hs} ${esc(g.home)}</b><small>${l}</small></div>${rp(g.id)}</div>`;
+  const c=r.comeback, cb=c?`<div class="rc-item ins-cb"><span class="badge">${esc(c.winner)}</span><div class="grow"><b>Comeback of the day</b> · ${esc(c.winner)} beat ${esc(c.loser)} ${esc(c.score)}<small>Down to a ${c.low<.01?'<1':Math.round(c.low*100)}% win chance at one point</small></div>${rp(c.id)}</div>`:'';
   return `<div class="seg ins-tabs" role="tablist" aria-label="Day">${days.map(d=>`<button type="button" role="tab" data-ins-day="${d}" aria-selected="${d===INS.day}">${name(d)}</button>`).join('')}</div>
     <div class="ins-kpi" style="margin-top:14px">${kpi}</div>
     <div class="rc-grid"><div class="card"><div class="card-h"><h2>Upsets</h2><span class="label">Longest prices first</span></div>${ups}</div>
     <div class="card"><div class="card-h"><h2>Performances</h2><span class="label">Best single game</span></div>${perf||'<p class="st-none">—</p>'}</div>
-    <div class="card"><div class="card-h"><h2>Games of the day</h2></div>${gm(r.shootout,'Highest-scoring game')}${gm(r.thriller,'Closest game')}</div></div>`;
+    <div class="card"><div class="card-h"><h2>Games of the day</h2></div>${cb}${gm(r.shootout,'Highest-scoring game')}${gm(r.thriller,'Closest game')}</div></div>
+    ${insBigHTML(r.big,rp)}`;
 }
 function renderInsights(t,force){
   const el=document.getElementById('viewInsights'); if(!el) return;

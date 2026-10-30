@@ -21,7 +21,8 @@ const DEMO=new Date(Date.parse(REG[Math.floor(REG.length*0.7)].kickoff)+60e3).to
 async function server(port,env){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-insights-'));
   process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });
-  fs.mkdirSync(path.join(data,'weeks')); fs.symlinkSync(path.join(WEEKS,DERNIERE),path.join(data,'weeks',DERNIERE));
+  fs.mkdirSync(path.join(data,'weeks'));
+  for(const w of fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_'))) fs.symlinkSync(path.join(WEEKS,w),path.join(data,'weeks',w));   /* toutes : l'historique des face-à-face */
   const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(port)],{cwd:ROOT,
     env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_PUSH_LOOP:'0',GC_DEMO_AT:DEMO},env),stdio:'ignore'});
   for(let i=0;i<240;i++){ try{ const r=await fetch(`http://localhost:${port}/api/time`); if(r.ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
@@ -53,7 +54,7 @@ const lockVisible=p=>p.$eval('.rail-btn[data-view="insights"] .ins-lkw',e=>!e.hi
     const g=await ouvrir(b,P1);
     check(!(await g.$('[data-exh-go]'))&&!/Exhibition/.test(await g.textContent('.rail')),'Exhibition retirée de la barre latérale');
     check(!!(await g.$('.rail-btn[data-view="insights"]')),'bouton Insights dans la barre latérale');
-    let reponse=null; g.on('response',async r=>{ if(r.url().includes('/api/insights')) reponse=await r.json().catch(()=>null); });
+    let reponse=null, paires=0; g.on('response',async r=>{ if(r.url().includes('/api/insights/h2h')) paires++; else if(r.url().includes('/api/insights')) reponse=await r.json().catch(()=>null); });
     await onglet(g,'week');
     check(await lockVisible(g),'invité : cadenas sur le bouton');
     const pay=await g.textContent('#viewInsights .ins-pay');
@@ -76,6 +77,10 @@ const lockVisible=p=>p.$eval('.rail-btn[data-view="insights"] .ins-lkw',e=>!e.hi
       await g.waitForFunction(d=>document.querySelector(`#viewInsights [data-ins-day="${d}"]`).getAttribute('aria-selected')==='true',jours[0]);
       const k0=await g.$eval('#viewInsights .ins-kpi .mt-st b',b=>b.textContent.trim());
       check(k0===String(ouvert.recaps[jours[0]].games),'récap : changement de jour'); }
+    const big=await g.$('#viewInsights .ins-three');
+    const tds=big?await g.$$eval('#viewInsights .ins-three > div:first-child .rc-item small',x=>x.map(e=>e.textContent)):[];
+    check(!!big&&tds.every(x=>/TD (catch|run)/.test(x)),`récap : Big plays (plus longs TD sur action, sans retours : ${tds.length})`);
+    check(paires===0,'invité : aucune demande de face-à-face (verrouillé)');
     await g.click('#viewInsights [data-sched]');
     await g.waitForFunction(()=>{ const m=document.getElementById('modal'); return m&&!m.hidden; },null,{timeout:20000}).then(()=>check(true,'récap : Replay ouvre le match'),()=>check(false,'récap : Replay ouvre le match'));
     errs.push(...g.errs);
@@ -97,6 +102,8 @@ const lockVisible=p=>p.$eval('.rail-btn[data-view="insights"] .ins-lkw',e=>!e.hi
     check(ok&&gp===2*complet.final,`tableau = API, ${gp/2} matchs comptés = ${complet.final} terminés`);
     const ind=await p.$$eval('#viewInsights .ins-angles .ins-hint',h=>h.length);
     check(ind===complet.hints.length&&ind<=6,`indices : ${ind}`);
+    const marche=await p.$$eval('#viewInsights .ins-two .rc-item',x=>x.length).catch(()=>0);
+    check(marche===10,`Market vs results : 5 sous-cotées et 5 sur-cotées (${marche})`);
     await onglet(p,'h2h');
     const equipes=complet.rows.map(r=>r.team).sort();
     let changes=0;
@@ -112,6 +119,14 @@ const lockVisible=p=>p.$eval('.rail-btn[data-view="insights"] .ins-lkw',e=>!e.hi
     const rencontre=W.schedule.some(g=>g.phase==='regular'&&((g.home===A&&g.away===B)||(g.home===B&&g.away===A)));
     const meet=await p.$$('#viewInsights .h2h-meet');
     check(rencontre?meet.length>=1:/don't meet/.test(await p.textContent('#viewInsights')),`leur match de la semaine (${A}-${B} : ${rencontre?'oui':'non'})`);
+    const pair=(await api(P1,`/insights/h2h?a=${A}&b=${B}&token=${pro.token}`)).json;
+    await p.waitForFunction(()=>{ const v=document.getElementById('viewInsights'); return v.querySelector('.ins-series')||/never met/.test(v.textContent); },null,{timeout:15000});
+    const hist=await p.$$eval('#viewInsights .ins-series ~ .rc-item',x=>x.length);
+    check(hist===pair.meetings.length&&pair.meetings.every(m=>m.week>=2),`historique des confrontations : ${hist} matchs (API ${pair.meetings.length}), depuis la semaine 2`);
+    check(pair.meetings.some(m=>m.week<W.week.index)||!pair.meetings.length,'historique : des semaines précédentes');
+    check((await p.$$('#viewInsights .ins-duel')).length===6,'duel des points forts : 6 duels');
+    const pls=await p.$$eval('#viewInsights .ins-pl',x=>x.length), npl=[A,B].reduce((n,k)=>n+pair.players[k].hot.length+pair.players[k].cold.length,0);
+    check(pls===npl,`joueurs à suivre : ${pls} (API ${npl})`);
     errs.push(...p.errs);
 
     /* ---- téléphone ---- */

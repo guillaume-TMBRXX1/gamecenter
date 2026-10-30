@@ -1,6 +1,8 @@
 """Onglet Insights (README section 78) : moteur/insights.py et /api/insights.
 
   Calcul      bilans, contre le spread, over / under, chance, force (SRS), indices (seuils), récap du jour
+              (remontée, grosses actions sans les retours), duels passe / course / pression, écart à la ligne
+  Face-à-face confrontations terminées de toutes les semaines (depuis HIST_DEPUIS), joueurs en forme / en méforme
   Direct      seuls les matchs terminés comptent (aucun résultat, aucune action d'un match en cours ou à venir)
   Accès       récap ouvert à tous ; « This week » et « Head-to-head » aux pseudos de GC_INSIGHTS_USERS seulement
   Interrupteur GC_INSIGHTS=off : ni API ni drapeau dans la page
@@ -82,6 +84,50 @@ class Calcul(unittest.TestCase):
         self.assertEqual(r["top"]["rush"][0]["name"], "Runner")
         self.assertEqual(r["shootout"]["id"], "g1")
 
+    def test_points_duels_marche(self):
+        plays = [_passe(1, "home", 12), _passe(2, "home", -6, res="sack"),
+                 {"seq": 3, "offense": "home", "result": "run", "gain": 5, "down": 1, "los_x": 40, "call": {"type": "run"},
+                  "players": {"carrier": {"id": "AAA_RB1", "name": "R"}}}]
+        jeux = [_match(1, "AAA", "BBB", 27, 13, plays=plays), _match(2, "BBB", "AAA", 17, 10, spread=-1.0)]
+        d = insights.calculer(jeux)
+        a = next(r for r in d["rows"] if r["team"] == "AAA")
+        b = next(r for r in d["rows"] if r["team"] == "BBB")
+        self.assertEqual((a["ppg"], a["papg"]), (18.5, 15.0))   # les tentatives de passe ne se mêlent pas aux points
+        self.assertEqual((a["pya"], a["ypc"], a["skr_a"]), (3.0, 5.0, 0.5))
+        self.assertEqual((b["pya_a"], b["ypc_a"], b["skr"]), (3.0, 5.0, 0.5))
+        self.assertEqual(a["atsm"], round((14 - 3 + (-7 + 1)) / 2, 1))   # +11 puis -6 contre la ligne
+        self.assertEqual(d["league"]["home_margin"], round((14 + 7) / 2, 1))
+
+    def test_remontee_et_grosses_actions(self):
+        wp = lambda v: {"seq": 0, "offense": "away", "result": "incomplete", "gain": 0, "win_prob_home": v}
+        td = _passe(5, "home", 34, res="touchdown", x=76)
+        ret = {"seq": 6, "offense": "away", "result": "touchdown", "gain": -35, "los_x": 35,
+               "text": "Zed Quick 99-yd kickoff return …", "players": {"carrier": {"id": "AAA_WR2", "name": "Zed Quick"}}}
+        fg = {"seq": 7, "offense": "home", "result": "field_goal_good", "gain": 0, "text": "Field goal good, 52 yds"}
+        it = {"seq": 8, "offense": "away", "result": "interception", "gain": 0, "los_x": 50, "call": {"type": "pass"},
+              "players": {"passer": {"id": "BBB_QB1", "name": "Q B"}, "defender": {"name": "Ball Hawk", "credit": "INTERCEPTION"}}}
+        jeux = [_match(1, "AAA", "BBB", 24, 21, plays=[wp(0.4), wp(0.07), wp(0.9), td, ret, fg, it]),
+                _match(2, "CCC", "DDD", 10, 30, plays=[wp(0.5), wp(0.3)])]
+        r = insights.calculer(jeux)["recaps"]["2026-10-26"]
+        self.assertEqual(r["comeback"], {"id": "g1", "winner": "AAA", "loser": "BBB", "low": 0.07, "score": "24-21"})
+        self.assertEqual([(x["name"], x["yds"], x["kind"]) for x in r["big"]["td"]], [("R AAA_WR1", 34, "pass")])  # pas le retour
+        self.assertEqual(r["big"]["fg"], [{"game": "g1", "team": "AAA", "vs": "BBB", "yds": 52}])
+        self.assertEqual((r["big"]["n_int"], r["big"]["int"][0]["name"], r["big"]["int"][0]["team"]), (1, "Ball Hawk", "AAA"))
+
+    def test_confrontations_et_joueurs(self):
+        g = lambda i, h, a, hs, as_: {"id": f"w{i}", "kickoff": f"2026-10-0{i}T10:00:00+02:00", "phase": "regular", "home": h,
+                                      "away": a, "result": {"home": hs, "away": as_}, "odds": {"spread_home": -2.5, "total": 44.5}}
+        sem = [(2, [g(1, "AAA", "BBB", 20, 17), g(2, "CCC", "AAA", 9, 3)]), (3, [g(3, "BBB", "AAA", 30, 10)])]
+        m = insights.confrontations(sem, "BBB", "AAA")
+        self.assertEqual([(x["week"], x["home"], x["hs"], x["as"]) for x in m], [(3, "BBB", 30, 10), (2, "AAA", 20, 17)])
+        self.assertEqual(m[1]["spread_home"], -2.5)
+        r = lambda i, pos, form, depth=1, status="active": {"id": f"AAA_{i}", "name": f"P{i}", "pos": pos, "depth": depth,
+                                                             "status": status, "progression": {"ovr": 80, "form": form}}
+        j = insights.joueurs([r(1, "QB", 2.5), r(2, "WR", 1.0), r(3, "LT", 2.0), r(4, "RB", 3.0, depth=2),
+                              r(5, "CB", -2.0), r(6, "LG", -2.5), r(7, "S", -1.0), r(8, "WR", 2.9, status="out")])
+        self.assertEqual([x["id"] for x in j["hot"]], ["AAA_1", "AAA_3", "AAA_2"])     # titulaires, ≥ +1, les meilleurs d'abord
+        self.assertEqual([x["id"] for x in j["cold"]], ["AAA_5", "AAA_7"])             # postes clés seulement (pas un garde)
+
     def test_vide(self):
         d = insights.calculer([])
         self.assertEqual((d["rows"], d["hints"], d["recaps"]), ([], [], {}))
@@ -140,6 +186,31 @@ class Serveur(ts.Base):
                     self.assertNotIn(k, d)
         with mock.patch.dict(os.environ, {"GC_INSIGHTS_USERS": ""}):
             self.assertFalse(self._get(jo)["pro"])
+
+    def test_face_a_face(self):
+        t = self.reg[30]["ko"] + 60_000
+        ts.a_l_heure(t)
+        g = self.reg[0]
+        a, b = g["home"], g["away"]
+        with mock.patch.dict(os.environ, {"GC_INSIGHTS_USERS": "Ines Test"}):
+            tok = self._compte("Ines Test")
+            d = json.loads(ts.serveur.api_insights_h2h(a, b, tok).body)
+            for m in d["meetings"]:
+                self.assertEqual({m["home"], m["away"]}, {a, b})
+                self.assertGreaterEqual(m["week"], ts.serveur.HIST_DEPUIS)
+            futurs = {x["id"] for x in self.w.sched if self.w.status(x, t) != "final"}
+            self.assertFalse(futurs & {m["id"] for m in d["meetings"]})            # rien d'un match pas terminé
+            self.assertEqual(set(d["players"]), {a, b})
+            for p in d["players"].values():
+                self.assertTrue(all(x["form"] >= insights.FORME for x in p["hot"]))
+                self.assertTrue(all(x["form"] <= -insights.FORME for x in p["cold"]))
+            for bad in ((a, a), ("zz", b), (a, "XXX")):
+                with self.assertRaises(ts.HTTPException) as e:
+                    ts.serveur.api_insights_h2h(bad[0], bad[1], tok)
+                self.assertEqual(e.exception.status_code, 400)
+            with self.assertRaises(ts.HTTPException) as e:                          # hors liste : verrouillé
+                ts.serveur.api_insights_h2h(a, b, "")
+            self.assertEqual(e.exception.status_code, 403)
 
     def test_interrupteur(self):
         with mock.patch.dict(os.environ, {"GC_INSIGHTS": "off"}):

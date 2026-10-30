@@ -2300,6 +2300,26 @@ reste vide ≈ 5 s, puis ≈ 1 200 px de tuiles poussent « Power rankings », �
   créneau ; bandeau dès la 1re image, replay ou direct sur le grand écran, prochain coup d'envoi, fermeture retenue,
   focus, déjà venu, CLS < 0,1 ordinateur et téléphone, 390 px, mode sombre ; `SHOTS=<dossier>` pour les captures).
 
+### 82. Insights, plus de données : historique des face-à-face, écart à la ligne, joueurs en forme (29/10/2026)
+Ajouts choisis par Guillaume (onglet Insights, section 78), toujours sur les seuls matchs terminés :
+- **Head-to-head** : **historique des confrontations** (`/api/insights/h2h`, comptes de `GC_INSIGHTS_USERS`) : toutes
+  les rencontres terminées depuis la semaine `GC_HIST_DEPUIS` (comme History), bilan de la série, points et écart moyens,
+  bilan contre le spread et over / under, puis chaque match (semaine, score, ligne, qui a couvert, over / under ; Replay
+  pour la semaine en cours). **Écart à la ligne** pour leur match à venir : spread suggéré par les ratings (écart de
+  ratings + avantage du terrain de la semaine, ±3 au plus) contre la ligne du moteur ; « Edge » à partir d'un point.
+  **Duel des points forts** : passe (yards par tentative, sacks compris), course (yards par portée), pression (sacks
+  par tentative), attaque contre défense, chacun comparé à la moyenne de la ligue. **Joueurs à suivre** : titulaires en
+  forme (≥ +1) et joueurs clés en méforme (≤ −1), trois au plus par liste, avec note globale et forme de la semaine
+  (profil d'avant-match, pas les stats) ; un clic ouvre la fiche.
+- **This week** : **Market vs results** : les cinq équipes qui battent le plus la ligne (sous-cotées) et les cinq qui
+  restent le plus en dessous (sur-cotées), en points par match.
+- **Day recap** (gratuit) : **remontée du jour** (vainqueur tombé le plus bas en chance de victoire) et **Big plays** :
+  plus longs touchdowns sur action (sans les retours de coup d'envoi ou de punt), plus longs field goals, interceptions.
+- Constat en passant : les touchdowns sur action dépassent rarement 40 yards. Les tables de yards du moteur (cellules
+  V0.2 `calculate_run_yards` et `calculate_pass_yards`, toujours utilisées) bornent une course à 25 yards et une passe
+  complétée à 40 avant les yards après réception : une vingtaine d'actions de 40 yards ou plus par semaine de 240
+  matchs (≈ 1 par match en NFL). Pas changé ici (moteur, cotes et calibrage).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

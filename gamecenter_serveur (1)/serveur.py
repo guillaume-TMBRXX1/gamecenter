@@ -853,7 +853,7 @@ def page(request: Request = None):
     if chat_mode() != "off":                         # chat (section « chat ») : sans lui, la page ne le dessine pas
         srv["chat"] = chat_mode()
     if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
-        srv["insights"] = True
+        srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
@@ -3203,6 +3203,38 @@ def api_insights(token: str = ""):
     if pro:
         out.update(league=d["league"], rows=d["rows"], hints=d["hints"])
     return JSONResponse(out, headers={"Cache-Control": "no-store"})
+
+
+_TEAM_INS = re.compile(r"^[A-Z]{2,4}$")
+
+
+def insights_roster(w, team):
+    """Le roster d'avant-match d'une franchise cette semaine (son premier match : rien de joué)."""
+    for g in sorted(w.reg, key=lambda g: (g["ko"], g["id"])):
+        for side in ("home", "away"):
+            if g.get(side) == team:
+                tm = (w.feed(g["id"]).get("game") or {}).get(side)
+                return tm.get("roster") if isinstance(tm, dict) else None
+    return None
+
+
+@app.get("/api/insights/h2h")
+def api_insights_h2h(a: str = "", b: str = "", token: str = ""):
+    """Face-à-face (comptes de GC_INSIGHTS_USERS) : toutes leurs confrontations terminées depuis la semaine
+    HIST_DEPUIS (comme History), et les joueurs en forme / clés en méforme de chaque franchise cette semaine."""
+    if not insights_on():
+        raise HTTPException(404, "insights_off")
+    if not insights_pro(player_by_token(token) if token else None):
+        raise HTTPException(403, "insights_locked")
+    w = _need_week(); t = now_ms()
+    if not (_TEAM_INS.match(a) and _TEAM_INS.match(b)) or a == b or a not in w.doc["teams"] or b not in w.doc["teams"]:
+        raise HTTPException(400, "bad_teams")
+    ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday)
+          if x.open <= t and x.monday <= w.monday and x.doc["week"]["index"] >= HIST_DEPUIS]
+    sem = [(x.doc["week"]["index"], [g for g in x.sched if x.status(g, t) == "final" and x.teams_known(g, t)]) for x in ws]
+    return JSONResponse({"a": a, "b": b, "meetings": _insights.confrontations(sem, a, b),
+                         "players": {k: _insights.joueurs(insights_roster(w, k)) for k in (a, b)}},
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")

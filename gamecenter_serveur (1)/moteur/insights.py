@@ -14,6 +14,7 @@ une action ou une cote d'après-match avant l'heure. Rien ne change dans le mote
 victoire). Textes en anglais, comme le site.
 """
 import collections
+import re
 
 VERSION = "insights-1"
 MIN_MATCHS = 8                  # un indice ne porte que sur au moins 8 matchs de l'équipe
@@ -27,10 +28,16 @@ _COUPS_DE_PIED = {"kickoff", "punt", "pat_good", "pat_missed", "two_point_good",
                   "field_goal_good", "field_goal_missed"}
 _SCRIMMAGE = {"run", "complete", "incomplete", "sack", "interception", "fumble_lost", "touchdown"}
 _PASSES = {"complete", "incomplete", "sack", "interception"}
+_FG = re.compile(r"(\d+)\s*yds", re.I)
+_RETOUR = re.compile(r"\d+-yd (kickoff|punt) return", re.I)          # touchdowns sur retour : hors liste
 
 
 def _pct(a, b):
     return round(a / b, 3) if b else None
+
+
+def _moy(a, b):
+    return round(a / b, 2) if b else None
 
 
 def _cotes(g, F):
@@ -54,6 +61,11 @@ def _actions(g, F, S):
         o["plays"] += 1; o["yds"] += gain; d["plays_a"] += 1; d["yds_a"] += gain
         passe = call.get("type") == "pass" or res in _PASSES or bool((P.get("players") or {}).get("passer"))
         o["pass"] += passe
+        if passe:                                # duel des points forts : passe (sacks compris) et course
+            o["patt"] += 1; o["pyd"] += gain; d["patt_a"] += 1; d["pyd_a"] += gain
+            o["skt"] += res == "sack"
+        else:
+            o["ra"] += 1; o["ryd"] += gain; d["ra_a"] += 1; d["ryd_a"] += gain
         if gain >= GRANDE and res in ("run", "complete", "touchdown"):
             o["xpl"] += 1; d["xpl_a"] += 1
         if res in ("interception", "fumble_lost"):
@@ -126,6 +138,32 @@ def _recap(jeux):
     """Récap d'une journée : surprises (plus grosses cotes d'abord), meilleure performance d'un match (passe,
     course, réception), match le plus prolifique et le plus serré."""
     surprises, perf, noms, pts = [], collections.Counter(), {}, 0
+    remontee, tds, fgs, ints = None, [], [], []
+    for g, F in jeux:
+        rs0 = g["result"]
+        if rs0["home"] != rs0["away"]:            # remontée : la plus basse chance de victoire du futur vainqueur
+            dom = rs0["home"] > rs0["away"]
+            wp = [P["win_prob_home"] for P in F.get("plays") or [] if isinstance(P.get("win_prob_home"), (int, float))]
+            if wp:
+                bas = min(wp) if dom else 1 - max(wp)
+                if remontee is None or bas < remontee["low"]:
+                    v, p = (g["home"], g["away"]) if dom else (g["away"], g["home"])
+                    remontee = {"id": g["id"], "winner": v, "loser": p, "low": round(bas, 3),
+                                "score": f"{max(rs0['home'], rs0['away'])}-{min(rs0['home'], rs0['away'])}"}
+        cote = {"home": g["home"], "away": g["away"]}
+        for P in F.get("plays") or []:
+            pl, res = P.get("players") or {}, P.get("result")
+            att, dfn = cote.get(P.get("offense")), cote.get("away" if P.get("offense") == "home" else "home")
+            if res == "touchdown" and (pl.get("carrier") or {}).get("name") and not _RETOUR.search(P.get("text") or ""):
+                tds.append({"game": g["id"], "team": att, "vs": dfn, "name": pl["carrier"]["name"],   # sur action (pas les retours)
+                            "yds": P.get("gain") or 0, "kind": "pass" if (pl.get("passer") or {}).get("id") else "run"})
+            elif res == "field_goal_good":
+                m = _FG.search(P.get("text") or "")
+                if m:
+                    fgs.append({"game": g["id"], "team": att, "vs": dfn, "yds": int(m.group(1))})
+            elif res == "interception" and (pl.get("defender") or {}).get("name"):
+                ints.append({"game": g["id"], "team": dfn, "vs": att, "name": pl["defender"]["name"],
+                             "qb": (pl.get("passer") or {}).get("name")})
     for g, F in jeux:
         rs, o = g["result"], _cotes(g, F)
         pts += rs["home"] + rs["away"]
@@ -162,7 +200,10 @@ def _recap(jeux):
     return {"games": len(jeux), "ppg": round(pts / len(jeux), 1), "n_upsets": len(surprises),
             "upsets": sorted(surprises, key=lambda u: (-u["ml"], u["game"]))[:3],
             "top": {k: tops(k) for k in ("pass", "rush", "rec")},
-            "shootout": court(prolifique), "thriller": court(serre)}
+            "shootout": court(prolifique), "thriller": court(serre), "comeback": remontee,
+            "big": {"td": sorted(tds, key=lambda x: (-x["yds"], x["game"]))[:3],
+                    "fg": sorted(fgs, key=lambda x: (-x["yds"], x["game"]))[:3],
+                    "int": ints[:3], "n_int": len(ints)}}
 
 
 def calculer(jeux):
@@ -191,6 +232,7 @@ def calculer(jeux):
             if sp is not None:
                 v = us - them + (sp if c == "home" else -sp)
                 s["ats_w"] += v > 0; s["ats_l"] += v < 0; s["ats_p"] += v == 0
+                s["atsm"] += v; s["ats_n"] += 1
             if o.get("total") is not None:
                 s["ov"] += hs + as_ > o["total"]; s["un"] += hs + as_ < o["total"]
             ph = o.get("p_home")
@@ -214,13 +256,53 @@ def calculer(jeux):
                      "ypp_a": round(s["yds_a"] / s["plays_a"], 2) if s["plays_a"] else None,
                      "pass": _pct(s["pass"], s["plays"]), "d3": _pct(s["d3c"], s["d3"]), "rz": _pct(s["rz_td"], s["rz"]),
                      "to": s["take"] - s["give"], "xpl": round(s["xpl"] / gp, 1), "sk": round(s["sk"] / gp, 1),
+                     "atsm": round(s["atsm"] / s["ats_n"], 1) if s["ats_n"] else None,
+                     "pya": _moy(s["pyd"], s["patt"]), "pya_a": _moy(s["pyd_a"], s["patt_a"]),
+                     "ypc": _moy(s["ryd"], s["ra"]), "ypc_a": _moy(s["ryd_a"], s["ra_a"]),
+                     "skr": _pct(s["sk"], s["patt_a"]), "skr_a": _pct(s["skt"], s["patt"]),
                      "form": forme[t][-5:], "rating": round(force.get(t, 0), 1)})
     rows.sort(key=lambda x: (-x["rating"], x["team"]))
     n = len(jeux)
     league = {"games": n, "ppg": round(sum(g["result"]["home"] + g["result"]["away"] for g, _ in jeux) / n, 1) if n else None,
-              "home_w": _pct(dom, n), "fav_w": _pct(fav, n_fav), "over": _pct(ov, n_ov)}
+              "home_w": _pct(dom, n), "fav_w": _pct(fav, n_fav), "over": _pct(ov, n_ov),
+              "home_margin": round(sum(g["result"]["home"] - g["result"]["away"] for g, _ in jeux) / n, 1) if n else None}
     jours = collections.OrderedDict()
     for g, F in jeux:
         jours.setdefault(g["kickoff"][:10], []).append((g, F))   # date locale du coup d'envoi (heure de Bruxelles)
     return {"version": VERSION, "league": league, "rows": rows, "hints": _indices(rows),
             "recaps": {d: _recap(j) for d, j in jours.items()}}
+
+
+# ---- Head-to-head : confrontations passées et joueurs à suivre ----
+FORME = 1.0                     # « en forme » à +1,0 au moins, « en méforme » à −1,0 au plus (forme de −3 à +3)
+CLES = ("QB", "RB", "WR", "TE", "EDGE", "DT", "LB", "CB", "S")   # joueurs clés (titulaires) pour la méforme
+PAR_LISTE = 3
+
+
+def confrontations(semaines, a, b):
+    """Matchs terminés entre a et b : semaines = [(numéro de la semaine, [matchs du calendrier terminés])]."""
+    out = []
+    for idx, matchs in semaines:
+        for g in matchs:
+            if {g.get("home"), g.get("away")} != {a, b} or not g.get("result"):
+                continue
+            o = g.get("odds") or {}
+            out.append({"id": g["id"], "week": idx, "kickoff": g["kickoff"], "phase": g.get("phase"),
+                        "home": g["home"], "away": g["away"], "hs": g["result"]["home"], "as": g["result"]["away"],
+                        "spread_home": o.get("spread_home"), "total": o.get("total")})
+    out.sort(key=lambda m: m["kickoff"], reverse=True)
+    return out
+
+
+def joueurs(roster):
+    """Titulaires en forme et joueurs clés en méforme cette semaine (profil : note globale et forme, pas les stats)."""
+    tit = [r for r in roster or [] if r.get("depth") == 1 and r.get("status", "active") != "out"]
+
+    def court(r):
+        p = r.get("progression") or {}
+        return {"id": r["id"], "name": r["name"], "pos": r.get("pos"), "ovr": p.get("ovr"), "form": p.get("form", 0)}
+    forme = [court(r) for r in tit if (r.get("progression") or {}).get("form", 0) >= FORME]
+    meforme = [court(r) for r in tit if r.get("pos") in CLES and (r.get("progression") or {}).get("form", 0) <= -FORME]
+    forme.sort(key=lambda x: (-x["form"], -(x["ovr"] or 0), x["id"]))
+    meforme.sort(key=lambda x: (x["form"], -(x["ovr"] or 0), x["id"]))
+    return {"hot": forme[:PAR_LISTE], "cold": meforme[:PAR_LISTE]}
