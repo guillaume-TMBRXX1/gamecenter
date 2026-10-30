@@ -91,6 +91,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js
   lancer "Site : ligues privées" node outils/site/test_ligues.js
   lancer "Site : Insights (semaine, face-à-face, récap du jour, cadenas) et retrait d.Exhibition" node outils/site/test_insights.js
+  lancer "Site : calendrier filtré par franchise, paris sous un match" node outils/site/test_schedule.js
   lancer "Site : chat, salon General (signaler, masquer, effacer, administration)" node outils/site/test_chat.js
   lancer "Site : chat d.un match (synchronisé à l.action, Bigger field) et bouclier anti-spoiler" node outils/site/test_chat_match.js
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js
