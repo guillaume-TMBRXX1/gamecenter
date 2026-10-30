@@ -15,6 +15,7 @@ directement (requête simulée), sans réseau ni httpx. Il faut fastapi (require
                 champion seulement quand ils sont joués
   Paris         simple, combiné, refus (cote, solde, mise, marché fermé), règlement = score du moteur, cash-out,
                 historique, semaine fermée
+  MemeMatch     combiné sur un même match : cote de moteur/meme_match.py, refus, règlement, cash-out, interrupteur
   Comptes       inscription, connexion (limite d'essais, paris d'invité repris), mot de passe, admin, équipe favorite
   Classement    semaine (soldes) et saison (comptes seulement)
   Ajustement    semaines enchaînées : numéro + 1, staffs de départ = staffs ajustés de la semaine d'avant
@@ -263,7 +264,7 @@ class Paris(Base):
         self.assertEqual([x["reason"] for x in r["rejected"]], ["price", "stake", "balance"])
         self.assertEqual(r["accepted"], [])
         combo = {"stake": 20, "legs": [self.pick(g1["id"], "ml", "away"), self.pick(g3["id"], "sp", "home")]}
-        meme = {"stake": 20, "legs": [self.pick(g1["id"]), self.pick(g1["id"], "tot", "under")]}
+        meme = {"stake": 20, "legs": [self.pick(g1["id"]), self.pick(g1["id"], "tot", "under"), self.pick(g2["id"])]}
         fut = {"stake": 20, "legs": [self.pick(g1["id"]), {"key": "fut:ai_bowl:CTX", "price_dec": 2.0, "line": None}]}
         seul = {"stake": 20, "legs": [self.pick(g1["id"])]}
         r = self.parier(tok, combos=[combo, meme, fut, seul])
@@ -334,6 +335,60 @@ class Paris(Base):
         a_l_heure(self.w.reset + 3600_000)                         # semaine finie, la suivante n'existe pas encore
         e = self.refus(409, appel, serveur.api_bets, {"token": tok, "picks": [self.pick(g["id"])]})
         self.assertIn("fermés", e.detail)
+
+
+class MemeMatch(Base):
+    """Combinés sur un même match (section 86) : cote de moteur/meme_match.py, avant le coup d'envoi, règlement
+    (égalité : moneyline remboursée, le reste à sa cote ensemble), cash-out avant le coup d'envoi, GC_SAME_GAME=off."""
+
+    def sgp(self, g, legs, stake=20, prix=None):
+        from moteur import meme_match as MM
+        picks = [self.pick(g["id"], mk, side) for mk, side in legs]
+        o = self.w.feeds[g["id"]]["game"]["pregame_odds"]
+        r = MM.prix(o, legs, [x["price_dec"] for x in picks])
+        return {"stake": stake, "legs": picks, "price_dec": r.get("price_dec") if prix is None else prix}, r
+
+    def test_pari_reglement_cash_out(self):
+        g = self.reg[4]
+        a_l_heure(g["ko"] - 120_000)
+        tok = self.joueur("Même match")["token"]
+        cb, r = self.sgp(g, [("ml", "home"), ("tot", "over")])
+        faux, _ = self.sgp(g, [("ml", "home"), ("tot", "over")], prix=r["price_dec"] * 1.2)
+        red, _ = self.sgp(g, [("ml", "home"), ("ml", "away")])
+        res = self.parier(tok, combos=[cb, faux, red])
+        self.assertEqual(len(res["accepted"]), 1, res)
+        b = res["accepted"][0]
+        self.assertEqual((b["key"], b["price_dec"]), ("sgp", r["price_dec"]))
+        self.assertEqual(b["legs"][0]["push_price"], r["push_price"])
+        self.assertEqual([x["reason"] for x in res["rejected"]], ["sgp_price", "same_market"])
+        self.assertAlmostEqual(res["rejected"][0]["price_dec"], r["price_dec"])
+        row = serveur.bet_row(serveur.db().execute("SELECT * FROM bets WHERE id=?", (b["id"],)).fetchone())
+        self.assertEqual(self.w.cash_value(row, serveur.now_ms()), (round(20 * 0.95, 2), None))
+        a_l_heure(g["ko"] + 30_000)
+        self.assertEqual(self.w.cash_value(row, serveur.now_ms()), (None, "sgp"))
+        cb2, _ = self.sgp(g, [("sp", "home"), ("tot", "under")])
+        self.assertEqual([x["reason"] for x in self.parier(tok, combos=[cb2])["rejected"]], ["sgp_live"])
+        a_l_heure(g["end"] + 1000)
+        H, A = g["result"]["home"], g["result"]["away"]
+        over = H + A > b["legs"][1]["line"]
+        attendu = ("lost", 0.0) if not over or H < A else ("won", round(20 * (r["push_price"] if H == A else r["price_dec"]), 2))
+        self.assertEqual(self.w.settle(row, serveur.now_ms()), attendu)
+
+    def test_interrupteur(self):
+        g = self.reg[5]
+        a_l_heure(g["ko"] - 120_000)
+        tok = self.joueur("Interrupteur")["token"]
+        cb, _ = self.sgp(g, [("ml", "away"), ("tot", "under")])
+        old = os.environ.get("GC_SAME_GAME")
+        os.environ["GC_SAME_GAME"] = "off"
+        try:
+            self.assertEqual([x["reason"] for x in self.parier(tok, combos=[cb])["rejected"]], ["same_game"])
+        finally:
+            if old is None:
+                os.environ.pop("GC_SAME_GAME", None)
+            else:
+                os.environ["GC_SAME_GAME"] = old
+        self.assertEqual(self.parier(tok, combos=[cb])["accepted"][0]["key"], "sgp")
 
 
 class Comptes(Base):

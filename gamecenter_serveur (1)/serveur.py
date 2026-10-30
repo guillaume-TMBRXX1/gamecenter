@@ -8,6 +8,8 @@ Comptes (étape 1, 03/10/2026) : pseudo + mot de passe facultatifs, posés sur l
 saison = somme des gains nets de chaque semaine (comptes seulement). Voir /api/account/* et /api/leaderboard?scope=season.
 Paris plus riches (étape 2, 03/10/2026) : combinés 2-6 sélections (une par match, pas de futures), cash-out à la valeur
 juste − 5 % (/api/cashout), historique des semaines passées (/api/history).
+Combinés sur un même match (section 86, 30/10/2026) : 2 ou 3 sélections d'un match (une par marché), avant le coup
+d'envoi, cote calculée par moteur/meme_match.py (key = « sgp ») ; GC_SAME_GAME=off : refusés comme avant.
 
 Lancer :  uvicorn serveur:app --host 0.0.0.0 --port 8000
 Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecenter_source.html)
@@ -28,6 +30,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from moteur import histoire as _histoire
 from moteur import insights as _insights
+from moteur import meme_match as _mm
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -74,6 +77,16 @@ OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après la Gr
 BANKROLL, MIN_STAKE = 1000.0, 1.0
 CASH_FEE = 0.05                # cash-out : valeur juste − 5 % (étape 2)
 COMBO_MIN, COMBO_MAX = 2, 6    # combinés : 2 à 6 sélections, une par match, pas de futures
+
+
+def same_game_on():
+    """Combinés sur un même match (section 86) : GC_SAME_GAME=off, refusés (« same_game ») comme avant."""
+    return os.environ.get("GC_SAME_GAME", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def quick_bet_on():
+    """Pari rapide depuis l'écran d'un match (section 86) : GC_PARI_RAPIDE=off, la page d'avant."""
+    return os.environ.get("GC_PARI_RAPIDE", "on").strip().lower() not in ("off", "0", "non", "no")
 TZ = ZoneInfo("Europe/Brussels")
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("GC_DATA", os.path.join(HERE, "data"))
@@ -354,6 +367,16 @@ class Week:
         if b.get("cashed_at") is not None and t >= b["cashed_at"]:
             return "cashed", b["cashed_amt"]
         legs = b.get("legs")
+        if legs and b.get("key") == "sgp":           # même match (section 86) : égalité = moneyline remboursée,
+            res = [self.settle_leg(L["key"], L.get("line"), t)[0] for L in legs]     # le reste à sa cote ensemble
+            if "lost" in res:
+                return "lost", 0.0
+            if None in res:
+                return "open", 0.0
+            if "push" in res:
+                L = legs[res.index("push")]
+                return "won", round(b["stake"] * float(L.get("push_price") or 1.0), 2)
+            return "won", round(b["stake"] * b["price_dec"], 2)
         if legs:
             prod, pending, all_push = 1.0, False, True
             for L in legs:
@@ -380,6 +403,12 @@ class Week:
         if st != "open":
             return None, "settled"
         legs = b.get("legs") or [{"key": b["key"], "price_dec": b["price_dec"], "line": b["line"]}]
+        if b.get("key") == "sgp":                    # même match : avant le coup d'envoi seulement (cote inchangée)
+            g = self.by.get(legs[0]["key"].split(":")[0])
+            if g is None or self.status(g, t) != "upcoming":
+                return None, "sgp"
+            amt = round(b["stake"] * (1 - CASH_FEE), 2)
+            return (amt, None) if amt >= 0.01 else (None, "zero")
         f = 1.0
         for L in legs:
             res, _ = self.settle_leg(L["key"], L.get("line"), t)
@@ -856,6 +885,10 @@ def page(request: Request = None):
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
     if os.environ.get("GC_SCHEDULE_PLUS", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
+    if not same_game_on():                           # combinés sur un même match (section 86)
+        srv["same_game"] = False
+    if not quick_bet_on():                           # pari rapide depuis l'écran d'un match (section 86)
+        srv["quick_bet"] = False
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
@@ -1956,6 +1989,43 @@ def _check_pick(w, pk, t):
             "title": str(pk.get("title", ""))[:120], "sub": str(pk.get("sub", ""))[:120]}, None
 
 
+def _sgp(w, p, cb, raw, t):
+    """Combiné sur un même match (section 86) : (pari, None) ou (None, refus). Cote recalculée ici (meme_match) ;
+    la page envoie celle qu'elle affiche (price_dec) : si elle diffère, refus « sgp_price » avec la bonne."""
+    if not (_mm.MIN_LEGS <= len(raw) <= _mm.MAX_LEGS):
+        return None, {"reason": "legs"}
+    legs, bads = [], []
+    for x in raw:
+        leg, bad = _check_pick(w, x, t)
+        (bads.append(bad) if bad else legs.append(leg))
+    if bads:
+        return None, {"reason": "legs_changed", "legs": bads}
+    g = w.by[legs[0]["key"].split(":")[0]]
+    if w.status(g, t) != "upcoming":
+        return None, {"reason": "sgp_live"}
+    o = w.feed(g["id"])["game"].get("pregame_odds") or {}
+    if o.get("p_home") is None or o.get("spread_home") is None or o.get("total") is None:
+        return None, {"reason": "sgp_na"}
+    sel = [tuple(L["key"].split(":")[1:]) for L in legs]
+    r = _mm.prix(o, sel, [L["price_dec"] for L in legs])
+    if "refus" in r:
+        return None, {"reason": r["refus"]}
+    D = r["price_dec"]
+    try:
+        vu = float(cb.get("price_dec"))
+    except (TypeError, ValueError):
+        vu = float("nan")
+    if not abs(vu - D) <= max(0.01, 0.003 * D):
+        return None, {"reason": "sgp_price", "price_dec": D}
+    for L, (mk, _) in zip(legs, sel):
+        if mk == "ml" and r.get("push_price"):
+            L["push_price"] = r["push_price"]
+    n = len(legs)
+    return {"id": "c" + uuid.uuid4().hex[:16], "player": p["id"], "week": w.start, "key": "sgp", "price_dec": D,
+            "line": None, "stake": _stake(cb.get("stake")), "pt": t, "title": f"{n}-leg Same Game Combo",
+            "sub": " · ".join(l["title"] for l in legs)[:120], "legs": legs}, None
+
+
 def _stake(x):
     try:
         return round(float(x), 2)
@@ -2006,7 +2076,15 @@ async def api_bets(req: Request):
             keys = [str(x.get("key", "")) for x in raw]
             if any(k.startswith("fut:") for k in keys):
                 rejected.append({"combo": ci, "reason": "futures"}); continue
-            if len({k.split(":")[0] for k in keys}) != len(keys):
+            gids = {k.split(":")[0] for k in keys}
+            if len(gids) == 1 and same_game_on():
+                b, bad = _sgp(w, p, cb, raw, t)
+                if bad:
+                    rejected.append(dict(bad, combo=ci)); continue
+                if not take(b["stake"], {"combo": ci}):
+                    continue
+                rows.append(b); accepted.append(b); continue
+            if len(gids) != len(keys):
                 rejected.append({"combo": ci, "reason": "same_game"}); continue
             legs, bads = [], []
             for x in raw:
