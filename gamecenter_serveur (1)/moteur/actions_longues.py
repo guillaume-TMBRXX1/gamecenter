@@ -13,7 +13,7 @@ Ce module ajoute la QUEUE des distributions, sans changer leur moyenne :
   PASSE     la réception lancée profond (gain ≥ SEUIL_PROFOND) peut filer, et une réception plus courte peut devenir
             une longue course après la réception (YAC) : vitesse du receveur contre celle de la couverture ;
   MOYENNE   pour garder les yards moyens par action (calibrage des scores, des cotes et du test d'équilibre), un gain
-            « moyen » (entre RABOT_MIN et RABOT_MAX) perd 1 yard avec la probabilité qui compense l'ajout moyen ;
+            « moyen » (bornes RABOT) perd en moyenne p yard(s), p réglé pour compenser l'ajout moyen (cellule : P_RABOT) ;
   INTERCEPTION  le ballon est intercepté à la profondeur de la passe (route de la cible), puis le défenseur le ramène :
             souvent quelques yards, parfois loin, jusqu'à l'en-but adverse (pick-six), selon sa vitesse contre la
             poursuite de l'attaque. Interception dans l'en-but sans retour : touchback.
@@ -30,23 +30,23 @@ MOY_VITESSE = 82.0              # vitesse moyenne d'un porteur / défenseur de l
 
 # course : échappée au-delà du 2e rideau
 SEUIL_COURSE = 8                # gain déjà acquis pour « passer » le 2e rideau
-P_COURSE = 0.075                # chance d'échappée d'un porteur moyen contre des safeties moyens
+P_COURSE = 0.05                # chance d'échappée d'un porteur moyen contre des safeties moyens
 K_COURSE = 0.045                # par point de vitesse d'écart (porteur - safeties)
-MOY_COURSE = 14.0               # yards en plus, moyenne de la loi exponentielle
+MOY_COURSE = 30.0               # yards en plus, moyenne de la loi exponentielle
 # passe : profonde qui file, ou réception courte qui devient une longue course (YAC)
 SEUIL_PROFOND = 16
-P_PROFOND = 0.20
-MOY_PROFOND = 15.0
+P_PROFOND = 0.30
+MOY_PROFOND = 19.0
 SEUIL_YAC = 6
-P_YAC = 0.035
-MOY_YAC = 16.0
+P_YAC = 0.11
+MOY_YAC = 15.0
 K_PASSE = 0.04
 # compensation : -1 yard sur une part des gains moyens
-RABOT = {"run": (3, 9), "pass": (5, 14)}
+RABOT = {"run": (2, 10), "pass": (4, 18)}
 # retour d'interception
 P_RETOUR_NUL = 0.16             # glissé / poussé en touche / à genou aussitôt
-MOY_RETOUR = 7.5                # retour ordinaire (loi exponentielle)
-P_ECHAPPEE_INT = 0.17           # le retour qui trouve de l'espace
+MOY_RETOUR = 8.5                # retour ordinaire (loi exponentielle)
+P_ECHAPPEE_INT = 0.21           # le retour qui trouve de l'espace
 MOY_ECHAPPEE_INT = 32.0
 K_INT = 0.05
 AIR_DEFAUT = 10                 # profondeur d'une interception sans route connue
@@ -90,9 +90,13 @@ def ajout(kind, gain, porteur, defense, rng):
 
 
 def rabot(kind, gain, p, rng):
-    """−1 yard sur un gain « moyen » avec la probabilité p (compensation de la moyenne)."""
+    """Compensation de la moyenne sur un gain « moyen » : −p yard en espérance (⌊p⌋ yards, plus 1 avec la
+    probabilité de la partie décimale de p)."""
     lo, hi = RABOT[kind]
-    return -1 if lo <= gain <= hi and rng.random() < p else 0
+    if not lo <= gain <= hi:
+        return 0
+    k = int(p)
+    return -(k + (1 if rng.random() < p - k else 0))
 
 
 def retour_interception(ligne, air, intercepteur, attaque, rng):

@@ -46,6 +46,8 @@ class Ajout(unittest.TestCase):
         self.assertEqual({AL.rabot("run", g, 1.0, rng) for g in range(lo, hi + 1)}, {-1})
         self.assertEqual({AL.rabot("run", g, 1.0, rng) for g in (lo - 1, hi + 1, 30)}, {0})
         self.assertEqual({AL.rabot("run", 5, 0.0, rng) for _ in range(100)}, {0})
+        moy = sum(AL.rabot("pass", 8, 1.4, rng) for _ in range(20_000)) / 20_000
+        self.assertAlmostEqual(moy, -1.4, delta=0.03)                      # p > 1 : 1 ou 2 yards
 
     def test_flux_dedie(self):
         a = [AL.tirer_ajout(77, n, "run", 12, RAPIDE, DEF, 0.1) for n in range(200)]
