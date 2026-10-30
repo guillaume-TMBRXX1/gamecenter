@@ -1155,6 +1155,43 @@
   .delta.neg{color:var(--pink)}
   .odd.sm{height:32px;padding:0 9px;font-size:11.5px;gap:6px;min-width:76px}
   .sch-bet{display:inline-flex;gap:6px;justify-content:flex-end}
+  .sch-teams{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .sch-teams button{border:1.5px solid var(--tc);background:color-mix(in srgb,var(--tc) 9%,var(--l1));color:var(--ink);border-radius:8px;font:700 11px var(--f-display);letter-spacing:.06em;height:30px;min-width:44px;padding:0 9px;cursor:pointer;transition:background-color .15s,color .15s,transform .12s}
+  .sch-teams button:not([data-tm]){--tc:var(--line-2);background:var(--l2);color:var(--ink-2)}
+  .sch-teams button:hover{background:color-mix(in srgb,var(--tc) 22%,var(--l1))}
+  .sch-teams button[aria-pressed="true"]{background:var(--tc);color:#fff;box-shadow:0 3px 10px -4px var(--tc)}
+  .sch-teams button:not([data-tm])[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--l1)}
+  .sch-teams button:active{transform:scale(.95)}
+  .sch-game{position:relative;border-radius:12px;transition:background-color .25s,box-shadow .25s}
+  .sch-game::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:linear-gradient(var(--ta),var(--th));opacity:0;transform:scaleY(.3);transition:opacity .25s,transform .3s cubic-bezier(.2,.8,.2,1)}
+  .sch-game.open{background:var(--l1);box-shadow:0 0 0 1px var(--line),0 10px 26px -18px rgba(0,0,0,.45);margin:4px -10px;padding:0 10px}
+  .sch-game.open::before{opacity:1;transform:none}
+  .sch-game.open .sch-row{border-top-color:transparent}
+  .sch-game.open+.sch-row,.sch-game.open+.sch-game .sch-row{border-top-color:transparent}
+  .sch-mb{border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:40px;border-radius:8px;transition:color .15s,transform .12s}
+  .sch-mb:hover,.sch-game.open .sch-mb{color:var(--ink)}
+  .sch-mb:active{transform:scale(.98)}
+  .sch-car{flex:0 0 auto;width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.6;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+  .sch-game.open .sch-car{transform:rotate(225deg) translate(-2px,0);opacity:1}
+  .sch-drop{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.2,.8,.2,1)}
+  .sch-game.open .sch-drop{grid-template-rows:1fr}
+  .sch-in{overflow:hidden;min-height:0;display:grid;grid-template-columns:minmax(180px,.8fr) minmax(0,2.2fr);gap:10px 26px;align-items:start;padding:0 4px;opacity:0;transform:translateY(-6px);transition:opacity .25s,transform .3s cubic-bezier(.2,.8,.2,1),padding .32s}
+  .sch-game.open .sch-in{opacity:1;transform:none;padding:6px 4px 16px;transition-delay:.06s}
+  .sch-wp .label,.sch-mk .label{display:block;margin-bottom:8px}
+  .sch-wpbar{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+  .sch-wpbar i{display:block;background:var(--tc);min-width:2px}.sch-wpbar i.tie{background:var(--l3)}
+  .sch-wpl{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font:600 12px var(--f-ui);color:var(--ink-2)}
+  .sch-wpl .tie{color:var(--ink-3);font-weight:500}
+  .sch-mks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .sch-mk>div{display:flex;flex-direction:column;gap:6px}.sch-mk .odd{width:100%;min-width:0;justify-content:space-between}
+  .sch-mk .odd .o-l small{font:600 11px var(--f-mono);color:var(--ink-3);margin-left:4px}
+  .sch-note{grid-column:1/-1;margin:0;color:var(--ink-3);font-size:11.5px}
+  .sch-game.flash .sch-row{animation:schFlash .7s ease-out}
+  @keyframes schFlash{0%{background:color-mix(in srgb,var(--ta) 16%,transparent)}100%{background:transparent}}
+  @media (prefers-reduced-motion:reduce){ .sch-drop,.sch-in,.sch-car,.sch-game,.sch-game::before{transition:none} .sch-game.flash .sch-row{animation:none} }
+  @media (max-width:980px){ .sch-in{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:760px){ .sch-teams{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin} .sch-teams button{flex:0 0 auto}
+    .sch-mks{grid-template-columns:minmax(0,1fr);gap:10px} .sch-mk>div{flex-direction:row} .sch-mk .label{margin-bottom:6px} .sch-game.open{margin:4px -8px;padding:0 8px} }
   /* bloc 2, étape 6: reminder bell on upcoming games, Notifications settings */
   .sch-acts{display:inline-flex;gap:8px;align-items:center;justify-content:flex-end}
   .sch-bell{width:32px;height:32px;display:grid;place-items:center;border-radius:var(--r-md);border:1px solid var(--line);background:none;color:var(--ink-3);cursor:pointer;flex-shrink:0}
@@ -6034,6 +6071,8 @@ document.addEventListener('click',e=>{
   const vg=t.closest('[data-view-go]'); if(vg){ closeDrawer(); setView(vg.dataset.viewGo); return; }
   const rkp=t.closest('[data-rkpos]'); if(rkp){ RK_POS_SEL=rkp.dataset.rkpos; renderView(true); return; }
   const sf=t.closest('[data-schf]'); if(sf){ SCH_FILTER=sf.dataset.schf; renderView(true); return; }
+  const stm=t.closest('[data-schteam]'); if(stm){ const v=stm.dataset.schteam||null; SCH_TEAM=SCH_TEAM===v?null:v; SCH_BET=null; renderView(true); return; }
+  const sbt=t.closest('[data-schbet]'); if(sbt){ schToggleBet(sbt.dataset.schbet); return; }
   const hb=t.closest('[data-hist],[data-histrec]'); if(hb){ if(hb.dataset.hist) HIST_TAB=hb.dataset.hist; else HIST_REC=hb.dataset.histrec; renderView(true); return; }
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
   if(t.closest('[data-favchange]')){ MT_PICK=true; renderView(true); return; }
@@ -6449,6 +6488,38 @@ function statusCell(g,t){
 /* 21/10 (Guillaume) : only the results of the day in progress — each day of the schedule is a tab; today's is open, the
    others are closed (a tap opens them; that choice lasts until midnight, Brussels time) */
 let SCH_OPEN={}, SCH_OPEN_DAY='';
+/* Schedule, section 84: filter by franchise and the pre-game markets of a game under its row. GC_SCHEDULE_PLUS=off on
+   the server (#gf-server .schedule_plus false): the schedule as before. */
+const SCH_PLUS=!SERVER||SERVER.schedule_plus!==false;
+let SCH_TEAM=null, SCH_BET=null;
+function schBetBtn(s,mk,side,t){
+  const key=`${s.id}:${mk}:${side}`, q=quote(key,t)||{}, on=q.price!=null&&!q.locked;
+  const lab=mk==='tot'?(side==='over'?'Over':'Under'):`<span class="abbr">${TEAMS[s[side]].abbr}</span>`;
+  const ln=mk==='sp'&&q.line!=null?fmtLine(q.line):mk==='tot'&&q.line!=null?q.line.toFixed(1):'';
+  return `<button type="button" class="odd sm" data-key="${key}" aria-pressed="${slipHas(key)}"${on?'':' disabled'} aria-label="${esc(q.title||'')}, ${on?fmtO(q.price):esc(lockText(q.why))}"><span class="o-l">${lab}${ln?`<small>${esc(ln)}</small>`:''}</span><span class="price">${q.price!=null?fmtO(q.price):'—'}</span></button>`;
+}
+function schMarketsHTML(s,t){
+  const A=TEAMS[s.away], H=TEAMS[s.home], o=s.odds||{}, ph=o.p_home!=null?o.p_home:.5, pt=o.p_tie||0, pa=1-ph-pt;
+  const col=(lab,mk,x,y)=>`<div class="sch-mk"><span class="label">${lab}</span><div>${schBetBtn(s,mk,x,t)}${schBetBtn(s,mk,y,t)}</div></div>`;
+  return `<div class="sch-drop" id="schb-${esc(s.id)}" role="region" aria-label="Bets: ${esc(A.name)} at ${esc(H.name)}"><div class="sch-in">
+    <div class="sch-wp" role="img" aria-label="Engine win chance: ${esc(A.name)} ${Math.round(pa*100)}%, ${esc(H.name)} ${Math.round(ph*100)}%${pt?`, tie ${Math.round(pt*100)}%`:''}">
+      <span class="label">Engine win chance</span>
+      <div class="sch-wpbar"><i data-tm="${s.away}" style="flex:${pa}"></i>${pt?`<i class="tie" style="flex:${pt}"></i>`:''}<i data-tm="${s.home}" style="flex:${ph}"></i></div>
+      <div class="sch-wpl"><span><span class="abbr">${A.abbr}</span> ${Math.round(pa*100)}%</span>${pt?`<span class="tie">Tie ${Math.round(pt*100)}%</span>`:''}<span>${Math.round(ph*100)}% <span class="abbr">${H.abbr}</span></span></div></div>
+    <div class="sch-mks">${col('Moneyline','ml','away','home')}${col('Spread','sp','away','home')}${col('Total','tot','over','under')}</div>
+    <p class="sch-note">Pre-game prices from the engine · tap one to add it to your slip · live prices from kickoff on the big screen</p></div></div>`;
+}
+/* open / close a game's markets without redrawing the schedule: the panel slides (CSS), one open at a time */
+function schToggleBet(id){
+  const el=document.getElementById('viewSchedule'); SCH_BET=SCH_BET===id?null:id;
+  el.querySelectorAll('.sch-game').forEach(gm=>{ const on=gm.dataset.g===SCH_BET; gm.classList.toggle('open',on);
+    const b=gm.querySelector('[data-schbet]'); if(b) b.setAttribute('aria-expanded',String(on));
+    const d=gm.querySelector('.sch-drop'); if(d) d.inert=!on; });
+  if(SCH_BET){ const gm=el.querySelector(`.sch-game[data-g="${CSS.escape(SCH_BET)}"]`);
+    if(gm){ gm.classList.remove('flash'); void gm.offsetWidth; gm.classList.add('flash');
+      setTimeout(()=>{ const r=gm.getBoundingClientRect(); if(r.bottom+170>innerHeight) gm.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'nearest'}); },REDUCED?0:280); } }
+  el._k=null;
+}
 function schOpenDefault(t){                      /* today ; before the week or on a day off: the next day with games */
   const td=dayKey(t), ds=[...new Set(SCHED.map(g=>dayKey(g.ko)))];
   if(ds.includes(td)) return td;
@@ -6467,22 +6538,28 @@ function renderSchedule(t){
   const days={}, def=schOpenDefault(t);
   for(const g of SCHED){ const st=gStatus(g,t);
     if(SCH_FILTER==='upcoming'&&st!=='upcoming') continue; if(SCH_FILTER==='results'&&st==='upcoming') continue;
+    if(SCH_TEAM&&!(revealed(g,t)&&(g.home===SCH_TEAM||g.away===SCH_TEAM))) continue;
     (days[dayKey(g.ko)]=days[dayKey(g.ko)]||[]).push(g); }
-  if(SCH_FILTER==='results'&&!days[dayKey(t)]&&SCHED.some(g=>isToday(g,t))) days[dayKey(t)]=[];   /* today, before the first kickoff */
+  if(SCH_FILTER==='results'&&!SCH_TEAM&&!days[dayKey(t)]&&SCHED.some(g=>isToday(g,t))) days[dayKey(t)]=[];   /* today, before the first kickoff */
   const order=Object.keys(days).sort((a,b)=>Math.min(...(days[a].length?days[a]:SCHED.filter(g=>dayKey(g.ko)===a)).map(g=>g.ko))-Math.min(...(days[b].length?days[b]:SCHED.filter(g=>dayKey(g.ko)===b)).map(g=>g.ko)));
-  const rows=order.map(d=>[d,days[d]]).map(([d,list])=>{ const open=d in SCH_OPEN?SCH_OPEN[d]:d===def;
+  const rows=order.map(d=>[d,days[d]]).map(([d,list])=>{ const open=d in SCH_OPEN?SCH_OPEN[d]:SCH_TEAM?true:d===def;
     const first=SCHED.filter(g=>dayKey(g.ko)===d).sort((a,b)=>a.ko-b.ko)[0];
     return `<details class="sch-day" data-day="${esc(d)}"${open?' open':''}><summary><h3 class="sch-h">${esc(d)}</h3>${d===dayKey(t)?'<span class="sch-today">TODAY</span>':''}<span class="sch-sum">${list.length?schDaySum(list,t):`No results yet · first kickoff ${esc(tStr(first.ko))}`}</span></summary>${list.map(g=>{
       const st=gStatus(g,t), o=g.odds||{}, rv=revealed(g,t), A=rv?TEAMS[g.away].abbr:'TBD', H=rv?TEAMS[g.home].abbr:'TBD';
       const act= st==='upcoming' ? `<span class="sch-acts">${rv?bellBtn(g):''}${rv&&o.ml?`<span class="sch-bet">${schOdd(g,'away',t)}${schOdd(g,'home',t)}</span>`:`<span class="sch-odds">Odds at the lock</span>`}</span>` :
         `<button class="chip-btn sch-go" type="button" data-sched="${g.id}">${st==='live'?'Watch live':'Replay'}</button>`;
-      return `<div class="sch-row ${st}"><span class="sch-t">${esc(tStr(g.ko))}</span><span class="sch-ph">${g.phase==='regular'?'Slot '+g.slot:esc(PHASE[g.phase])}</span>
-        <span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>${statusCell(g,t)}${act}</div>`; }).join('')}</details>`; }).join('');
-  const key='sch|'+SCH_FILTER+'|'+JSON.stringify(SCH_OPEN)+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN)+'|'+pushSig();
+      const bet=SCH_PLUS&&st==='upcoming'&&rv&&o.ml, opn=bet&&SCH_BET===g.id;
+      const m=bet?`<button type="button" class="sch-m sch-mb" data-schbet="${g.id}" aria-expanded="${opn}" aria-controls="schb-${g.id}" title="Bet on this game">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}<i class="sch-car" aria-hidden="true"></i></button>`
+        :`<span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>`;
+      const row=`<div class="sch-row ${st}"><span class="sch-t">${esc(tStr(g.ko))}</span><span class="sch-ph">${g.phase==='regular'?'Slot '+g.slot:esc(PHASE[g.phase])}</span>
+        ${m}${statusCell(g,t)}${act}</div>`;
+      return bet?`<div class="sch-game${opn?' open':''}" data-g="${g.id}" style="--ta:var(--t-${g.away.toLowerCase()});--th:var(--t-${g.home.toLowerCase()})">${row}${schMarketsHTML(g,t).replace('class="sch-drop"',opn?'class="sch-drop"':'class="sch-drop" inert')}</div>`:row; }).join('')}</details>`; }).join('');
+  const key='sch|'+SCH_FILTER+'|'+SCH_TEAM+'|'+SCH_BET+'|'+JSON.stringify(SCH_OPEN)+'|'+SCHED.map(g=>gStatus(g,t)[0]).join('')+'|'+Math.floor(t/60000)+'|'+slip.picks.map(p=>p.key).join(',')+'|'+(t>=WEEK_OPEN)+'|'+pushSig();
   if(el._k===key) return; el._k=key;
   el.innerHTML=`<div class="view-head"><h2>Schedule</h2><p class="eyebrow">Week ${SW.week.index} · all times Brussels · a kickoff every 30 min, 10:00–22:00, Monday to Friday · playoffs Saturday and Sunday</p>
-    <div class="seg" role="tablist" aria-label="Schedule filter">${[['all','All games'],['upcoming','Upcoming'],['results','Results']].map(([k,l])=>`<button type="button" role="tab" data-schf="${k}" aria-selected="${SCH_FILTER===k}">${l}</button>`).join('')}</div></div>
-    <div class="card sch">${rows||'<p class="st-none">Nothing here yet.</p>'}</div>`;
+    <div class="seg" role="tablist" aria-label="Schedule filter">${[['all','All games'],['upcoming','Upcoming'],['results','Results']].map(([k,l])=>`<button type="button" role="tab" data-schf="${k}" aria-selected="${SCH_FILTER===k}">${l}</button>`).join('')}</div>
+    ${SCH_PLUS?`<div class="sch-teams" role="group" aria-label="Filter by team"><button type="button" data-schteam="" aria-pressed="${!SCH_TEAM}">All teams</button>${Object.keys(SW.teams).sort().map(a=>`<button type="button" data-schteam="${a}" data-tm="${a}" aria-pressed="${SCH_TEAM===a}" title="${esc(TEAMS[a].name)}">${a}</button>`).join('')}</div>`:''}</div>
+    <div class="card sch">${rows||`<p class="st-none">${SCH_TEAM?`No ${SCH_FILTER==='results'?'result':SCH_FILTER==='upcoming'?'upcoming game':'game'} for ${esc(TEAMS[SCH_TEAM].name)} here.`:'Nothing here yet.'}</p>`}</div>`;
 }
 function renderStandings(t){
   const el=document.getElementById('viewStandings'), S=standingsAt(t), F=futuresAt(t), locked=t>=LOCK;

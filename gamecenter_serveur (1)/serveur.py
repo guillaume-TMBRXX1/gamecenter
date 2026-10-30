@@ -854,6 +854,8 @@ def page(request: Request = None):
         srv["chat"] = chat_mode()
     if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
+    if os.environ.get("GC_SCHEDULE_PLUS", "on").strip().lower() in ("off", "0", "non", "no"):
+        srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant

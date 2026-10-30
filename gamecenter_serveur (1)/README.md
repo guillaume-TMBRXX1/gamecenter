@@ -2373,6 +2373,21 @@ Le Game Center du notebook (cellule 427) dessine le nouveau. Test : `outils/site
 partir, le receveur file droit, le retour d'interception ne part pas au centre, un défenseur est sur le receveur à
 l'arrêt, aucun saut, interrupteur coupé = dessin d'avant (par le crochet de test `__gc.fluide`).
 
+### 84. Schedule : filtre par franchise, paris sous un match (30/10/2026)
+Demande de Guillaume : dans Schedule, ne voir que les matchs d'une franchise et parier sur un match à venir sans quitter
+la liste.
+- **Filtre** : sous « All games / Upcoming / Results », une puce « All teams » et une par franchise, entourée de sa
+  couleur (pleine quand elle est choisie). Un clic ne garde que ses matchs, dans les trois onglets, jours dépliés ; un
+  second clic ou « All teams » remet tout. Sur téléphone, la rangée défile.
+- **Paris sous un match** : dans un match à venir (affiche connue, cotes publiées), le nom devient un bouton. Un clic
+  ouvre dessous, dans la même carte, la chance de victoire du moteur (barre aux couleurs des deux équipes, nul
+  compris) et les marchés d'avant-match : moneyline, spread, total, aux prix du moteur (ceux du bulletin). La ligne
+  s'éclaire un instant, le panneau glisse, un liseré aux couleurs des équipes apparaît ; un seul ouvert à la fois, un
+  second clic le referme ; sans animation si l'appareil la refuse. Un prix va au bulletin comme ailleurs ; les
+  marchés ferment au coup d'envoi (paris en direct sur le grand écran).
+- Interrupteur `GC_SCHEDULE_PLUS` (`off` : le calendrier d'avant). Tests : `moteur/tests/test_schedule.py`
+  (interrupteur), `outils/site/test_schedule.js` (filtre, panneau, bulletin, téléphone, interrupteur).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2548,7 +2563,7 @@ courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/st
 (pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
-section 83).
+section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84).
 
 ## Test
 
