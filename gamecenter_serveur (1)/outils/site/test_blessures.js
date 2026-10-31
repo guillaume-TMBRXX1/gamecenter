@@ -83,7 +83,7 @@ async function server(){
       for(let i=0;i<30;i++) G.stepGame(g,0.01);
       out.phase=g.phase; const T=G.nameTags(g)||[]; out.tag=T.filter(t=>t.kind==='inj').map(t=>t.text+' '+t.sub);
       out.spot=G.injSpot(g);
-      out.card=out.spot?/pc-inj/.test(G.playerCardHTML(g,out.spot.side,out.spot.idx))&&/will not return/.test(G.playerCardHTML(g,out.spot.side,out.spot.idx)):false;
+      out.card=out.spot?/pc-inj/.test(G.playerCardHTML(g,out.spot.side,out.spot.idx))&&/will not return|out \d+ weeks?/.test(G.playerCardHTML(g,out.spot.side,out.spot.idx)):false;
       // play-by-play et commentateur
       out.pbp=G.rpFeedItem(g,F.plays[k]).text;
       const nx=F.plays.findIndex((P,j)=>j>k&&(P.subs||[]).some(x=>x.reason==='injury'&&x.out===B.id));
@@ -114,8 +114,8 @@ async function server(){
     check(R.retour.length===0,`le blessé n'est plus aligné après son remplacement${R.retour.length?' (actions '+R.retour.slice(0,5).join(', ')+')':''}`);
     check(R.phase==='post'&&R.tag.length===1&&/INJURED/.test(R.tag[0]),`après l'action : étiquette « INJURED » (${R.tag.join(', ')})`);
     check(!!R.spot,'la croix médicale a son joueur sur le terrain (injSpot)');
-    check(R.card,'fiche en match : bandeau « Injured … will not return »');
-    check(/Injury: .* — will not return/.test(R.pbp),`play-by-play de l'action : « ${R.pbp.split(' · ').find(x=>/Injury/.test(x))} »`);
+    check(R.card,'fiche en match : bandeau « Injured … will not return » (ou « out N weeks », blessure de plusieurs semaines)');
+    check(/Injury: .* — (will not return|out \d+ weeks?)/.test(R.pbp),`play-by-play de l'action : « ${R.pbp.split(' · ').find(x=>/Injury/.test(x))} »`);
     check(/comes in for the injured/.test(R.pbpNext),`play-by-play du remplacement : « ${R.pbpNext.split(' · ').find(x=>/comes in/.test(x))} »`);
     check(/will not return|out for the game|done for the day/.test(R.line),'commentateur : il ne reviendra pas');
     check(/injured|With .* out/.test(R.lineNext),'commentateur : le remplaçant entre');

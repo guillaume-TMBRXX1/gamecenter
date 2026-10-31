@@ -29,7 +29,8 @@ function feedAvecBanc(){
   const all=feeds();
   for(const {file,src} of all){
     const F=JSON.parse(fs.readFileSync(file,'utf8'));
-    if(F.game.rotation_model&&F.plays.some(P=>(P.subs||[]).some(x=>x.pos==='QB'&&x.reason==='garbage'))&&F.plays.some(P=>(P.subs||[]).some(x=>x.reason==='package'&&x.pos==='WR3')))
+    if(F.game.rotation_model&&!F.plays.some(P=>(P.subs||[]).some(x=>x.reason==='absence'))   /* 31/10 : sans titulaire absent (blessé la semaine d'avant), le CB3 reste le nickel */
+      &&F.plays.some(P=>(P.subs||[]).some(x=>x.pos==='QB'&&x.reason==='garbage'))&&F.plays.some(P=>(P.subs||[]).some(x=>x.reason==='package'&&x.pos==='WR3')))
       return {F,src:src+' (réel)'};
   }
   const {file,src}=all[0];
