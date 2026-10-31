@@ -90,12 +90,13 @@ class FinDePeriode(unittest.TestCase):
     def test_pick_six_a_la_mi_temps(self):
         """Comme un touchdown ordinaire : la transformation, dans la même période, horloge à 0, termine la mi-temps."""
         P = [{"quarter": 2, "result": "interception", "int_return": {"td": True}, "try_follows": True,
-              "after": {"status": "half"}, "clock_end": 0},
+              "possession_change": "half", "after": {"status": "half"}, "clock_end": 0},
              {"quarter": 3, "result": "pat_good", "clock_start": 240, "clock_end": 240, "after": {"status": "live"}},
              {"quarter": 3, "result": "kickoff", "after": {"status": "live"}}]
         self.assertEqual(AL.fin_de_periode(P), 1)
         self.assertEqual([(p["quarter"], p["after"]["status"]) for p in P], [(2, "live"), (2, "half"), (3, "live")])
         self.assertEqual((P[1]["clock_start"], P[1]["clock_end"]), (0, 0))
+        self.assertEqual(P[0]["possession_change"], "turnover")
         self.assertEqual(AL.fin_de_periode(P), 0)                    # déjà en ordre : rien
 
     def test_sans_pick_six(self):

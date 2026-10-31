@@ -158,5 +158,7 @@ def fin_de_periode(plays):
         q["clock_start"] = q["clock_end"] = 0
         q["after"]["status"] = st
         p["after"]["status"] = "live"
+        if p.get("possession_change") in ("half", "final", "end"):    # un pick-six : la défense prend le ballon
+            p["possession_change"] = "turnover"
         n += 1
     return n
