@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 import uuid
 
@@ -166,6 +167,9 @@ class TestLigues(unittest.TestCase):
                 cx.execute("INSERT INTO bets(id, player, week, key, price_dec, line, stake, pt, title, sub) VALUES(?,?,?,?,?,?,?,?,?,?)",
                            (uuid.uuid4().hex, p["id"], self.w.start, f"{g['id']}:ml:{cote}", 2.0, None, 100.0, g["ko"] - 60000, "t", "s"))
         t = g["end"] + 1000
+        old = serveur._OFFSET_MS                       # 31/10 : la semaine en cours est celle de l'horloge du serveur ;
+        serveur._OFFSET_MS = t - int(time.time() * 1000)   # avec toutes les semaines chargées (suite complète), elle était
+        self.addCleanup(setattr, serveur, "_OFFSET_MS", old)   # celle d'avant tant que la dernière n'a pas commencé
         _, rows = serveur.ligue_classement(L["id"], "week", t)
         self.assertEqual([(r["id"], r["rank"], r["balance"]) for r in rows],
                          [(a["id"], 1, 1100.0), (b["id"], 2, 900.0), (c["id"], None, 1000.0)])

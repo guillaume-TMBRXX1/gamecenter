@@ -29,7 +29,7 @@ function base(g,P,phase){
   const pl=P.players||{};
   return { gameId:g.id, seq:P.seq, phase, mode:g.mode||'replay', speed:num(g.speed,1),
     result:P.result, callType:P.call&&P.call.type, gain:num(P.gain,0), status:P.after&&P.after.status,
-    returnTd:!!(P.punt_return&&P.punt_return.td),   /* 12.2 sexdecies : touchdown sur retour de punt (résultat « punt ») */
+    returnTd:!!((P.punt_return&&P.punt_return.td)||(P.int_return&&P.int_return.td)),   /* 12.2 sexdecies : retour de punt ; 12.2 vicies novies : pick-six */
     quarter:q, timeRemaining:tr, offense:off, defense:def, team:off==='home'?'HOME':'AWAY',
     score:{home:score.home,away:score.away}, scoreBefore:{home:before.home,away:before.away},
     down:P.down, toGo:P.to_go, goalDist, isRedZone:goalDist<=20, isLateGame:late, isOvertime:q>4,
@@ -64,7 +64,7 @@ function mapResolve(g,P,wpBefore){
   if(takeaway){ c.team=c.defense==='home'?'HOME':'AWAY'; }
   switch(r){
     case 'touchdown': ev.push('TOUCHDOWN'); if(ty==='kickoff') ev.push('KICK_RETURN_TD'); break;
-    case 'interception': ev.push('INTERCEPTION','TURNOVER'); break;
+    case 'interception': ev.push('INTERCEPTION','TURNOVER'); if(P.int_return&&P.int_return.td) ev.push('TOUCHDOWN'); break;   /* pick-six */
     case 'fumble_lost': ev.push('FUMBLE','TURNOVER'); break;
     case 'sack': ev.push('SACK'); break;
     case 'field_goal_good': ev.push('FIELD_GOAL_GOOD'); break;

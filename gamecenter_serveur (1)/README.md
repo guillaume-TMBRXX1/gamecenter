@@ -2423,6 +2423,13 @@ yard (12.2 quinquies) : le défenseur s'arrêtait aussitôt, même seul, et aucu
 - Tests : `moteur/tests/test_actions_longues.py`, `moteur/tests/test_ecran.py`, `outils/site/test_actions_longues.js`
   (matchs d'essai `outils/site/matchs/longues-*.json`).
 
+- **Suite (31/10, première semaine réelle avec le chantier, 02/11)** : un pick-six sur la dernière action d'une mi-temps
+  passait sa transformation après la mi-temps (3e quart-temps) et le site sautait la pause : comme un touchdown ordinaire,
+  la transformation est maintenant jouée dans la même période, horloge à 0, et c'est elle qui termine la mi-temps
+  (`moteur/actions_longues.py` `fin_de_periode`, appelé par la cellule ; le seul cas de la semaine du 02/11, w6-r275,
+  corrigé dans ses données). Son du pick-six dans `static/audio` (klaxon du touchdown, comme la page) ; résumé vidéo :
+  la dernière action reste même quand scores et pertes de balle débordent ; « Pick-six » n'est pas un mot de paris.
+
 ### 86. Combinés sur un même match et pari rapide depuis l'écran d'un match (30/10/2026)
 Demande de Guillaume : « des combos sur un seul match (Win GRZ + spread + over), deux ou trois », et confirmer un pari
 sans fermer le match qu'on regarde (vue normale ou Bigger field).

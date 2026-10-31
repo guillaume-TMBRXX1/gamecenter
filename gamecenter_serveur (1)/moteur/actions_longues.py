@@ -139,3 +139,26 @@ def tirer_ajout(graine, n, kind, gain, porteur, defense, p_rabot):
 
 def tirer_retour(graine, n, ligne, air, intercepteur, attaque):
     return retour_interception(ligne, air, intercepteur, attaque, aleatoire.flux("longues-int", graine, n))
+
+
+CONVERSIONS = ("pat_good", "pat_missed", "two_point_good", "two_point_failed")
+
+
+def fin_de_periode(plays):
+    """Pick-six sur la dernière action d'une mi-temps ou du match (GameFeed) : comme un touchdown ordinaire, l'action
+    reste « live » et c'est la transformation qui la suit, jouée dans la même période, horloge à 0, qui termine la
+    mi-temps (« half ») ou le match. Sans cela la transformation passait après la mi-temps (3e quart-temps) et le site
+    sautait la pause de la mi-temps (semaine du 02/11, w6-r275). Modifie plays sur place ; renvoie le nombre de cas."""
+    n = 0
+    for p, q in zip(plays, plays[1:]):
+        st = (p.get("after") or {}).get("status")
+        if not ((p.get("int_return") or {}).get("td") and st in ("half", "final") and q.get("result") in CONVERSIONS):
+            continue
+        q["quarter"] = p["quarter"]
+        q["clock_start"] = q["clock_end"] = 0
+        q["after"]["status"] = st
+        p["after"]["status"] = "live"
+        if p.get("possession_change") in ("half", "final", "end"):    # un pick-six : la défense prend le ballon
+            p["possession_change"] = "turnover"
+        n += 1
+    return n

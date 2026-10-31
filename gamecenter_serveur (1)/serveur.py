@@ -3348,7 +3348,7 @@ def api_backup(key: str = ""):
             src.backup(dst)
         src.close(); dst.close()
         z.write(snap, "gamecenter.db"); os.remove(snap)
-        for root, _, files in os.walk(WEEKS_DIR):
+        for root, _, files in os.walk(WEEKS_DIR, followlinks=True):     # semaines : liens vers l'image (Dockerfile)
             for fn in files:
                 p = os.path.join(root, fn)
                 z.write(p, os.path.relpath(p, DATA))
