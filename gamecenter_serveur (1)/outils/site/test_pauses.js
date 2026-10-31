@@ -137,10 +137,11 @@ async function page(b,port){
   /* ---------- 4 : live, server clock inside the halftime of w2-r01 ---------- */
   const S=starts(F.plays), h=F.plays.findIndex(P=>brkKind(P)==='half'), ko=Date.parse(F.game.kickoff);
   const brkStart=ko+(S[h]+PLAY)*1000, brkEnd=brkStart+BRK.half*1000;
-  srv=await server(new Date(brkEnd-14000).toISOString(),8132);
+  const AV=25;   /* 31/10: page opened 25 s before the end of halftime (it was 14 s: an end-of-week page takes several seconds to load) */
+  srv=await server(new Date(brkEnd-AV*1000).toISOString(),8132);
   try{
     const {p,errs}=await page(b,8132);
-    console.log(`Live ${gid}: page opened 14 s before the end of halftime (play ${h})`);
+    console.log(`Live ${gid}: page opened ${AV} s before the end of halftime (play ${h})`);
     const L=await p.evaluate(async gid=>{ const G=window.__gc, g=G.byId['s-'+gid];
       if(!g) return {missing:true};
       G.updateGameUI(g);
@@ -156,17 +157,17 @@ async function page(b,port){
     if(!L.missing){ await p.click(`.tile [data-open="s-${gid}"]`,{timeout:5000}).catch(()=>{}); await p.waitForTimeout(800);
       M=await p.evaluate(()=>{ const el=document.querySelector('#modal:not([hidden]) .field.big .brk'); return {open:!!el&&!el.hidden,cards:el?el.querySelectorAll('.brk-card').length:0,resume:!!(el&&el.querySelector('[data-brk="resume"]'))}; });
       await p.evaluate(()=>{ const c=document.querySelector('#modal [data-close]'); if(c) c.click(); }); }
-    const L2=L.missing?L:await p.evaluate(async gid=>{ const G=window.__gc, g=G.byId['s-'+gid], a={};
+    const L2=L.missing?L:await p.evaluate(async ({gid,lim})=>{ const G=window.__gc, g=G.byId['s-'+gid], a={};
       /* end of the break: the board resumes with the next play, at clock speed */
       let resumed=null, maxSpeed=0; const t0=performance.now(); a.left=g.pause;
-      while(performance.now()-t0<22000){ await new Promise(r=>setTimeout(r,250)); maxSpeed=Math.max(maxSpeed,g.speed);
+      while(performance.now()-t0<lim){ await new Promise(r=>setTimeout(r,250)); maxSpeed=Math.max(maxSpeed,g.speed);
         if(!g.brk&&resumed===null) resumed={after:+((performance.now()-t0)/1000).toFixed(1),idx:g.idx,q:g.cur.quarter,status:g.status}; }
-      a.resumed=resumed; a.maxSpeed=maxSpeed; a.idxEnd=g.idx; return a; },gid);
+      a.resumed=resumed; a.maxSpeed=maxSpeed; a.idxEnd=g.idx; return a; },{gid,lim:(AV+PLAY+8)*1000});
     Object.assign(L,L2);
     if(L.missing){ ok(false,'live board s-'+gid+' on the home page'); }
     else{
       ok(L.brk==='half'&&L.idx===h&&L.shown, `halftime on screen at load (play ${L.idx}, ${L.label})`);
-      ok(L.pause>14&&L.pause<=14+PLAY+1, `remaining ${L.pause} s (break end + one play: the server sends the next play then)`);
+      ok(L.pause>PLAY+1&&L.pause<=AV+PLAY+1, `remaining ${L.pause} s (break end + one play: the server sends the next play then)`);
       ok(L.newPlays===0, 'no play revealed by the server during the break');
       ok(M&&M.open&&M.cards>0&&!M.resume, `tile clicked during the break: big screen with the halftime screen (${M&&M.cards} cards, no “Resume now” live)`);
       ok(L.resumed&&L.resumed.idx===h+1&&L.resumed.q===3&&L.resumed.status==='live'&&L.resumed.after>=L.left-1.5&&L.resumed.after<=L.left+3.5,   /* + the page's /api/delta poll (every 3 s), as for any live play */ `resumed on play ${L.resumed&&L.resumed.idx} (Q${L.resumed&&L.resumed.q}) after ${L.resumed&&L.resumed.after} s (${L.left&&L.left.toFixed(1)} s announced)`);
