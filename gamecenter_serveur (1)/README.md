@@ -2461,6 +2461,21 @@ sans fermer le match qu'on regarde (vue normale ou Bigger field).
   (pas de barre sur le grand écran). Tests : `moteur/tests/test_meme_match.py`, `moteur/tests/test_serveur.py`
   (MemeMatch), `outils/site/test_meme_match.js`, `outils/site/test_pari_rapide.js`.
 
+### 87. Fin d'un match en direct sur le tableau (31/10/2026)
+Constat de Guillaume : sur le live board, un match passait en replay avant d'être fini à l'écran (souvent pendant que le
+QB pose le genou), sans l'écran final et ses meilleurs joueurs (que le Bigger field, lui, montrait). Cause : le tableau
+joue une action derrière le serveur (une action n'est envoyée qu'une fois finie) ; dès que le serveur déclarait le
+match fini, le tableau le relançait en replay, et chaque résultat reçu reconstruisait tout le tableau en recalant les
+matchs en direct sur l'horloge (dernières actions sautées, dernière action rejouée).
+- Un match reste sur le tableau comme match en direct `BOARD_HOLD` (2 min 30) après sa fin : il joue ses dernières
+  actions (un peu plus vite s'il est en retard), puis son écran final ; ensuite il passe en replay comme avant. Étiquette
+  « Final » pendant ce temps.
+- Une reconstruction du tableau garde les matchs en direct tels quels (même partie, même action) ; un match en direct
+  ouvert après sa fin va droit à son écran final.
+- Écran final dans une tuile : complet (joueur du match, meilleurs joueurs par équipe) dans la tuile Prime Time ; le
+  score dans les petites tuiles ; pas de bouton « Show the field » dans une tuile.
+- Test : `outils/site/test_fin_live.js`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

@@ -2247,6 +2247,7 @@
     .brk-in.full .brk-main{grid-template-columns:1fr}
     .brk-side,.brk-note,.brk-potg{display:none}
   }
+  .tile .brk-acts{display:none}   /* board tile: the final screen stays until the replay takes over */
 </style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
@@ -5106,7 +5107,10 @@ function brkHTML(g,big){
 /* called 4x a second by updateGameUI: rebuilt only when the break, the game or the plays change; the countdown alone
    moves in between. Leaving a break plays the exit transition, then the field is back. */
 function renderBrk(g,el){
-  const big=!!el.closest('.field.big'), b=g.brk&&!g.brkHide?g.brk:null;
+  const b0=g.brk&&!g.brkHide?g.brk:null;
+  /* 31/10: on the board, a live game's final screen is the full one too (player of the game, top performers) when the
+     tile is wide enough (Prime Time); a small tile keeps the score (container queries below) */
+  const big=!!el.closest('.field.big')||(!!b0&&b0.kind==='final'&&!!el.closest('.tile')), b=b0;
   if(!b){ if(!el.hidden&&!el.classList.contains('out')){ el.classList.add('out'); el._k=null; clearTimeout(el._t); el._t=setTimeout(()=>{ el.hidden=true; el.classList.remove('out','on','end'); },450); }
     renderBrkTab(g,el); return; }
   const key=[b.kind,b.q,g.idx,g.plays.length,big,g.mode,g.hs,g.as].join('|');
@@ -6229,6 +6233,7 @@ function liveBreakLeft(g,d){
 /* put a live board where the broadcast is: on the play being shown, or in the break that is running */
 function liveSeek(g,t){
   const tl=timelineAt(g.sched,t), n=g.plays.length;
+  if(isFinite(g.sched.end)&&t>=g.sched.end&&n){ rpSeek(g,n-1); rpResolve(g); g.tdFlash=false; g.toFlash=null; g.shake=null; g.phase='post'; rpCommit(g); return; }   /* over: its final screen */
   if(tl.brk&&brkOn(g)&&tl.done-1<n){ rpSeek(g,tl.done-1); rpResolve(g); g.tdFlash=false; g.toFlash=null; g.shake=null; g.phase='post'; rpCommit(g); return; }
   rpSeek(g,clamp(tl.done,0,n-1));
 }
@@ -6289,9 +6294,15 @@ function recordOf(a,t){ const r=standingsAt(t).table.find(x=>x.team===a); return
 
 /* ---------- the board: live games, recent replays, what is next ---------- */
 let BOARD_SIG='', NEXT_GAMES=[], BOARD_AT=0, BOARD_PENDING=false;
+/* 31/10 (Guillaume): a live board game no longer turns into a replay the second the server calls it final. The board
+   draws one play behind the server (a play is sent once it is over), so the last plays — often the kneel-downs — and the
+   final screen were cut by the switch to the replay. A game stays on the board as a live game for BOARD_HOLD after its
+   end: it plays out its last plays, then shows its final screen (score, player of the game, top performers). */
+const BOARD_HOLD=150e3;
+const boardLive=(g,t)=>{ const st=gStatus(g,t); return st==='live'||(st==='final'&&t<g.end+BOARD_HOLD); };
 function boardPlan(t){
-  const live=SCHED.filter(g=>gStatus(g,t)==='live').sort((a,b)=>(b.id===WATCH_ID)-(a.id===WATCH_ID)||(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
-  const fin=SCHED.filter(g=>gStatus(g,t)==='final'&&isToday(g,t)).sort((a,b)=>b.end-a.end);   /* 21/10 : today's results only */
+  const live=SCHED.filter(g=>boardLive(g,t)).sort((a,b)=>(b.id===WATCH_ID)-(a.id===WATCH_ID)||(a.phase==='regular')-(b.phase==='regular')||a.ko-b.ko);
+  const fin=SCHED.filter(g=>gStatus(g,t)==='final'&&!boardLive(g,t)&&isToday(g,t)).sort((a,b)=>b.end-a.end);   /* 21/10 : today's results only */
   const up=SCHED.filter(g=>gStatus(g,t)==='upcoming'&&revealed(g,t)).sort((a,b)=>a.ko-b.ko);
   const nLive=window.matchMedia&&window.matchMedia('(min-width: 900px)').matches?4:2;   /* étape 6 : 4 matchs par créneau (2 animés sur mobile) */
   const plan=[...live.slice(0,nLive).map(g=>[g,SEASON.feeds[g.id].plays.length?'live':'upcoming']),...fin.map(g=>[g,'replay'])].slice(0,Math.max(5,nLive+1));
@@ -6381,7 +6392,7 @@ function pregameObj(s){
 }
 function seasonTileMeta(g){
   const s=g.sched, st=gStatus(s,nowMs());
-  const lab= st==='live' ? 'Live' : st==='final' ? 'Replay · '+dStr(s.ko)+' '+tStr(s.ko) : 'Kickoff '+dStr(s.ko)+' '+tStr(s.ko);
+  const lab= st==='live' ? 'Live' : st==='final'&&g.mode==='live' ? 'Final' : st==='final' ? 'Replay · '+dStr(s.ko)+' '+tStr(s.ko) : 'Kickoff '+dStr(s.ko)+' '+tStr(s.ko);
   return `<span class="watch">${esc(lab)}</span>`;
 }
 function seasonNextTile(t){
@@ -6409,10 +6420,13 @@ function buildBoard(force){
      would keep an orphan copy (frozen field) while the new board copy writes into it — rebuilt when it closes */
   BOARD_SIG=sig; NEXT_GAMES=next;
   for(let i=views.length-1;i>=0;i--){ if(views[i]!==modalView){ views[i].destroy(); views.splice(i,1); } }
+  /* 31/10: a live game keeps its board copy across a rebuild (a result coming in rebuilt the whole board and jumped every
+     live game to the clock: the last plays were skipped and the last one played again) */
+  const keep=new Map(games.filter(g=>g.mode==='live'&&g.sched).map(g=>[g.id,g]));
   for(const g of games) if(byId[g.id]===g) delete byId[g.id];
   Object.keys(byId).forEach(k=>{ if(k.startsWith('pg-')) delete byId[k]; });
   games.length=0;
-  for(const [s,m] of plan){ const g=makeBoardGame(s,m,t); games.push(g); byId[g.id]=g; }
+  for(const [s,m] of plan){ const g=(m==='live'&&keep.get('s-'+s.id))||makeBoardGame(s,m,t); games.push(g); byId[g.id]=g; }
   if(TEASER_ON&&!games.includes(TEASER_ON)) TEASER_ON=null;
   games.forEach((g,i)=>{ if(i>0&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run */
   BOARD_AT=performance.now();
@@ -6993,7 +7007,7 @@ function seasonRefresh(force){
      score banner and chip still shown) and jump only on a real gap (tab in the background, clock changed) */
   if(WATCH_ID) watchTick(t);
   for(const g of games){ if(g.mode!=='live') continue; const k=playIndexAt(g.sched,t), lag=k-g.idx;
-    if(gStatus(g.sched,t)!=='live'){ g.speed=1; continue; }
+    if(gStatus(g.sched,t)!=='live'){ g.speed= g.status!=='final'&&lag>=1 ? Math.min(2.5,1+0.3*lag) : 1; continue; }   /* over on the server: the board plays its last plays, a little faster */
     if(lag>8||lag<-2){ liveSeek(g,t); g.paused=false; rpAfterSeek(g); g.speed=1; }
     else if(g.brkEnter){ g.speed=1; }   /* a break runs at clock speed: it ends when the broadcast resumes */
     else g.speed = lag>=1 ? Math.min(2.5,1+0.3*lag) : 1; }   /* appareil lent (images à < 10 / s) : rattrape plus fort */
