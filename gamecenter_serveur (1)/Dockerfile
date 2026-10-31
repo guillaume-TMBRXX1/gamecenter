@@ -12,7 +12,9 @@ COPY data/weeks /app/semaines_initiales
 # Les semaines et la base des paris vivent dans /data : il FAUT y monter un disque persistant
 # (Railway : « Volume » monté sur /data ; docker run : -v gamecenter-data:/data).
 # À chaque démarrage, les semaines du dépôt remplacent celles de /data (le dépôt fait foi ; la base des paris n'est pas touchée).
+# 31/10/2026 : par des liens vers l'image, plus des copies — six semaines pèsent ≈ 450 Mo et le volume (500 Mo) débordait
+# (« No space left on device », site arrêté). Le serveur ne fait que les lire.
 # Pas d'instruction VOLUME ici : Railway la refuse.
 ENV GC_DATA=/data GC_AUTOGEN=0 PYTHONUNBUFFERED=1
 EXPOSE 8000
-CMD ["sh", "-c", "mkdir -p /data/weeks && for d in /app/semaines_initiales/week_*; do rm -rf /data/weeks/$(basename $d) && cp -r $d /data/weeks/; done && exec uvicorn serveur:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "mkdir -p /data/weeks && for d in /app/semaines_initiales/week_*; do rm -rf /data/weeks/$(basename $d) && ln -s $d /data/weeks/$(basename $d); done && exec uvicorn serveur:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
