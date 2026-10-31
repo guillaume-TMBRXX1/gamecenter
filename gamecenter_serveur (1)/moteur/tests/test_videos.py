@@ -19,7 +19,7 @@ import choisir as C  # noqa: E402
 import faire_video as V  # noqa: E402
 
 SEMAINES = sorted(glob.glob(os.path.join(RACINE, "data", "weeks", "week_*")))
-PARIS = re.compile(r"\b(odds|bets?|betting|wagers?|parlays?|gambl\w*|picks?|casino|stakes?|cash.?out)\b", re.I)
+PARIS = re.compile(r"\b(odds|bets?|betting|wagers?|parlays?|gambl\w*|picks?(?!-six)|casino|stakes?|cash.?out)\b", re.I)   # « Pick-six » : du football
 
 
 def action(t, r, gain=0, wp=0.5, down=1, to_go=10, los=60, offense="home", q=2, clock=600, text="", **kw):

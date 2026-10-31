@@ -109,14 +109,14 @@ async function server(){
     const es=kind(x=>x.run&&x.qbMoveU!=null);
     if(es.some(x=>!(x.lat>4&&x.release!=null&&x.release>=x.qbMoveU-0.03))) console.log('   ',JSON.stringify(es.map(x=>({lat:+x.lat.toFixed(1),rel:x.release,u:x.qbMoveU,res:x.result}))));
     check(es.length&&es.every(x=>x.lat>4&&x.release!=null&&x.release>=x.qbMoveU-0.03),`escape : le QB sort sur le côté, le ballon part après sa sortie (${es.length})`);
-    const sk=kind(x=>x.result==='sack'&&x.shape!=='clean');
+    const sk=kind(x=>x.result==='sack'&&x.shape!=='clean'&&!/fumble/i.test(x.line));   /* 31/10 : un sack avec fumble, le commentateur parle du ballon */
     check(sk.length&&sk.every(x=>x.sacker!=null&&x.sacker===x.beatenSlot),`sack : le rusher du duel perdu fait le sack (${sk.length})`);
     check(su.every(x=>/steps up in the pocket/.test(x.text))&&es.every(x=>/flushed (left|right), throws on the run/.test(x.text))&&sk.every(x=>/beats .*|collapses|unblocked/.test(x.text)),
       'play-by-play : « steps up », « flushed …, throws on the run », « X beats Y »');
     check(clean.every(x=>!/steps up|flushed|beats/.test(x.text)),'play-by-play : rien sur une poche propre');
     check(R.ot===R.runs&&R.pb>0&&R.prs>0,`stats : « Throws on the run » ${R.ot}, duels de protection (${R.pb} joueurs), pressions (${R.prs} joueurs)`);
     check(sk.every(x=>/gets home|untouched|collapses|caves in|brings him down|can't hold/.test(x.line))&&es.filter(x=>x.result==='complete'||x.result==='incomplete').every(x=>/on the run|on the move/.test(x.line)),
-      'commentateur : le duel du sack, le lancer en courant');
+      'commentateur : le duel du sack, le lancer en courant'+((()=>{ const bad=[...sk.filter(x=>!/gets home|untouched|collapses|caves in|brings him down|can't hold/.test(x.line)),...es.filter(x=>(x.result==='complete'||x.result==='incomplete')&&!/on the run|on the move/.test(x.line))]; return bad.length?' · '+bad.map(x=>`${x.result}: « ${x.line} »`).join(' | '):''; })()));
     check(!errs.length,'aucune erreur JS'+(errs.length?' : '+errs.slice(0,3).join(' | '):''));
   } finally { await b.close(); srv.kill(); }
   console.log(fail?`ÉCHEC (${fail})`:'OK'); process.exit(fail?1:0);

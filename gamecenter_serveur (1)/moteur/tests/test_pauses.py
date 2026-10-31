@@ -8,6 +8,7 @@ la ligne de temps du serveur (actions révélées, fin des matchs) et la même l
 """
 import glob
 import json
+import math
 import os
 import re
 import shutil
@@ -79,12 +80,13 @@ class TestServeur(unittest.TestCase):
         tot = sum(serveur.BREAK_SEC[serveur.break_kind(p)] for p in P if serveur.break_kind(p))
         self.assertAlmostEqual(g["end"], g["ko"] + int((sum(serveur.play_sec(p) for p in P) + tot) * 1000), delta=1)
         h = next(i for i, p in enumerate(P) if serveur.break_kind(p) == "half")
-        fin_h = g["ko"] + g["ends"][h] * 1000              # l'action h finit son temps d'écran
+        fin_h = g["ko"] + math.ceil(g["ends"][h] * 1000)   # l'action h finit son temps d'écran (ms : arrondi au-dessus,
+        #                                                    une somme de flottants peut donner 545,0300000000001 s)
         self.assertEqual(w.revealed_plays(g, fin_h - 1), h)
         self.assertEqual(w.revealed_plays(g, fin_h), h + 1)
         for dt in (1000, 20000, 39000):                    # pause : toujours h + 1 actions révélées
             self.assertEqual(w.revealed_plays(g, fin_h + dt), h + 1)
-        reprise = fin_h + (serveur.BREAK_SEC["half"] + serveur.play_sec(P[h + 1])) * 1000
+        reprise = g["ko"] + math.ceil(g["ends"][h + 1] * 1000)
         self.assertEqual(w.revealed_plays(g, reprise - 1), h + 1)
         self.assertEqual(w.revealed_plays(g, reprise), h + 2)
         self.assertEqual(w.revealed_plays(g, g["end"]), len(P))
