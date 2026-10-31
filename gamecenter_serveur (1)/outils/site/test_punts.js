@@ -49,7 +49,7 @@ async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-punts-'));
   process.on('exit',()=>{ try{ fs.rmSync(data,{recursive:true,force:true}); }catch(e){} });   /* la copie des données ne reste pas dans le dossier temporaire */
   fs.cpSync(WEEKS,path.join(data,'weeks'),{recursive:true});
-  const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1'}),stdio:'ignore'});
+  const p=spawn('python3',['-m','uvicorn','serveur:app','--port',String(PORT)],{cwd:ROOT,env:Object.assign({},process.env,{GC_DATA:data,GC_TEST_HOOK:'1',GC_DEMO_AT:'auto'}),stdio:'ignore'});   /* lundi 12:45 : page légère (≈ 85 Mo le vendredi soir) */
   for(let i=0;i<120;i++){ try{ const r=await fetch(`http://localhost:${PORT}/api/time`); if(r.ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
   p.kill(); throw new Error('le serveur ne démarre pas');
 }
