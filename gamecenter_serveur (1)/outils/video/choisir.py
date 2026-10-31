@@ -167,7 +167,8 @@ def resume(feed, cible=150.0):
     oblig.add(len(P) - 1)
     n_max = int(RESUME_MAX // DUREE_ACTION)
     n_vise = max(int(cible // DUREE_ACTION), int(RESUME_MIN // DUREE_ACTION))
-    choisis = set(sorted(oblig, key=lambda i: -interet(feed, i)[0])[:n_max])
+    fin = len(P) - 1                       # la dernière action reste, même quand les scores et pertes de balle débordent
+    choisis = set(sorted(oblig - {fin}, key=lambda i: -interet(feed, i)[0])[:n_max - 1]) | {fin}
     reste = sorted((i for i in range(len(P)) if i not in choisis and (P[i].get("call") or {}).get("type") in ("run", "pass", "kickoff", "punt")),
                    key=lambda i: (-interet(feed, i)[0], i))
     for i in reste:
