@@ -2483,6 +2483,29 @@ matchs en direct sur l'horloge (dernières actions sautées, dernière action re
   score dans les petites tuiles ; pas de bouton « Show the field » dans une tuile.
 - Test : `outils/site/test_fin_live.js`.
 
+### 88. Rivalités, bilans des confrontations et mémoire (02/11/2026)
+Pour que les fans s'approprient une franchise par son histoire plutôt que par un visuel (les emblèmes essayés ont été
+écartés : trop chargés pour le design du site).
+- **12 rivalités officielles** (`moteur/rivalites.py`), une par franchise, dans sa division, chacune avec son trophée,
+  détenu par le vainqueur de la dernière confrontation décidée (un nul ne le fait pas changer de main) :
+  MNL–ZPH The Ground & Air Trophy · AXM–ONX The Talon · MRG–CTD The Mirage Cup · VEC–APX The Fang · GRZ–LTC The Den ·
+  CPH–MRD The Riddle · CTX–PRM The Masks · FRG–BST The Anvil · PLS–CMT Lightspeed · AEG–GLT The Firewall ·
+  NVA–SPK Starfall · GMB–TDL The Wager.
+- **Bilan de n'importe quelle affiche** (`serie`) : victoires de chaque côté et nuls, série en cours (2 et plus), plus
+  large victoire, 5 derniers résultats, dernière confrontation et match « classique » (3 points d'écart au plus ou
+  prolongation ; prolongation et playoffs d'abord). Semaines comptées depuis `HIST_DEPUIS` (comme History).
+- **Serveur** : `/api/rivalry?game=<id>` (le bilan AVANT le coup d'envoi de ce match, jamais lui-même) ou
+  `?a=&b=` (à l'instant) ; matchs terminés seulement. `/api/insights/h2h` ajoute `series`. Pages `/teams/<nom>` :
+  section « Rivalry » (saisons terminées seulement : rien de la semaine en cours).
+- **Site** : marqueur « Rivalry » (Schedule, tuiles du tableau) ; panneau d'un match du Schedule : trophée, détenteur,
+  bilan, pastilles des derniers résultats, dernière confrontation et classique (demandé à l'ouverture du panneau) ;
+  grand écran : « Before kickoff » ; fiche d'une franchise (Teams, My team) : son rival, toute la série ; Insights,
+  Head-to-head : trophée et classique ; le commentateur nomme le trophée au coup d'envoi et dit à la fin qui le garde
+  ou le prend. « Hide scores » : le score d'un match de la semaine pas regardé reste caché.
+- Interrupteur `GC_RIVALITES=off` (le site d'avant, `/api/rivalry` 404). Tests : `moteur/tests/test_rivalites.py`,
+  `test_serveur.py` (Rivalites), `test_franchises.py`, `outils/site/test_rivalites.js`. À venir : Ring of Honor et
+  numéros retirés.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2660,7 +2683,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86.
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88).
 
 ## Test
 

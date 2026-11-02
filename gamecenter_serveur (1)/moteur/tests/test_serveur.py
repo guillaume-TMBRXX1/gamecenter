@@ -16,6 +16,7 @@ directement (requête simulée), sans réseau ni httpx. Il faut fastapi (require
   Paris         simple, combiné, refus (cote, solde, mise, marché fermé), règlement = score du moteur, cash-out,
                 historique, semaine fermée
   MemeMatch     combiné sur un même match : cote de moteur/meme_match.py, refus, règlement, cash-out, interrupteur
+  Rivalites     bilan d'avant-match (/api/rivalry) : matchs terminés seulement, rivalité et trophée, interrupteur
   Comptes       inscription, connexion (limite d'essais, paris d'invité repris), mot de passe, admin, équipe favorite
   Classement    semaine (soldes) et saison (comptes seulement)
   Ajustement    semaines enchaînées : numéro + 1, staffs de départ = staffs ajustés de la semaine d'avant
@@ -389,6 +390,40 @@ class MemeMatch(Base):
             else:
                 os.environ["GC_SAME_GAME"] = old
         self.assertEqual(self.parier(tok, combos=[cb])["accepted"][0]["key"], "sgp")
+
+
+class Rivalites(Base):
+    """Rivalités et bilans (section 88) : /api/rivalry ne compte que des matchs terminés avant le coup d'envoi du match
+    demandé, jamais lui-même ; rivalité, trophée et détenteur ; GC_RIVALITES=off."""
+
+    def test_bilan_avant_le_match(self):
+        g = next(x for x in self.reg if {x["home"], x["away"]} == {"AEG", "GLT"})
+        a_l_heure(g["end"] + 60_000)                                   # même après le match, son bilan est celui d'avant
+        r = json.loads(serveur.api_rivalry(g["id"]).body)
+        self.assertEqual((r["a"], r["b"]), (g["away"], g["home"]))
+        self.assertEqual(r["rivalry"]["trophy"], "The Firewall")
+        self.assertNotIn(g["id"], [m["id"] for m in r["recent"]])
+        self.assertEqual(r["games"], sum(r["record"].values()))
+        self.assertTrue(r["games"] >= 1 and r["last"]["week"] < self.w.doc["week"]["index"])
+        self.assertEqual(r["rivalry"]["holder"], next((x["winner"] for x in r["recent"] if x["winner"]), None))   # dernier vainqueur
+        autre = next(x for x in self.reg if {x["home"], x["away"]} == {"VEC", "GLT"})
+        self.assertIsNone(json.loads(serveur.api_rivalry(autre["id"]).body)["rivalry"])
+        self.refus(404, serveur.api_rivalry, "inconnu")
+        d = json.loads(serveur.api_rivalry(a="GLT", b="AEG").body)            # deux franchises, à l'instant :
+        self.assertEqual(d["games"], r["games"] + 1)                           # ce match-ci, joué, compte
+        self.refus(400, serveur.api_rivalry, "", "GLT", "GLT")
+
+    def test_interrupteur(self):
+        g = self.reg[0]
+        old = os.environ.get("GC_RIVALITES")
+        os.environ["GC_RIVALITES"] = "off"
+        try:
+            self.refus(404, serveur.api_rivalry, g["id"])
+        finally:
+            if old is None:
+                os.environ.pop("GC_RIVALITES", None)
+            else:
+                os.environ["GC_RIVALITES"] = old
 
 
 class Comptes(Base):

@@ -1190,6 +1190,21 @@
   .odd.sm{height:32px;padding:0 9px;font-size:11.5px;gap:6px;min-width:76px}
   .sch-bet{display:inline-flex;gap:6px;justify-content:flex-end}
   .sch-sgp{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 0;font-size:12px;color:var(--ink-2);min-height:0}
+  /* rivalries, series and memory (section 88) */
+  .matchup .riv-pill{margin-left:auto;flex-shrink:0}
+  .riv-pill{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:4px;font:700 italic 9.5px/1 var(--f-display);letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink);background:color-mix(in srgb,var(--amber,#ffb020) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--amber,#ffb020) 55%,transparent);white-space:nowrap;vertical-align:middle}
+  .riv-box{display:grid;gap:6px;font-size:12.5px;color:var(--ink-2)}
+  .riv-box:empty{display:none}
+  .riv-box .riv-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .riv-box .riv-h b{color:var(--ink);font:700 13px var(--f-ui)}
+  .riv-box .riv-ser{font:700 14px var(--f-display);letter-spacing:.02em;color:var(--ink)}
+  .riv-box .riv-mem{display:flex;gap:6px;align-items:baseline}
+  .riv-box .riv-mem .label{flex-shrink:0}
+  .riv-box .riv-dots{display:inline-flex;gap:3px;vertical-align:middle}
+  .riv-box .riv-dots i{min-width:18px;height:16px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font:700 8.5px/1 var(--f-ui);font-style:normal;color:#fff;background:var(--tc,var(--ink-3))}
+  .riv-box .riv-dots i.tie{background:var(--ink-3)}
+  .sch-drop .riv-box{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:10px;background:var(--l1,rgba(0,0,0,.03));box-shadow:inset 0 0 0 1px var(--line-2)}
   .sch-sgp:empty{display:none}
   .sch-sgp b{font-family:var(--f-mono);color:var(--cyan)} .sch-sgp .chg{color:var(--amber,#ffb020)}
   .sch-teams{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
@@ -4255,6 +4270,64 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
 /* section 86 (30/10/2026): Same Game Combos (GC_SAME_GAME=off: combos as before) and the quick bet on the big screen
    (GC_PARI_RAPIDE=off: the page as before) */
 const SG_ON=!!SEASON&&(!SERVER||SERVER.same_game!==false), QB_ON=!!SEASON&&(!SERVER||SERVER.quick_bet!==false);
+/* ---------- rivalries, series and memory (section 88, 02/11/2026): twelve official rivalries with a trophy (held by
+   the winner of the last decided meeting), and for any game the series before kickoff, the last meeting and the classic
+   one. Finished games only (the server: /api/rivalry); Hide scores on: no score from a game of this week not watched.
+   GC_RIVALITES=off (#gf-server without .rivalries): the page as before. */
+const RIV=SERVER&&Array.isArray(SERVER.rivalries)?SERVER.rivalries:null, RIV_ON=!!(SEASON&&RIV);
+function rivOf(a,b){ return RIV_ON?RIV.find(r=>(r.a===a&&r.b===b)||(r.a===b&&r.b===a))||null:null; }
+const RIVD={};
+function rivKey(gid,a,b){ return gid?'g:'+gid:'t:'+[a,b].sort().join('|'); }
+function rivGet(gid,a,b){
+  if(!RIV_ON) return null; const k=rivKey(gid,a,b), d=RIVD[k];
+  if(d&&d!=='busy') return d;
+  if(!d){ RIVD[k]='busy';
+    api('/rivalry?'+(gid?'game='+encodeURIComponent(gid):'a='+encodeURIComponent(a)+'&b='+encodeURIComponent(b)))
+      .then(x=>{ RIVD[k]=x; rivFill(); }).catch(()=>{ RIVD[k]=null; }); }
+  return null; }
+function rivFill(){ document.querySelectorAll('[data-riv]').forEach(el=>{ const h=rivBoxHTML(el.dataset.riv,el.dataset.rivA,el.dataset.rivB,el.dataset.rivK,true); if(el._h!==h){ el._h=h; el.innerHTML=h; } }); }
+/* a meeting of this week not watched, Hide scores on: its score stays hidden */
+const rivHid=m=>SET.spoil&&!!SCHED_BY[m.id]&&!seen(m.id);
+const rivSc=m=>`${esc(m.away)} ${m.as} – ${m.hs} ${esc(m.home)}${m.ot?' (OT)':''}`;
+function rivSeries(d){
+  const r=d.record, a=d.a, b=d.b;
+  if(!d.games) return 'First meeting';
+  if(r[a]===r[b]) return `Series tied ${r[a]}-${r[b]}${r.ties?'-'+r.ties:''}`;
+  const l=r[a]>r[b]?a:b; return `${l} leads ${Math.max(r[a],r[b])}-${Math.min(r[a],r[b])}${r.ties?'-'+r.ties:''}`; }
+function rivDots(d){ return `<span class="riv-dots" aria-label="Last meetings, most recent first">${d.recent.map(m=>m.winner?`<i style="--tc:var(--t-${m.winner.toLowerCase()})" title="W${m.week}: ${esc(rivSc(m))}">${esc(m.winner)}</i>`:`<i class="tie" title="W${m.week}: tie">T</i>`).join('')}</span>`; }
+/* kind: 'game' (Schedule, big screen) · 'team' (My team, Teams) · lazy: from what is already loaded, no request (the
+   Schedule draws every game's panel: one is asked for when it opens) */
+function rivBoxHTML(gid,a,b,kind,lazy){
+  if(!RIV_ON) return '';
+  const c=RIVD[rivKey(gid,a,b)], d=lazy?(c&&c!=='busy'?c:null):rivGet(gid,a,b), rv=rivOf(a,b);
+  if(!d) return rv?`<div class="riv-h"><span class="riv-pill">Rivalry</span><b>${esc(rv.trophy)}</b></div>`:'';
+  const hid=d.recent.some(rivHid);
+  const head=d.rivalry?`<div class="riv-h"><span class="riv-pill">Rivalry</span><b>${esc(d.rivalry.trophy)}</b>${hid?'':d.rivalry.holder?`<span>· held by ${esc(TEAMS[d.rivalry.holder].name)}</span>`:'<span>· never won yet</span>'}</div>`:'';
+  if(hid) return head+'<div>Series hidden · Hide scores is on (Settings)</div>';
+  if(!d.games) return head+`<div class="riv-ser">First meeting</div>`;
+  const st=d.streak?` · ${esc(d.streak.team)} won the last ${d.streak.n}`:'';
+  const mem=[];
+  if(d.last) mem.push(`<div class="riv-mem"><span class="label">Last time</span><span>W${d.last.week} · ${esc(rivSc(d.last))}</span></div>`);
+  if(d.classic&&(!d.last||d.classic.id!==d.last.id)) mem.push(`<div class="riv-mem"><span class="label">Classic</span><span>W${d.classic.week}${d.classic.phase&&d.classic.phase!=='regular'?' · '+esc(PHASE[d.classic.phase]||'playoffs'):''} · ${esc(rivSc(d.classic))}</span></div>`);
+  if(kind==='team'&&d.biggest) mem.push(`<div class="riv-mem"><span class="label">Biggest win</span><span>${esc(d.biggest.winner)} by ${d.biggest.margin} · W${d.biggest.week}</span></div>`);
+  return head+`<div class="riv-h"><span class="riv-ser">${esc(rivSeries(d))}</span><span>${st}</span>${rivDots(d)}</div>`+mem.join(''); }
+/* a franchise's page (My team, Teams): its rival, the trophy, the whole series */
+function rivTeamPanel(abbr){
+  const r=RIV.find(x=>x.a===abbr||x.b===abbr); if(!r) return '';
+  const o=r.a===abbr?r.b:r.a;
+  return `<div class="panel" style="margin-bottom:12px"><span class="label">Rival · ${esc(TEAMS[o].name)}</span><div class="riv-box" data-riv="" data-riv-a="${abbr}" data-riv-b="${o}" data-riv-k="team" style="margin-top:8px">${rivBoxHTML('',abbr,o,'team')}</div></div>`; }
+/* the commentator: the trophy at kickoff, who keeps or takes it at the final whistle */
+function rivGid(g){ return g.sched?g.sched.id:(g.gf&&g.gf.game&&SCHED_BY[g.gf.game.id]?g.gf.game.id:null); }
+function rivIntro(g){
+  const rv=rivOf(g.away,g.home); if(!rv) return '';
+  const d=RIVD['g:'+rivGid(g)], h=d&&d!=='busy'&&d.rivalry&&d.rivalry.holder;
+  return ` ${rv.trophy} is on the line${h?`, and the ${nick(h)} hold it`:''}.`; }
+function rivFinal(g){
+  const rv=rivOf(g.away,g.home); if(!rv) return '';
+  const d=RIVD['g:'+rivGid(g)], h=d&&d!=='busy'&&d.rivalry?d.rivalry.holder:null;
+  if(g.hs===g.as) return h?` ${rv.trophy} stays with the ${nick(h)}.`:'';
+  const w=g.hs>g.as?g.home:g.away;
+  return w===h?` The ${nick(w)} keep ${rv.trophy}.`:` The ${nick(w)} take ${rv.trophy}!`; }
 const games=SEASON?[]:[
   BOOT_FEED ? makeReplayGame(LIVE_ID,BOOT_FEED,{viewers:'4.8K',mode:'live'}) : makeGame('g1','VAN','SOV',{hs:21,as:17,q:3,clock:522,poss:'away',losOwn:34,down:2,toGo:6,edge:1.5,viewers:'4.8K'}),
   makeGame('g2','ICO','DRF',{hs:10,as:9,q:2,clock:675,poss:'home',losOwn:45,down:1,toGo:10,edge:-1,viewers:'2.1K'}),
@@ -4415,7 +4488,7 @@ function miniTile(g){
   return `<article class="tile${g.preview?' preview':''}" data-gid="${g.id}">
     ${fieldHTML(g,'',true)}
     <div class="tile-meta">
-      <div class="matchup"><span><b>${A.name}</b><em>@</em><b>${H.name}</b></span>${g.sched?seasonTileMeta(g):`<span class="watch">${ICON.eye}${g.viewers}</span>`}</div>
+      <div class="matchup"><span><b>${A.name}</b><em>@</em><b>${H.name}</b></span>${g.sched&&rivOf(g.away,g.home)?`<span class="riv-pill" title="Rivalry · ${esc(rivOf(g.away,g.home).trophy)}">Rivalry</span>`:''}${g.sched?seasonTileMeta(g):`<span class="watch">${ICON.eye}${g.viewers}</span>`}</div>
       ${powerHTML(g)}
       <div class="odds-row">${oddBtn(g,'ml','away','team')}${oddBtn(g,'ml','home','team')}</div>
       ${injOutHTML(g)}
@@ -4448,7 +4521,7 @@ function featTile(g){
   const canReplay = g.replay && !(g.sched && g.mode!=='replay');     /* season: no replay of a game still being played */
   const meta = canReplay ? `<button type="button" class="rp-load rp-open" data-replay="${g.id}" title="Watch this match again from kickoff on the big screen">${ICON.restart}Replay</button>` : `<span class="watch">${ICON.eye}${g.viewers}</span>`;
   return `<article class="tile feat" data-gid="${g.id}">
-    <div class="feat-head"><span class="pt-tag">${g.sched&&g.sched.phase!=='regular'?esc(PHASE[g.sched.phase]):'Prime time'}</span><h3>${A.name}<em>@</em>${H.name}</h3>${meta}</div>
+    <div class="feat-head"><span class="pt-tag">${g.sched&&g.sched.phase!=='regular'?esc(PHASE[g.sched.phase]):'Prime time'}</span>${g.sched&&rivOf(g.away,g.home)?`<span class="riv-pill" title="Rivalry · ${esc(rivOf(g.away,g.home).trophy)}">Rivalry</span>`:''}<h3>${A.name}<em>@</em>${H.name}</h3>${meta}</div>
     ${fieldHTML(g,'',true)}
     ${g.replay?`<div class="rp-call" data-g="${g.id}" data-f="rpcall"></div>`:''}
     <div class="feat-bottom">
@@ -5905,6 +5978,7 @@ function openModal(id){
       </div>
       <aside class="m-side">
         <div class="panel wp-panel">${wpHTML(g,true)}</div>
+        ${RIV_ON&&rivGid(g)?`<div class="panel"><span class="label">Before kickoff</span><div class="riv-box" data-riv="${esc(rivGid(g))}" data-riv-a="${g.away}" data-riv-b="${g.home}" data-riv-k="game" style="margin-top:8px">${rivBoxHTML(rivGid(g),g.away,g.home,'game')}</div></div>`:''}
         <div class="panel">${powerHTML(g)}${marketsHTML(g,true)}<p class="np-note">${note}</p></div>
       </aside>
     </div>
@@ -6373,6 +6447,7 @@ function makeBoardGame(s,mode,t){
   const f=f0.plays.length?f0:Object.assign({},f0,{plays:[kickoffStub(f0)]});   /* server mode: nothing played yet */
   const g=makeReplayGame('s-'+s.id,f,{mode:mode==='upcoming'?'upcoming':mode,loop:mode==='replay',speed:1});
   g.sched=s; g.growing=!!SERVER&&!isFinite(s.end);
+  if(RIV_ON&&mode==='live'&&rivOf(s.away,s.home)) rivGet(s.id,s.away,s.home);   /* the commentator names the trophy at kickoff */
   if(mode==='live'){ liveSeek(g,t); }
   if(mode==='upcoming'){
     g.paused=true; const o=f.game.pregame_odds;
@@ -6563,6 +6638,7 @@ function schMarketsHTML(s,t){
   const A=TEAMS[s.away], H=TEAMS[s.home], o=s.odds||{}, ph=o.p_home!=null?o.p_home:.5, pt=o.p_tie||0, pa=1-ph-pt;
   const col=(lab,mk,x,y)=>`<div class="sch-mk"><span class="label">${lab}</span><div>${schBetBtn(s,mk,x,t)}${schBetBtn(s,mk,y,t)}</div></div>`;
   return `<div class="sch-drop" id="schb-${esc(s.id)}" role="region" aria-label="Bets: ${esc(A.name)} at ${esc(H.name)}"><div class="sch-in">
+    ${RIV_ON?`<div class="riv-box" data-riv="${esc(s.id)}" data-riv-a="${s.away}" data-riv-b="${s.home}" data-riv-k="game">${rivBoxHTML(s.id,s.away,s.home,'game',true)}</div>`:''}
     <div class="sch-wp" role="img" aria-label="Engine win chance: ${esc(A.name)} ${Math.round(pa*100)}%, ${esc(H.name)} ${Math.round(ph*100)}%${pt?`, tie ${Math.round(pt*100)}%`:''}">
       <span class="label">Engine win chance</span>
       <div class="sch-wpbar"><i data-tm="${s.away}" style="flex:${pa}"></i>${pt?`<i class="tie" style="flex:${pt}"></i>`:''}<i data-tm="${s.home}" style="flex:${ph}"></i></div>
@@ -6574,6 +6650,7 @@ function schMarketsHTML(s,t){
 /* open / close a game's markets without redrawing the schedule: the panel slides (CSS), one open at a time */
 function schToggleBet(id){
   const el=document.getElementById('viewSchedule'); SCH_BET=SCH_BET===id?null:id;
+  if(SCH_BET&&RIV_ON){ const s=SCHED_BY[SCH_BET]; if(s) rivGet(s.id,s.away,s.home); }   /* section 88: its series, now */
   el.querySelectorAll('.sch-game').forEach(gm=>{ const on=gm.dataset.g===SCH_BET; gm.classList.toggle('open',on);
     const b=gm.querySelector('[data-schbet]'); if(b) b.setAttribute('aria-expanded',String(on));
     const d=gm.querySelector('.sch-drop'); if(d) d.inert=!on; });
@@ -6611,8 +6688,8 @@ function renderSchedule(t){
       const act= st==='upcoming' ? `<span class="sch-acts">${rv?bellBtn(g):''}${rv&&o.ml?`<span class="sch-bet">${schOdd(g,'away',t)}${schOdd(g,'home',t)}</span>`:`<span class="sch-odds">Odds at the lock</span>`}</span>` :
         `<button class="chip-btn sch-go" type="button" data-sched="${g.id}">${st==='live'?'Watch live':'Replay'}</button>`;
       const bet=SCH_PLUS&&st==='upcoming'&&rv&&o.ml, opn=bet&&SCH_BET===g.id;
-      const m=bet?`<button type="button" class="sch-m sch-mb" data-schbet="${g.id}" aria-expanded="${opn}" aria-controls="schb-${g.id}" title="Bet on this game">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}<i class="sch-car" aria-hidden="true"></i></button>`
-        :`<span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}</span>`;
+      const m=bet?`<button type="button" class="sch-m sch-mb" data-schbet="${g.id}" aria-expanded="${opn}" aria-controls="schb-${g.id}" title="Bet on this game">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}${rivOf(g.away,g.home)?' <span class="riv-pill">Rivalry</span>':''}<i class="sch-car" aria-hidden="true"></i></button>`
+        :`<span class="sch-m">${schName(g,'away',t)}<em>@</em>${schName(g,'home',t)}${rv&&rivOf(g.away,g.home)?' <span class="riv-pill">Rivalry</span>':''}</span>`;
       const row=`<div class="sch-row ${st}"><span class="sch-t">${esc(tStr(g.ko))}</span><span class="sch-ph">${g.phase==='regular'?'Slot '+g.slot:esc(PHASE[g.phase])}</span>
         ${m}${statusCell(g,t)}${act}</div>`;
       return bet?`<div class="sch-game${opn?' open':''}" data-g="${g.id}" style="--ta:var(--t-${g.away.toLowerCase()});--th:var(--t-${g.home.toLowerCase()})">${row}${schMarketsHTML(g,t).replace('class="sch-drop"',opn?'class="sch-drop"':'class="sch-drop" inert')}</div>`:row; }).join('')}</details>`; }).join('');
@@ -6683,6 +6760,7 @@ function teamDetailHTML(abbr,t,mine){
   const up=mine?teamUpcomingRows(abbr,t):'';
   return `<div class="card team-page"><div class="tp-head"><span class="badge lg">${T.abbr}</span><div><h2>${esc(T.name)}</h2><p class="eyebrow"><b>${esc(tStyle(T))}</b> · ${esc(tIdent(T))}${r&&(r.w+r.l+r.t)?` · ${r.w}-${r.l}${r.t?'-'+r.t:''} · #${r.rank}`:''}</p></div></div>
       ${stats}
+      ${RIV_ON?rivTeamPanel(abbr):''}
       <div class="tp-grid"><div class="panel"><span class="label">Coordinators</span><div class="pc-line"><span>Offense</span><b>${esc(T.coordinators.offense)}</b></div><div class="pc-line"><span>Defense</span><b>${esc(T.coordinators.defense)}</b></div>
         <span class="label" style="margin-top:12px;display:block">Unit ratings (from the roster)</span>${unitBar('Pass offense',u.pass_off)}${unitBar('Run offense',u.run_off)}${unitBar('Pass defense',u.pass_def)}${unitBar('Run defense',u.run_def)}${unitBar('Special teams',u.special_teams)}</div>
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
@@ -7095,7 +7173,9 @@ function insHistHTML(P,A,B){
     const day=new Date(m.kickoff).toLocaleDateString('en-GB',{weekday:'short',timeZone:'Europe/Brussels'});
     return `<div class="rc-item"><span class="ins-wk">W${m.week}<small>${day}${m.phase&&m.phase!=='regular'?' · PO':''}</small></span><div class="grow"><b>${aw?'<u>':''}${esc(m.away)} ${m.as}${aw?'</u>':''} – ${hw?'<u>':''}${m.hs} ${esc(m.home)}${hw?'</u>':''}</b>
       <small>${insLine(m.home,m.spread_home)}${v!=null?` · ${v>0?esc(m.home)+' covered':v<0?esc(m.away)+' covered':'push'}`:''}${m.total!=null?` · O/U ${m.total} · ${s>m.total?'over':s<m.total?'under':'push'}`:''}</small></div>${SCHED_BY[m.id]?`<button class="link" type="button" data-sched="${esc(m.id)}">Replay</button>`:''}</div>`; }).join('');
-  return `<div class="ins-series"><b>${esc(lead)}</b><small>${M.length} game${M.length>1?'s':''} · ${(tot/M.length).toFixed(1)} pts per game · margin ${(mar/M.length).toFixed(1)} · vs spread ${A} ${ca}-${cb} ${B} · overs ${ov}-${un}</small></div>${rows}`;
+  const SR=P.series, rvh=SR&&SR.rivalry?`<div class="riv-box" style="margin-bottom:8px"><div class="riv-h"><span class="riv-pill">Rivalry</span><b>${esc(SR.rivalry.trophy)}</b>${SR.rivalry.holder?`<span>· held by ${esc(TEAMS[SR.rivalry.holder].name)}</span>`:''}</div></div>`:'';
+  const cl=SR&&SR.classic?`<div class="riv-box" style="margin:6px 0 8px"><div class="riv-mem"><span class="label">Classic</span><span>W${SR.classic.week} · ${esc(rivSc(SR.classic))}</span>${SR.streak?`<span>· ${esc(SR.streak.team)} won the last ${SR.streak.n}</span>`:''}</div></div>`:'';
+  return rvh+`<div class="ins-series"><b>${esc(lead)}</b><small>${M.length} game${M.length>1?'s':''} · ${(tot/M.length).toFixed(1)} pts per game · margin ${(mar/M.length).toFixed(1)} · vs spread ${A} ${ca}-${cb} ${B} · overs ${ov}-${un}</small></div>${cl}${rows}`;
 }
 function insDuelHTML(D,a,b){
   const R=D.rows, avg=k=>{ const v=R.map(r=>r[k]).filter(x=>x!=null); return v.length?v.reduce((s,x)=>s+x,0)/v.length:0; };
@@ -8207,7 +8287,7 @@ function playLine(g,P){
   const st=P.after&&P.after.status;
   if(st==='half'){ prio=3; text=(text?text+' ':'')+`And that's halftime. ${scoreLine(g)}`; }
   if(st==='final'){ prio=3; const ot=num(P.quarter,4)>4;
-    text=(text?text+' ':'')+(g.hs===g.as?`It ends in a tie, ${g.hs} all.`:`And that's the ball game! The ${nick(g.hs>g.as?g.home:g.away)} win it, ${Math.max(g.hs,g.as)} to ${Math.min(g.hs,g.as)}${ot?', in overtime':''}.`); }
+    text=(text?text+' ':'')+(g.hs===g.as?`It ends in a tie, ${g.hs} all.`:`And that's the ball game! The ${nick(g.hs>g.as?g.home:g.away)} win it, ${Math.max(g.hs,g.as)} to ${Math.min(g.hs,g.as)}${ot?', in overtime':''}.`)+(RIV_ON?rivFinal(g):''); }
   /* a big swing of the engine's win probability */
   if(prio>=2&&st!=='final'){ const h=g.hist||[], prev=h.length?h[h.length-1]:null, p=num(P.win_prob_home,null);
     if(prev!=null&&p!=null&&Math.abs(p-prev)>=.18){ const fav=p>=.5?g.home:g.away; text+=` The engine now gives the ${nick(fav)} a ${Math.round((p>=.5?p:1-p)*100)} percent chance.`; } }
@@ -8233,7 +8313,7 @@ function introLine(g){
   const A=TEAMS[g.away].name, H=TEAMS[g.home].name, s=g.sched, ph=s&&s.phase!=='regular'?PHASE[s.phase]+': ':'';
   if(g.mode==='replay') return `Replay. ${ph}${A} at ${H}.`;
   const P=g.cur, q=P?num(P.quarter,1):1;
-  if(!P||(g.idx<=1&&g.hs+g.as===0)) return `${ph}${A} at ${H}, live on GameCenter. Here we go!`;
+  if(!P||(g.idx<=1&&g.hs+g.as===0)) return `${ph}${A} at ${H}, live on GameCenter.${RIV_ON?rivIntro(g):''} Here we go!`;
   return `We're live: ${A} at ${H}, ${q>4?'overtime':ORD[q].toLowerCase()+' quarter'}. ${scoreLine(g)}`;
 }
 

@@ -537,7 +537,32 @@ def page_index(teams, league, origine, tete=""):
                  "their coaching philosophies, conferences and divisions.", "/teams", "\n".join(parts), origine, tete)
 
 
-def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None):
+def _rivalite(a, teams, r):
+    """Section « Rivalry » (README section 88) : le rival, le trophée, son détenteur, la série (saisons terminées)."""
+    o = r["b"] if r["a"] == a else r["a"]
+    nm = lambda x: e(teams.get(x, {}).get("name", x))
+    riv = r.get("rivalry") or {}
+    p = [f"Rival: the {nm(o)}. Every time they meet, the {nm(a)} play for <b>{e(riv.get('trophy', ''))}</b>, held by "
+         "the winner of their last decided meeting."]
+    li = []
+    if riv.get("holder"):
+        li.append(f"<li><b>Trophy holder:</b> {nm(riv['holder'])}</li>")
+    if r.get("games"):
+        rc = r["record"]
+        li.append(f"<li><b>Series:</b> {nm(a)} {rc[a]}, {nm(o)} {rc[o]}" + (f", {rc['ties']} tie{'s' if rc['ties'] > 1 else ''}" if rc["ties"] else "")
+                  + f" ({r['games']} game{'s' if r['games'] > 1 else ''})</li>")
+        for k, lab in (("last", "Last meeting"), ("classic", "Classic")):
+            m = r.get(k)
+            if m and (k == "last" or m["id"] != (r.get("last") or {}).get("id")):
+                li.append(f"<li><b>{lab}:</b> week {m['week']}, {e(m['away'])} {m['as']} – {m['hs']} {e(m['home'])}"
+                          + (" (overtime)" if m.get("ot") else "") + "</li>")
+    else:
+        li.append("<li>They have not met in a completed season yet.</li>")
+    return (f"<section><h2>Rivalry</h2><p>{p[0]}</p><ul>{''.join(li)}</ul>"
+            "<p>Completed seasons only: nothing from this week's games.</p></section>")
+
+
+def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None, rivalite=None):
     """/teams/<nom> : présentation écrite, identité, staff, notes des unités, titulaires, histoire et division."""
     t = teams[a]
     nom, tc = t["name"], COULEURS.get(a, "#1E5C78")
@@ -592,6 +617,8 @@ def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None
                   f"<li><b>Titles:</b> {f.get('titles', 0)}" + (f" ({e(tit)})" if tit else "") + "</li>"]
         parts.append("<section><h2>Franchise history</h2><p>Every Snapline week is a full season. Totals over the "
                      f"completed seasons only.</p><ul>{''.join(lignes)}</ul></section>")
+    if rivalite and rivalite.get("rivalry"):
+        parts.append(_rivalite(a, teams, rivalite))
     fin = [s for s in saisons or [] if s.get("complete") and a in (s.get("champion"), s.get("runner_up"))]
     if fin:
         li = []
