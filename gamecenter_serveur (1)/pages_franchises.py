@@ -463,7 +463,7 @@ STYLE = """<style>
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
   th{color:var(--ink-2);font-weight:600}
   td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-  .fp{display:block;width:100%;max-width:300px;height:auto;margin:6px auto 0}
+  .fp{display:block;width:100%;max-width:380px;height:auto;margin:6px auto 0}
   .fp .g{fill:none;stroke:var(--line);stroke-width:1}
   .fp .sh{fill:var(--tc);fill-opacity:.18;stroke:var(--tc);stroke-width:2.2;stroke-linejoin:round}
   .fp text{fill:var(--ink-2);font:600 9.5px system-ui,sans-serif}
@@ -580,7 +580,7 @@ def _empreinte(a, teams, emp):
 
     def poly(fs):
         return " ".join(f"{x:.1f},{y:.1f}" for x, y in (pt(i, f) for i, f in enumerate(fs)))
-    svg = [f'<svg class="fp" viewBox="0 0 260 236" role="img" aria-label="Play fingerprint of the {nom}">']
+    svg = [f'<svg class="fp" viewBox="-36 0 332 236" role="img" aria-label="Play fingerprint of the {nom}">']
     svg += [f'<polygon class="g" points="{poly([g] * n)}"/>' for g in (.33, .66, 1)]
     svg += [f'<line class="g" x1="{cx}" y1="{cy}" x2="{pt(i, 1)[0]:.1f}" y2="{pt(i, 1)[1]:.1f}"/>' for i in range(n)]
     svg.append(f'<polygon class="sh" points="{poly(sh)}"/>')

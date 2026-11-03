@@ -104,7 +104,7 @@ const grandEcran=async(p,gid)=>{ await p.evaluate(gid=>{ const x=document.create
     await off.evaluate(()=>window.__gc.season.setView('teams')); await off.waitForTimeout(300); await off.click(`[data-team="${EQ}"]`).catch(()=>{}); await off.waitForTimeout(800);
     await grandEcran(off,LIVE.id);
     const r404=await off.evaluate(async t=>(await fetch('/api/fingerprint?team='+t)).status,EQ);
-    check(!(await off.$('[data-fp]'))&&!/Play fingerprint/.test(await off.textContent('body'))&&r404===404,'GC_EMPREINTE=off : rien, /api/fingerprint 404');
+    check(!(await off.$('[data-fp]'))&&!/Play fingerprint/.test(await off.innerText('body'))&&r404===404,'GC_EMPREINTE=off : rien, /api/fingerprint 404');
     errs.push(...off.errs);
     check(!errs.length,'aucune erreur JS'+(errs.length?' : '+errs.slice(0,3).join(' | '):''));
   }catch(e){ console.log(e); fail++; }

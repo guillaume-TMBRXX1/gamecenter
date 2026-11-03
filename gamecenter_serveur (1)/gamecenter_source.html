@@ -1208,13 +1208,13 @@
   .sch-sgp:empty{display:none}
   /* play fingerprint (section 89) */
   .fp-box{display:grid;gap:8px;font-size:12px;color:var(--ink-2)}
-  .fp-box svg.fp-r{width:100%;max-width:280px;height:auto;display:block;margin:0 auto}
+  .fp-box svg.fp-r{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
   .fp-r .g{fill:none;stroke:var(--line-2);stroke-width:1}
   .fp-r .avg{fill:none;stroke:var(--ink-3);stroke-width:1.4;stroke-dasharray:3 3}
   .fp-r .sh{fill:var(--tc);fill-opacity:.16;stroke:var(--tc);stroke-width:2.2;stroke-linejoin:round}
   .fp-r.duo .sh{fill-opacity:.12}
   .fp-r text{fill:var(--ink-2);font:600 9.5px var(--f-ui)}
-  .fp-duo{display:grid;grid-template-columns:minmax(120px,170px) 1fr;gap:14px;align-items:center}
+  .fp-duo{display:grid;grid-template-columns:minmax(120px,170px) 1fr;gap:18px;align-items:center;max-width:760px}
   .fp-bars{display:grid;gap:7px}
   .fp-b{display:grid;grid-template-columns:92px 1fr 52px;align-items:center;gap:8px;font-size:11.5px}
   .fp-b .t{position:relative;height:8px;border-radius:4px;background:var(--l2,rgba(127,127,127,.12))}
@@ -4367,7 +4367,7 @@ function fpRadar(series,avg,labels){
   const R=labels?86:104, CX=130, CY=labels?118:118, r0=.14, n=FP_AX.length;
   const pt=(i,f)=>{ const a=-Math.PI/2+i*2*Math.PI/n, rr=R*(r0+(1-r0)*f); return [CX+rr*Math.cos(a),CY+rr*Math.sin(a)]; };
   const poly=f=>FP_AX.map((_,i)=>pt(i,f(i)).map(x=>x.toFixed(1)).join(',')).join(' ');
-  let s=`<svg class="fp-r${series.length>1?' duo':''}" viewBox="0 ${labels?0:4} 260 ${labels?236:228}" role="img" aria-label="Play fingerprint${series.length?': '+series.map(x=>esc(x.t)).join(' and '):''}">`;
+  let s=`<svg class="fp-r${series.length>1?' duo':''}" viewBox="${labels?'-36 0 332 236':'0 4 260 228'}" role="img" aria-label="Play fingerprint${series.length?': '+series.map(x=>esc(x.t)).join(' and '):''}">`;
   for(const g of [.33,.66,1]) s+=`<polygon class="g" points="${poly(()=>g)}"/>`;
   FP_AX.forEach((_,i)=>{ const [x,y]=pt(i,1); s+=`<line class="g" x1="${CX}" y1="${CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
   if(avg) s+=`<polygon class="avg" points="${poly(i=>avg[i])}"/>`;
@@ -6070,7 +6070,7 @@ function openModal(id){
       <aside class="m-side">
         <div class="panel wp-panel">${wpHTML(g,true)}</div>
         ${RIV_ON&&rivGid(g)?`<div class="panel"><span class="label">Before kickoff</span><div class="riv-box" data-riv="${esc(rivGid(g))}" data-riv-a="${g.away}" data-riv-b="${g.home}" data-riv-k="game" style="margin-top:8px">${rivBoxHTML(rivGid(g),g.away,g.home,'game')}</div></div>`:''}
-        ${FP_ON&&!g.replay&&TEAMS[g.away]&&TEAMS[g.home]?`<div class="panel"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="game" data-fp-a="${g.away}" data-fp-b="${g.home}" style="margin-top:8px">${fpHTML('game',g.away,g.home)}</div></div>`:''}
+        ${FP_ON&&rivGid(g)&&TEAMS[g.away]&&TEAMS[g.home]?`<div class="panel"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="game" data-fp-a="${g.away}" data-fp-b="${g.home}" style="margin-top:8px">${fpHTML('game',g.away,g.home)}</div></div>`:''}
         <div class="panel">${powerHTML(g)}${marketsHTML(g,true)}<p class="np-note">${note}</p></div>
       </aside>
     </div>
