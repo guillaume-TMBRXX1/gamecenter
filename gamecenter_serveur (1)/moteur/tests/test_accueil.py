@@ -10,6 +10,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = os.path.normpath(os.path.join(ICI, "..", ".."))
@@ -36,6 +37,12 @@ class TestAccueil(unittest.TestCase):
         serveur.load_weeks()
         if serveur.current_week() is None:
             self.skipTest("pas de semaine")
+        # horloge figée : sans elle, une action révélée entre les deux pages comparées change leur longueur (un autre test
+        # de la suite a pu placer l'horloge au milieu d'une journée de matchs)
+        t = serveur.now_ms()
+        p = mock.patch.object(serveur, "now_ms", lambda: t)
+        p.start()
+        self.addCleanup(p.stop)
 
     def tearDown(self):
         if self.avant is None:
