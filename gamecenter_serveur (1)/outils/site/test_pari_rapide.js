@@ -84,7 +84,7 @@ const regarder=(p,gid)=>p.evaluate(gid=>{ const x=document.createElement('button
     check(/Place bet · \$15/.test(lab),`mise dans la barre : « ${lab} »`);
     await cap(p,'3_grand_ecran_barre');
     const n0=(await paris(p)).length;
-    for(let i=0;i<4&&(await paris(p)).length===n0;i++){       /* en direct, le prix peut bouger entre deux actions : on accepte */
+    for(let i=0;i<8&&(await paris(p)).length===n0;i++){       /* en direct, le prix peut bouger entre deux actions : on accepte */
       await p.click('#qb [data-qbplace]'); await p.waitForTimeout(1000); }
     B=await paris(p);
     check(B.length===n0+1&&B[B.length-1].stake===15,'« Place bet » dans la barre : pari placé');

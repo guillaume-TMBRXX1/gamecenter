@@ -1075,8 +1075,9 @@ def teams_page(nom: str, request: Request):
     h = league_history(now_ms(), True)
     histo = next((f for f in h.get("franchises") or [] if f.get("team") == a), None)
     riv = None
-    if rivalites_on() and _riv.rival(a):                 # section 88 : saisons terminées seulement (page en cache 1 h)
-        w, t = _need_week(), now_ms()
+    w = _need_week()
+    if rivalites_on() and _riv.rival(a) and hasattr(w, "monday"):   # section 88 : saisons terminées seulement (cache 1 h)
+        t = now_ms()
         prev = [x for x in load_weeks().values() if x.monday < w.monday]
         riv = _riv.serie(confrontations_finies(max(prev, key=lambda x: x.monday), t, a, _riv.rival(a)) if prev else [],
                          a, _riv.rival(a))
