@@ -22,7 +22,7 @@ Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/a
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
 import bisect, hashlib, hmac, html, json, os, re, secrets, sqlite3, threading, time, uuid, math
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException, Request
@@ -32,6 +32,7 @@ from moteur import histoire as _histoire
 from moteur import insights as _insights
 from moteur import meme_match as _mm
 from moteur import rivalites as _riv
+from moteur import empreinte as _emp
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -888,6 +889,8 @@ def page(request: Request = None):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if rivalites_on():                               # rivalités et bilans (section 88)
         srv["rivalries"] = _riv.table()
+    if empreinte_on():                               # empreinte de jeu (section 89)
+        srv["fingerprint"] = [l for _, l in _emp.AXES]
     if not same_game_on():                           # combinés sur un même match (section 86)
         srv["same_game"] = False
     if not quick_bet_on():                           # pari rapide depuis l'écran d'un match (section 86)
@@ -1081,8 +1084,11 @@ def teams_page(nom: str, request: Request):
         prev = [x for x in load_weeks().values() if x.monday < w.monday]
         riv = _riv.serie(confrontations_finies(max(prev, key=lambda x: x.monday), t, a, _riv.rival(a)) if prev else [],
                          a, _riv.rival(a))
+    emp = None
+    if empreinte_on() and hasattr(w, "monday"):          # section 89 : la forme seulement (page publique)
+        emp = dict(_emp.publique(empreinte_data(w, now_ms())[0], a), axes=[l for _, l in _emp.AXES])
     s = _franchises.page_equipe(a, teams, d["week"].get("league"), histo, h.get("seasons"), _origine(request),
-                                _franchises_tete(), _derniers_matchs(a, now_ms()), riv)
+                                _franchises_tete(), _derniers_matchs(a, now_ms()), riv, emp)
     return HTMLResponse(s, headers={"Cache-Control": "public, max-age=3600"})
 
 
@@ -3370,6 +3376,87 @@ def api_rivalry(game: str = "", a: str = "", b: str = ""):
         avant = None
     return JSONResponse(_riv.serie(confrontations_finies(w, t, a, b, avant=avant), a, b),
                         headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ empreinte de jeu (README section 89)
+# Ce qu'une franchise joue vraiment, sur ses FENETRE derniers matchs terminés depuis la semaine EMPREINTE_DEPUIS
+# (début des identités de jeu, 02/11/2026). La forme du radar est publique (arrondie : aucun pourcentage) ; les chiffres,
+# la ligue, la comparaison de deux franchises et les changements sont réservés aux comptes Insights (GC_INSIGHTS_USERS).
+# GC_EMPREINTE=off : ni API ni dessin, le site d'avant.
+_EMP_MATCH, _EMP_CACHE, _EMP_LOCK = {}, {}, threading.Lock()
+try:
+    EMPREINTE_DEPUIS = max(1, int(os.environ.get("GC_EMPREINTE_DEPUIS", "6")))
+except ValueError:
+    EMPREINTE_DEPUIS = 6
+
+
+def empreinte_on():
+    return os.environ.get("GC_EMPREINTE", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def _emp_mesure(x, g):
+    """Comptes d'un match terminé (calculés une fois : un match fini ne change plus)."""
+    k = (x.folder, g["id"])
+    m = _EMP_MATCH.get(k)
+    if m is None:
+        m = _EMP_MATCH[k] = _emp.mesurer_match(x.feed(g["id"]), g["home"], g["away"])
+    return m
+
+
+def _emp_calcul(ws, t):
+    """Empreintes à l'instant t sur les semaines ws : les matchs terminés, du plus récent au plus ancien, jusqu'à
+    FENETRE par franchise."""
+    jeux = sorted(((x, g) for x in ws for g in x.sched if x.status(g, t) == "final" and x.teams_known(g, t)),
+                  key=lambda xg: (xg[1]["end"], xg[1]["id"]), reverse=True)
+    P = defaultdict(list)
+    for x, g in jeux:
+        if len(P[g["home"]]) >= _emp.FENETRE and len(P[g["away"]]) >= _emp.FENETRE:
+            continue
+        m = _emp_mesure(x, g)
+        for s in ("home", "away"):
+            if len(P[g[s]]) < _emp.FENETRE:
+                P[g[s]].append(m[g[s]])
+    return _emp.calculer(P)
+
+
+def empreinte_data(w, t):
+    """(empreintes à l'instant t, empreintes au début de la semaine w) ; en cache par nombre de matchs finis."""
+    ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday)
+          if x.open <= t and x.monday <= w.monday and x.doc["week"]["index"] >= EMPREINTE_DEPUIS]
+    fin = sum(1 for g in w.sched if w.status(g, t) == "final")
+    cle = (w.start, tuple(x.start for x in ws), fin)
+    with _EMP_LOCK:
+        d = _EMP_CACHE.get(cle)
+        if d is None:
+            avant = [x for x in ws if x.monday < w.monday]
+            d = (_emp_calcul(ws, t), _emp_calcul(avant, t) if avant else None)
+            _EMP_CACHE.clear(); _EMP_CACHE[cle] = d
+            if len(_EMP_MATCH) > 4000:               # une saison de matchs au plus : on repart de zéro
+                _EMP_MATCH.clear()
+    return d
+
+
+@app.get("/api/fingerprint")
+def api_fingerprint(team: str = "", a: str = "", b: str = "", token: str = ""):
+    """Empreinte de jeu : team= (forme pour tous ; chiffres, ligue et changements pour un compte Insights) ou a=&b=
+    (deux franchises superposées : comptes Insights seulement)."""
+    if not empreinte_on():
+        raise HTTPException(404, "fingerprint_off")
+    w = _need_week(); t = now_ms()
+    teams = [team] if team else [a, b]
+    if not all(x and _TEAM_INS.match(x) and x in w.doc["teams"] for x in teams) or (not team and a == b):
+        raise HTTPException(400, "bad_teams")
+    pro = insights_on() and insights_pro(player_by_token(token) if token else None)
+    if not team and not pro:
+        raise HTTPException(403, "insights_locked")
+    now, avant = empreinte_data(w, t)
+    out = {"axes": [l for _, l in _emp.AXES], "pro": pro}
+    if pro:
+        out["league"] = _emp.ligue_publique(now)
+        out["teams"] = [_emp.complete(now, x, (avant or {"teams": {}})["teams"].get(x)) for x in teams]
+    else:
+        out["teams"] = [_emp.publique(now, x) for x in teams]
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")
