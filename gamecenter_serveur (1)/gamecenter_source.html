@@ -6070,8 +6070,8 @@ function openModal(id){
       <aside class="m-side">
         <div class="panel wp-panel">${wpHTML(g,true)}</div>
         ${RIV_ON&&rivGid(g)?`<div class="panel"><span class="label">Before kickoff</span><div class="riv-box" data-riv="${esc(rivGid(g))}" data-riv-a="${g.away}" data-riv-b="${g.home}" data-riv-k="game" style="margin-top:8px">${rivBoxHTML(rivGid(g),g.away,g.home,'game')}</div></div>`:''}
-        ${FP_ON&&rivGid(g)&&TEAMS[g.away]&&TEAMS[g.home]?`<div class="panel"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="game" data-fp-a="${g.away}" data-fp-b="${g.home}" style="margin-top:8px">${fpHTML('game',g.away,g.home)}</div></div>`:''}
         <div class="panel">${powerHTML(g)}${marketsHTML(g,true)}<p class="np-note">${note}</p></div>
+        ${FP_ON&&rivGid(g)&&TEAMS[g.away]&&TEAMS[g.home]?`<div class="panel"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="game" data-fp-a="${g.away}" data-fp-b="${g.home}" style="margin-top:8px">${fpHTML('game',g.away,g.home)}</div></div>`:''}
       </aside>
     </div>
     <div class="m-lower">${statsHTML(g)}</div>
