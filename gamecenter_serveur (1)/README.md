@@ -2506,6 +2506,26 @@ Pour que les fans s'approprient une franchise par son histoire plutôt que par u
   `test_serveur.py` (Rivalites), `test_franchises.py`, `outils/site/test_rivalites.js`. À venir : Ring of Honor et
   numéros retirés.
 
+### 89. Empreinte de jeu (03/11/2026)
+Ce qu'une franchise **joue vraiment** (`moteur/empreinte.py`), sur ses 20 derniers matchs terminés (6 au moins) depuis
+la semaine `GC_EMPREINTE_DEPUIS` (6 : début des identités de jeu), en 8 axes : part de passes (le reste : les courses),
+courses en force (POWER, COUNTER, TRAP, WHAM, POWER_TOSS, BUCK_SWEEP parmi les courses), motion, play-action, RPO, 4es
+essais tentés, blitz et couverture homme (défense). Genou et spike exclus ; mêmes familles de concepts que la mesure de
+l'identité (`outils/moteur/identite_playbooks.py`). Chaque axe va de la franchise la plus basse de la ligue (centre) à
+la plus haute (bord).
+- **Accès** (décision de Guillaume) : la **forme** du radar est ouverte à tous, arrondie au dixième (on ne peut pas en
+  retrouver les pourcentages) ; les **chiffres** (barres, « Pass / run » 83 / 17), la moyenne de la ligue, les deux
+  franchises superposées et « ce qui a changé depuis la semaine dernière » (5 points au moins, comparé aux empreintes du
+  début de la semaine) sont réservés aux comptes Insights (`GC_INSIGHTS_USERS`).
+- **Serveur** : `/api/fingerprint?team=` (forme ; tout pour un compte Insights) ou `?a=&b=` (comptes Insights, 403
+  sinon) ; matchs terminés seulement, comptes d'un match calculés une fois, en cache par nombre de matchs finis. Pages
+  `/teams/<nom>` : section « Play fingerprint » (la forme seulement).
+- **Site** : fiche d'une franchise (Teams, My team) : la forme et un cadenas, ou le petit radar et les 8 barres avec la
+  moyenne de la ligue ; grand écran : les deux empreintes superposées (aperçu flouté verrouillé sinon) ; Insights,
+  Head-to-head : carte « Play fingerprint ».
+- Interrupteur `GC_EMPREINTE=off` (le site d'avant, `/api/fingerprint` 404). Tests : `moteur/tests/test_empreinte.py`,
+  `test_franchises.py`, `outils/site/test_empreinte.js`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2683,7 +2703,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89).
 
 ## Test
 

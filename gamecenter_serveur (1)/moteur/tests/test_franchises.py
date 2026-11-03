@@ -86,6 +86,18 @@ class TestPagesFranchises(unittest.TestCase):
         self.assertIn("Last meeting: week 4, CTX 23 – 20 PRM", t)
         self.assertNotIn("<h2>Rivalry", pf.page_equipe("CTX", self.teams, self.league, None, [], "https://snapline.live"))
 
+    def test_empreinte(self):
+        """Section « Play fingerprint » (README section 89) : la forme du radar, aucun pourcentage."""
+        from moteur import empreinte as E
+        emp = {"team": "CTX", "games": 14, "shape": [1.0, .3, .5, .2, 0.0, .7, .9, .4], "axes": [l for _, l in E.AXES]}
+        s = pf.page_equipe("CTX", self.teams, self.league, None, [], "https://snapline.live", empreinte=emp)
+        self.assertIn("<h2>Play fingerprint", s)
+        self.assertIn("last 14 finished games", texte(s))
+        self.assertEqual(s.count('class="sh"'), 1)
+        self.assertNotRegex(s.split("<h2>Play fingerprint")[1].split("</section>")[0], r"\d+ ?%")
+        self.assertNotIn("<h2>Play fingerprint", pf.page_equipe("CTX", self.teams, self.league, None, [], "https://snapline.live",
+                                                               empreinte=dict(emp, shape=None)))
+
     def test_echappement(self):
         teams = json.loads(json.dumps(self.teams))
         teams["CTX"]["coordinators"]["offense"] = "<script>x</script>"

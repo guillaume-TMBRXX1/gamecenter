@@ -97,6 +97,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : Same Game Combo (Schedule, bulletin) et pari rapide sur le grand écran" node outils/site/test_pari_rapide.js
   lancer "Site : fin d.un match en direct sur le tableau (dernières actions, écran final)" node outils/site/test_fin_live.js
   lancer "Site : rivalités, bilans des confrontations et mémoire" node outils/site/test_rivalites.js
+  lancer "Site : empreinte de jeu (forme publique, chiffres Insights)" node outils/site/test_empreinte.js
   lancer "Site : chat, salon General (signaler, masquer, effacer, administration)" node outils/site/test_chat.js
   lancer "Site : chat d.un match (synchronisé à l.action, Bigger field) et bouclier anti-spoiler" node outils/site/test_chat_match.js
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js

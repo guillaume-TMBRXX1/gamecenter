@@ -1206,6 +1206,32 @@
   .riv-box .riv-dots i.tie{background:var(--ink-3)}
   .sch-drop .riv-box{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:10px;background:var(--l1,rgba(0,0,0,.03));box-shadow:inset 0 0 0 1px var(--line-2)}
   .sch-sgp:empty{display:none}
+  /* play fingerprint (section 89) */
+  .fp-box{display:grid;gap:8px;font-size:12px;color:var(--ink-2)}
+  .fp-box svg.fp-r{width:100%;max-width:280px;height:auto;display:block;margin:0 auto}
+  .fp-r .g{fill:none;stroke:var(--line-2);stroke-width:1}
+  .fp-r .avg{fill:none;stroke:var(--ink-3);stroke-width:1.4;stroke-dasharray:3 3}
+  .fp-r .sh{fill:var(--tc);fill-opacity:.16;stroke:var(--tc);stroke-width:2.2;stroke-linejoin:round}
+  .fp-r.duo .sh{fill-opacity:.12}
+  .fp-r text{fill:var(--ink-2);font:600 9.5px var(--f-ui)}
+  .fp-duo{display:grid;grid-template-columns:minmax(120px,170px) 1fr;gap:14px;align-items:center}
+  .fp-bars{display:grid;gap:7px}
+  .fp-b{display:grid;grid-template-columns:92px 1fr 52px;align-items:center;gap:8px;font-size:11.5px}
+  .fp-b .t{position:relative;height:8px;border-radius:4px;background:var(--l2,rgba(127,127,127,.12))}
+  .fp-b .t b{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--tc)}
+  .fp-b .t u{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--ink)}
+  .fp-b em{font:600 11.5px var(--f-mono,var(--f-ui));font-style:normal;color:var(--ink);text-align:right;white-space:nowrap}
+  .fp-lg{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:11px}
+  .fp-lg span{display:inline-flex;align-items:center;gap:5px}
+  .fp-lg i{width:14px;height:3px;border-radius:2px;background:var(--tc)}
+  .fp-lg i.avg{background:none;border-top:1.5px dashed var(--ink-3);height:0}
+  .fp-chg b{color:var(--ink)}
+  .fp-lock{display:flex;align-items:center;gap:6px;margin:0;font-size:11.5px;color:var(--ink-3)}
+  .fp-lock svg{width:13px;height:13px;flex-shrink:0}
+  .fp-tease{position:relative}
+  .fp-tease .fp-r{filter:blur(5px);opacity:.6}
+  .fp-tease .fp-lock{position:absolute;inset:auto 0 42%;justify-content:center;color:var(--ink-2);font-weight:600}
+  @media (max-width:520px){ .fp-duo{grid-template-columns:1fr} .fp-duo svg.fp-r{max-width:200px} }
   .sch-sgp b{font-family:var(--f-mono);color:var(--cyan)} .sch-sgp .chg{color:var(--amber,#ffb020)}
   .sch-teams{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .sch-teams button{border:1.5px solid var(--tc);background:color-mix(in srgb,var(--tc) 9%,var(--l1));color:var(--ink);border-radius:8px;font:700 11px var(--f-display);letter-spacing:.06em;height:30px;min-width:44px;padding:0 9px;cursor:pointer;transition:background-color .15s,color .15s,transform .12s}
@@ -4316,6 +4342,71 @@ function rivTeamPanel(abbr){
   const r=RIV.find(x=>x.a===abbr||x.b===abbr); if(!r) return '';
   const o=r.a===abbr?r.b:r.a;
   return `<div class="panel" style="margin-bottom:12px"><span class="label">Rival · ${esc(TEAMS[o].name)}</span><div class="riv-box" data-riv="" data-riv-a="${abbr}" data-riv-b="${o}" data-riv-k="team" style="margin-top:8px">${rivBoxHTML('',abbr,o,'team')}</div></div>`; }
+/* ---------- play fingerprint (section 89, 03/11/2026): what a franchise actually calls, over its last finished games,
+   on 8 axes (each from the league's lowest, centre, to its highest, edge). Everyone sees the SHAPE of a team's radar;
+   the numbers, the league average, two teams overlaid (Insights head-to-head, big screen) and what changed since last
+   week are for Insights accounts (the server: /api/fingerprint). GC_EMPREINTE=off (#gf-server without .fingerprint):
+   the page as before. */
+const FP_AX=SERVER&&Array.isArray(SERVER.fingerprint)?SERVER.fingerprint:null, FP_ON=!!(SEASON&&FP_AX);
+const FPD={}, FPL={}, FP_PRO={};
+const fpTok=()=>PLAYER&&PLAYER.token||'';
+function fpFinals(){ const t=nowMs(); let n=0; for(const g of SCHED) if(gStatus(g,t)==='final') n++; return n; }
+function fpPro(){ const k=fpTok(); if(INS.d&&INS.tok===k) return !!INS.d.pro; return k in FP_PRO?FP_PRO[k]:null; }
+function fpGet(a,b){
+  if(!FP_ON) return null;
+  const tok=fpTok(), base=(b?'p:'+a+'|'+b:'t:'+a)+'|'+tok, k=base+'|'+fpFinals(), d=FPD[k];
+  if(d&&d!=='busy'&&d!=='err') return d;
+  if(!d){ FPD[k]='busy';
+    api('/fingerprint?'+(b?'a='+encodeURIComponent(a)+'&b='+encodeURIComponent(b):'team='+encodeURIComponent(a))+(tok?'&token='+encodeURIComponent(tok):''))
+      .then(x=>{ FPD[k]=x; FPL[base]=x; FP_PRO[tok]=!!x.pro; fpFill(); }).catch(()=>{ FPD[k]='err'; if(b){ FP_PRO[tok]=false; fpFill(); } }); }
+  return FPL[base]||null; }
+function fpFill(){ document.querySelectorAll('[data-fp]').forEach(el=>{ const h=fpHTML(el.dataset.fp,el.dataset.fpA,el.dataset.fpB); if(el._h!==h){ el._h=h; el.innerHTML=h; } }); }
+const fpTc=a=>`--tc:var(--t-${String(a).toLowerCase()})`;
+/* the radar: series [{t, pos[8]}] (0..1), the league average's positions (or null) */
+function fpRadar(series,avg,labels){
+  const R=labels?86:104, CX=130, CY=labels?118:118, r0=.14, n=FP_AX.length;
+  const pt=(i,f)=>{ const a=-Math.PI/2+i*2*Math.PI/n, rr=R*(r0+(1-r0)*f); return [CX+rr*Math.cos(a),CY+rr*Math.sin(a)]; };
+  const poly=f=>FP_AX.map((_,i)=>pt(i,f(i)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  let s=`<svg class="fp-r${series.length>1?' duo':''}" viewBox="0 ${labels?0:4} 260 ${labels?236:228}" role="img" aria-label="Play fingerprint${series.length?': '+series.map(x=>esc(x.t)).join(' and '):''}">`;
+  for(const g of [.33,.66,1]) s+=`<polygon class="g" points="${poly(()=>g)}"/>`;
+  FP_AX.forEach((_,i)=>{ const [x,y]=pt(i,1); s+=`<line class="g" x1="${CX}" y1="${CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
+  if(avg) s+=`<polygon class="avg" points="${poly(i=>avg[i])}"/>`;
+  for(const x of series) s+=`<polygon class="sh" style="${fpTc(x.t)}" points="${poly(i=>x.pos[i])}"/>`;
+  if(labels) FP_AX.forEach((l,i)=>{ const [x,y]=pt(i,1.2); s+=`<text x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="${Math.abs(x-CX)<6?'middle':x>CX?'start':'end'}">${esc(l)}</text>`; });
+  return s+'</svg>'; }
+const fpPc=v=>Math.round(v*100);
+function fpBars(x,L){
+  const K=['pass','power','motion','pa','rpo','go4','blitz','man'];
+  return `<div class="fp-bars">${FP_AX.map((l,i)=>{ const k=K[i], v=x.values[k];
+    return `<div class="fp-b" style="${fpTc(x.team)}"><span>${esc(l)}</span><span class="t"><b style="width:${(4+96*x.pos[i]).toFixed(1)}%"></b>${L?`<u style="left:${(4+96*L.avg_pos[i]).toFixed(1)}%" title="League average ${fpPc(L.avg[k])}%"></u>`:''}</span><em>${k==='pass'?fpPc(v)+' / '+fpPc(1-v):fpPc(v)+'%'}</em></div>`; }).join('')}</div>`; }
+function fpChanges(x){
+  if(!x.changes||!x.changes.length) return '';
+  return `<p class="fp-chg np-note">Since last week: ${x.changes.map(c=>`<b>${esc(c.label)} ${c.delta>0?'+':MINUS}${Math.abs(Math.round(c.delta*100))} pts</b>`).join(' · ')}</p>`; }
+const fpLock=txt=>`<p class="fp-lock">${typeof INS_SVG!=='undefined'?INS_SVG.lock:''}<span>${txt}</span></p>`;
+function fpSample(a,b){   /* made-up shapes behind the lock: nothing real is drawn */
+  const f=(t,k)=>{ let s=0; for(const c of t+k) s=(s*31+c.charCodeAt(0))%997; return (s%9+1)/10; };
+  return [a,b].map(t=>({t,pos:FP_AX.map((_,i)=>f(t,String(i)))})); }
+/* kind: 'team' (My team, Teams) · 'game' (big screen: both teams) · 'h2h' (Insights head-to-head) */
+function fpHTML(kind,a,b){
+  if(!FP_ON) return '';
+  if(kind==='team'){
+    const d=fpGet(a); if(!d) return '<p class="st-none">Loading…</p>';
+    const x=d.teams[0];
+    if(!x.shape) return `<p class="st-none">Not enough finished games yet (${x.games} of 6).</p>`;
+    const n=`<p class="np-note">Last ${x.games} finished games · each axis runs from the league's lowest (centre) to its highest (edge).</p>`;
+    if(!d.pro) return fpRadar([{t:a,pos:x.shape}],null,true)+n+fpLock('Numbers, league average and match-ups with Insights · Pro');
+    return `<div class="fp-duo">${fpRadar([{t:a,pos:x.pos}],d.league&&d.league.avg_pos,false)}${fpBars(x,d.league)}</div>${fpChanges(x)}${n.replace('</p>',' Black tick: league average.</p>')}`; }
+  const pro=fpPro();
+  if(pro===null){ fpGet(b); return kind==='h2h'?'<p class="st-none">Loading…</p>':''; }
+  if(!pro) return kind==='game'?`<div class="fp-tease" aria-hidden="false">${fpRadar(fpSample(a,b),null,false)}${fpLock('Both play fingerprints · Insights Pro')}</div>`:'';
+  const d=fpGet(a,b); if(!d) return '<p class="st-none">Loading…</p>';
+  const ok=d.teams.filter(x=>x.pos);
+  if(ok.length<2) return '<p class="st-none">Not enough finished games yet for both teams.</p>';
+  const lg=`<div class="fp-lg">${ok.map(x=>`<span style="${fpTc(x.team)}"><i></i>${esc(x.team)} · ${fpPc(x.values.pass)}/${fpPc(1-x.values.pass)} pass/run</span>`).join('')}<span><i class="avg"></i>League average</span></div>`;
+  const chg=kind==='h2h'?ok.map(x=>x.changes&&x.changes.length?fpChanges(x).replace('Since last week:',esc(x.team)+' since last week:'):'').join(''):'';
+  return fpRadar(ok.map(x=>({t:x.team,pos:x.pos})),d.league&&d.league.avg_pos,true)+lg+chg; }
+function fpTeamPanel(abbr){
+  return `<div class="panel" style="margin-bottom:12px"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="team" data-fp-a="${abbr}" style="margin-top:8px">${fpHTML('team',abbr)}</div></div>`; }
 /* the commentator: the trophy at kickoff, who keeps or takes it at the final whistle */
 function rivGid(g){ return g.sched?g.sched.id:(g.gf&&g.gf.game&&SCHED_BY[g.gf.game.id]?g.gf.game.id:null); }
 function rivIntro(g){
@@ -5979,6 +6070,7 @@ function openModal(id){
       <aside class="m-side">
         <div class="panel wp-panel">${wpHTML(g,true)}</div>
         ${RIV_ON&&rivGid(g)?`<div class="panel"><span class="label">Before kickoff</span><div class="riv-box" data-riv="${esc(rivGid(g))}" data-riv-a="${g.away}" data-riv-b="${g.home}" data-riv-k="game" style="margin-top:8px">${rivBoxHTML(rivGid(g),g.away,g.home,'game')}</div></div>`:''}
+        ${FP_ON&&!g.replay&&TEAMS[g.away]&&TEAMS[g.home]?`<div class="panel"><span class="label">Play fingerprint</span><div class="fp-box" data-fp="game" data-fp-a="${g.away}" data-fp-b="${g.home}" style="margin-top:8px">${fpHTML('game',g.away,g.home)}</div></div>`:''}
         <div class="panel">${powerHTML(g)}${marketsHTML(g,true)}<p class="np-note">${note}</p></div>
       </aside>
     </div>
@@ -6761,6 +6853,7 @@ function teamDetailHTML(abbr,t,mine){
   return `<div class="card team-page"><div class="tp-head"><span class="badge lg">${T.abbr}</span><div><h2>${esc(T.name)}</h2><p class="eyebrow"><b>${esc(tStyle(T))}</b> · ${esc(tIdent(T))}${r&&(r.w+r.l+r.t)?` · ${r.w}-${r.l}${r.t?'-'+r.t:''} · #${r.rank}`:''}</p></div></div>
       ${stats}
       ${RIV_ON?rivTeamPanel(abbr):''}
+      ${FP_ON?fpTeamPanel(abbr):''}
       <div class="tp-grid"><div class="panel"><span class="label">Coordinators</span><div class="pc-line"><span>Offense</span><b>${esc(T.coordinators.offense)}</b></div><div class="pc-line"><span>Defense</span><b>${esc(T.coordinators.defense)}</b></div>
         <span class="label" style="margin-top:12px;display:block">Unit ratings (from the roster)</span>${unitBar('Pass offense',u.pass_off)}${unitBar('Run offense',u.run_off)}${unitBar('Pass defense',u.pass_def)}${unitBar('Run defense',u.run_def)}${unitBar('Special teams',u.special_teams)}</div>
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
@@ -7210,7 +7303,7 @@ function insSample(){
   rows.sort((a,b)=>b.rating-a.rating);
   const t=rows.map(r=>r.team);
   const fake=n=>({id:'x',name:n,pos:'WR',ovr:80,form:2});
-  return {league:{games:144,ppg:50.2,home_w:.52,fav_w:.61,over:.48,home_margin:1},rows,
+  return {fp:'sample',league:{games:144,ppg:50.2,home_w:.52,fav_w:.61,over:.48,home_margin:1},rows,
     pair:{meetings:[1,2,3,4].map(i=>({id:'s'+i,week:5-i,kickoff:'2026-10-0'+i+'T13:00:00+02:00',home:t[0],away:t[1],hs:20+i,as:24-i,spread_home:-2.5,total:47.5})),
       players:Object.fromEntries(t.map(x=>[x,{hot:[fake('Sample Player'),fake('Sample Player')],cold:[fake('Sample Player')]}]))},
     hints:[{kind:'ats',text:`${t[0]} covers the spread 9 of 12`,sub:'Beats the engine line more often than not.'},
@@ -7283,7 +7376,8 @@ function insH2HHTML(D,t){
   return `<div class="card"><div class="h2h-pick"><div class="h2h-side">${side(a)}${list(A,'a',B)}</div><span class="h2h-vs" aria-hidden="true">VS</span><div class="h2h-side">${side(b)}${list(B,'b',A)}</div></div></div>
     <div class="ins-grid"><div class="card"><div class="card-h"><h2>Head-to-head history</h2><span class="label">Every meeting since week ${esc(String((SERVER&&SERVER.hist_since)||2))}</span></div>${insHistHTML(P,A,B)}</div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}
-      <p class="np-note"><b>Ratings line</b> = the spread the power ratings suggest. A gap of a point or more against the engine line points to the side the ratings like.</p></div></div></div>
+      <p class="np-note"><b>Ratings line</b> = the spread the power ratings suggest. A gap of a point or more against the engine line points to the side the ratings like.</p></div>
+      ${FP_ON?`<div class="card"><div class="card-h"><h2>Play fingerprint</h2><span class="label">What each team actually calls</span></div><div class="fp-box">${D.fp==='sample'?fpRadar(fpSample(A,B),null,true):`<div class="fp-box" data-fp="h2h" data-fp-a="${A}" data-fp-b="${B}">${fpHTML('h2h',A,B)}</div>`}</div></div>`:''}</div></div>
     <div class="ins-grid"><div class="ins-col"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
       <div class="card"><div class="card-h"><h2>Strength match-up</h2><span class="label">Offense against defense</span></div>${insDuelHTML(D,a,b)}</div></div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Players to watch</h2><span class="label">Starters' form this week</span></div>${insPlayersHTML(P,A,B)}</div>

@@ -463,6 +463,10 @@ STYLE = """<style>
   th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
   th{color:var(--ink-2);font-weight:600}
   td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .fp{display:block;width:100%;max-width:300px;height:auto;margin:6px auto 0}
+  .fp .g{fill:none;stroke:var(--line);stroke-width:1}
+  .fp .sh{fill:var(--tc);fill-opacity:.18;stroke:var(--tc);stroke-width:2.2;stroke-linejoin:round}
+  .fp text{fill:var(--ink-2);font:600 9.5px system-ui,sans-serif}
   .bar{display:inline-block;height:8px;border-radius:4px;background:var(--tc);vertical-align:middle;margin-left:8px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:0 0 16px}
   .tm{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -562,7 +566,36 @@ def _rivalite(a, teams, r):
             "<p>Completed seasons only: nothing from this week's games.</p></section>")
 
 
-def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None, rivalite=None):
+def _empreinte(a, teams, emp):
+    """Section « Play fingerprint » (README section 89) : la forme du radar seulement (aucun pourcentage)."""
+    import math
+    nom = e(teams[a]["name"])
+    ax, sh = emp["axes"], emp["shape"]
+    n, R, cx, cy, r0 = len(ax), 86, 130, 118, .14
+
+    def pt(i, f):
+        ang = -math.pi / 2 + i * 2 * math.pi / n
+        rr = R * (r0 + (1 - r0) * f)
+        return cx + rr * math.cos(ang), cy + rr * math.sin(ang)
+
+    def poly(fs):
+        return " ".join(f"{x:.1f},{y:.1f}" for x, y in (pt(i, f) for i, f in enumerate(fs)))
+    svg = [f'<svg class="fp" viewBox="0 0 260 236" role="img" aria-label="Play fingerprint of the {nom}">']
+    svg += [f'<polygon class="g" points="{poly([g] * n)}"/>' for g in (.33, .66, 1)]
+    svg += [f'<line class="g" x1="{cx}" y1="{cy}" x2="{pt(i, 1)[0]:.1f}" y2="{pt(i, 1)[1]:.1f}"/>' for i in range(n)]
+    svg.append(f'<polygon class="sh" points="{poly(sh)}"/>')
+    for i, l in enumerate(ax):
+        x, y = pt(i, 1.2)
+        anc = "middle" if abs(x - cx) < 6 else "start" if x > cx else "end"
+        svg.append(f'<text x="{x:.1f}" y="{y + 3:.1f}" text-anchor="{anc}">{e(l)}</text>')
+    svg.append("</svg>")
+    return (f"<section><h2>Play fingerprint</h2><p>What the {nom} actually call, over their last {emp['games']} "
+            "finished games. Each axis runs from the league's lowest team (centre) to its highest (edge).</p>"
+            + "".join(svg) + "<p>Numbers, the league average and match-ups are in Insights on "
+            '<a href="/">snapline.live</a>.</p></section>')
+
+
+def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None, rivalite=None, empreinte=None):
     """/teams/<nom> : présentation écrite, identité, staff, notes des unités, titulaires, histoire et division."""
     t = teams[a]
     nom, tc = t["name"], COULEURS.get(a, "#1E5C78")
@@ -619,6 +652,8 @@ def page_equipe(a, teams, league, histo, saisons, origine, tete="", recents=None
                      f"completed seasons only.</p><ul>{''.join(lignes)}</ul></section>")
     if rivalite and rivalite.get("rivalry"):
         parts.append(_rivalite(a, teams, rivalite))
+    if empreinte and empreinte.get("shape"):
+        parts.append(_empreinte(a, teams, empreinte))
     fin = [s for s in saisons or [] if s.get("complete") and a in (s.get("champion"), s.get("runner_up"))]
     if fin:
         li = []
