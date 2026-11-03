@@ -4395,7 +4395,7 @@ function fpHTML(kind,a,b){
     if(!x.shape) return `<p class="st-none">Not enough finished games yet (${x.games} of 6).</p>`;
     const n=`<p class="np-note">Last ${x.games} finished games · each axis runs from the league's lowest (centre) to its highest (edge).</p>`;
     if(!d.pro) return fpRadar([{t:a,pos:x.shape}],null,true)+n+fpLock('Numbers, league average and match-ups with Insights · Pro');
-    return `<div class="fp-duo">${fpRadar([{t:a,pos:x.pos}],d.league&&d.league.avg_pos,false)}${fpBars(x,d.league)}</div>${fpChanges(x)}${n.replace('</p>',' Black tick: league average.</p>')}`; }
+    return `<div class="fp-duo">${fpRadar([{t:a,pos:x.pos}],d.league&&d.league.avg_pos,false)}${fpBars(x,d.league)}</div>${fpChanges(x)}${n.replace('</p>',' Tick: league average.</p>')}`; }
   const pro=fpPro();
   if(pro===null){ fpGet(b); return kind==='h2h'?'<p class="st-none">Loading…</p>':''; }
   if(!pro) return kind==='game'?`<div class="fp-tease" aria-hidden="false">${fpRadar(fpSample(a,b),null,false)}${fpLock('Both play fingerprints · Insights Pro')}</div>`:'';
