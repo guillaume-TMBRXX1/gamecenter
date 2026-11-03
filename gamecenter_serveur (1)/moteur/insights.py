@@ -289,7 +289,8 @@ def confrontations(semaines, a, b):
             o = g.get("odds") or {}
             out.append({"id": g["id"], "week": idx, "kickoff": g["kickoff"], "phase": g.get("phase"),
                         "home": g["home"], "away": g["away"], "hs": g["result"]["home"], "as": g["result"]["away"],
-                        "spread_home": o.get("spread_home"), "total": o.get("total")})
+                        "spread_home": o.get("spread_home"), "total": o.get("total"),
+                        "ot": bool((g.get("result") or {}).get("overtime"))})
     out.sort(key=lambda m: m["kickoff"], reverse=True)
     return out
 

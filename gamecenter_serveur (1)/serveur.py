@@ -31,6 +31,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from moteur import histoire as _histoire
 from moteur import insights as _insights
 from moteur import meme_match as _mm
+from moteur import rivalites as _riv
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -885,6 +886,8 @@ def page(request: Request = None):
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
     if os.environ.get("GC_SCHEDULE_PLUS", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
+    if rivalites_on():                               # rivalités et bilans (section 88)
+        srv["rivalries"] = _riv.table()
     if not same_game_on():                           # combinés sur un même match (section 86)
         srv["same_game"] = False
     if not quick_bet_on():                           # pari rapide depuis l'écran d'un match (section 86)
@@ -1071,8 +1074,15 @@ def teams_page(nom: str, request: Request):
     a = par_slug[nom]
     h = league_history(now_ms(), True)
     histo = next((f for f in h.get("franchises") or [] if f.get("team") == a), None)
+    riv = None
+    w = _need_week()
+    if rivalites_on() and _riv.rival(a) and hasattr(w, "monday"):   # section 88 : saisons terminées seulement (cache 1 h)
+        t = now_ms()
+        prev = [x for x in load_weeks().values() if x.monday < w.monday]
+        riv = _riv.serie(confrontations_finies(max(prev, key=lambda x: x.monday), t, a, _riv.rival(a)) if prev else [],
+                         a, _riv.rival(a))
     s = _franchises.page_equipe(a, teams, d["week"].get("league"), histo, h.get("seasons"), _origine(request),
-                                _franchises_tete(), _derniers_matchs(a, now_ms()))
+                                _franchises_tete(), _derniers_matchs(a, now_ms()), riv)
     return HTMLResponse(s, headers={"Cache-Control": "public, max-age=3600"})
 
 
@@ -3320,8 +3330,45 @@ def api_insights_h2h(a: str = "", b: str = "", token: str = ""):
     ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday)
           if x.open <= t and x.monday <= w.monday and x.doc["week"]["index"] >= HIST_DEPUIS]
     sem = [(x.doc["week"]["index"], [g for g in x.sched if x.status(g, t) == "final" and x.teams_known(g, t)]) for x in ws]
-    return JSONResponse({"a": a, "b": b, "meetings": _insights.confrontations(sem, a, b),
+    meet = _insights.confrontations(sem, a, b)
+    return JSONResponse({"a": a, "b": b, "meetings": meet, "series": _riv.serie(meet, a, b) if rivalites_on() else None,
                          "players": {k: _insights.joueurs(insights_roster(w, k)) for k in (a, b)}},
+                        headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ rivalités et bilans (README section 88)
+def rivalites_on():
+    """Rivalités, bilans des confrontations, mémoire (section 88) : GC_RIVALITES=off, le site d'avant."""
+    return os.environ.get("GC_RIVALITES", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def confrontations_finies(w, t, a, b, avant=None):
+    """Confrontations a–b terminées à l'instant t, des semaines HIST_DEPUIS à w (comme History), avant le coup d'envoi
+    avant (ms) si donné : jamais un match pas encore joué."""
+    ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday)
+          if x.open <= t and x.monday <= w.monday and x.doc["week"]["index"] >= HIST_DEPUIS]
+    sem = [(x.doc["week"]["index"], [g for g in x.sched if x.status(g, t) == "final" and x.teams_known(g, t)
+                                     and (avant is None or g["ko"] < avant)]) for x in ws]
+    return _insights.confrontations(sem, a, b)
+
+
+@app.get("/api/rivalry")
+def api_rivalry(game: str = "", a: str = "", b: str = ""):
+    """Bilan de deux franchises : celles d'un match de la semaine en cours (game), avant son coup d'envoi, ou a et b
+    à l'instant (My team, pages des franchises) ; série, dernière confrontation, classique ; rivalité et trophée."""
+    if not rivalites_on():
+        raise HTTPException(404, "rivalries_off")
+    w = _need_week(); t = now_ms()
+    if game:
+        g = w.by.get(str(game))
+        if g is None or not w.teams_known(g, t):
+            raise HTTPException(404, "unknown_game")
+        a, b, avant = g["away"], g["home"], g["ko"]
+    else:
+        if not (_TEAM_INS.match(a) and _TEAM_INS.match(b)) or a == b or a not in w.doc["teams"] or b not in w.doc["teams"]:
+            raise HTTPException(400, "bad_teams")
+        avant = None
+    return JSONResponse(_riv.serie(confrontations_finies(w, t, a, b, avant=avant), a, b),
                         headers={"Cache-Control": "no-store"})
 
 

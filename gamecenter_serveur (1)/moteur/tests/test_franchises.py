@@ -73,6 +73,19 @@ class TestPagesFranchises(unittest.TestCase):
         self.assertIn('<link rel="canonical" href="https://snapline.live/teams/cortex-foxes">', s)
         self.assertNotIn("<script src", s)
 
+    def test_rivalite(self):
+        """Section « Rivalry » (README section 88) : rival, trophée, détenteur, série, dernière confrontation."""
+        from moteur import rivalites as R
+        M = [{"id": "w4-r1", "week": 4, "kickoff": "2026-10-20T12:00:00+02:00", "phase": "regular", "home": "PRM",
+              "away": "CTX", "hs": 20, "as": 23, "ot": False}]
+        s = pf.page_equipe("CTX", self.teams, self.league, None, [], "https://snapline.live", rivalite=R.serie(M, "CTX", "PRM"))
+        t = texte(s)
+        self.assertIn("Rival: the Prism Chameleons", t)
+        self.assertIn("The Masks", t)
+        self.assertIn("Trophy holder: Cortex Foxes", t)
+        self.assertIn("Last meeting: week 4, CTX 23 – 20 PRM", t)
+        self.assertNotIn("<h2>Rivalry", pf.page_equipe("CTX", self.teams, self.league, None, [], "https://snapline.live"))
+
     def test_echappement(self):
         teams = json.loads(json.dumps(self.teams))
         teams["CTX"]["coordinators"]["offense"] = "<script>x</script>"
