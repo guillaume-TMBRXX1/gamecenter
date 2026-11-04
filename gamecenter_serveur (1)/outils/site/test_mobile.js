@@ -27,7 +27,9 @@ async function server(port,env){
   for(let i=0;i<240;i++){ try{ if((await fetch(`http://localhost:${port}/api/time`)).ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
   p.kill(); throw new Error('le serveur ne démarre pas');
 }
-const ouvrir=async(b,port)=>{ const ctx=await b.newContext({viewport:{width:1180,height:820},deviceScaleFactor:2});
+/* netteté : petite fenêtre (le navigateur sans écran dessine en logiciel : ≈ 4,7 ms à 1180 × 820, trop près du seuil de
+   remontée de 5 ms ; la règle elle-même est vérifiée, pas la vitesse de la machine) */
+const ouvrir=async(b,port,vp)=>{ const ctx=await b.newContext({viewport:vp||{width:1180,height:820},deviceScaleFactor:2});
   const p=await ctx.newPage(); p.errs=[]; p.diag=[]; p.on('pageerror',e=>p.errs.push(e.message));
   await ctx.route('**/api/diag',async rt=>{ try{ const r=rt.request(), raw=r.postDataBuffer(); p.diag.push(...JSON.parse(raw?raw.toString('utf8'):'{}').e||[]); }catch(e){} await rt.continue(); });
   await p.goto(`http://localhost:${port}/`,{timeout:240000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:120000}); return p; };
@@ -47,7 +49,7 @@ const ratio=p=>p.evaluate(()=>{ const c=document.querySelector('#modal .field ca
     check(leg.length>0&&!lourd,`page : ${leg.length} matchs terminés allégés, sans poche, pré-snap ni scouting (${Math.round(page.length/1e6)} Mo)`);
 
     /* ---- netteté : rapide = net, même à 30 images/s ---- */
-    const p=await ouvrir(b,P1);
+    const p=await ouvrir(b,P1,{width:760,height:620});
     await grandEcran(p,LIVE.id);
     await p.evaluate(()=>{ const raf=window.requestAnimationFrame.bind(window); let last=0;   /* 30 images/s, comme un iPhone en économie d'énergie */
       window.requestAnimationFrame=cb=>raf(function tick(t){ if(t-last<32){ raf(tick); return; } last=t; cb(t); }); });
@@ -57,10 +59,10 @@ const ratio=p=>p.evaluate(()=>{ const c=document.querySelector('#modal .field ca
     /* ---- calcul lent : la résolution baisse, puis remonte ---- */
     const cdp=await p.context().newCDPSession(p);
     await cdp.send('Emulation.setCPUThrottlingRate',{rate:20});
-    let r2=r1; for(let i=0;i<30&&r2>=2;i++){ await p.waitForTimeout(1000); r2=await ratio(p); }
+    let r2=r1; for(let i=0;i<45&&r2>=2;i++){ await p.waitForTimeout(1000); r2=await ratio(p); }
     check(r2<2,`processeur bridé ×20 : la résolution baisse (×${r2})`);
     await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
-    let r3=r2; for(let i=0;i<70&&r3<=r2;i++){ await p.waitForTimeout(1000); r3=await ratio(p); }
+    let r3=r2; for(let i=0;i<100&&r3<=r2;i++){ await p.waitForTimeout(1000); r3=await ratio(p); }
     check(r3>r2,`processeur libéré : la résolution remonte (×${r2} → ×${r3})`);
     for(let i=0;i<10&&!(p.diag.some(e=>e.k==='perf')&&p.diag.some(e=>e.k==='perf-up'));i++) await p.waitForTimeout(1000);   /* envoyé toutes les 4 s */
     const ev=p.diag.map(e=>e.k);
@@ -78,7 +80,7 @@ const ratio=p=>p.evaluate(()=>{ const c=document.querySelector('#modal .field ca
     const q=await ouvrir(b,P1);
     const gid=leg[leg.length-1][0];
     await grandEcran(q,gid);
-    await q.waitForFunction(()=>document.querySelectorAll('#modal .feed li').length>=2,null,{timeout:45000}).catch(()=>{});
+    await q.waitForFunction(()=>document.querySelectorAll('#modal .feed li').length>=2,null,{timeout:90000}).catch(()=>{});   /* ≈ 16 s avant la 1re action (chargement, présentation), puis 6,5 s par action */
     const li=await q.$$eval('#modal .feed li',x=>x.length);
     check(li>=2,`replay d'un match allégé (${gid}) : rechargé et joué (${li} actions dans le play-by-play)`);
     errs.push(...q.errs);

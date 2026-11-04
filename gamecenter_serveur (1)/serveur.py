@@ -33,6 +33,7 @@ from moteur import insights as _insights
 from moteur import meme_match as _mm
 from moteur import rivalites as _riv
 from moteur import empreinte as _emp
+from moteur import recap_semaine as _rev
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -898,6 +899,8 @@ def page(request: Request = None):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if rivalites_on():                               # rivalités et bilans (section 88)
         srv["rivalries"] = _riv.table()
+    if week_review_on():                             # « Week in review », l'émission du week-end (section 92)
+        srv["week_review"] = True
     if empreinte_on():                               # empreinte de jeu (section 89)
         srv["fingerprint"] = [l for _, l in _emp.AXES]
     if not same_game_on():                           # combinés sur un même match (section 86)
@@ -3468,6 +3471,36 @@ def api_fingerprint(team: str = "", a: str = "", b: str = "", token: str = ""):
     else:
         out["teams"] = [_emp.publique(now, x) for x in teams]
     return JSONResponse(out, headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ « Week in review » (README section 92)
+# L'émission du week-end : à partir du verrou du vendredi, une playlist d'actions des matchs TERMINÉS de la semaine
+# (moteur/recap_semaine.py), en cache par nombre de matchs finis. Le site la joue sur le tableau quand aucun match
+# n'est en direct. GC_WEEK_REVIEW=off : ni API ni émission, le site d'avant.
+_REV_CACHE, _REV_LOCK = {}, threading.Lock()
+
+
+def week_review_on():
+    return os.environ.get("GC_WEEK_REVIEW", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+@app.get("/api/review")
+def api_review():
+    if not week_review_on():
+        raise HTTPException(404, "review_off")
+    w = _need_week(); t = now_ms()
+    if t < w.lock:
+        return JSONResponse({"on": False, "from": w.lock}, headers={"Cache-Control": "no-store"})
+    finis = sorted((g for g in w.sched if w.status(g, t) == "final" and w.teams_known(g, t)), key=lambda g: (g["ko"], g["id"]))
+    cle = (w.start, len(finis))
+    with _REV_LOCK:
+        d = _REV_CACHE.get(cle)
+        if d is None:
+            debut = min(x.start for x in load_weeks().values())
+            d = _rev.calculer([(g, w.feed(g["id"])) for g in finis],
+                              _rev.franchise_du_rang(w.doc["teams"], debut, w.start))
+            _REV_CACHE.clear(); _REV_CACHE[cle] = d
+    return JSONResponse(dict(d, on=True, final=len(finis)), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")
