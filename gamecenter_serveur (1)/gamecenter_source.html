@@ -8629,7 +8629,7 @@ function diagSnap(){
     fld:r?Math.round(r.width)+'x'+Math.round(r.height):null,cv:cv?cv.style.width+' '+cv.style.height+' '+cv.width:null,snd:soundOn(),ac:ac?ac.state:null,
     fx:FX_DPR+(FX_GLOW?'g':''),vis:document.visibilityState};
 }
-window.GC_DIAG=function(k,o){ if(!SERVER) return; if(!modalGame&&k!=='error'&&k!=='close') return;
+window.GC_DIAG=function(k,o){ if(!SERVER) return; if(!modalGame&&k!=='error'&&k!=='close'&&k!=='restart') return;
   try{ DIAG.q.push(Object.assign({k,t:Math.round(performance.now())},o||{},diagSnap())); if(DIAG.q.length>40) DIAG.q.shift(); }catch(e){} };
 function diagFlush(){
   if(!SERVER||!DIAG.q.length||DIAG.sent>=60) return; const e=DIAG.q.splice(0,12); DIAG.sent++;   /* ≤ 12 événements par envoi (< 8 Ko) */
@@ -8645,6 +8645,17 @@ if(SERVER){
   document.addEventListener('visibilitychange',()=>window.GC_DIAG('visibility'));
   for(const ev of ['fullscreenchange','webkitfullscreenchange']) document.addEventListener(ev,()=>window.GC_DIAG('fullscreen'));
   window.addEventListener('pagehide',()=>{ window.GC_DIAG('pagehide'); diagFlush(); });
+  /* section 90 (03/11/2026) : une page qui redémarre alors qu'un match était ouvert (iPhone / iPad : Safari recharge un
+     onglet qu'il a fermé faute de mémoire). Pendant un match, la page note lequel dans sessionStorage (gardé par un
+     rechargement de l'onglet, effacé à sa fermeture) ; au démarrage suivant, elle l'envoie au serveur (DIAG « restart »). */
+  const WATCH='gc-watch-v1';
+  try{ const m=JSON.parse(sessionStorage.getItem(WATCH)||'null'); sessionStorage.removeItem(WATCH);
+    if(m&&m.g&&Date.now()-m.at<180000){ const nv=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+      const o={was:m.g,was_idx:m.idx,was_th:m.th,gap:Math.round((Date.now()-m.at)/1000),nav:nv?nv.type:null,up:m.up};
+      setTimeout(()=>{ window.GC_DIAG('restart',o); diagFlush(); },3000); } }catch(e){}
+  const BOOT=Date.now();
+  setInterval(()=>{ try{ if(modalGame) sessionStorage.setItem(WATCH,JSON.stringify({g:modalGame.id,idx:modalGame.idx,th:theaterOn(),at:Date.now(),up:Math.round((Date.now()-BOOT)/1000)}));
+    else sessionStorage.removeItem(WATCH); }catch(e){} },4000);
 }
 
 /* ---------- the player and the server wallet ---------- */
@@ -9510,19 +9521,48 @@ setInterval(()=>{ cd=Math.max(0,cd-1); cdEl.textContent=cd>0?clockStr(cd):'Kicko
 
 let last=performance.now(), lastUi=0;
 /* perf: frame-time watch. If the fields can't hold ~40 fps for a few seconds, the halos go first, then the
-   canvases are redrawn at a lower resolution (2x → 1.5x → 1x). Only goes down, so the picture never pumps. */
-const PERF={t0:last+4000,ws:0,n:0,sum:0};
-function perfWatch(ms,drew,now){
+   canvases are redrawn at a lower resolution (2x → 1.5x → 1x).
+   Netteté (03/11/2026, iPhone / iPad : terrain flou au bout de 20 s) : on juge le TEMPS DE CALCUL d'une image (le jeu
+   et le dessin des terrains), plus l'écart entre deux images : un iPhone en économie d'énergie ou un iPad tiède
+   affichent à 30 images/s (33 ms entre deux) sans peiner. On baisse quand le calcul dépasse PERF_HI en moyenne, on
+   remonte d'un cran après PERF_UP ms passées sous PERF_LO ; un cran qui fait rebaisser dans les 30 s n'est plus
+   retenté. GC_NETTETE=off (#gf-server .nettete_off) : la règle d'avant (écart entre deux images, ne remonte jamais). */
+const PERF_OLD=!!(SERVER&&SERVER.nettete_off), PERF_HI=12, PERF_LO=5, PERF_UP=20000;
+const PERF={t0:last+4000,ws:0,n:0,sum:0,calm:0,upAt:0,cap:null};
+const FX_STEPS=[[1,false],[1.5,false],[2,false],[2,true]];
+const fxLevel=()=>FX_STEPS.findIndex(([d,g])=>d===FX_DPR&&g===FX_GLOW);
+function fxSet(i,why,avg){
+  const [d,gl]=FX_STEPS[i]; FX_DPR=d; FX_GLOW=gl;
+  if(window.GC_DIAG) window.GC_DIAG(why,{avg:Math.round(avg*10)/10});
+  for(const v of views) v.resize();
+}
+function perfWatch(ms,drew,now,work){
   const canDpr=FX_DPR>1&&(window.devicePixelRatio||1)>1;
-  if(now<PERF.t0||document.hidden||!drew||(!FX_GLOW&&!canDpr)) return;
+  if(PERF_OLD){
+    if(now<PERF.t0||document.hidden||!drew||(!FX_GLOW&&!canDpr)) return;
+    if(!PERF.n) PERF.ws=now;
+    PERF.n++; PERF.sum+=Math.min(ms,250);
+    if(PERF.n<20||now-PERF.ws<2500) return;            /* judge on 2.5 s and at least 20 drawn frames */
+    const avg=PERF.sum/PERF.n; PERF.n=0; PERF.sum=0;
+    if(avg>25){ if(FX_GLOW) FX_GLOW=false; else FX_DPR=FX_DPR>1.5?1.5:1; if(window.GC_DIAG) window.GC_DIAG('perf',{avg:Math.round(avg)}); for(const v of views) v.resize(); PERF.t0=now+3000; }
+    return;
+  }
+  if(now<PERF.t0||document.hidden||!drew){ PERF.calm=0; return; }
   if(!PERF.n) PERF.ws=now;
-  PERF.n++; PERF.sum+=Math.min(ms,250);
-  if(PERF.n<20||now-PERF.ws<2500) return;            /* judge on 2.5 s and at least 20 drawn frames */
-  const avg=PERF.sum/PERF.n; PERF.n=0; PERF.sum=0;
-  if(avg>25){ if(FX_GLOW) FX_GLOW=false; else FX_DPR=FX_DPR>1.5?1.5:1; if(window.GC_DIAG) window.GC_DIAG('perf',{avg:Math.round(avg)}); for(const v of views) v.resize(); PERF.t0=now+3000; }
+  PERF.n++; PERF.sum+=Math.min(work,100);
+  if(PERF.n<20||now-PERF.ws<2500) return;              /* judge on 2.5 s and at least 20 drawn frames */
+  const avg=PERF.sum/PERF.n, span=now-PERF.ws; PERF.n=0; PERF.sum=0;
+  let i=fxLevel(); if(i<0) i=FX_STEPS.length-1;
+  if(avg>PERF_HI&&i>0&&(canDpr||FX_GLOW)){
+    if(now-PERF.upAt<30000) PERF.cap=i-1;               /* the step we just tried was too much: stay below it */
+    fxSet(i-1,'perf',avg); PERF.calm=0; PERF.t0=now+3000; return; }
+  if(avg<PERF_LO&&i<FX_STEPS.length-1&&(PERF.cap===null||i<PERF.cap)){
+    PERF.calm+=span;
+    if(PERF.calm>=PERF_UP){ fxSet(i+1,'perf-up',avg); PERF.calm=0; PERF.upAt=now; PERF.t0=now+3000; }
+  } else PERF.calm=0;
 }
 function frame(now){
-  const ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
+  const t1=performance.now(), ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
   for(const g of games) stepGame(g,dt);
   if(replayGame) stepGame(replayGame,dt);
   let drew=false;
@@ -9534,7 +9574,7 @@ function frame(now){
     if(v.g.preview&&!(T&&T.running)){ if(v._sig&&!v._resnap) continue; v._resnap=true; v.draw(dt,null); continue; }   /* still preview: one frame */
     if(v.draw(dt,now)) drew=true;
   }
-  perfWatch(ms,drew,now);
+  perfWatch(ms,drew,now,performance.now()-t1);
   if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview||(g.teaser&&g.teaser.running)) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
   requestAnimationFrame(frame);
 }
