@@ -62,6 +62,7 @@ const ratio=p=>p.evaluate(()=>{ const c=document.querySelector('#modal .field ca
     await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
     let r3=r2; for(let i=0;i<70&&r3<=r2;i++){ await p.waitForTimeout(1000); r3=await ratio(p); }
     check(r3>r2,`processeur libéré : la résolution remonte (×${r2} → ×${r3})`);
+    for(let i=0;i<10&&!(p.diag.some(e=>e.k==='perf')&&p.diag.some(e=>e.k==='perf-up'));i++) await p.waitForTimeout(1000);   /* envoyé toutes les 4 s */
     const ev=p.diag.map(e=>e.k);
     check(ev.includes('perf')&&ev.includes('perf-up'),`diagnostic : « perf » puis « perf-up » envoyés au serveur`);
     /* ---- redémarrage signalé ---- */
