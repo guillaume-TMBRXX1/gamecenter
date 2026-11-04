@@ -9,3 +9,6 @@ gamecenter_serveur (1)/outils/audio/ecoute.html
 
 # base des comptes créée par le serveur en local (jamais commitée)
 gamecenter_serveur (1)/data/gamecenter.db
+
+# vidéos produites en local (workflow « Vidéos », vitrine) : publiées à la main, jamais commitées
+gamecenter_serveur (1)/videos/

@@ -1154,6 +1154,15 @@ Plan (compte, rythme, formats, mesure) : `programme/Promotion.md` à la racine d
 « Vidéos » (section 46) et se publient à la main.
 - **Photo de profil** : `outils/promotion/photo_profil.png` (1080×1080, le logo du site sur son dégradé ; le réseau
   l'affiche en rond). À refaire seulement si le logo change : `node outils/promotion/faire_profil.js` (Playwright).
+- **Vidéo « vitrine »** (04/11/2026, demande de Guillaume : la même vidéo qu'un reel de démo d'interface, avec
+  snapline.live) : `bash outils/promotion/vitrine/faire_vitrine.sh [sortie]` → `snapline_vitrine_9x16.mp4`
+  (1080×1920) et `snapline_vitrine_16x9.mp4` (1920×1080), ≈ 17 s, 30 images/s, dans `videos/` (non versionné).
+  Le site réel est filmé image par image (`tourner.js` : serveur local à l'heure `VITRINE_AT`, horloge de la page et
+  animations CSS pilotées, caméra virtuelle) : Live Now → zoom sur le match Prime Time en direct → clic → grand écran
+  → Standings → Ranking → Teams → retour à Live Now ; puis `carton.js` (logo + « snapline.live ») et `monter.py`
+  (recadrage sous-pixel, transitions floues, musique originale du site `final_drive` + « whoosh » et clic). Solde,
+  ticket, cotes et marchés masqués (jamais de paris à l'image). ≈ 20 min ; `DRY=1 node …/tourner.js P /tmp/x` vérifie
+  les sélecteurs en une minute (serveur lancé).
 
 ### 49. Fin de match dans le grand écran (14/10/2026)
 **Demande de Guillaume (14/10)** : une fois un match terminé dans le grand écran, en direct ou en replay, laisser le
