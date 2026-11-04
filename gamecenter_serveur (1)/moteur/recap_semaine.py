@@ -294,3 +294,48 @@ def calculer(jeux, franchise=None):
 
     edition = "final" if fin else "semis" if semis else "regular"
     return {"version": VERSION, "edition": edition, "segments": seg}
+
+
+# ------------------------------------------------------------------ programme du dimanche (README section 93)
+# Heures comptées depuis le coup d'envoi de la Grand Final (dimanche 18:00) : deux « Sunday Classic » (rediffusions
+# calées sur l'horloge, comme un direct), puis « Road to the Final », l'avant-match, jusqu'au coup d'envoi.
+CLASSIC_AVANT = (3 * 3600, 2 * 3600 + 15 * 60)       # 15:00 et 15:45
+ROAD_AVANT = 90 * 60                                   # 16:30
+N_PARCOURS = 3                                         # actions par demi-finale dans « Road to the Final »
+
+
+def _remontee(g, feed):
+    """Le plus bas qu'est tombé le vainqueur (chances de victoire), ou None (nul)."""
+    s = _score(feed)
+    if s["home"] == s["away"]:
+        return None
+    home = s["home"] > s["away"]
+    wps = [(P.get("win_prob_home") if P.get("win_prob_home") is not None else 0.5) for P in feed["plays"]]
+    return min((w if home else 1 - w) for w in wps) if wps else None
+
+
+def classiques(jeux):
+    """Les deux matchs rediffusés : le plus spectaculaire de la saison régulière (« Game of the week »), puis la plus
+    grosse remontée parmi les autres (à défaut, le deuxième plus spectaculaire). [{game, why, line}]"""
+    reg = _ordre([(g, f) for g, f in jeux if g.get("phase") == "regular"])
+    if not reg:
+        return []
+    tri = sorted(reg, key=lambda gf: (-spectacle(gf[1], gf[0]), gf[0]["id"]))
+    g1, f1 = tri[0]
+    out = [{"game": g1["id"], "why": "Game of the week", "line": _ligne(g1, f1)}]
+    autres = [(g, f, _remontee(g, f)) for g, f in tri[1:]]
+    cb = sorted(((b, g["id"], g, f) for g, f, b in autres if b is not None and b <= SEUIL_COMEBACK), key=lambda x: x[:2])
+    if cb:
+        b, _, g2, f2 = cb[0]
+        out.append({"game": g2["id"], "why": f"Comeback of the week · down to {max(1, round(b * 100))}% win chance",
+                    "line": _ligne(g2, f2)})
+    elif len(tri) > 1:
+        g2, f2 = tri[1]
+        out.append({"game": g2["id"], "why": "One more classic", "line": _ligne(g2, f2)})
+    return out
+
+
+def parcours(jeux):
+    """Les actions des demi-finales, pour « Road to the Final » : N_PARCOURS par demi-finale, dans l'ordre."""
+    semis = _ordre([(g, f) for g, f in jeux if g.get("phase") == "semifinal"])
+    return [_clip(g, f, i, f"{_ligne(g, f)} · {why}") for g, f in semis for _, i, why in _meilleures(g, f, N_PARCOURS)]

@@ -265,6 +265,23 @@
   .rev-list button:focus-visible{outline:2px solid var(--cyan,#2ee6ff);outline-offset:-2px}
   .rev-list button[aria-current="true"]{background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink);box-shadow:inset 3px 0 0 var(--cyan,#2ee6ff)}
   @media (max-width:520px){ .tile.rev .rev-seg{display:none} }
+  /* section 93: Road to the Final panels */
+  .road-panel{min-height:clamp(240px,34vw,400px);display:grid;align-content:center;gap:14px;padding:16px;border-radius:var(--r-md,12px);background:var(--l1,rgba(127,127,127,.05));box-shadow:inset 0 0 0 1px var(--line-2)}
+  .road-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;text-align:center}
+  .road-team{display:grid;justify-items:center;gap:6px}
+  .road-team b{font:800 italic clamp(16px,2.4vw,24px)/1.1 var(--f-display);letter-spacing:.03em;text-transform:uppercase;color:var(--ink)}
+  .road-team span:last-child{font:600 12px var(--f-mono,var(--f-ui));color:var(--ink-2)}
+  .road-x{font:800 italic 18px var(--f-display);color:var(--ink-3)}
+  .road-odds{max-width:420px;margin:0 auto;width:100%}
+  .road-panel .np-note{text-align:center;margin:0}
+  .road-pl{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .road-pl .label{display:block;margin-bottom:6px}
+  .road-p{display:grid;grid-template-columns:40px 1fr;column-gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .road-p .pos{grid-row:span 2;font:700 11px var(--f-mono,var(--f-ui));color:var(--ink-3)}
+  .road-p b{color:var(--ink)} .road-p span:last-child{color:var(--ink-2)}
+  .rev-dots span[data-road-k]{cursor:pointer}
+  .rev-list.prog button{grid-template-columns:44px auto 1fr;cursor:default}
+  @media (max-width:520px){ .road-pl{grid-template-columns:1fr} }
   .rev-list i{font:700 11px/1 var(--f-mono,var(--f-ui));font-style:normal;color:var(--ink-3)}
   .rev-list b{font:700 11.5px/1.2 var(--f-display);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
   .rev-list span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -6610,7 +6627,7 @@ function seasonNextTile(t){
    for each rubric, then each play on the big tile with its caption. "Full game" opens the replay. Hide scores on: no show
    (every clip would give a result away). GC_WEEK_REVIEW=off (#gf-server without .week_review): the board as before. */
 const REV_ON=!!(SEASON&&SERVER&&SERVER.week_review);
-const REV={d:null,busy:false,fin:-1,err:0,retry:0,list:[],k:-1,g:null,view:null,feeds:new Map(),cardUntil:0,next:0,started:0,tok:0};
+const REV={d:null,busy:false,fin:-1,err:0,retry:0,list:[],k:-1,g:null,view:null,feeds:new Map(),cardUntil:0,next:0,started:0,tok:0,mode:null,road:null};
 const REV_ED={regular:'Regular season',semis:'Semi-finals',final:'Grand Final'};
 function revFetch(t){
   if(!REV_ON||t<LOCK||REV.busy||Date.now()<REV.retry) return;
@@ -6622,10 +6639,21 @@ function revList(){
   const cur=REV.list[REV.k], L=[];
   ((REV.d&&REV.d.segments)||[]).forEach((sg,si)=>sg.clips.forEach((c,ci)=>L.push({sg,si,ci,c})));
   REV.list=L; const j=cur?L.findIndex(x=>x.c.game===cur.c.game&&x.c.index===cur.c.index):-1; REV.k=j; }
-function revActive(t){ return REV_ON&&!SET.spoil&&t>=LOCK&&!!REV.d&&REV.d.on&&REV.list.length>0&&!SCHED.some(g=>boardLive(g,t)); }
-function revTileHTML(){
-  return `<article class="tile feat rev" id="revTile" aria-label="Week in review">
-    <div class="feat-head"><span class="pt-tag">Week in review</span><h3 class="rev-seg"></h3><span class="rev-n"></span><button type="button" class="rp-load rev-full" data-open="" hidden>${ICON.restart}Full game</button></div>
+/* section 93: Sunday's programme. Two "Sunday Classic" rebroadcasts (in step with the clock, like a live game), then
+   "Road to the Final" until kickoff; the rest of the weekend, Week in review. Hide scores on: the Classics and Road to the
+   Final still run (Road without the semi-final plays), Week in review does not. */
+const revProg=()=>REV.d&&REV.d.programme||null;
+function revMode(t){
+  if(!REV_ON||t<LOCK||!REV.d||!REV.d.on||SCHED.some(g=>boardLive(g,t))) return null;
+  const P=revProg();
+  if(P){ const c=(P.classics||[]).find(c=>t>=c.start&&t<c.end+60e3); if(c&&SEASON.feeds[c.game]&&SCHED_BY[c.game]) return 'classic:'+c.game;
+    const R=P.road; if(R&&R.home&&t>=R.from&&t<R.to&&SCHED_BY[R.final]) return 'road'; }
+  return !SET.spoil&&REV.list.length?'review':null; }
+function revActive(t){ return !!revMode(t); }
+const REV_TAG={review:'Week in review',classic:'Sunday Classic',road:'Road to the Final'};
+function revTileHTML(m){ const k=String(m||'review').split(':')[0];
+  return `<article class="tile feat rev rev-${k}" id="revTile" aria-label="${REV_TAG[k]}">
+    <div class="feat-head"><span class="pt-tag">${REV_TAG[k]}</span><h3 class="rev-seg"></h3><span class="rev-n"></span><button type="button" class="rp-load rev-full" data-open="" hidden>${ICON.restart}Full game</button>${k==='classic'?`<button type="button" class="rp-load rev-watch" data-rev-watch>${ICON.restart}Watch</button>`:''}</div>
     <div class="rev-stage"><div class="rev-card off" aria-live="polite"></div></div>
     <div class="rev-cap"><b class="rev-match"></b><span class="rev-txt"></span></div>
     <div class="rev-dots" aria-hidden="true"></div>
@@ -6636,7 +6664,7 @@ function revFeed(gid){
   return fetch(SERVER.api+'/feed/'+encodeURIComponent(gid),{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(j=>{ REV.feeds.set(gid,j); while(REV.feeds.size>3) REV.feeds.delete(REV.feeds.keys().next().value); return j; }); }   /* 3 matchs gardés au plus (mémoire) */
 function revDrop(){ if(REV.view){ const i=views.indexOf(REV.view); if(i>=0) views.splice(i,1); REV.view.destroy(); } if(REV.g&&byId.rev===REV.g) delete byId.rev; REV.view=null; REV.g=null; }
-function revNext(){ if(!REV.list.length) return; REV.k=(REV.k+1)%REV.list.length; revMount(); }
+function revNext(){ if(REV.mode==='road'){ roadNext(); return; } if(REV.mode!=='review'||!REV.list.length) return; REV.k=(REV.k+1)%REV.list.length; revMount(); }
 function revMount(){
   const el=document.getElementById('revTile'); if(!el||!REV.list.length) return;
   if(REV.k<0||REV.k>=REV.list.length) REV.k=0;
@@ -6667,18 +6695,116 @@ document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closes
 function revAfter(g){ if(g!==REV.g||REV.next) return; if(g.idx>g.rev.idx||g.status==='final'){ g.paused=true; REV.next=performance.now()+1400; } }
 function revTick(t){
   if(!REV_ON) return; revFetch(t);
+  if(REV.mode==='road') roadTick(t);
   const g=REV.g; if(!g) return; const now=performance.now();
   if(g.paused&&!REV.next&&REV.cardUntil&&now>=REV.cardUntil){ REV.cardUntil=0; g.paused=false; const cd=document.querySelector('#revTile .rev-card'); if(cd) cd.classList.add('off'); }
+  if(g.classic){ classicSync(g,t); return; }
   if((REV.next&&now>=REV.next)||now-REV.started>30000) revNext();   /* 30 s: a clip never blocks the show */
 }
+/* Sunday's programme, under the Classics and Road to the Final */
+function revProgList(t){
+  const P=revProg(); if(!P) return '';
+  const it=[...(P.classics||[]).map(c=>({at:c.start,to:c.end,b:'Sunday Classic',s:c.line})),
+    P.road?{at:P.road.from,to:P.road.to,b:'Road to the Final',s:P.road.home?`${(TEAMS[P.road.away]||{}).abbr} @ ${(TEAMS[P.road.home]||{}).abbr}`:'The pre-game show'}:null,
+    {at:P.final_ko,to:Infinity,b:'Grand Final',s:'Live'}].filter(Boolean);
+  return it.map(x=>`<li><button type="button" tabindex="-1" aria-current="${t>=x.at&&t<x.to}"><i>${esc(tStr(x.at))}</i><b>${esc(x.b)}</b><span>${esc(x.s)}</span></button></li>`).join(''); }
+/* Sunday Classic: the game plays in step with the clock from its rebroadcast start (whoever comes in at 15:10 lands at
+   the same play as everyone); "Watch" opens it on the big screen at that play, with the original game's match chat */
+function classicMount(gid){
+  const el=document.getElementById('revTile'), P=revProg(), c=P&&(P.classics||[]).find(x=>x.game===gid); if(!el||!c) return;
+  const tok=++REV.tok;
+  revFeed(gid).then(feed=>{
+    if(tok!==REV.tok||!document.getElementById('revTile')) return;
+    revDrop();
+    const vs=Object.assign({},SCHED_BY[gid],{ko:c.start,end:c.end});
+    const g=makeReplayGame('rev',feed,{mode:'replay',loop:false,speed:1}); g.classic=vs;
+    REV.g=g; byId.rev=g; classicSync(g,nowMs(),true);
+    el.querySelector('.rev-stage').innerHTML=fieldHTML(g,'',false)+`<div class="rev-card" aria-live="polite"><span class="label">Sunday Classic · Rebroadcast</span><h4>${esc(c.line)}</h4><p>${esc(c.why)}</p></div>`;
+    el.querySelector('.rev-seg').textContent=`${TEAMS[vs.away].abbr} @ ${TEAMS[vs.home].abbr}`;
+    el.querySelector('.rev-n').textContent='Rebroadcast';
+    el.querySelector('.rev-match').textContent=c.why;
+    el.querySelector('.rev-txt').textContent=`Played ${dStr(SCHED_BY[gid].ko)} · everyone watches the same play · the match chat follows along`;
+    el.querySelector('.rev-dots').innerHTML='';
+    const ls=el.querySelector('.rev-list'); ls.classList.add('prog'); ls.setAttribute('aria-label',"Sunday's programme"); ls.innerHTML=revProgList(nowMs());
+    REV.view=new FieldView(el.querySelector('.field'),g,62,1.35); views.push(REV.view);
+    updateGameUI(g); REV.cardUntil=performance.now()+3500; REV.started=performance.now();
+  }).catch(()=>{}); }
+function classicSync(g,t,force){
+  const vs=g.classic, n=g.plays.length, k=clamp(timelineAt(vs,t).done,0,n-1);
+  if(force||Math.abs(k-g.idx)>2){ if(t>=vs.end){ rpSeek(g,n-1); rpResolve(g); g.phase='post'; rpCommit(g); } else { rpSeek(g,k); if(!force) rpAfterSeek(g); } }
+  g.paused=false;
+  if(REV.cardUntil&&performance.now()>=REV.cardUntil){ REV.cardUntil=0; const cd=document.querySelector('#revTile .rev-card'); if(cd) cd.classList.add('off'); } }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rev-watch]'); if(!b||!REV.g||!REV.g.classic) return;
+  const gid=REV.g.classic.id, k=REV.g.idx, f=SEASON.feeds[gid];
+  feedFull(f).then(()=>{ openReplayFeed(f); if(replayGame&&k>0){ rpSeek(replayGame,k); rpAfterSeek(replayGame); } }).catch(()=>toastErr('This game could not be loaded. Try again in a moment.')); });
+/* Road to the Final: panels in turn (the matchup and its prices, the semi-final plays, head-to-head, play fingerprints,
+   players to watch), a countdown to kickoff always on top */
+const ROAD_T={matchup:'The matchup',path:'Road to the Final',h2h:'Head-to-head',fp:'Play fingerprints',players:'Players to watch'};
+const ROAD_SEC=14000;
+function roadMount(){
+  const P=revProg(), R=P&&P.road; if(!R||!R.home) return;
+  const panels=['matchup']; if(R.clips&&R.clips.length&&!SET.spoil) panels.push('path'); if(RIV_ON) panels.push('h2h'); if(FP_ON) panels.push('fp'); panels.push('players');
+  REV.road={R,panels,k:-1,clip:0,until:0}; roadShow(0); }
+function roadShow(k){
+  const el=document.getElementById('revTile'), RD=REV.road; if(!el||!RD) return;
+  RD.k=(k+RD.panels.length)%RD.panels.length; RD.clip=0; RD.until=performance.now()+ROAD_SEC; REV.tok++; revDrop();
+  const p=RD.panels[RD.k], R=RD.R, t=nowMs();
+  el.querySelector('.rev-seg').textContent=ROAD_T[p]; roadCount(t);
+  el.querySelector('.rev-dots').innerHTML=RD.panels.map((x,i)=>`<span class="${i===RD.k?'on':''}" data-road-k="${i}" role="button" tabindex="0">${esc(ROAD_T[x])}</span>`).join('');
+  const ls=el.querySelector('.rev-list'); ls.classList.add('prog'); ls.setAttribute('aria-label',"Sunday's programme"); ls.innerHTML=revProgList(t);
+  el.querySelector('.rev-match').textContent=`Grand Final · ${dStr(R.to)} ${tStr(R.to)}`;
+  el.querySelector('.rev-txt').textContent=`${TEAMS[R.away].name} vs ${TEAMS[R.home].name}`;
+  if(p==='path'){ roadClip(); return; }
+  el.querySelector('.rev-stage').innerHTML=`<div class="road-panel road-${p}">${roadPanelHTML(p,R,t)}</div>`;
+  if(p==='matchup'){ const g=byId['pg-'+R.final]; if(g) refreshOddsUI(g); syncPressed(); }
+}
+function roadClip(){
+  const el=document.getElementById('revTile'), RD=REV.road, c=RD&&RD.R.clips[RD.clip]; if(!el||!c){ roadShow(RD?RD.k+1:0); return; }
+  const tok=++REV.tok;
+  revFeed(c.game).then(feed=>{
+    if(tok!==REV.tok||!document.getElementById('revTile')) return;
+    revDrop();
+    const g=makeReplayGame('rev',feed,{mode:'replay',loop:false,speed:1}); g.rev={idx:c.index}; rpSeek(g,c.index); g.paused=true;
+    REV.g=g; byId.rev=g;
+    el.querySelector('.rev-stage').innerHTML=fieldHTML(g,'',false)+'<div class="rev-card off"></div>';
+    el.querySelector('.rev-match').textContent=`Semi-final · ${(TEAMS[c.away]||{}).abbr} @ ${(TEAMS[c.home]||{}).abbr}${c.q?' · '+qName(c.q):''}`;
+    el.querySelector('.rev-txt').textContent=c.caption+(c.text?' — '+c.text:'');
+    REV.view=new FieldView(el.querySelector('.field'),g,62,1.35); views.push(REV.view);
+    updateGameUI(g); const now=performance.now(); REV.cardUntil=now+600; REV.next=0; REV.started=now; RD.until=Infinity;
+  }).catch(()=>{ if(tok===REV.tok) roadNext(); }); }
+function roadNext(){ const RD=REV.road; if(!RD) return; if(RD.panels[RD.k]==='path'&&RD.clip+1<RD.R.clips.length){ RD.clip++; roadClip(); } else roadShow(RD.k+1); }
+function roadCount(t){
+  const RD=REV.road; if(!RD) return;
+  const left=Math.max(0,RD.R.to-t), h=Math.floor(left/3600e3), m=Math.floor(left/60e3)%60, sec=Math.floor(left/1e3)%60;
+  const n=document.querySelector('#revTile .rev-n'); if(n) setTxt(n,`Kickoff in ${h?h+':':''}${String(m).padStart(h?2:1,'0')}:${String(sec).padStart(2,'0')}`); }
+function roadTick(t){ const RD=REV.road; if(!RD) return; roadCount(t); if(performance.now()>=RD.until) roadShow(RD.k+1); }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-road-k]'); if(b&&REV.road) roadShow(+b.dataset.roadK); });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('[data-road-k]')&&REV.road){ e.preventDefault(); roadShow(+e.target.dataset.roadK); } });
+function roadLeaders(team,t){
+  const P=Object.values(seasonAgg(t).players).filter(p=>p.team===team);
+  const top=(f,lab)=>{ const x=P.filter(p=>f(p)>0).sort((a,b)=>f(b)-f(a)||a.name.localeCompare(b.name))[0]; return x?{p:x,v:f(x),lab}:null; };
+  return [top(p=>p.pass.y||0,'pass yds'),top(p=>p.rush.y||0,'rush yds'),top(p=>p.rec.y||0,'rec yds'),top(p=>(p.def.sk||0)*10+(p.def.i||0)*8+(p.def.tk||0)*0.1,'')].filter(Boolean)
+    .map(x=>({...x,line:x.lab?`${x.v} ${x.lab}`:`${x.p.def.sk||0} sacks · ${x.p.def.i||0} INT · ${x.p.def.tk||0} tackles`})); }
+function roadPanelHTML(p,R,t){
+  const A=TEAMS[R.away], H=TEAMS[R.home], fs=SCHED_BY[R.final];
+  if(p==='matchup'){ const g=pregameObj(fs);
+    const side=(x,abbr)=>`<div class="road-team" data-tm="${abbr}"><span class="badge lg">${esc(abbr)}</span><b>${esc(x.name)}</b><span>${esc(recordOf(abbr,t))}</span></div>`;
+    return `<div class="road-vs">${side(A,R.away)}<span class="road-x">vs</span>${side(H,R.home)}</div>
+      <div class="odds-row road-odds">${oddBtn(g,'ml','away','team')}${oddBtn(g,'ml','home','team')}</div>
+      <p class="np-note">Moneyline from the engine · bets close at kickoff, ${esc(tStr(R.to))} Brussels.</p>`; }
+  if(p==='h2h') return `<div class="riv-box" data-riv="${esc(R.final)}" data-riv-a="${R.away}" data-riv-b="${R.home}" data-riv-k="game">${rivBoxHTML(R.final,R.away,R.home,'game')}</div>`;
+  if(p==='fp') return `<div class="fp-box" data-fp="game" data-fp-a="${R.away}" data-fp-b="${R.home}">${fpHTML('game',R.away,R.home)}</div>`;
+  if(p==='players') return `<div class="road-pl">${[R.away,R.home].map(tm=>`<div><span class="label">${esc(TEAMS[tm].name)}</span>${roadLeaders(tm,t).map(x=>`<div class="road-p"><span class="pos">${esc(x.p.pos)}</span><b>${esc(x.p.name)}</b><span>${esc(x.line)}</span></div>`).join('')||'<p class="st-none">No stats yet.</p>'}</div>`).join('')}</div>
+    <p class="np-note">This week's numbers, regular season and semi-final.</p>`;
+  return ''; }
 function buildBoard(force){
-  const t=nowMs(), {plan,next}=boardPlan(t), rev=revActive(t);
-  const sig=plan.map(([s,m])=>s.id+':'+m).join('|')+'#'+next.map(s=>s.id).join(',')+(rev?'#rev':'');
+  const t=nowMs(), {plan,next}=boardPlan(t), rm=revMode(t), rev=!!rm;
+  const sig=plan.map(([s,m])=>s.id+':'+m).join('|')+'#'+next.map(s=>s.id).join(',')+(rev?'#'+rm:'');
   if(!force && sig===BOARD_SIG) return false;
   if(modalGame && games.includes(modalGame)){ BOARD_PENDING=true; return false; }   /* never rebuild under an open match: the big screen
      would keep an orphan copy (frozen field) while the new board copy writes into it — rebuilt when it closes */
   BOARD_SIG=sig; NEXT_GAMES=next;
-  REV.tok++; revDrop();   /* section 92: the show's tile is rebuilt with the board */
+  REV.tok++; revDrop(); REV.mode=rm?rm.split(':')[0]:null; REV.road=null;   /* sections 92-93: the show's tile is rebuilt with the board */
   for(let i=views.length-1;i>=0;i--){ if(views[i]!==modalView){ views[i].destroy(); views.splice(i,1); } }
   /* 31/10: a live game keeps its board copy across a rebuild (a result coming in rebuilt the whole board and jumped every
      live game to the clock: the last plays were skipped and the last one played again) */
@@ -6690,7 +6816,7 @@ function buildBoard(force){
   if(TEASER_ON&&!games.includes(TEASER_ON)) TEASER_ON=null;
   games.forEach((g,i)=>{ if((i>0||rev)&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run (the show: none) */
   BOARD_AT=performance.now();
-  grid.innerHTML = rev ? revTileHTML() + games.map(miniTile).join('') + seasonNextTile(t)
+  grid.innerHTML = rev ? revTileHTML(rm) + games.map(miniTile).join('') + seasonNextTile(t)
     : games.length ? featTile(games[0]) + games.slice(1).map(miniTile).join('') + seasonNextTile(t) : seasonNextTile(t);
   document.querySelectorAll('#liveGrid .tile[data-gid]').forEach(tile=>{
     const g=byId[tile.dataset.gid];
@@ -6700,7 +6826,7 @@ function buildBoard(force){
   games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); if(g.preview) showChip(g); });
   NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* a Grand Final still to be decided has no prices */
   syncPressed();
-  if(rev) revMount();
+  if(rm==='review') revMount(); else if(rm==='road') roadMount(); else if(rm) classicMount(rm.slice(8));
   return true;
 }
 /* Settings → Hide scores switched: board tiles, ticker and big plays redrawn at once */
@@ -7280,7 +7406,7 @@ function seasonRefresh(force){
   const live=SCHED.filter(g=>gStatus(g,t)==='live').length, upc=SCHED.filter(g=>gStatus(g,t)==='upcoming').length, fin=SCHED.filter(g=>gStatus(g,t)==='final'&&isToday(g,t)).length;   /* Results : today */
   const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ setTxt(cnt[0],String(live)); setTxt(cnt[1],String(upc)); setTxt(cnt[2],String(fin)); }
   setHTML(document.getElementById('eyebrow'),`<b>Week ${SW.week.index}</b> · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))} · ${live?`${live} game${live>1?'s':''} live`:'no game live right now'} · every game played by the engine`);
-  setHTML(document.getElementById('h1txt'), live ? 'Live <span class="now">now</span>' : revActive(t) ? 'Week <span class="now">in review</span>' : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>');
+  setHTML(document.getElementById('h1txt'), live ? 'Live <span class="now">now</span>' : revActive(t) ? (REV.mode==='classic'?'Sunday <span class="now">Classic</span>':REV.mode==='road'?'Road to the <span class="now">Final</span>':'Week <span class="now">in review</span>') : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>');
   renderClock();
   betTick(t);
   renderView(false);
