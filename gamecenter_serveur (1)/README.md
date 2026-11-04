@@ -2559,6 +2559,26 @@ samedi. Une seule constante, `SEASON_PLAYOFF_SLOTS` (notebook 14.1, cellule 493)
 après la modification (première : semaine du 09/11/2026). Le serveur et la page lisent les heures dans le calendrier ;
 le tournage des vidéos (22 h 30 UTC) a désormais largement de marge sur la finale.
 
+### 92. Week-end en émission, étape 2 : « Week in review » (04/11/2026)
+L'émission du week-end : à partir du verrou du vendredi (23:30), chaque fois qu'aucun match n'est en direct (samedi
+avant les demi-finales, entre elles, dimanche, après la Grand Final), la grande tuile du tableau joue en boucle une
+playlist d'actions de la semaine.
+- **Playlist** (`moteur/recap_semaine.py`, matchs TERMINÉS seulement) : Grand Final (4 actions, après la finale),
+  Semi-finals (3 par demi-finale), Plays of the week (8, deux au plus par match), Game of the week (3 actions du match
+  le plus spectaculaire), Comebacks (vainqueur tombé à 15 % de chances ou moins : l'action qui l'a le plus relancé en
+  seconde mi-temps), Takeaways (4 interceptions / fumbles), Shootouts (le plus beau touchdown des 3 plus gros totaux),
+  Injury report (3 absences de plusieurs semaines, QB puis RB / WR / TE d'abord), Franchise of the week (même ordre fixe
+  que la vidéo). Extra points exclus. Notes des actions et des matchs : celles des vidéos (`outils/video/choisir.py`,
+  copiées, l'image du serveur n'embarque pas `outils/` ; un test vérifie qu'elles restent identiques). Trois éditions :
+  saison régulière (samedi), avec les demi-finales (dimanche), avec la Grand Final (après elle).
+- **Serveur** : `/api/review` (rien avant le verrou, `{"on": false}`), en cache par nombre de matchs finis.
+- **Site** : tuile « Week in review » : carton titre de chaque rubrique (édition, numéro de la semaine), l'action jouée
+  sur le terrain avec sa légende, les rubriques, la liste des actions de la rubrique (un clic y saute), « Full game »
+  (le replay du match). Le titre de l'accueil devient « Week in review ». Les matchs sont chargés à la demande (3 gardés
+  au plus en mémoire). « Hide scores » activé : pas d'émission (chaque action donnerait un résultat).
+- Interrupteur `GC_WEEK_REVIEW=off` (le tableau d'avant, `/api/review` 404). Tests : `moteur/tests/test_recap_semaine.py`,
+  `outils/site/test_review.js`. Étape 3 (à venir) : « Sunday Classic » (15:00) et « Road to the Final » (16:30).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2736,7 +2756,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90.
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92).
 
 ## Test
 

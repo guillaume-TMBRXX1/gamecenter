@@ -244,6 +244,31 @@
   .feat-head h3 em{font-style:inherit;color:var(--ink-3);margin:0 6px;font-weight:600}
   .feat-head .watch,.feat-head .rp-load{margin-left:auto}
   .feat-head .rp-load{height:28px;padding:0 10px;font-size:11.5px;flex-shrink:0}
+  /* « Week in review » (section 92): the weekend show on the board */
+  .tile.rev .feat-head .rev-n{font:700 11px/1 var(--f-mono,var(--f-ui));color:var(--ink-3);flex-shrink:0}
+  .tile.rev .feat-head .rp-load{margin-left:auto}
+  .rev-stage{position:relative}
+  .rev-card{position:absolute;inset:0;z-index:6;display:grid;place-content:center;gap:6px;text-align:center;padding:16px;border-radius:var(--r-md,12px);
+    background:color-mix(in srgb,var(--bg,#0b0e1a) 74%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .35s ease}
+  .rev-card.off{opacity:0;pointer-events:none}
+  .rev-card .label{color:var(--ink-2)}
+  .rev-card h4{margin:0;font:800 italic clamp(22px,4vw,38px)/1.05 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+  .rev-card p{margin:0;font-size:13px;color:var(--ink-2);max-width:46ch}
+  .rev-cap{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:10px 10px 4px;font-size:13px;color:var(--ink-2);min-height:44px}
+  .rev-cap b{font:700 12px/1.2 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+  .rev-dots{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px 8px}
+  .rev-dots span{font:600 10.5px/1 var(--f-ui);padding:4px 7px;border-radius:5px;color:var(--ink-3);background:var(--l2,rgba(127,127,127,.1))}
+  .rev-dots span.on{color:#fff;background:var(--brand)}
+  .rev-list{list-style:none;margin:0;padding:2px 6px 8px;display:grid;gap:2px;overflow:auto;min-height:0;flex:1}
+  .rev-list button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:22px auto 1fr;gap:8px;align-items:baseline;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
+  .rev-list button:hover{background:var(--l2,rgba(127,127,127,.08))}
+  .rev-list button:focus-visible{outline:2px solid var(--cyan,#2ee6ff);outline-offset:-2px}
+  .rev-list button[aria-current="true"]{background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink);box-shadow:inset 3px 0 0 var(--cyan,#2ee6ff)}
+  @media (max-width:520px){ .tile.rev .rev-seg{display:none} }
+  .rev-list i{font:700 11px/1 var(--f-mono,var(--f-ui));font-style:normal;color:var(--ink-3)}
+  .rev-list b{font:700 11.5px/1.2 var(--f-display);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+  .rev-list span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (prefers-reduced-motion:reduce){ .rev-card{transition:none} }
   .pt-tag{white-space:nowrap;flex-shrink:0}
 
   .field{position:relative;aspect-ratio:16/9;width:100%;max-width:100%;border-radius:12px;overflow:hidden;isolation:isolate;container-type:inline-size;background:radial-gradient(120% 90% at 50% 110%, #16124A 0%, #080A1E 55%, var(--bg) 100%);box-shadow:inset 0 0 0 1px var(--line)}
@@ -4978,6 +5003,7 @@ function onResolve(g){
 }
 function onCommit(g){
   if(g.spoiler){ spoilerMask(g); teaserNext(g); }
+  if(g.rev) revAfter(g);   /* section 92 */
   if(SEASON&&g===replayGame&&g.status==='final'&&g.gf) markWatched(g.gf.game.id);   /* seen to the final whistle */
   watchPos(g);
   flashField(g,document); refreshOddsUI(g); flashMoves(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); renderFeed(g); renderStats(g); }
@@ -6579,13 +6605,80 @@ function seasonNextTile(t){
     <div class="next-body">${rows}</div>
   </article>`;
 }
+/* ---------- « Week in review » (section 92, 04/11/2026): the weekend show. From the Friday lock, whenever no game is live,
+   the board plays a playlist of the week's plays (/api/review, finished games only, built by the server): a title card
+   for each rubric, then each play on the big tile with its caption. "Full game" opens the replay. Hide scores on: no show
+   (every clip would give a result away). GC_WEEK_REVIEW=off (#gf-server without .week_review): the board as before. */
+const REV_ON=!!(SEASON&&SERVER&&SERVER.week_review);
+const REV={d:null,busy:false,fin:-1,err:0,retry:0,list:[],k:-1,g:null,view:null,feeds:new Map(),cardUntil:0,next:0,started:0,tok:0};
+const REV_ED={regular:'Regular season',semis:'Semi-finals',final:'Grand Final'};
+function revFetch(t){
+  if(!REV_ON||t<LOCK||REV.busy||Date.now()<REV.retry) return;
+  const fin=SCHED.reduce((n,g)=>n+(gStatus(g,t)==='final'?1:0),0); if(REV.d&&REV.fin===fin) return;
+  REV.busy=true;
+  api('/review').then(d=>{ REV.d=d; REV.fin=fin; REV.err=0; revList(); BOARD_SIG=''; })
+    .catch(()=>{ REV.err++; REV.retry=Date.now()+Math.min(60e3,5e3*REV.err); }).finally(()=>{ REV.busy=false; }); }
+function revList(){
+  const cur=REV.list[REV.k], L=[];
+  ((REV.d&&REV.d.segments)||[]).forEach((sg,si)=>sg.clips.forEach((c,ci)=>L.push({sg,si,ci,c})));
+  REV.list=L; const j=cur?L.findIndex(x=>x.c.game===cur.c.game&&x.c.index===cur.c.index):-1; REV.k=j; }
+function revActive(t){ return REV_ON&&!SET.spoil&&t>=LOCK&&!!REV.d&&REV.d.on&&REV.list.length>0&&!SCHED.some(g=>boardLive(g,t)); }
+function revTileHTML(){
+  return `<article class="tile feat rev" id="revTile" aria-label="Week in review">
+    <div class="feat-head"><span class="pt-tag">Week in review</span><h3 class="rev-seg"></h3><span class="rev-n"></span><button type="button" class="rp-load rev-full" data-open="" hidden>${ICON.restart}Full game</button></div>
+    <div class="rev-stage"><div class="rev-card off" aria-live="polite"></div></div>
+    <div class="rev-cap"><b class="rev-match"></b><span class="rev-txt"></span></div>
+    <div class="rev-dots" aria-hidden="true"></div>
+    <ol class="rev-list" aria-label="Plays in this rubric"></ol></article>`; }
+function revFeed(gid){
+  const f=SEASON.feeds[gid]; if(f&&!f.light&&f.plays.length) return Promise.resolve(f);
+  if(REV.feeds.has(gid)) return Promise.resolve(REV.feeds.get(gid));
+  return fetch(SERVER.api+'/feed/'+encodeURIComponent(gid),{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(j=>{ REV.feeds.set(gid,j); while(REV.feeds.size>3) REV.feeds.delete(REV.feeds.keys().next().value); return j; }); }   /* 3 matchs gardés au plus (mémoire) */
+function revDrop(){ if(REV.view){ const i=views.indexOf(REV.view); if(i>=0) views.splice(i,1); REV.view.destroy(); } if(REV.g&&byId.rev===REV.g) delete byId.rev; REV.view=null; REV.g=null; }
+function revNext(){ if(!REV.list.length) return; REV.k=(REV.k+1)%REV.list.length; revMount(); }
+function revMount(){
+  const el=document.getElementById('revTile'); if(!el||!REV.list.length) return;
+  if(REV.k<0||REV.k>=REV.list.length) REV.k=0;
+  const it=REV.list[REV.k], c=it.c, tok=++REV.tok;
+  revFeed(c.game).then(feed=>{
+    if(tok!==REV.tok||!document.getElementById('revTile')) return;
+    if(!feed||!feed.plays||c.index>=feed.plays.length){ revNext(); return; }
+    revDrop();
+    const g=makeReplayGame('rev',feed,{mode:'replay',loop:false,speed:1}); g.rev={idx:c.index}; rpSeek(g,c.index); g.paused=true;
+    REV.g=g; byId.rev=g;
+    const first=it.ci===0, segs=REV.d.segments;
+    el.querySelector('.rev-stage').innerHTML=fieldHTML(g,'',false)+`<div class="rev-card${first?'':' off'}" aria-live="polite"><span class="label">${esc(REV_ED[REV.d.edition]||'')} · Week ${esc(String(SW.week.index))}</span><h4>${esc(it.sg.title)}</h4><p>${esc(it.sg.key==='franchise'&&TEAMS[it.sg.sub]?TEAMS[it.sg.sub].name:it.sg.sub)}</p></div>`;
+    el.querySelector('.rev-seg').textContent=it.sg.title;
+    el.querySelector('.rev-n').textContent=`${it.ci+1}/${it.sg.clips.length}`;
+    const fb=el.querySelector('.rev-full'); fb.dataset.open='rp:'+c.game; fb.hidden=!SEASON.feeds[c.game];
+    el.querySelector('.rev-match').textContent=`${(TEAMS[c.away]||{}).abbr||c.away} @ ${(TEAMS[c.home]||{}).abbr||c.home}${c.q?' · '+qName(c.q):''}`;
+    el.querySelector('.rev-txt').textContent=c.caption+(c.text?' — '+c.text:'');
+    el.querySelector('.rev-dots').innerHTML=segs.map((sg,i)=>`<span class="${i===it.si?'on':''}">${esc(sg.title)}</span>`).join('');
+    el.querySelector('.rev-list').innerHTML=it.sg.clips.map((x,i)=>`<li><button type="button" data-rev-k="${REV.k-it.ci+i}" aria-current="${i===it.ci}"><i>${i+1}</i><b>${esc((TEAMS[x.away]||{}).abbr||x.away)} @ ${esc((TEAMS[x.home]||{}).abbr||x.home)}</b><span>${esc(x.text||x.caption)}</span></button></li>`).join('');
+    REV.view=new FieldView(el.querySelector('.field'),g,62,1.35); views.push(REV.view);
+    updateGameUI(g);
+    const now=performance.now(); REV.cardUntil=now+(first?3200:900); REV.next=0; REV.started=now;
+    const nx=REV.list[(REV.k+1)%REV.list.length]; if(nx) revFeed(nx.c.game).catch(()=>{});   /* the next clip is ready in time */
+  }).catch(()=>{ if(tok===REV.tok) setTimeout(revNext,1500); }); }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-rev-k]'); if(!b) return;
+  const k=+b.dataset.revK; if(k>=0&&k<REV.list.length){ REV.k=k; revMount(); } });
+/* after each committed play of the show: its clip is over (or the game is) → the next one, after a short breath */
+function revAfter(g){ if(g!==REV.g||REV.next) return; if(g.idx>g.rev.idx||g.status==='final'){ g.paused=true; REV.next=performance.now()+1400; } }
+function revTick(t){
+  if(!REV_ON) return; revFetch(t);
+  const g=REV.g; if(!g) return; const now=performance.now();
+  if(g.paused&&!REV.next&&REV.cardUntil&&now>=REV.cardUntil){ REV.cardUntil=0; g.paused=false; const cd=document.querySelector('#revTile .rev-card'); if(cd) cd.classList.add('off'); }
+  if((REV.next&&now>=REV.next)||now-REV.started>30000) revNext();   /* 30 s: a clip never blocks the show */
+}
 function buildBoard(force){
-  const t=nowMs(), {plan,next}=boardPlan(t);
-  const sig=plan.map(([s,m])=>s.id+':'+m).join('|')+'#'+next.map(s=>s.id).join(',');
+  const t=nowMs(), {plan,next}=boardPlan(t), rev=revActive(t);
+  const sig=plan.map(([s,m])=>s.id+':'+m).join('|')+'#'+next.map(s=>s.id).join(',')+(rev?'#rev':'');
   if(!force && sig===BOARD_SIG) return false;
   if(modalGame && games.includes(modalGame)){ BOARD_PENDING=true; return false; }   /* never rebuild under an open match: the big screen
      would keep an orphan copy (frozen field) while the new board copy writes into it — rebuilt when it closes */
   BOARD_SIG=sig; NEXT_GAMES=next;
+  REV.tok++; revDrop();   /* section 92: the show's tile is rebuilt with the board */
   for(let i=views.length-1;i>=0;i--){ if(views[i]!==modalView){ views[i].destroy(); views.splice(i,1); } }
   /* 31/10: a live game keeps its board copy across a rebuild (a result coming in rebuilt the whole board and jumped every
      live game to the clock: the last plays were skipped and the last one played again) */
@@ -6595,9 +6688,10 @@ function buildBoard(force){
   games.length=0;
   for(const [s,m] of plan){ const g=(m==='live'&&keep.get('s-'+s.id))||makeBoardGame(s,m,t); games.push(g); byId[g.id]=g; }
   if(TEASER_ON&&!games.includes(TEASER_ON)) TEASER_ON=null;
-  games.forEach((g,i)=>{ if(i>0&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run */
+  games.forEach((g,i)=>{ if((i>0||rev)&&g.mode==='replay') previewGame(g); });   /* only Prime Time and live games run (the show: none) */
   BOARD_AT=performance.now();
-  grid.innerHTML = games.length ? featTile(games[0]) + games.slice(1).map(miniTile).join('') + seasonNextTile(t) : seasonNextTile(t);
+  grid.innerHTML = rev ? revTileHTML() + games.map(miniTile).join('') + seasonNextTile(t)
+    : games.length ? featTile(games[0]) + games.slice(1).map(miniTile).join('') + seasonNextTile(t) : seasonNextTile(t);
   document.querySelectorAll('#liveGrid .tile[data-gid]').forEach(tile=>{
     const g=byId[tile.dataset.gid];
     views.push(new FieldView(tile.querySelector('.field'),g,tile.classList.contains('feat')?62:54,tile.classList.contains('feat')?1.35:1.25));
@@ -6606,6 +6700,7 @@ function buildBoard(force){
   games.forEach(g=>{ refreshOddsUI(g); renderWP(g); renderPower(g); tickerOdds(g); updateGameUI(g); if(g.preview) showChip(g); });
   NEXT_GAMES.forEach(s=>{ const g=byId['pg-'+s.id]; if(g) refreshOddsUI(g); });   /* a Grand Final still to be decided has no prices */
   syncPressed();
+  if(rev) revMount();
   return true;
 }
 /* Settings → Hide scores switched: board tiles, ticker and big plays redrawn at once */
@@ -7185,7 +7280,7 @@ function seasonRefresh(force){
   const live=SCHED.filter(g=>gStatus(g,t)==='live').length, upc=SCHED.filter(g=>gStatus(g,t)==='upcoming').length, fin=SCHED.filter(g=>gStatus(g,t)==='final'&&isToday(g,t)).length;   /* Results : today */
   const cnt=document.querySelectorAll('.live-head .seg .cnt'); if(cnt.length===3){ setTxt(cnt[0],String(live)); setTxt(cnt[1],String(upc)); setTxt(cnt[2],String(fin)); }
   setHTML(document.getElementById('eyebrow'),`<b>Week ${SW.week.index}</b> · ${esc(dStr(W_FIRST))} → ${esc(dStr(W_END))} · ${live?`${live} game${live>1?'s':''} live`:'no game live right now'} · every game played by the engine`);
-  setHTML(document.getElementById('h1txt'), live ? 'Live <span class="now">now</span>' : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>');
+  setHTML(document.getElementById('h1txt'), live ? 'Live <span class="now">now</span>' : revActive(t) ? 'Week <span class="now">in review</span>' : fin ? 'Replays <span class="now">on</span>' : 'Kickoff <span class="now">soon</span>');
   renderClock();
   betTick(t);
   renderView(false);
@@ -9565,6 +9660,7 @@ function frame(now){
   const t1=performance.now(), ms=now-last, dt=Math.min(0.1,ms/1000); last=now;
   for(const g of games) stepGame(g,dt);
   if(replayGame) stepGame(replayGame,dt);
+  if(REV.g&&!modalView) stepGame(REV.g,dt);   /* section 92: the show (paused under the big screen) */
   let drew=false;
   for(const v of views){
     /* perf: off-screen fields, and the boards behind the open big screen, are not drawn (their games still run) */
@@ -9575,7 +9671,7 @@ function frame(now){
     if(v.draw(dt,now)) drew=true;
   }
   perfWatch(ms,drew,now,performance.now()-t1);
-  if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview||(g.teaser&&g.teaser.running)) updateGameUI(g); if(replayGame) updateGameUI(replayGame); }
+  if(now-lastUi>250){ lastUi=now; for(const g of games) if(!g.preview||(g.teaser&&g.teaser.running)) updateGameUI(g); if(replayGame) updateGameUI(replayGame); if(REV.g) updateGameUI(REV.g); revTick(nowMs()); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
