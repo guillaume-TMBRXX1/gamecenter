@@ -717,7 +717,8 @@ créés = débranchés), la page reste lourde.
   chaque ronde inchangés, aucun résultat connu avant la mise à jour des futures. Dans une ronde, les équipes qui ont
   joué le plus tôt jouent les premières : ≈ 2 h 40 de repos en moyenne entre deux matchs d'un jour (2 h au moins).
   Un match dure ≈ 15 min en direct (≈ 140 actions × 6,5 s) : deux heures voisines ne se chevauchent pas.
-  Inchangés : verrou vendredi 23:30, finales de conférence samedi 16:00 et 20:00, finale dimanche 22:00.
+  Inchangés : verrou vendredi 23:30, finales de conférence samedi 16:00 et 20:00, finale dimanche 22:00 (samedi 18:00 et
+  21:00, dimanche 18:00 depuis la semaine du 09/11/2026, section 91).
 - **Grand Final** : nouveau nom affiché de la finale (site, notebook, audit, GameFeeds des semaines 1 et 2). La clé
   interne `ai_bowl` (phase du match, marché des futures, paris enregistrés) ne change pas.
 - Site : « a kickoff every 30 min, 10:00–22:00 », « rounds » au lieu de « slots », raccourcis d'horloge calculés
@@ -2547,6 +2548,16 @@ le mercredi et 84,5 Mo le dimanche : Safari ferme un onglet trop lourd puis le r
   l'ouverture de la page). Si les redémarrages continuent, étape suivante : charger les matchs terminés à la demande.
 - Tests : `test_serveur.py` (page légère, interrupteur), `outils/site/test_mobile.js` (net à 30 images/s, baisse sous
   un processeur bridé ×20 puis remontée, « restart », replay d'un match allégé, interrupteurs).
+
+### 91. Week-end en émission, étape 1 : nouvelles heures des playoffs (04/11/2026)
+Décision de Guillaume : le samedi et le dimanche deviennent un programme (« Week in review » en boucle, « Sunday
+Classic », « Road to the Final », étapes 2 et 3). Pour lui laisser la journée, les playoffs passent en soirée, heure de
+Bruxelles : **demi-finales samedi 18:00 (#1 – #4) et 21:00 (#2 – #3), Grand Final dimanche 18:00** (avant : 16:00,
+20:00 et dimanche 22:00). Un match de playoffs dure ≈ 20 min : rien ne se chevauche. Inchangés : saison régulière
+du lundi au vendredi, verrou du classement vendredi 23:30, calcul de la semaine suivante dans la nuit de vendredi à
+samedi. Une seule constante, `SEASON_PLAYOFF_SLOTS` (notebook 14.1, cellule 493) : s'applique aux semaines générées
+après la modification (première : semaine du 09/11/2026). Le serveur et la page lisent les heures dans le calendrier ;
+le tournage des vidéos (22 h 30 UTC) a désormais largement de marge sur la finale.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
