@@ -834,10 +834,18 @@ def _enc(o):
 # quand on ouvre le replay. Les rosters (identiques pour toute la semaine) ne sont écrits qu'une fois par équipe.
 FULL_RECENT_FINALS = 12
 _LIGHT_DROP = ("decision", "clock_decision", "adjust", "tracks", "spot", "odds")
+# Page encore allégée (03/11/2026, section 90 : iPhone / iPad, onglet rechargé en plein match, ouverture lente en fin de
+# semaine) : la poche du QB, le pré-snap et le scouting ne servent qu'à dessiner et raconter le replay, qui recharge le
+# match complet. 84,5 → 61 Mo le dimanche. GC_PAGE_LEGERE=off : la page d'avant.
+_LIGHT_DROP_PLUS = ("pocket", "presnap", "scout")
 
 
-def _light_play(p):
-    q = {k: v for k, v in p.items() if k not in _LIGHT_DROP}
+def page_legere_on():
+    return os.environ.get("GC_PAGE_LEGERE", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def _light_play(p, drop=_LIGHT_DROP):
+    q = {k: v for k, v in p.items() if k not in drop}
     if isinstance(p.get("call"), dict):
         q["call"] = {"type": p["call"].get("type")}
     return q
@@ -847,10 +855,11 @@ def _page_bundle(w, t):
     finals = sorted((g for g in w.sched if w.status(g, t) == "final"), key=lambda g: g["end"], reverse=True)
     full = {g["id"] for g in finals[:FULL_RECENT_FINALS]}
     feeds, rosters = {}, {}
+    drop = _LIGHT_DROP + _LIGHT_DROP_PLUS if page_legere_on() else _LIGHT_DROP
     for g in w.sched:
         f = w.public_feed(g, t)
         if w.status(g, t) == "final" and g["id"] not in full:
-            f = dict(f, plays=[_light_play(p) for p in f["plays"]], light=True)
+            f = dict(f, plays=[_light_play(p, drop) for p in f["plays"]], light=True)
         game = f.get("game") or {}
         for side in ("home", "away"):
             tm = game.get(side)
@@ -897,6 +906,8 @@ def page(request: Request = None):
         srv["quick_bet"] = False
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
+    if os.environ.get("GC_NETTETE", "on").strip().lower() in ("off", "0", "non", "no"):
+        srv["nettete_off"] = True                    # netteté du terrain (section 90) : la règle de fluidité d'avant
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
         srv["fluide_off"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))

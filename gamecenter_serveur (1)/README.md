@@ -2526,6 +2526,28 @@ la plus haute (bord).
 - Interrupteur `GC_EMPREINTE=off` (le site d'avant, `/api/fingerprint` 404). Tests : `moteur/tests/test_empreinte.py`,
   `test_franchises.py`, `outils/site/test_empreinte.js`.
 
+### 90. iPhone et iPad : terrain net, page plus légère, redémarrages signalés (04/11/2026)
+Constaté par Guillaume : terrain net puis de plus en plus flou, page rechargée toute seule en plein match (depuis le
+02/11), ouverture lente en fin de semaine. Les journaux « DIAG » montraient la résolution du terrain tombée de 2× à 1×
+en 10 à 30 s sur iPad et iPhone, et deux redémarrages de la page en plein match sur l'iPad (sans déploiement à ces
+heures). Mesuré sans écran : aucune fuite (tas JavaScript ≈ 65 Mo stable sur 6 min, canevas vidés), la page fait 54 Mo
+le mercredi et 84,5 Mo le dimanche : Safari ferme un onglet trop lourd puis le recharge.
+- **Netteté** : la règle de fluidité jugeait l'écart entre deux images (25 ms) : un iPhone en économie d'énergie ou un
+  iPad tiède affichent à 30 images/s sans peiner et perdaient leur résolution. Elle juge maintenant le **temps de
+  calcul** d'une image (jeu et dessin des terrains) : on baisse d'un cran (halos, puis 2× → 1,5× → 1×) au-dessus de
+  12 ms en moyenne sur 2,5 s, on **remonte** d'un cran après 20 s sous 5 ms ; un cran qui fait rebaisser dans les 30 s
+  n'est plus retenté. Journaux : « perf » (baisse), « perf-up » (remontée). Interrupteur `GC_NETTETE=off` (la règle
+  d'avant).
+- **Page plus légère** : les matchs terminés allégés (section « page allégée », 09/10) n'emportent plus la poche du QB,
+  le pré-snap ni le scouting, qui ne servent qu'au dessin et aux textes du replay (le replay recharge le match complet,
+  `/api/feed/{id}`) ; classements, stats de la semaine et temps de jeu inchangés. Dimanche 84,5 → 61 Mo (8,6 → 6,7 Mo
+  compressés), mercredi 54 → 41 Mo. Interrupteur `GC_PAGE_LEGERE=off`.
+- **Redémarrages signalés** : pendant un match, la page note lequel (sessionStorage, toutes les 4 s) ; si elle redémarre
+  dans les 3 minutes, elle envoie « restart » au serveur (match, action, Bigger Field, type de navigation, temps depuis
+  l'ouverture de la page). Si les redémarrages continuent, étape suivante : charger les matchs terminés à la demande.
+- Tests : `test_serveur.py` (page légère, interrupteur), `outils/site/test_mobile.js` (net à 30 images/s, baisse sous
+  un processeur bridé ×20 puis remontée, « restart », replay d'un match allégé, interrupteurs).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2703,7 +2725,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90.
 
 ## Test
 

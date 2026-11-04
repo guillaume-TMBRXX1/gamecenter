@@ -168,6 +168,32 @@ class Direct(Base):
         self.assertNotIn("__WEEK__", html)
         self.assertNotIn("__SERVER__", html)
 
+    def test_page_legere(self):
+        """Section 90 : les matchs terminés allégés n'emportent ni la poche du QB, ni le pré-snap, ni le scouting (le
+        replay recharge le match complet) ; les plus récents restent complets ; GC_PAGE_LEGERE=off : la page d'avant."""
+        t = self.reg[-1]["end"] + 60_000
+        lourd = ("pocket", "presnap", "scout")
+
+        def cles(b):
+            leg = {k for f in b["feeds"].values() if f.get("light") for p in f["plays"] for k in p}
+            plein = {k for f in b["feeds"].values() if not f.get("light") for p in f["plays"] for k in p}
+            return leg, plein, sum(1 for f in b["feeds"].values() if f.get("light"))
+        leg, plein, n = cles(serveur._page_bundle(self.w, t))
+        self.assertGreater(n, 0)
+        self.assertFalse(leg & set(lourd + serveur._LIGHT_DROP))
+        self.assertTrue({"players", "subs", "after", "show"} <= leg)          # stats, temps de jeu, classements
+        self.assertTrue(set(lourd) & plein)                                   # les matchs complets gardent tout
+        old = os.environ.get("GC_PAGE_LEGERE")
+        os.environ["GC_PAGE_LEGERE"] = "off"
+        try:
+            leg2, _, _ = cles(serveur._page_bundle(self.w, t))
+        finally:
+            if old is None:
+                os.environ.pop("GC_PAGE_LEGERE", None)
+            else:
+                os.environ["GC_PAGE_LEGERE"] = old
+        self.assertTrue(set(lourd) & leg2)
+
     def test_resultat_public_egal_au_score_du_moteur(self):
         """Score de la fiche du calendrier = score final du GameFeed = score après la dernière action (tous les matchs)."""
         for g in self.w.sched:
