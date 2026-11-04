@@ -91,6 +91,22 @@ class Calcul(unittest.TestCase):
             for c in cb["clips"]:
                 self.assertGreaterEqual(F[c["game"]]["plays"][c["index"]].get("quarter") or 0, 3)
 
+    def test_programme_du_dimanche(self):
+        """Section 93 : deux Classics (le match de la semaine, puis une remontée), le parcours des demi-finales."""
+        c = R.classiques(self.jeux)
+        self.assertEqual(len(c), 2)
+        self.assertNotEqual(c[0]["game"], c[1]["game"])
+        jeu = next(s for s in R.calculer(self.jeux)["segments"] if s["key"] == "game")
+        self.assertEqual(c[0]["game"], jeu["clips"][0]["game"])                      # « Game of the week »
+        reg = {g["id"] for g, _ in self.jeux if g["phase"] == "regular"}
+        self.assertTrue(all(x["game"] in reg for x in c))
+        p = R.parcours(self.jeux)
+        semis = {g["id"] for g, _ in self.jeux if g["phase"] == "semifinal"}
+        self.assertEqual(len(p), R.N_PARCOURS * len(semis))
+        self.assertTrue(all(x["game"] in semis for x in p))
+        self.assertEqual(R.classiques([]), [])
+        self.assertEqual(R.parcours([(g, f) for g, f in self.jeux if g["phase"] == "regular"]), [])
+
     def test_franchise_du_rang(self):
         eq = {t: {} for t in ("AAA", "BBB", "CCC")}
         self.assertEqual(R.franchise_du_rang(eq, "2026-09-28", "2026-09-28"), "AAA")
@@ -126,6 +142,28 @@ class Serveur(ts.Base):
         ts.a_l_heure(sf["ko"] + 60_000)
         ts.serveur._REV_CACHE.clear()
         self.assertEqual(self._get()["edition"], "regular")                         # demi-finales en cours : pas encore
+
+    def test_programme(self):
+        fk = self.w.final["ko"]
+        sf = self.w.semis[-1]
+        ts.a_l_heure(sf["ko"] + 60_000)                                             # demi-finale en cours
+        ts.serveur._REV_CACHE.clear()
+        p = self._get()["programme"]
+        self.assertEqual(p["final_ko"], fk)
+        self.assertEqual([c["start"] for c in p["classics"]], [fk - 3 * 3600_000, fk - (2 * 3600 + 15 * 60) * 1000])
+        for c in p["classics"]:
+            g = self.w.by[c["game"]]
+            self.assertEqual(c["end"] - c["start"], g["end"] - g["ko"])
+            self.assertLess(c["end"], fk - 90 * 60_000 + 1)                          # fini avant « Road to the Final »
+        self.assertEqual((p["road"]["from"], p["road"]["to"]), (fk - 90 * 60_000, fk))
+        self.assertEqual(p["road"]["clips"], [])                                     # finalistes pas encore connus
+        self.assertNotIn("home", p["road"])
+        ts.a_l_heure(fk - 60 * 60_000)                                              # dimanche 17:00
+        ts.serveur._REV_CACHE.clear()
+        r = self._get()["programme"]["road"]
+        self.assertEqual({r["home"], r["away"]}, {self.w.final["home"], self.w.final["away"]})
+        semis = {g["id"] for g in self.w.semis}
+        self.assertTrue(r["clips"] and all(c["game"] in semis for c in r["clips"]))
 
     def test_interrupteur(self):
         with mock.patch.dict(os.environ, {"GC_WEEK_REVIEW": "off"}):

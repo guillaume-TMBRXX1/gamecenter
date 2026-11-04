@@ -3500,7 +3500,24 @@ def api_review():
             d = _rev.calculer([(g, w.feed(g["id"])) for g in finis],
                               _rev.franchise_du_rang(w.doc["teams"], debut, w.start))
             _REV_CACHE.clear(); _REV_CACHE[cle] = d
+            d["programme"] = programme_du_dimanche(w, t, finis)
     return JSONResponse(dict(d, on=True, final=len(finis)), headers={"Cache-Control": "no-store"})
+
+
+def programme_du_dimanche(w, t, finis):
+    """Section 93 : les deux « Sunday Classic » (match d'origine, début et fin de la rediffusion) et « Road to the
+    Final » (de 16:30 au coup d'envoi ; les actions des demi-finales, une fois les finalistes connus)."""
+    fk = w.final["ko"]
+    jeux = [(g, w.feed(g["id"])) for g in finis if g["phase"] in ("regular", "semifinal")]
+    cl = []
+    for c, avant in zip(_rev.classiques(jeux), _rev.CLASSIC_AVANT):
+        g = w.by[c["game"]]
+        debut = fk - avant * 1000
+        cl.append(dict(c, start=debut, end=debut + (g["end"] - g["ko"])))
+    road = {"from": fk - _rev.ROAD_AVANT * 1000, "to": fk, "final": w.final["id"], "clips": []}
+    if w.teams_known(w.final, t):
+        road.update(home=w.final["home"], away=w.final["away"], clips=_rev.parcours(jeux))
+    return {"final_ko": fk, "classics": cl, "road": road}
 
 
 @app.get("/api/health")

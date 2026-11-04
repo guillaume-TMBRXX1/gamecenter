@@ -2577,7 +2577,30 @@ playlist d'actions de la semaine.
   (le replay du match). Le titre de l'accueil devient « Week in review ». Les matchs sont chargés à la demande (3 gardés
   au plus en mémoire). « Hide scores » activé : pas d'émission (chaque action donnerait un résultat).
 - Interrupteur `GC_WEEK_REVIEW=off` (le tableau d'avant, `/api/review` 404). Tests : `moteur/tests/test_recap_semaine.py`,
-  `outils/site/test_review.js`. Étape 3 (à venir) : « Sunday Classic » (15:00) et « Road to the Final » (16:30).
+  `outils/site/test_review.js`. Étape 3 : « Sunday Classic » (15:00, 15:45) et « Road to the Final » (16:30), section 93.
+
+### 93. Week-end en émission, étape 3 : « Sunday Classic » et « Road to the Final » (04/11/2026)
+Le programme du dimanche, compté depuis le coup d'envoi de la Grand Final (F, dimanche 18:00) : jusqu'à F − 3 h
+« Week in review » ; **F − 3 h (15:00) et F − 2 h 15 (15:45) : « Sunday Classic »** ; **F − 1 h 30 (16:30) à F :
+« Road to the Final »** ; F : la Grand Final en direct ; après elle, « Week in review », édition finale.
+- **Sunday Classic** (`recap_semaine.classiques`) : 1er, le match le plus spectaculaire de la saison régulière (« Game of
+  the week ») ; 2e, la plus grosse remontée parmi les autres (le vainqueur tombé à 15 % ou moins), à défaut le
+  deuxième plus spectaculaire. Rediffusion **calée sur l'horloge**, comme un direct (même calcul que le tableau : arriver
+  à 15:10, c'est arriver au même moment du match que tout le monde). Tuile « Sunday Classic · Rebroadcast », programme
+  de l'après-midi sous le terrain ; **« Watch »** ouvre le grand écran à l'action en cours, avec le chat du match
+  d'origine (calé sur l'action vue, section 73). Pas de paris (le résultat est connu).
+- **Road to the Final** : panneaux de 14 s (un clic sur un panneau y saute), compte à rebours jusqu'au coup d'envoi :
+  l'affiche (bilans, cotes de la finale, on parie depuis la tuile), le parcours (les 3 plus belles actions de chaque
+  demi-finale, jouées sur le terrain), le face-à-face (bilan, rivalité et trophée, section 88), les empreintes de jeu
+  (superposées pour les comptes Insights, aperçu flouté sinon, section 89), les joueurs à suivre (meilleurs passeur,
+  coureur, receveur et défenseur de chaque finaliste, stats de la semaine, ouvertes à tous).
+- **Serveur** : `/api/review` ajoute `programme` (`classics` : match, raison, début et fin de la rediffusion ; `road` :
+  heures, finale, finalistes et actions des demi-finales une fois les finalistes connus).
+- « Hide scores » : les Classics et Road to the Final passent (Road sans les actions des demi-finales), pas « Week in
+  review ». Un match en direct passe toujours avant l'émission. Interrupteur : `GC_WEEK_REVIEW=off` coupe les trois.
+- Tests : `moteur/tests/test_recap_semaine.py` (choix des Classics, parcours, heures du programme),
+  `outils/site/test_dimanche.js` (Classic calé sur l'horloge, « Watch », Classic 2, Road to the Final et ses panneaux,
+  téléphone).
 
 ### Annexe — `.github/workflows/semaine.yml`
 

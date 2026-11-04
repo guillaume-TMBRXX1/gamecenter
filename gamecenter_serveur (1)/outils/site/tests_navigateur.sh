@@ -100,6 +100,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : empreinte de jeu (forme publique, chiffres Insights)" node outils/site/test_empreinte.js
   lancer "Site : netteté du terrain, page allégée, redémarrage signalé (iPhone / iPad)" node outils/site/test_mobile.js
   lancer "Site : « Week in review », l.émission du week-end" node outils/site/test_review.js
+  lancer "Site : le dimanche (Sunday Classic, Road to the Final)" node outils/site/test_dimanche.js
   lancer "Site : chat, salon General (signaler, masquer, effacer, administration)" node outils/site/test_chat.js
   lancer "Site : chat d.un match (synchronisé à l.action, Bigger field) et bouclier anti-spoiler" node outils/site/test_chat_match.js
   lancer "Site : visibilité (référencement, partage)" node outils/site/test_visibilite.js
