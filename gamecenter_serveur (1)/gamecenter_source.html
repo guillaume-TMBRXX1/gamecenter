@@ -3018,6 +3018,7 @@ function kfCurve(kf,i,u,h){
 }
 /* keyframes from start u0 along a polyline at a constant speed (yards per unit of play time) */
 function pathKf(pts,u0,sp){
+  if(JEU_FLUIDE) return pathKfProfile(pts,u0,sp);
   const k=[[0,pts[0].x,pts[0].y]]; let u=u0;
   if(u0>0) k.push([u0,pts[0].x,pts[0].y]);
   for(let i=1;i<pts.length;i++){
@@ -3027,6 +3028,39 @@ function pathKf(pts,u0,sp){
     u+=du; k.push([u,b.x,b.y]);
   }
   if(k[k.length-1][0]<1) k.push([1,pts[pts.length-1].x,pts[pts.length-1].y]);
+  return k;
+}
+/* JEU_FLUIDE (05/11/2026): the same route with a speed profile — a burst off the line, the receiver gathers himself
+   before each break (the sharper the break, the slower: 30° ≈ 85 % of his speed, 90° ≈ 55 %, a turn back ≈ 30 %),
+   plants and accelerates out of it. He reaches the end of his route at the same moment as at the constant speed (the
+   cruise is a little faster in between), so the play's timing is kept; the catch point follows his keyframes. */
+const PF_ZONE=2.4, PF_BURST=3, PF_START=0.5;
+function pathKfProfile(pts,u0,sp){
+  const P=[pts[0]]; for(let i=1;i<pts.length;i++){ const a=P[P.length-1], b=pts[i]; if(Math.hypot(b.x-a.x,b.y-a.y)>1e-6) P.push(b); }
+  const k=[[0,pts[0].x,pts[0].y]]; if(u0>0) k.push([u0,pts[0].x,pts[0].y]);
+  if(P.length<2){ if(k[k.length-1][0]<1) k.push([1,pts[0].x,pts[0].y]); return k; }
+  const n=P.length, fac=[PF_START];                                   /* speed factor at each point of the route */
+  for(let i=1;i<n-1;i++){ const a=P[i-1], b=P[i], c=P[i+1], t1=Math.atan2(b.y-a.y,b.x-a.x), t2=Math.atan2(c.y-b.y,c.x-b.x);
+    const th=Math.abs(Math.atan2(Math.sin(t2-t1),Math.cos(t2-t1)));
+    fac.push(th<0.35?1:clamp(1-0.5*th/(Math.PI/2),0.3,1)); }
+  fac.push(1);
+  /* nodes [x, y, time at cruise speed 1]; each leg: ramp up from its start, ramp down into its end, both linear in distance */
+  const nodes=[]; let T=0, L0=0;
+  for(let i=1;i<n;i++){
+    const a=P[i-1], b=P[i], L=Math.hypot(b.x-a.x,b.y-a.y), fa=fac[i-1], fb=fac[i];
+    let az=fa<1?Math.min(i===1?PF_BURST:PF_ZONE,L*0.45):0, bz=fb<1?Math.min(PF_ZONE,L*0.45):0;
+    const vAt=s=>Math.min(az>0&&s<az?fa+(1-fa)*s/az:1, bz>0&&s>L-bz?fb+(1-fb)*(L-s)/bz:1);
+    const S=[0,az/3,az*2/3,az,L-bz,L-bz*2/3,L-bz/3,L].filter(s=>s>=0&&s<=L).sort((p,q)=>p-q).filter((s,j,A)=>j===0||s-A[j-1]>1e-4);
+    if(i===1) nodes.push([a.x,a.y,0]);
+    for(let j=1;j<S.length;j++){ const ds=S[j]-S[j-1]; T+=ds/((vAt(S[j-1])+vAt(S[j]))/2); const f=S[j]/L; nodes.push([a.x+(b.x-a.x)*f,a.y+(b.y-a.y)*f,T]); }
+    L0+=L;
+  }
+  const scale=T/L0;                                     /* same total time as at constant speed sp */
+  let prev=nodes[0];
+  for(let j=1;j<nodes.length;j++){ const q=nodes[j], u=u0+q[2]/(scale*sp);
+    if(u>=1){ const up=u0+prev[2]/(scale*sp), f=(1-up)/Math.max(1e-9,u-up); k.push([1,prev[0]+(q[0]-prev[0])*f,prev[1]+(q[1]-prev[1])*f]); return k; }
+    k.push([u,q[0],q[1]]); prev=q; }
+  if(k[k.length-1][0]<1) k.push([1,P[n-1].x,P[n-1].y]);
   return k;
 }
 /* keyframes truncated at u, then new points */
@@ -5797,6 +5831,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 /* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
    the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
 let FX_DPR=2, FX_GLOW=true;
+const FD_PULSE=1300, DA_CHAIN='#F29A1F';   /* 05/11/2026: first-down pulse (ms), the chain crew's orange */
 class FieldView{
   constructor(wrap,g,viewW,maxZoom){
     this.wrap=wrap; this.canvas=wrap.querySelector('canvas'); this.ctx=this.canvas.getContext('2d'); this.g=g; this.viewW=viewW;
@@ -5861,7 +5896,8 @@ class FieldView{
     return [W,H,Math.round(x0*s*4),Math.round(y0*s*4),Math.round(s*400),h,Math.round(b.x*40),Math.round(b.y*40),Math.round(b.h*40),
       g.trail.length,tl&&Math.round(tl.x*40),tl&&Math.round(tl.y*40),g.tracks,g.plan,g.phase,g.status,g.los,g.toGo,g.special,g.poss,g.home,g.away,
       c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g),
-      g.stopT0!=null&&performance.now()-g.stopT0<1700?Math.floor((performance.now()-g.stopT0)/200):-1];   /* clignotement du cercle rouge */
+      g.stopT0!=null&&performance.now()-g.stopT0<1700?Math.floor((performance.now()-g.stopT0)/200):-1,
+      g.fdT0!=null&&performance.now()-g.fdT0<FD_PULSE?Math.floor((performance.now()-g.fdT0)/33):-1, g.down];   /* the first-down pulse */   /* clignotement du cercle rouge */
   }
   endZone(xs,team,X,x0,x1){
     if(xs+10<x0||xs>x1) return;
@@ -5890,6 +5926,46 @@ class FieldView{
     if(!pts.length) pts.push({x:g.los||60,y:g.bally||MIDY});
     let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9; for(const p of pts){ x0=Math.min(x0,p.x); x1=Math.max(x1,p.x); y0=Math.min(y0,p.y); y1=Math.max(y1,p.y); }
     return {x0,x1,y0,y1};
+  }
+  /* 05/11/2026: the chain crew, as on TV — on the far sideline, the down box at the line of scrimmage (down number) and
+     the chain to the stick at the line to gain; goal to go: the down box alone */
+  /* the chain's height on the canvas: on the far sideline, or at the top of what the viewer sees when the camera is in close */
+  chainY(Y,h){ const top=(this.vis?this.vis.t:0.04)*this.ch; return Math.max(Y(0)+h*0.62+1, top+h*0.62+2); }
+  chains(g,X,Y,s,d,a){
+    const c=this.ctx, h=Math.max(13,s*2.3), w=Math.max(11,s*1.8), y=this.chainY(Y,h), los=X(g.los), gtg=g.toGo>=ytg(g)-0.5, fx=X(g.los+d*g.toGo);
+    c.save(); c.globalAlpha=Math.max(a,0.7);
+    if(!gtg){ c.strokeStyle=DA_CHAIN; c.lineWidth=Math.max(1.5,s*0.16); c.setLineDash([Math.max(3,s*0.4),Math.max(2,s*0.25)]);
+      c.beginPath(); c.moveTo(los,y); c.lineTo(fx,y); c.stroke(); c.setLineDash([]);
+      c.fillStyle=DA_CHAIN; c.strokeStyle=hexA('#1A1206',.55); c.lineWidth=1;            /* the stick: a small orange plate */
+      c.beginPath(); c.roundRect(fx-w*0.32,y-h*0.36,w*0.64,h*0.72,Math.max(1.5,w*0.12)); c.fill(); c.stroke(); }
+    c.fillStyle=DA_CHAIN; c.strokeStyle=hexA('#1A1206',.55); c.lineWidth=1;
+    c.beginPath(); c.roundRect(los-w/2,y-h/2,w,h,Math.max(2,w*0.18)); c.fill(); c.stroke();
+    c.fillStyle='#1A1206'; c.font=`800 ${Math.round(h*0.78)}px "Big Shoulders Display", Manrope, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(String(clamp(g.down|0,1,4)),los,y+h*0.04);
+    c.restore();
+  }
+  /* 05/11/2026: the ball carrier crosses the line to gain — the line flashes and a light wave runs out from it (once a play) */
+  firstDownPulse(g,X,s,H,d){
+    if(REDUCED) return;
+    const P=g.plan, car=g.carrier;
+    if(g.phase==='play'&&P&&car&&car.side==='off'&&g.fdFor!==P&&g.toGo<ytg(g)-0.5){ const p=g.off[car.idx], lx=g.los+d*g.toGo;
+      if(p&&(p.x-lx)*d>=0){ g.fdFor=P; g.fdT0=performance.now(); g.fdX=lx; } }   /* the spot is kept: the line moves once the ball is spotted */
+    if(g.fdFor!==P||g.fdT0==null) return;
+    const e=(performance.now()-g.fdT0)/FD_PULSE; if(e<0||e>=1) return;
+    const c=this.ctx, px=X(g.fdX), k=1-e, col=daOff(g), grow=Math.max(10,s*7)*(1-Math.pow(1-Math.min(1,e*1.6),3)), lw=Math.max(3,s*0.45);
+    c.save();
+    const gr=c.createLinearGradient(px-grow,0,px+grow,0);   /* a wave of the offence's colour spreading from the line */
+    gr.addColorStop(0,hexA(col,0)); gr.addColorStop(0.5,hexA(col,0.38*k)); gr.addColorStop(1,hexA(col,0));
+    c.fillStyle=gr; c.fillRect(px-grow,0,grow*2,H);
+    c.shadowColor=col; c.shadowBlur=FX_GLOW?16*k:0;           /* the line itself lights up */
+    c.fillStyle=hexA(col,0.95*k); c.fillRect(px-lw*(1+k)/2,0,lw*(1+k),H);
+    c.shadowBlur=0;
+    const tf=Math.max(10,Math.round(s*1.05)), t='1ST DOWN';  /* and the stick says it */
+    c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+    const ch=Math.max(13,s*2.3), tw=c.measureText(t).width+tf*1.1, th=tf*1.6, ty=this.chainY(this.Y,ch)+ch*0.62+th*0.75;
+    c.globalAlpha=Math.min(1,k*2.2); c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill();
+    const rgb=daRgb(col); c.fillStyle=rgb&&daLum(rgb)>0.3?'#141414':'#FFFFFF'; c.fillText(t,px,ty+0.5);
+    c.restore();
   }
   /* 05/11/2026: which way each player faces — where he has just been running (smoothed), or, still before the snap,
      toward the other team. Drawn as a small chevron outside his glyph (big screen and featured tiles). */
@@ -5987,6 +6063,7 @@ class FieldView{
       c.shadowColor='#FFFFFF'; c.fillStyle=hexA(FIELD.ink,a*0.9); c.fillRect(X(g.los)-lw/2,0,lw,H);
       if(!g.special && g.toGo<ytg(g)-0.5){ c.shadowColor=FIELD.cyan; c.fillStyle=hexA(FIELD.cyan,a); c.fillRect(X(g.los+d*g.toGo)-lw/2,0,lw,H); }
       c.restore();
+      if(!g.special){ this.chains(g,X,Y,s,d,a); this.firstDownPulse(g,X,s,H,d); }
     }
     // player traces, like a playbook diagram: offence routes in cyan (the target brighter), coverage in pink
     const TP=g.plan, TR=g.tracks;
