@@ -34,7 +34,8 @@ const api=async(port,u,body)=>{ const r=await fetch(`http://localhost:${port}/ap
 const ouvrir=async(b,port,opts,tok,name,theme)=>{ const ctx=await b.newContext(Object.assign({viewport:{width:1440,height:1000},colorScheme:theme||'light'},opts||{}));
   const p=await ctx.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message));
   if(tok) await ctx.addInitScript(([t,n])=>localStorage.setItem('gc-player-v1',JSON.stringify({token:t,name:n,account:true})),[tok,name]);
-  await p.goto(`http://localhost:${port}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:60000}); return p; };
+  /* patient : la page d'une fin de semaine est lourde, et le serveur de l'interrupteur démarre à froid (CI, 05/11/2026) */
+  await p.goto(`http://localhost:${port}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000}); return p; };
 const fiche=async(p,t)=>{ await p.evaluate(()=>window.__gc.season.setView('teams')); await p.waitForTimeout(300);
   await p.click(`[data-team="${t}"]`).catch(()=>{});
   await p.waitForFunction(()=>{ const e=document.querySelector('[data-fp="team"]'); return e&&e.querySelector('svg.fp-r'); },null,{timeout:20000}).catch(()=>{}); };
