@@ -2639,7 +2639,14 @@ Une simulation spatiale qui déciderait aussi des gains reste une étape possibl
   contact au niveau décidé (≈ 0,6 / 3,5 / 8 yards), puis le porteur entraîne le plaqueur jusqu'au point (yards après
   contact). Semaine de test : 11 785 courses résumées, toutes conformes ; `play.geo` (passes et courses) ≈ 6,7 Mo sur
   126 Mo de GameFeed (+ 5,5 %) ; mêmes résultats que sans (audit identique).
-- Suite prévue : palier 3, la poche (duels gagnés ou perdus).
+- **Palier 3, la poche** (même jour) : rien à exporter de plus — `play.pocket` (étape 7.1) a déjà chaque duel de
+  protection (rusher, bloqueur, marge, instant `t` où il cède, `free`, `double`). Le site s'en servait pour le duel perdu
+  et la réaction du QB ; il dessine maintenant aussi le **rusher non bloqué** (il arrive sur le QB au même rapport au
+  lancer que dans le moteur : `t / decision.throw_time`, car les secondes du moteur ne sont pas celles de l'écran — avant le
+  lancer, il le touche au moment où le ballon part ; plus tard, il est encore en route) et la **double équipe** (le joueur
+  de ligne sans adversaire vient aider). Le duel perdu garde son moment d'avant (la forme de la poche dit déjà qu'il cède
+  avant le lancer). S'applique aussi aux semaines déjà en ligne. Mesures du dessin inchangées (vol le plus court 0,42 s,
+  vitesse au 99e centile 33,4 yd/s).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
