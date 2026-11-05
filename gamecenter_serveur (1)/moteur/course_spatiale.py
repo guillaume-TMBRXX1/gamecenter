@@ -13,8 +13,8 @@ jouent la suite sur le terrain :
             2e niveau, safeties et corners derrière) ; le plaqueur du bloc F est au contact ;
   SIMULATION pas de DT secondes : le porteur court vers l'en-but en s'écartant des défenseurs devant lui (agilité),
             chaque défenseur suit un angle de poursuite (vitesse) ; au contact, un plaquage est tenté (tackling contre
-            agilité ou puissance) : manqué, le défenseur est gêné un instant ; réussi, le porteur tombe vers l'avant
-            (puissance) ; touche et en-but arrêtent la course.
+            agilité ou puissance, plus sûr avec des coéquipiers autour) : manqué, le défenseur est gêné un instant et le
+            porteur perd son élan ; réussi, le porteur tombe vers l'avant (puissance) ; touche et en-but l'arrêtent.
 Les notes pèsent donc par ce qu'elles font : vitesse (qui rattrape qui), agilité et puissance (plaquages manqués,
 yards après contact), tackling. Le hasard a son flux (« course-spatiale|<graine>|<n° d'action> ») : le moteur n'en
 consomme pas plus qu'avant. Purement Python, ≈ 0,1 ms par course (prototype du 06/11 : + 1,4 % du temps d'un match).
@@ -40,6 +40,8 @@ PARAMS = {
     "k_chute": 0.03,           # par point de puissance au-delà de 70
     "vit_porteur": 1.0,        # échelle de vitesse du porteur
     "vit_defense": 1.0,        # échelle de vitesse des défenseurs
+    "perte": 0.55,             # plaquage cassé : le porteur garde cette part de sa vitesse (il perd son élan)
+    "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
     # profondeur du contact (yards depuis la ligne) selon le niveau du bloc F : uniforme [a, b]
     "profondeur": {"ligne": (-0.5, 1.5), "linebacker": (2.0, 5.0), "second rideau": (6.0, 10.0)},
 }
@@ -135,13 +137,15 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
             dx, dy = px - q[0], py - q[1]
             dd = hypot(dx, dy)
             if dd < rayon:
-                if rng.random() < P["p_plaquage"] + (q[3] - max(ag, pu)) * P["k_plaquage"]:
+                aide = sum(1 for o in D if o is not q and o[4] <= 0 and hypot(px - o[0], py - o[1]) < 2.5)
+                if rng.random() < P["p_plaquage"] + (q[3] - max(ag, pu)) * P["k_plaquage"] + aide * P["renfort"]:
                     px += max(0.0, rng.gauss(P["chute"] + (pu - 70) * P["k_chute"], 0.5))
                     fin["plaqueur"] = q[5]
                     plaque = True
                     break
                 manques += 1
                 q[4] = P["gene"]
+                v *= P["perte"]                         # il casse le plaquage mais perd son élan
                 continue
             lead = min(1.2, dd / (q[2] + 1e-6))         # angle de poursuite : vers le point d'interception
             tx, ty = px + v * ux * lead - q[0], py + v * uy * lead - q[1]
@@ -151,7 +155,8 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
             q[1] += ty / tn * s
         if plaque:
             break
-    px = min(px, but)
+    if px >= but:                                       # plaqué en tombant dans l'en-but : touchdown
+        px, fin["td"], fin["plaqueur"] = but, True, None
     total = px
     k = math.floor(total)
     yards = int(k + (1 if rng.random() < total - k else 0))           # arrondi sans biais

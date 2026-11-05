@@ -101,7 +101,9 @@ if moteur:
         for _e in _cs_runs:
             _s = _e["run"]["spatial"]
             assert _s["contact"] <= max(_e["yards_gained"], _s["contact"]) + 1e-9
-            assert not _s["plaqueur"] or _e.get("credited_defender") is not None, _e
+            assert not _s["plaqueur"] or _e.get("credited_defender") is not None \
+                or _e["yard_line"] + _e["yards_gained"] >= 100 \
+                or (_e.get("penalty") or {}).get("nullified"), _e      # touchdown, action annulée : pas de plaqueur
     print(f"✅ 12.2 untricies — course après le contact {'simulée sur le terrain' if COURSE_SPATIALE_ENABLED else 'coupée'}"
           + (f" ({len(_cs_runs)} courses simulées sur un match de contrôle)" if COURSE_SPATIALE_ENABLED else ""))
 else:
