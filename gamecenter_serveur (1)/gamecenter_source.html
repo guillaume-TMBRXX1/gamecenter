@@ -5831,7 +5831,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 /* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
    the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
 let FX_DPR=2, FX_GLOW=true;
-const FD_PULSE=1300, DA_CHAIN='#F29A1F';   /* 05/11/2026: first-down pulse (ms), the chain crew's orange */
+const FD_PULSE=1300;   /* 05/11/2026: first-down pulse (ms) */
 class FieldView{
   constructor(wrap,g,viewW,maxZoom){
     this.wrap=wrap; this.canvas=wrap.querySelector('canvas'); this.ctx=this.canvas.getContext('2d'); this.g=g; this.viewW=viewW;
@@ -5929,21 +5929,6 @@ class FieldView{
   }
   /* 05/11/2026: the chain crew, as on TV — on the far sideline, the down box at the line of scrimmage (down number) and
      the chain to the stick at the line to gain; goal to go: the down box alone */
-  /* the chain's height on the canvas: on the far sideline, or at the top of what the viewer sees when the camera is in close */
-  chainY(Y,h){ const top=(this.vis?this.vis.t:0.04)*this.ch; return Math.max(Y(0)+h*0.62+1, top+h*0.62+2); }
-  chains(g,X,Y,s,d,a){
-    const c=this.ctx, h=Math.max(13,s*2.3), w=Math.max(11,s*1.8), y=this.chainY(Y,h), los=X(g.los), gtg=g.toGo>=ytg(g)-0.5, fx=X(g.los+d*g.toGo);
-    c.save(); c.globalAlpha=Math.max(a,0.7);
-    if(!gtg){ c.strokeStyle=DA_CHAIN; c.lineWidth=Math.max(1.5,s*0.16); c.setLineDash([Math.max(3,s*0.4),Math.max(2,s*0.25)]);
-      c.beginPath(); c.moveTo(los,y); c.lineTo(fx,y); c.stroke(); c.setLineDash([]);
-      c.fillStyle=DA_CHAIN; c.strokeStyle=hexA('#1A1206',.55); c.lineWidth=1;            /* the stick: a small orange plate */
-      c.beginPath(); c.roundRect(fx-w*0.32,y-h*0.36,w*0.64,h*0.72,Math.max(1.5,w*0.12)); c.fill(); c.stroke(); }
-    c.fillStyle=DA_CHAIN; c.strokeStyle=hexA('#1A1206',.55); c.lineWidth=1;
-    c.beginPath(); c.roundRect(los-w/2,y-h/2,w,h,Math.max(2,w*0.18)); c.fill(); c.stroke();
-    c.fillStyle='#1A1206'; c.font=`800 ${Math.round(h*0.78)}px "Big Shoulders Display", Manrope, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-    c.fillText(String(clamp(g.down|0,1,4)),los,y+h*0.04);
-    c.restore();
-  }
   /* 05/11/2026: the ball carrier crosses the line to gain — the line flashes and a light wave runs out from it (once a play) */
   firstDownPulse(g,X,s,H,d){
     if(REDUCED) return;
@@ -5960,9 +5945,9 @@ class FieldView{
     c.shadowColor=col; c.shadowBlur=FX_GLOW?16*k:0;           /* the line itself lights up */
     c.fillStyle=hexA(col,0.95*k); c.fillRect(px-lw*(1+k)/2,0,lw*(1+k),H);
     c.shadowBlur=0;
-    const tf=Math.max(10,Math.round(s*1.05)), t='1ST DOWN';  /* and the stick says it */
+    const tf=Math.max(10,Math.round(s*1.05)), t='1ST DOWN';  /* and the line says it */
     c.font=`800 ${tf}px Manrope, system-ui, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-    const ch=Math.max(13,s*2.3), tw=c.measureText(t).width+tf*1.1, th=tf*1.6, ty=this.chainY(this.Y,ch)+ch*0.62+th*0.75;
+    const tw=c.measureText(t).width+tf*1.1, th=tf*1.6, ty=Math.max(this.Y(0),(this.vis?this.vis.t:0.04)*this.ch)+th*1.1;   /* at the top of the line, in view */
     c.globalAlpha=Math.min(1,k*2.2); c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill();
     const rgb=daRgb(col); c.fillStyle=rgb&&daLum(rgb)>0.3?'#141414':'#FFFFFF'; c.fillText(t,px,ty+0.5);
     c.restore();
@@ -6063,7 +6048,7 @@ class FieldView{
       c.shadowColor='#FFFFFF'; c.fillStyle=hexA(FIELD.ink,a*0.9); c.fillRect(X(g.los)-lw/2,0,lw,H);
       if(!g.special && g.toGo<ytg(g)-0.5){ c.shadowColor=FIELD.cyan; c.fillStyle=hexA(FIELD.cyan,a); c.fillRect(X(g.los+d*g.toGo)-lw/2,0,lw,H); }
       c.restore();
-      if(!g.special){ this.chains(g,X,Y,s,d,a); this.firstDownPulse(g,X,s,H,d); }
+      if(!g.special) this.firstDownPulse(g,X,s,H,d);
     }
     // player traces, like a playbook diagram: offence routes in cyan (the target brighter), coverage in pink
     const TP=g.plan, TR=g.tracks;
