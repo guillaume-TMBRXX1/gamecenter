@@ -2611,6 +2611,43 @@ Le programme du dimanche, compté depuis le coup d'envoi de la Grand Final (F, d
   `outils/site/test_dimanche.js` (Classic calé sur l'horloge, « Watch », Classic 2, Road to the Final et ses panneaux,
   téléphone).
 
+### 94. Trajectoires du moteur, palier 1 : les passes (05/11/2026)
+Chantier « le terrain montre ce que le moteur a décidé ». Décision de Guillaume : **descriptif d'abord** (le moteur
+exporte ce qu'il a décidé, le site dessine à partir de là ; aucun résultat changé, donc ni recalibrage ni cotes refaites).
+Une simulation spatiale qui déciderait aussi des gains reste une étape possible, plus tard.
+- **Moteur** : `moteur/trajectoires.py` résume l'état après le snap de chaque passe (bloc A, défenseur responsable du
+  bloc C) : `play.geo = {v: "geo-1", k: "pass", cov, fam, dbl, tt (lancer, s), ttp (pression, s), tgt, rec}`, `rec` =
+  `[[rôle, séparation en yards, statut L/S/C/D, défenseur responsable, bust], …]` pour CHAQUE receveur. Séparation : écart
+  du moteur converti en yards et borné par le statut (libre 3 à 7 yd, serré 1,6 à 2,9, couvert 0,4 à 1,5, doublé 0,8).
+  Aucun tirage. Tests : `moteur/tests/test_trajectoires.py`.
+- **Notebook 12.2 tricies** : `decision.geo` au journal, `play.geo` au GameFeed (additif) ; contrôles : mêmes matchs et
+  mêmes scores allumé ou coupé, chaque passe décidée résumée et conforme. Interrupteur `GC_TRAJECTOIRES=0` (GameFeed
+  d'avant). Semaine de test (279 matchs) : 22 766 passes résumées, toutes conformes, défenseur connu pour 100 % des
+  receveurs ; `play.geo` ≈ 4,7 Mo sur 124 Mo de GameFeed (+ 3,9 %) ; audit : 0 anomalie bloquante.
+- **Site** (et cellule 427) : au lancer, chaque receveur est à la distance de son défenseur que le moteur a décidée — le
+  défenseur du moteur quand il est libre de couvrir (repéré par son identifiant dans les onze alignés), sinon celui
+  dessiné sur lui, sinon le plus proche — ; il s'y rend à `FL_VMAX` au plus. Un receveur libre que le QB n'a pas vu
+  apparaît libre. Ensuite, le dessin d'avant (défenseurs qui lisent le lancer, réception disputée, plaquage). Sans
+  `play.geo` (semaines d'avant le 09/11), le dessin d'avant à l'identique.
+- **Palier 2, les courses** (même jour) : `geo_course` résume l'état du bloc F (`moteur.course.courir`) :
+  `play.geo = {v: "geo-1", k: "run", cls, side L/R, hole o/t/c, read p/cb/bo/k/x, ch (non bloqués), ct L/B/S (premier
+  contact : ligne / linebacker / second rideau), tkl (plaqueur), duels: [[bloqueur, défenseur, marge], …]}` (notebook :
+  `geo_run` au journal, écrit avec `run`). Site : le trou entre les bloqueurs du point d'attaque ; chaque duel joué comme
+  le moteur (marge positive : le défenseur est repoussé hors du trou ; négative : il passe et entre dans le trou) — la
+  ligne dessinée ne tourne pas avec l'attaque, un duel est donc placé par le rang de son bloqueur depuis le centre (C, G,
+  T, TE) du côté de la course ; plaqueur du moteur s'il est du bon niveau (le nom suit le joueur de toute façon) ; premier
+  contact au niveau décidé (≈ 0,6 / 3,5 / 8 yards), puis le porteur entraîne le plaqueur jusqu'au point (yards après
+  contact). Semaine de test : 11 785 courses résumées, toutes conformes ; `play.geo` (passes et courses) ≈ 6,7 Mo sur
+  126 Mo de GameFeed (+ 5,5 %) ; mêmes résultats que sans (audit identique).
+- **Palier 3, la poche** (même jour) : rien à exporter de plus — `play.pocket` (étape 7.1) a déjà chaque duel de
+  protection (rusher, bloqueur, marge, instant `t` où il cède, `free`, `double`). Le site s'en servait pour le duel perdu
+  et la réaction du QB ; il dessine maintenant aussi le **rusher non bloqué** (il arrive sur le QB au même rapport au
+  lancer que dans le moteur : `t / decision.throw_time`, car les secondes du moteur ne sont pas celles de l'écran — avant le
+  lancer, il le touche au moment où le ballon part ; plus tard, il est encore en route) et la **double équipe** (le joueur
+  de ligne sans adversaire vient aider). Le duel perdu garde son moment d'avant (la forme de la poche dit déjà qu'il cède
+  avant le lancer). S'applique aussi aux semaines déjà en ligne. Mesures du dessin inchangées (vol le plus court 0,42 s,
+  vitesse au 99e centile 33,4 yd/s).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

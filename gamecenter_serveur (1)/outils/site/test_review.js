@@ -28,6 +28,11 @@ async function server(port,env,at){
   for(let i=0;i<240;i++){ try{ if((await fetch(`http://localhost:${port}/api/time`)).ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
   p.kill(); throw new Error('le serveur ne démarre pas');
 }
+/* arrête un serveur et attend que son port ne réponde plus (redémarrage sur le même port, CI du 05/11/2026) */
+async function arreter(p,port){
+  if(p.exitCode===null&&p.signalCode===null){ const fin=new Promise(r=>p.once('exit',r)); p.kill(); await Promise.race([fin,new Promise(r=>setTimeout(r,15000))]); }
+  for(let i=0;i<60;i++){ try{ await fetch(`http://localhost:${port}/api/time`); }catch(e){ return; } await new Promise(r=>setTimeout(r,250)); }
+}
 const ouvrir=async(b,port,opts,init)=>{ const ctx=await b.newContext(Object.assign({viewport:{width:1440,height:1000}},opts||{}));
   if(init) await ctx.addInitScript(init);
   const p=await ctx.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message));
@@ -92,7 +97,7 @@ const show=p=>p.waitForSelector('#revTile .field canvas',{timeout:30000}).then((
     errs.push(...q.errs);
     /* ---- après la Grand Final : l'édition finale, la Grand Final d'abord (mode sombre) ---- */
     const FIN=W.schedule.find(g=>g.phase==='ai_bowl');
-    srv.kill(); await new Promise(r=>setTimeout(r,800));
+    await arreter(srv,P1);   /* le port doit être libre : sinon l'ancien serveur répond au test du nouveau, puis s'en va */
     const srvF=await server(P1,{},Date.parse(FIN.kickoff)+90*60e3);
     const f=await ouvrir(b,P1,{colorScheme:'dark'});
     check(await show(f),'après la Grand Final : l\'émission reprend');

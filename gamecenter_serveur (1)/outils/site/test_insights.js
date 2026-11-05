@@ -33,7 +33,8 @@ const api=async(port,u,body)=>{ const r=await fetch(`http://localhost:${port}/ap
 const ouvrir=async(b,port,opts,tok,name)=>{ const ctx=await b.newContext(Object.assign({viewport:{width:1440,height:1000}},opts||{}));
   const p=await ctx.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message));
   if(tok) await ctx.addInitScript(([t,n])=>localStorage.setItem('gc-player-v1',JSON.stringify({token:t,name:n,account:true})),[tok,name]);
-  await p.goto(`http://localhost:${port}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000}); return p; };
+  /* patient : la page d'une fin de semaine est lourde, et le serveur de l'interrupteur démarre à froid (CI, 05/11/2026) */
+  await p.goto(`http://localhost:${port}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000}); return p; };
 const onglet=async(p,tab)=>{ if(!(await p.$('#viewInsights:not([hidden])'))){ await p.click('.rail-btn[data-view="insights"]'); }
   await p.waitForSelector(`#viewInsights [data-ins-tab="${tab}"]`,{timeout:15000}); await p.click(`#viewInsights [data-ins-tab="${tab}"]`);
   await p.waitForFunction(t=>{ const b=document.querySelector(`#viewInsights [data-ins-tab="${t}"]`); return b&&b.getAttribute('aria-selected')==='true'&&!/Loading…/.test(document.getElementById('viewInsights').textContent); },tab,{timeout:15000}); };
