@@ -3380,6 +3380,7 @@ function planScrimmage(g,call,imp){
       const from=kfAt(off[6],t0);
       P.flight={t0,t1:uc,from,to:{x:C.x,y:C.y},peak:FL?Math.min(1.2,0.3+0.04*Math.hypot(C.x-from.x,C.y-from.y)):0};
       P.carrier=[[0.08,t0,'off',6]]; P.tIdx=tIdx; P.uc=uc;
+      if(imp.geo&&FL){ geoSeparate(imp.geo,t0,off,def,D,rushers,covOf,act,d); P.geo=true; }   /* engine trajectories, step 1 */
       /* defenders read the throw: everyone not rushing breaks toward the catch point */
       for(let i=0;i<11;i++){
         if(rushers.has(i)) continue;
@@ -4023,6 +4024,40 @@ function rpEndX(g,P){
   if(s!==null && Math.abs(s-byGain)<0.75) return s;
   return byGain;
 }
+/* Trajectories from the engine, step 1: passes (05/11/2026, notebook 12.2 tricies). play.geo is the engine's post-snap
+   state: for EVERY receiver, his separation at the throw (yards), his status and the defender responsible for him.
+   geoOf adds the slot of each defender (by id, from the eleven the engine lined up), so the field shows the engine's
+   coverage instead of inventing who is open. No play.geo (older weeks, GC_TRAJECTOIRES=0): the drawing before it. */
+const GEO_SLOT={WR1:8,WR2:9,WR3:10,TE:5,RB:7};
+function geoOf(g,P,t,scr){
+  const G=P.geo; if(!G||G.k!=='pass'||G.v!=='geo-1'||t!=='pass'||scr||!Array.isArray(G.rec)) return null;
+  let ix={};
+  try{ const dS=P.offense==='home'?'away':'home', RD=teamRoster(g,dS), call=g.call||callFromFeed(P), df=(call.def&&call.def.formation)||'4_3', LU=rotAt(g,P);
+    const nth=(pos,n)=>RD.filter(r=>r.pos===pos)[n-1]||null;
+    (DEF_SLOT[df]||DEF_SLOT['4_3']).forEach(([p,n],i)=>{ const pl=LU?rotPl(RD,LU[dS].def[p+n]):nth(p,n); if(pl&&pl.id) ix[pl.id]=i; }); }catch(e){ ix={}; }
+  const rec=[]; for(const r of G.rec){ if(!Array.isArray(r)||GEO_SLOT[r[0]]==null) continue;
+    rec.push({slot:GEO_SLOT[r[0]],sep:clamp(num(r[1],2),0.4,7),st:r[2],def:r[3]!=null&&ix[r[3]]!=null?ix[r[3]]:null,bust:!!r[4]}); }
+  return {rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null};
+}
+/* at the throw (t0), each receiver is as far from his defender as the engine had him: the engine's defender when he is
+   free to cover, else the one drawn on him, else the nearest free one; he gets there at FL_VMAX at most */
+function geoSeparate(G,t0,off,def,D,rushers,covOf,act,d){
+  const used=new Set();
+  for(const R of G.rec){
+    const rk=off[R.slot]; if(!rk) continue;
+    const r0=kfAt(rk,t0), moved=Math.hypot(r0.x-kfAt(rk,0).x,r0.y-kfAt(rk,0).y); if(moved<2) continue;   /* blocking, not out */
+    const ok=i=>i!=null&&i>=4&&!rushers.has(i)&&!used.has(i)&&def[i];
+    let i=ok(R.def)&&Math.hypot(kfAt(def[R.def],t0).x-r0.x,kfAt(def[R.def],t0).y-r0.y)<22?R.def:ok(covOf[R.slot])?covOf[R.slot]:null;
+    if(i==null){ let bd=1e9; for(let j=4;j<11;j++){ if(!ok(j)) continue; const p=kfAt(def[j],t0), v=Math.hypot(p.x-r0.x,p.y-r0.y); if(v<bd){bd=v;i=j;} } if(bd>18) i=null; }
+    if(i==null) continue;
+    used.add(i);
+    const p0=kfAt(def[i],t0); let vx=p0.x-r0.x, vy=p0.y-r0.y, n=Math.hypot(vx,vy);
+    if(n<0.3){ vx=d; vy=0; n=1; }                                       /* on top of him: trail from behind */
+    const T={x:r0.x+vx/n*R.sep, y:clamp(r0.y+vy/n*R.sep,0.8,52.5)}, s=Math.max(0.12,t0-0.22), ps=kfAt(def[i],s);
+    const Tc=capTo(ps,T,t0-s,act);
+    def[i]=kfCut(def[i],s,[[t0,Tc.x,Tc.y],[1,Tc.x,Tc.y]]);
+  }
+}
 function planFromFeed(g,P){
   if(P.tracks&&Array.isArray(P.tracks.frames)&&P.tracks.frames.length>1) return planTracks(g,P);
   P=penPlay(P);   /* step 7.2: a play wiped out by a flag is drawn as it was played */
@@ -4039,7 +4074,7 @@ function planFromFeed(g,P){
   const pd=!!(P.players&&P.players.defender&&P.players.defender.credit==='PASS_DEFENDED');
   const rs=P.run&&(P.run.side==='left'||P.run.side==='right')?(P.run.side==='left'?-1:1)*(P.offense==='home'?1:-1):null;   /* block F: the run's side */
   const pk=t==='pass'&&P.pocket&&Array.isArray(P.pocket.duels)?Object.assign({},P.pocket,{lsgn:P.offense==='home'?-1:1,act:dk.action||''}):null;   /* step 7.1 */
-  const plan=planScrimmage(g,call,{kind,act:P.show?num(P.show.act,0):0,target:rpSlot(P),endX,td,endY:ey,oob,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null,pocket:pk});
+  const plan=planScrimmage(g,call,{kind,act:P.show?num(P.show.act,0):0,target:rpSlot(P),endX,td,endY:ey,oob,side:g.latEngine&&P.call.side?P.call.side:rs,cov,pd,run:kind==='run'?P.run||null:null,pocket:pk,geo:geoOf(g,P,t,scr)});
   if(r==='fumble_lost'){
     const sx=P.spot&&num(P.spot.x,null);
     addFumble(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)});
