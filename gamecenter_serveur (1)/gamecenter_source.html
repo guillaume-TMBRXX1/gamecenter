@@ -2548,18 +2548,11 @@ function daField(hex){ const k=hex+'|'+FIELD.turf+'|'+FIELD.ink; let v=DA_FLD.ge
   if(DA_FLD.size>256) DA_FLD.clear(); DA_FLD.set(k,v); return v; }
 const daTeamCol=team=>DA_TEAM[team]?daField(DA_TEAM[team]):FIELD.cyan;
 const daOff=g=>daTeamCol(offTeam(g));
-/* 05/11/2026: the defence wears its franchise colour too (X glyphs, traces, rings), so a team keeps one colour on both
-   sides of the ball. When the two franchises' colours are too close to tell apart (ΔE < DA_DE_MIN, ≈ 5 % of the
-   pairings: ONX / CTD, GLT / LTC, VEC / GMB…), the defence falls back to the red of the official design. */
-const DA_DE_MIN=25, DA_LAB=new Map();
-function daLab(hex){ let v=DA_LAB.get(hex); if(v) return v; const c=daRgb(hex); if(!c) return null;
-  const f=x=>{ x/=255; return x<=0.04045?x/12.92:Math.pow((x+0.055)/1.055,2.4); }, r=f(c[0]), gg=f(c[1]), b=f(c[2]);
-  const F=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116, X=F((r*.4124+gg*.3576+b*.1805)/.95047), Y=F(r*.2126+gg*.7152+b*.0722), Z=F((r*.0193+gg*.1192+b*.9505)/1.08883);
-  v=[116*Y-16,500*(X-Y),200*(Y-Z)]; if(DA_LAB.size>256) DA_LAB.clear(); DA_LAB.set(hex,v); return v; }
-function daTeamDef(team,opp){ if(!DA_TEAM[team]) return FIELD.pink; const c=daTeamCol(team); if(!DA_TEAM[opp]) return c;
-  const a=daLab(c), b=daLab(daTeamCol(opp)); if(!a||!b) return FIELD.pink;
-  return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])<DA_DE_MIN ? FIELD.pink : c; }
-const daDef=g=>daTeamDef(defTeam(g),offTeam(g));
+/* 05/11/2026 (Guillaume's decision): the defence wears its franchise colour too (X glyphs, traces, rings, bubbles,
+   legend), so a team keeps one colour on both sides of the ball. Red stays only for the tackler's ring and the
+   penalty flag. When the two colours are close, the glyphs still tell them apart (O / X, solid / hollow). */
+function daTeamDef(team){ return DA_TEAM[team]?daTeamCol(team):FIELD.pink; }
+const daDef=g=>daTeamDef(defTeam(g));
 /* DESIGN OFFICIEL : thème clair/sombre — relit les jetons CSS à chaud (le terrain est redessiné à chaque image) */
 const DA_FX={tag:'rgba(255,255,255,.96)',vig:'236,238,230'};
 window.__gcRetheme=function(){ const C=getComputedStyle(document.documentElement), v=(n,f)=>C.getPropertyValue(n).trim()||f;
@@ -5686,7 +5679,7 @@ function statLine(e){
 function teamKeyHTML(g){
   const A=TEAMS[g.away], H=TEAMS[g.home];
   const o=(away)=>`<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="${away?4.6:5.3}" ${away?`fill="var(--bg)" stroke="${DA_TEAM[g.away]?daTeamCol(g.away):'var(--cyan-2)'}" stroke-width="1.6"`:`fill="${DA_TEAM[g.home]?daTeamCol(g.home):'var(--cyan)'}"`}/></svg>`;
-  const xc=(away)=>{ const c=away?daTeamDef(g.away,g.home):daTeamDef(g.home,g.away); return c===FIELD.pink?(away?'var(--pink-2)':'var(--pink)'):c; };   /* 05/11/2026: the defence's colour on the field */
+  const xc=(away)=>{ const c=daTeamDef(away?g.away:g.home); return c===FIELD.pink?(away?'var(--pink-2)':'var(--pink)'):c; };   /* 05/11/2026: the defence's colour on the field */
   const x=(away)=>`<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3.2 3.2l7.6 7.6M10.8 3.2l-7.6 7.6" stroke-linecap="round" ${away?`stroke="${xc(1)}" stroke-width="3.2"/><path d="M3.2 3.2l7.6 7.6M10.8 3.2l-7.6 7.6" stroke="var(--turf)" stroke-width="1.2" stroke-linecap="round"`:`stroke="${xc(0)}" stroke-width="2.4"`}/></svg>`;
   return `<span class="tkey" role="note" aria-label="${A.abbr} hollow glyphs, ${H.abbr} solid glyphs"><span>${o(1)}${x(1)}<b class="abbr">${A.abbr}</b></span><span>${o(0)}${x(0)}<b class="abbr">${H.abbr}</b></span></span>`;
 }
@@ -5918,7 +5911,7 @@ class FieldView{
   }
   draw(dt,now){
     const g=this.g, c=this.ctx, W=this.cw, H=this.ch;
-    const dCol=daDef(g);   /* 05/11/2026: the defence in its franchise colour (red when too close to the offence's) */
+    const dCol=daDef(g);   /* 05/11/2026: the defence in its franchise colour */
     if(!W) return false;
     if(this._resnap){ this._resnap=false; this._sig=null; dt=5; }   /* back on screen: the camera jumps to the action instead of panning from where it was left */
     /* "Lazy" camera: it stays still while the action is inside the visible window and only moves when
