@@ -2611,6 +2611,26 @@ Le programme du dimanche, compté depuis le coup d'envoi de la Grand Final (F, d
   `outils/site/test_dimanche.js` (Classic calé sur l'horloge, « Watch », Classic 2, Road to the Final et ses panneaux,
   téléphone).
 
+### 94. Trajectoires du moteur, palier 1 : les passes (05/11/2026)
+Chantier « le terrain montre ce que le moteur a décidé ». Décision de Guillaume : **descriptif d'abord** (le moteur
+exporte ce qu'il a décidé, le site dessine à partir de là ; aucun résultat changé, donc ni recalibrage ni cotes refaites).
+Une simulation spatiale qui déciderait aussi des gains reste une étape possible, plus tard.
+- **Moteur** : `moteur/trajectoires.py` résume l'état après le snap de chaque passe (bloc A, défenseur responsable du
+  bloc C) : `play.geo = {v: "geo-1", k: "pass", cov, fam, dbl, tt (lancer, s), ttp (pression, s), tgt, rec}`, `rec` =
+  `[[rôle, séparation en yards, statut L/S/C/D, défenseur responsable, bust], …]` pour CHAQUE receveur. Séparation : écart
+  du moteur converti en yards et borné par le statut (libre 3 à 7 yd, serré 1,6 à 2,9, couvert 0,4 à 1,5, doublé 0,8).
+  Aucun tirage. Tests : `moteur/tests/test_trajectoires.py`.
+- **Notebook 12.2 tricies** : `decision.geo` au journal, `play.geo` au GameFeed (additif) ; contrôles : mêmes matchs et
+  mêmes scores allumé ou coupé, chaque passe décidée résumée et conforme. Interrupteur `GC_TRAJECTOIRES=0` (GameFeed
+  d'avant). Semaine de test (279 matchs) : 22 766 passes résumées, toutes conformes, défenseur connu pour 100 % des
+  receveurs ; `play.geo` ≈ 4,7 Mo sur 124 Mo de GameFeed (+ 3,9 %) ; audit : 0 anomalie bloquante.
+- **Site** (et cellule 427) : au lancer, chaque receveur est à la distance de son défenseur que le moteur a décidée — le
+  défenseur du moteur quand il est libre de couvrir (repéré par son identifiant dans les onze alignés), sinon celui
+  dessiné sur lui, sinon le plus proche — ; il s'y rend à `FL_VMAX` au plus. Un receveur libre que le QB n'a pas vu
+  apparaît libre. Ensuite, le dessin d'avant (défenseurs qui lisent le lancer, réception disputée, plaquage). Sans
+  `play.geo` (semaines d'avant le 09/11), le dessin d'avant à l'identique.
+- Suite prévue : palier 2, les courses (trou, contact, plaqueur) ; palier 3, la poche (duels gagnés ou perdus).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
