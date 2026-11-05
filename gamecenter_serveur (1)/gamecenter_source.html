@@ -3380,7 +3380,7 @@ function planScrimmage(g,call,imp){
       const from=kfAt(off[6],t0);
       P.flight={t0,t1:uc,from,to:{x:C.x,y:C.y},peak:FL?Math.min(1.2,0.3+0.04*Math.hypot(C.x-from.x,C.y-from.y)):0};
       P.carrier=[[0.08,t0,'off',6]]; P.tIdx=tIdx; P.uc=uc;
-      if(imp.geo&&FL){ geoSeparate(imp.geo,t0,off,def,D,rushers,covOf,act,d); P.geo=true; }   /* engine trajectories, step 1 */
+      if(imp.geo&&imp.geo.k==='pass'&&FL){ geoSeparate(imp.geo,t0,off,def,D,rushers,covOf,act,d); P.geo=true; }   /* engine trajectories, step 1 */
       /* defenders read the throw: everyone not rushing breaks toward the catch point */
       for(let i=0;i<11;i++){
         if(rushers.has(i)) continue;
@@ -3464,7 +3464,11 @@ function planScrimmage(g,call,imp){
   const oobRun = !!imp.oob && imp.endY!=null;
   const side = oobRun ? (imp.endY<by?-1:1) : imp.side===1||imp.side===-1 ? imp.side : concept==='POWER' ? te : concept==='COUNTER' ? te : (RNG()<.5?-1:1);
   const hOff = concept==='INSIDE_RUN'||concept==='DRAW'||concept==='TRAP'||concept==='READ_OPTION'?rand(0.8,2.4):concept==='OUTSIDE_RUN'?rand(7,10):concept==='JET_SWEEP'?rand(9,13):rand(3,4.6);
-  const holeY = by+side*(oobRun ? Math.max(hOff, Math.abs(imp.endY-by)*0.45) : hOff);
+  const GR=imp.geo&&imp.geo.k==='run'&&FL?imp.geo:null;   /* engine trajectories, step 2: the engine's point of attack */
+  let holeY = by+side*(oobRun ? Math.max(hOff, Math.abs(imp.endY-by)*0.45) : hOff);
+  if(GR&&GR.duels.length&&!oobRun&&!['OUTSIDE_RUN','JET_SWEEP'].includes(concept)){
+    const my=GR.duels.reduce((a,q)=>a+O[q.b].y,0)/GR.duels.length, out=GR.cls==='outside'||GR.cls==='perimeter';
+    holeY=clamp(my+side*(out?2.6:0.6),2,51.3); }
   const qb=O[6], rb=O[7], shot=(qb.x-L)*-d>2.5;
   const mesh= concept==='DRAW' ? {x:L-d*6.2,y:by+side*0.6} : shot ? {x:qb.x+d*0.3,y:by+(rb.y>by?0.9:-0.9)} : {x:L-d*4,y:by+side*0.8};
   const hU = concept==='DRAW'?0.36:concept==='COUNTER'?0.26:0.2;
@@ -3533,14 +3537,28 @@ function planScrimmage(g,call,imp){
   if(RF){
     /* the hole: closed, the nearest lineman wins and sits in it; open, the two nearest are driven back */
     const dl=DF.dl.filter(i=>D[i]).sort((a,b)=>Math.abs(D[a].y-holeY)-Math.abs(D[b].y-holeY));
-    if(RF.hole==='closed'&&dl.length){ const i=dl[0], s=D[i]; def[i]=[[0,s.x,s.y],[0.26,L-d*0.4,holeY+side*0.4],[1,L-d*0.2,holeY+side*0.6]]; }
+    if(GR&&GR.duels.length){   /* step 2: each duel at the point of attack as the engine played it */
+      for(const q of GR.duels){ const s=D[q.k], o=O[q.b]; if(!s||!o) continue; const away=Math.sign(s.y-holeY)||-side, k=clamp(Math.abs(q.m),0,12)/12;
+        if(q.m>=0){ const ex=s.x+d*(0.9+1.6*k), ey=clamp(s.y+away*(0.8+1.2*k),1,52.3);   /* the blocker wins: driven back, off the hole */
+          def[q.k]=[[0,s.x,s.y],[0.24,lerp(s.x,o.x,0.45),s.y],[1,ex,ey]]; off[q.b]=[[0,o.x,o.y],[0.24,lerp(o.x,s.x,0.45)-d*0.4,o.y],[1,ex-d*0.9,ey]]; }
+        else { const px=L-d*(0.4+1.2*k), py=lerp(s.y,holeY,0.7);                     /* the defender wins: through, into the hole */
+          def[q.k]=[[0,s.x,s.y],[0.24,lerp(s.x,o.x,0.45),s.y],[0.5,px,py],[1,px-d*0.4,lerp(py,holeY,0.5)]];
+          off[q.b]=[[0,o.x,o.y],[0.24,lerp(o.x,s.x,0.45)-d*0.4,o.y],[1,o.x-d*(0.6+0.8*k),lerp(o.y,s.y,0.3)]]; } } }
+    else if(RF.hole==='closed'&&dl.length){ const i=dl[0], s=D[i]; def[i]=[[0,s.x,s.y],[0.26,L-d*0.4,holeY+side*0.4],[1,L-d*0.2,holeY+side*0.6]]; }
     else if(RF.hole==='open') for(const i of dl.slice(0,2)){ const s=D[i]; def[i]=[[0,s.x,s.y],[0.3,s.x+d*1.4,s.y-side*0.8],[1,s.x+d*2.6,s.y-side*1.6]]; }
     /* the tackler: at the line, a linebacker or the secondary (play.run.contact); he makes the stop (red ring) */
     if(!imp.td&&RF.contact){
       const pool=RF.contact==='line'?DF.dl:RF.contact==='second level'?(DF.lb.length?DF.lb:[4,5]):[9,10,6,7];
       const t0=Math.max(0.05,tc-0.3), ey=Fy+(Fy<by?0.5:-0.5);
       let ti=null, bd=1e9; for(const i of pool){ if(!def[i]) continue; const q=kfAt(def[i],t0), dd=(q.x-Fx)**2+(q.y-Fy)**2; if(dd<bd){bd=dd;ti=i;} }
-      if(ti!=null){ def[ti]=kfCut(def[ti],t0,[[tc,Fx+d*0.7,ey],[1,Fx+d*0.7,ey]]); P.wDef[ti]=0; P.stop={i:ti,at:tc}; }
+      if(GR&&GR.tkl!=null&&def[GR.tkl]) ti=GR.tkl;                 /* step 2: the engine's tackler */
+      /* step 2: first contact where the engine had it (at the line, a linebacker, the secondary), then the yards after
+         contact: the back carries him to the spot */
+      const cs=P.carrier.length?P.carrier[P.carrier.length-1][3]:7, cd=GR?(GR.ct==='L'?0.6:GR.ct==='S'?8:3.5):null;
+      let uct=null; if(GR&&ti!=null&&off[cs]&&total-cd>=1.5&&rd!=='stuffed'){ for(let u=0.2;u<tc-0.06;u+=0.01){ if((kfAt(off[cs],u).x-L)*d>=cd){ uct=u; break; } } }
+      if(ti!=null&&uct!=null){ const c=kfAt(off[cs],uct), s0=leadAt(def[ti],uct,{x:c.x+d*0.6,y:c.y},Math.max(0.08,uct-0.3),act,0.08);
+        def[ti]=kfCut(def[ti],s0,[[uct,c.x+d*0.6,c.y+(c.y<by?0.4:-0.4)],[tc,Fx+d*0.7,ey],[1,Fx+d*0.7,ey]]); P.wDef[ti]=0; P.stop={i:ti,at:tc}; }
+      else if(ti!=null){ def[ti]=kfCut(def[ti],t0,[[tc,Fx+d*0.7,ey],[1,Fx+d*0.7,ey]]); P.wDef[ti]=0; P.stop={i:ti,at:tc}; }
     }
     if(tc<0.88) P.pEnd=Math.min(P.pEnd,tc+0.04);
   } else if(FL&&!imp.td&&!oobRun){   /* JEU_FLUIDE, a run without play.run: the defender who gets there the easiest stops him */
@@ -4030,14 +4048,20 @@ function rpEndX(g,P){
    coverage instead of inventing who is open. No play.geo (older weeks, GC_TRAJECTOIRES=0): the drawing before it. */
 const GEO_SLOT={WR1:8,WR2:9,WR3:10,TE:5,RB:7};
 function geoOf(g,P,t,scr){
-  const G=P.geo; if(!G||G.k!=='pass'||G.v!=='geo-1'||t!=='pass'||scr||!Array.isArray(G.rec)) return null;
-  let ix={};
-  try{ const dS=P.offense==='home'?'away':'home', RD=teamRoster(g,dS), call=g.call||callFromFeed(P), df=(call.def&&call.def.formation)||'4_3', LU=rotAt(g,P);
-    const nth=(pos,n)=>RD.filter(r=>r.pos===pos)[n-1]||null;
-    (DEF_SLOT[df]||DEF_SLOT['4_3']).forEach(([p,n],i)=>{ const pl=LU?rotPl(RD,LU[dS].def[p+n]):nth(p,n); if(pl&&pl.id) ix[pl.id]=i; }); }catch(e){ ix={}; }
+  const G=P.geo; if(!G||G.v!=='geo-1'||scr) return null;
+  const run=G.k==='run'&&t==='run', pass=G.k==='pass'&&t==='pass'&&Array.isArray(G.rec); if(!run&&!pass) return null;
+  let ix={}, ox={};
+  try{ const oS=P.offense, dS=oS==='home'?'away':'home', RD=teamRoster(g,dS), RO=teamRoster(g,oS), call=g.call||callFromFeed(P), df=(call.def&&call.def.formation)||'4_3', LU=rotAt(g,P);
+    const nth=(R,pos,n)=>R.filter(r=>r.pos===pos)[n-1]||null;
+    (DEF_SLOT[df]||DEF_SLOT['4_3']).forEach(([p,n],i)=>{ const pl=LU?rotPl(RD,LU[dS].def[p+n]):nth(RD,p,n); if(pl&&pl.id) ix[pl.id]=i; });
+    if(run) OFF_SLOT.forEach(([p,n],i)=>{ const pl=LU?rotPl(RO,LU[oS].off[rotPlace(p,n)]):nth(RO,p,n); if(pl&&pl.id) ox[pl.id]=i; }); }catch(e){ ix={}; ox={}; }
+  if(run){   /* step 2: the run (engine block F): point of attack, its duels, the first contact and the tackler */
+    const duels=[]; for(const q of Array.isArray(G.duels)?G.duels:[]){ const b=ox[q[0]], k=ix[q[1]]; if(b!=null&&k!=null&&b!==6&&b!==7) duels.push({b,k,m:num(q[2],0)}); }
+    return {k:'run',cls:G.cls||'',duels,ct:G.ct||'B',tkl:G.tkl!=null&&ix[G.tkl]!=null?ix[G.tkl]:null};
+  }
   const rec=[]; for(const r of G.rec){ if(!Array.isArray(r)||GEO_SLOT[r[0]]==null) continue;
     rec.push({slot:GEO_SLOT[r[0]],sep:clamp(num(r[1],2),0.4,7),st:r[2],def:r[3]!=null&&ix[r[3]]!=null?ix[r[3]]:null,bust:!!r[4]}); }
-  return {rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null};
+  return {k:'pass',rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null};
 }
 /* at the throw (t0), each receiver is as far from his defender as the engine had him: the engine's defender when he is
    free to cover, else the one drawn on him, else the nearest free one; he gets there at FL_VMAX at most */

@@ -1,8 +1,9 @@
-"""Trajectoires du moteur, palier 1 : les passes (moteur/trajectoires.py).
+"""Trajectoires du moteur, paliers 1 (passes) et 2 (courses) (moteur/trajectoires.py).
 
   Forme       play.geo compact : chaque receveur (rôle, séparation en yards, statut, défenseur, bust), lancer, couverture
   Fidélité    statut et défenseur = ceux de l'état après le snap ; séparation monotone ; seuils cohérents
   Neutralité  geo_passe ne tire rien : decider_passe donne la même décision avec ou sans lui (même flux)
+  Courses     play.geo d'une course : duels, trou, lecture, contact et plaqueur = ceux de moteur.course.courir
 
     python -m unittest moteur.tests.test_trajectoires        (depuis « gamecenter_serveur (1) »)
 """
@@ -88,6 +89,44 @@ class Neutralite(unittest.TestCase):
         g["rec"].append(list(g["rec"][0]))
         self.assertIn("receveur en double", T.controler(g))
         self.assertEqual(T.controler({"v": "x"}), ["version ou type"])
+
+
+def _course(n, classe="gap"):
+    from moteur import course as C
+    bl = [{"id": f"A_{p}", "pos": p, "ratings": {"run_block": 70 + 3 * k, "strength": 72}}
+          for k, p in enumerate(("LT", "LG", "C", "RG", "RT", "TE"))]
+    df = [{"id": f"B_{p}{k}", "pos": p, "ratings": {"strength": 74, "tackling": 70 + k, "speed": 80, "pass_rush": 70}}
+          for k, p in enumerate(("EDGE", "DT", "DT", "EDGE", "LB", "LB", "LB", "S", "S", "CB", "CB"))]
+    att = {"bloqueurs": bl, "porteur": {"id": "A_RB1", "pos": "RB", "ratings": {"speed": 88, "power": 75,
+                                                                              "elusiveness": 82, "acceleration": 85}}}
+    return C.courir("POWER", classe, att, {"defenseurs": df}, 7 + n % 3, 42, n)
+
+
+class Courses(unittest.TestCase):
+    def test_forme_et_fidelite(self):
+        for n in range(60):
+            for cls in ("inside", "gap", "outside", "perimeter"):
+                e = _course(n, cls)
+                g = T.geo_course(e)
+                self.assertEqual(T.controler_course(g), [], g)
+                self.assertEqual(g["side"], e["cote"])
+                self.assertEqual(g["hole"], T.TROUS[e["trou"]])
+                self.assertEqual(g["read"], T.LECTURES[e["lecture"]])
+                self.assertEqual(g["ct"], T.CONTACTS[e["contact"]])
+                self.assertEqual(g["tkl"], e["plaqueur"])
+                self.assertEqual(g["ch"], e["chapeaux"])
+                self.assertEqual([d[:2] for d in g["duels"]], [[d["bloqueur"], d["defenseur"]] for d in e["duels"]])
+
+    def test_aucun_tirage(self):
+        a = _course(9)
+        T.geo_course(a)
+        self.assertEqual(a, _course(9))
+
+    def test_controle_detecte(self):
+        g = T.geo_course(_course(4))
+        g["duels"].append(list(g["duels"][0]))
+        self.assertIn("bloqueur en double", T.controler_course(g))
+        self.assertEqual(T.controler_course({"v": T.VERSION, "k": "pass"}), ["version ou type"])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Trajectoires du moteur, palier 1 : les passes (chantier du 05/11/2026, approche « descriptive »).
+"""Trajectoires du moteur : palier 1, les passes ; palier 2, les courses (chantier du 05/11/2026, approche « descriptive »).
 
 Le moteur décide chaque passe dans un état après le snap (bloc A) : pour CHAQUE receveur, sa route, sa séparation, son
 statut (LIBRE / SERRE / COUVERT / DOUBLE) et, au bloc C, le défenseur responsable et l'oubli de couverture (bust). Le
@@ -71,4 +71,48 @@ def controler(geo):
         pb.append("cible absente des receveurs")
     if geo.get("tt", 0) < 0 or geo.get("ttp", 0) < 0:
         pb.append("temps négatif")
+    return pb
+
+
+# ---------------------------------------------------------------- palier 2 : les courses
+# Le bloc F (moteur/course.py) décide chaque course : côté, point d'attaque (les duels bloqueur contre défenseur, avec leur
+# marge), défenseurs non bloqués, trou, lecture du porteur, niveau du premier contact et plaqueur. Le GameFeed n'en gardait
+# que le duel décisif et le nom du plaqueur ; le site inventait le trou et qui gagnait à la ligne.
+#
+#     play.geo = {"v": "geo-1", "k": "run", "cls": "gap", "side": "L" | "R",
+#                 "hole": "o" | "t" | "c",          # ouvert / étroit / fermé
+#                 "read": "p" | "cb" | "bo" | "k" | "x",   # plan / cutback / rebond / garde (option) / bloqué
+#                 "ch": 1,                           # défenseurs non bloqués (« chapeaux »)
+#                 "ct": "L" | "B" | "S",             # premier contact : ligne / linebacker / second rideau
+#                 "tkl": "PRM_LB1" | None,           # plaqueur (premier défenseur au contact)
+#                 "duels": [[bloqueur, défenseur, marge], …]}   # marge > 0 : le bloqueur gagne
+TROUS = {"ouvert": "o", "etroit": "t", "ferme": "c"}
+LECTURES = {"plan": "p", "cutback": "cb", "bounce": "bo", "keep": "k", "bloque": "x"}
+CONTACTS = {"ligne": "L", "linebacker": "B", "second rideau": "S"}
+
+
+def geo_course(etat):
+    """play.geo d'une course décidée par le bloc F (le dict rendu par moteur.course.courir). Aucun tirage."""
+    e = etat or {}
+    duels = [[d.get("bloqueur"), d.get("defenseur"), round(float(d.get("marge") or 0.0), 1)]
+             for d in e.get("duels") or [] if d.get("bloqueur") and d.get("defenseur")]
+    return {"v": VERSION, "k": "run", "cls": e.get("classe") or None, "side": "L" if e.get("cote") == "L" else "R",
+            "hole": TROUS.get(e.get("trou"), "t"), "read": LECTURES.get(e.get("lecture"), "p"),
+            "ch": int(e.get("chapeaux") or 0), "ct": CONTACTS.get(e.get("contact"), "B"),
+            "tkl": e.get("plaqueur") or None, "duels": duels}
+
+
+def controler_course(geo):
+    """Problèmes d'un play.geo de course (liste vide : conforme)."""
+    if not isinstance(geo, dict) or geo.get("v") != VERSION or geo.get("k") != "run":
+        return ["version ou type"]
+    pb = []
+    if geo.get("side") not in ("L", "R") or geo.get("hole") not in TROUS.values() or geo.get("read") not in LECTURES.values() \
+            or geo.get("ct") not in CONTACTS.values():
+        pb.append("champ inconnu")
+    for d in geo.get("duels") or []:
+        if len(d) != 3 or not d[0] or not d[1]:
+            pb.append(f"duel mal formé : {d}")
+    if len({d[0] for d in geo.get("duels") or []}) != len(geo.get("duels") or []):
+        pb.append("bloqueur en double")
     return pb
