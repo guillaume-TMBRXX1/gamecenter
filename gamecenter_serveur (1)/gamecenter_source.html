@@ -2993,27 +2993,35 @@ function kfAt(kf,t){
     const b=kf[i];
     if(t<=b[0]){
       const a=kf[i-1], h=b[0]-a[0]; let u=h>0?(t-a[0])/h:1;
-      if(JEU_FLUIDE&&h>0) return {x:kfCurve(kf,i,u,1,h), y:kfCurve(kf,i,u,2,h)};
+      if(JEU_FLUIDE&&h>0) return kfCurve(kf,i,u,h);
       if(i===1||i===n-1) u=ease(u);
       return {x:a[1]+(b[1]-a[1])*u, y:a[2]+(b[2]-a[2])*u};
     }
   }
   const l=kf[n-1]; return {x:l[1],y:l[2]};
 }
-/* JEU_FLUIDE (05/11/2026): a monotone cubic through the keyframes, axis by axis (Fritsch-Carlson), instead of straight
-   segments. Every keyframe is still passed at its exact time (catch, tackle and stop spots unchanged) and the curve never
-   overshoots; but speed no longer jumps at a keyframe: a player slows into a route break (the axis he stops moving on
-   comes to rest) and accelerates out of it, and starts / stops from rest as before (zero slope at both ends). */
-function kfSlope(kf,j,k){
-  const n=kf.length; if(j<=0||j>=n-1) return 0;
-  const h0=kf[j][0]-kf[j-1][0], h1=kf[j+1][0]-kf[j][0]; if(h0<=0||h1<=0) return 0;
-  const d0=(kf[j][k]-kf[j-1][k])/h0, d1=(kf[j+1][k]-kf[j][k])/h1;
-  if(d0*d1<=0) return 0;                                         /* turning point or stop on this axis: at rest */
-  const w0=2*h1+h0, w1=h1+2*h0; return (w0+w1)/(w0/d0+w1/d1);    /* weighted harmonic mean: no overshoot */
+/* JEU_FLUIDE (05/11/2026): a cubic (Hermite) curve through the keyframes instead of straight segments. Every keyframe is
+   still passed at its exact time (catch, tackle and stop spots unchanged). Where a player turns at about the same speed
+   (a route break, a pursuit angle, a cut) the turn is rounded: the velocity at the keyframe follows the mean direction
+   of the two segments, at 85-100 % of their speed (the shorter segment does most of the turning), so he never runs
+   faster than his keyframes by more than a few %. A sharp
+   turn back, a change of pace or a stop keeps each side's own straight speed, as before; both ends of the play still
+   ease from and to rest. */
+function kfVel(kf,j,right){
+  const n=kf.length; if(j<=0||j>=n-1) return [0,0];
+  const h0=kf[j][0]-kf[j-1][0], h1=kf[j+1][0]-kf[j][0]; if(h0<=0||h1<=0) return [0,0];
+  const ax=(kf[j][1]-kf[j-1][1])/h0, ay=(kf[j][2]-kf[j-1][2])/h0, bx=(kf[j+1][1]-kf[j][1])/h1, by=(kf[j+1][2]-kf[j][2])/h1;
+  const sa=Math.hypot(ax,ay), sb=Math.hypot(bx,by), lim=Math.min(sa,sb);
+  let vx=(ax*h1+bx*h0)/(h0+h1), vy=(ay*h1+by*h0)/(h0+h1); const v=Math.hypot(vx,vy);
+  if(!(lim>1e-6)||lim<0.7*Math.max(sa,sb)||v<0.5*lim) return right?[bx,by]:[ax,ay];   /* change of pace, stop, turn back: straight */
+  const k=clamp(v,0.85*lim,lim)/v, w=right?Math.min(1,h0/h1):Math.min(1,h1/h0), ox=right?bx:ax, oy=right?by:ay;
+  /* the shorter segment does the turning: a long one keeps close to its own line (no wide bulge before the break) */
+  return [ox+(vx*k-ox)*w, oy+(vy*k-oy)*w];
 }
-function kfCurve(kf,i,u,k,h){
-  const a=kf[i-1][k], b=kf[i][k], m0=kfSlope(kf,i-1,k)*h, m1=kfSlope(kf,i,k)*h, u2=u*u, u3=u2*u;
-  return (2*u3-3*u2+1)*a+(u3-2*u2+u)*m0+(-2*u3+3*u2)*b+(u3-u2)*m1;
+function kfCurve(kf,i,u,h){
+  const a=kf[i-1], b=kf[i], m0=kfVel(kf,i-1,true), m1=kfVel(kf,i,false), u2=u*u, u3=u2*u;
+  const h00=2*u3-3*u2+1, h10=(u3-2*u2+u)*h, h01=-2*u3+3*u2, h11=(u3-u2)*h;
+  return {x:h00*a[1]+h10*m0[0]+h01*b[1]+h11*m1[0], y:h00*a[2]+h10*m0[1]+h01*b[2]+h11*m1[1]};
 }
 /* keyframes from start u0 along a polyline at a constant speed (yards per unit of play time) */
 function pathKf(pts,u0,sp){
