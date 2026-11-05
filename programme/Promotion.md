@@ -16,6 +16,7 @@ publication **à la main** (aucun connecteur TikTok).
 | 8.6 a | Carton de statistiques animé ; **joueur de la semaine** et **champion** de la Grand Final (le dimanche, tout seuls) | ✅ 13/10 |
 | 8.6 b | **Match hors norme** (le mercredi, s'il y en a un) et **histoire d'une franchise** (le vendredi, une par semaine) | ✅ 13/10 |
 | 8.7 | Habillage « AI vs AI » aux couleurs du site : journal des agents IA, score bug, mot du résultat animé, qualité ×5, vue normale forcée (défaut « Bigger field ») ; couverture `-cover.jpg` | ✅ 20/10 |
+| 8.8 | Vidéo « vitrine » du site (démo d'interface façon reel : zooms, transitions floues, curseur), 9:16 et 16:9, ≈ 17 s (`outils/promotion/vitrine/`, README section 48) | ✅ 04/11 |
 | — | Plus tard (à décider) : voix du commentaire du site + sous-titres incrustés (revient sur le choix du 12/10 « son du stade seulement ») | — |
 
 ## 1. Le compte
