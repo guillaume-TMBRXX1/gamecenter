@@ -2705,7 +2705,11 @@ Suite du programme (section 95). Bloc 2 : ce que fait le receveur une fois le ba
   victoires à domicile 0,524 → 0,505. Le quart des receveurs les plus rapides gagne ≈ 2 yards de plus par réception que
   le quart des plus lents (0,8 avant la simulation) : surtout les WR contre les TE, qui attrapent près de la ligne au
   milieu du trafic.
-__SEMAINE2__
+- **Semaine de test** (calcul complet de la semaine du 09/11 sur une copie des données, blocs 1 et 2, cotes comprises) :
+  37 min 52 s (35 min 6 s avec le bloc 1 seul ; limite 75 min) ; audit : 0 anomalie bloquante (une alerte : un match à
+  123 points). Comparée aux semaines du 26/10 et du 02/11 : points par match 52,0 (53,8 et 52,1), overs 48,2 % (55,8 et
+  47,5), victoires à domicile 0,484 (0,469 et 0,529) ; yards par passe complétée 11,03 (11,30 et 10,85), de 20 yards et
+  plus 14,2 % (11,6 et 13,3), de 40 et plus 0,74 par match (0,07 et 0,76).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
