@@ -60,6 +60,7 @@ from .reaction_defensive import DefensiveReactionEngine, PostSnapState
 from .decision_qb import QBDecisionEngine, QBDecision
 from . import resolution, stats, intelligence_qb, intelligence_joueurs, plan_de_jeu, developpement, playbook_expansion
 from . import poche as poche_mod
+from . import reaction_defensive
 from .intelligence_qb import attributs_qb
 from .intelligence_joueurs import attributs_joueur
 from .plan_de_jeu import plan_de_jeu as plan_de_jeu_adverse, AdaptiveGameplanEngine, MemoireTendances
@@ -101,7 +102,8 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
         lectures = playbook_expansion.ajuster_lectures(lectures, appel)
     etat = _REACTION.react(concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng,
                            **({"bruit": intelligence_joueurs.BRUIT_C, "echelle": intelligence_joueurs.ECHELLE_C} if bloc_c else {}),
-                           **plan_de_jeu.options_reaction(plan), **({"appel": appel} if appel else {}))
+                           **plan_de_jeu.options_reaction(plan), **({"appel": appel} if appel else {}),
+                           **({"cle": (graine_match, numero_action)} if reaction_defensive.DUEL is not None else {}))
     qui = None
     if bloc_c:
         qui = intelligence_joueurs.ajuster_post_snap(etat, lectures, receveurs, defenseurs, concept,

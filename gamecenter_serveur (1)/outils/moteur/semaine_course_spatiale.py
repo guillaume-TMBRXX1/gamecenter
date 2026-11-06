@@ -21,7 +21,8 @@ sys.path.insert(0, HERE)
 import rapport_calibration as rc     # noqa: E402
 
 BLOCS = {1: ("12.2 tricies", "12.2 untricies", "cellule_course_spatiale.py", "GC_COURSE_SPATIALE", "GC_CS_PARAMS"),
-         2: ("12.2 untricies", "12.2 duotricies", "cellule_reception_spatiale.py", "GC_RECEPTION_SPATIALE", "GC_RS_PARAMS")}
+         2: ("12.2 untricies", "12.2 duotricies", "cellule_reception_spatiale.py", "GC_RECEPTION_SPATIALE", "GC_RS_PARAMS"),
+         3: ("12.2 duotricies", "12.2 tritricies", "cellule_couverture_spatiale.py", "GC_COUVERTURE_SPATIALE", "GC_CV_PARAMS")}
 BLOC = [1]
 _NS = {}
 
@@ -60,8 +61,14 @@ def _jouer(tache):
     g = ns["franchise_game"](h, a, seed=graine)
     sec = time.perf_counter() - t
     m = {"hs": g["home_score"], "as": g["away_score"], "sec": sec, "runs": [], "niv": [], "manques": 0, "sim": 0,
-         "passes": [], "psim": 0, "pmanques": 0}
+         "passes": [], "psim": 0, "pmanques": 0, "issues": {}, "statuts": {}}
     for e in g["play_log"]:
+        dec = e.get("decision") or {}
+        if dec.get("action"):
+            o = e.get("outcome")
+            m["issues"][o] = m["issues"].get(o, 0) + 1
+            if dec.get("status"):
+                m["statuts"][dec["status"]] = m["statuts"].get(dec["status"], 0) + 1
         if e.get("outcome") == "PASS_COMPLETE":
             m["passes"].append(e.get("yards_gained") or 0)
             y = (e.get("decision") or {}).get("yac")
@@ -96,9 +103,26 @@ def mesurer(M):
                         "20+_par_match": round(sum(y >= 20 for y in runs) / n, 2), "max": max(runs),
                         "simulees": sum(m["sim"] for m in M),
                         "plaquages_manques_par_course": round(sum(m["manques"] for m in M) / max(1, sum(m["sim"] for m in M)), 2)},
-            "passes": _passes(M),
+            "passes": _passes(M), "decisions": _decisions(M),
             "par_niveau": {k: {"n": len(v), "moyenne": round(statistics.mean(v), 2), "20+": round(sum(y >= 20 for y in v) / len(v), 4)}
                            for k, v in niv.items() if k}}
+
+
+def _decisions(M):
+    """Passes décidées : issues (complète, incomplète, interception, sack, course du QB) et statut de la cible au lancer."""
+    iss, st = {}, {}
+    for m in M:
+        for k, v in m.get("issues", {}).items():
+            iss[k] = iss.get(k, 0) + v
+        for k, v in m.get("statuts", {}).items():
+            st[k] = st.get(k, 0) + v
+    n, ns = max(1, sum(iss.values())), max(1, sum(st.values()))
+    lancers = sum(iss.get(k, 0) for k in ("PASS_COMPLETE", "PASS_INCOMPLETE", "INTERCEPTION"))
+    yards = sum(sum(m["passes"]) for m in M)
+    return {"n_par_match": round(n / len(M), 1), "issues": {k: round(v / n, 4) for k, v in sorted(iss.items())},
+            "completion": round(iss.get("PASS_COMPLETE", 0) / max(1, lancers), 4),
+            "yards_par_tentative": round(yards / max(1, lancers), 3),
+            "statuts": {k: round(v / ns, 4) for k, v in sorted(st.items())}}
 
 
 def _passes(M):
