@@ -44,6 +44,10 @@ PARAMS = {
     "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
     "pousse": 1.0,             # yards de poussée au premier contact (il encaisse le choc et avance), + puissance
     "vit_arriere": 1.0,        # échelle de vitesse des safeties et corners (angles de poursuite en profondeur)
+    "anticipe": 4.0,           # secondes : jusqu'où un défenseur anticipe le point d'interception
+    "fatigue": 0.0,            # longue course : vitesse perdue par yard au-delà de "fatigue_dep" yards après le contact
+    "fatigue_dep": 8.0,
+    "fatigue_min": 0.72,       # il garde au moins cette part de sa vitesse
     # profondeur du contact (yards depuis la ligne) selon le niveau du bloc F : uniforme [a, b]
     "profondeur": {"ligne": (-0.5, 1.5), "linebacker": (2.0, 5.0), "second rideau": (6.0, 10.0)},
 }
@@ -123,7 +127,9 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
                 ay -= w * dy / (dd + 1e-6)
                 ax -= 0.4 * w * dx / (dd + 1e-6)
         nn = hypot(ax, ay) or 1.0
-        v = min(vmax, v + acc * dt)
+        loin = px - dep - P["fatigue_dep"]                 # une longue course l'use : les poursuivants le reprennent
+        vcap = vmax * max(P["fatigue_min"], 1.0 - P["fatigue"] * loin) if loin > 0 else vmax
+        v = min(vcap, v + acc * dt)
         ux, uy = ax / nn, ay / nn
         px += v * ux * dt
         py += v * uy * dt
@@ -153,8 +159,18 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
                 q[4] = P["gene"]
                 v *= P["perte"]                         # il casse le plaquage mais perd son élan
                 continue
-            lead = min(1.2, dd / (q[2] + 1e-6))         # angle de poursuite : vers le point d'interception
-            tx, ty = px + v * ux * lead - q[0], py + v * uy * lead - q[1]
+            # angle de poursuite : le point où il coupe la course du porteur (s'il va tout droit à sa vitesse)
+            wx, wy = v * ux, v * uy
+            aa = wx * wx + wy * wy - q[2] * q[2]
+            bb = 2 * (dx * wx + dy * wy)
+            lead = 0.0
+            if abs(aa) > 1e-6:
+                disc = bb * bb - 4 * aa * dd * dd
+                if disc >= 0:
+                    r1, r2 = (-bb - math.sqrt(disc)) / (2 * aa), (-bb + math.sqrt(disc)) / (2 * aa)
+                    lead = min([r for r in (r1, r2) if r > 0] or [0.0])
+            lead = min(lead, P["anticipe"]) if lead > 0 else min(1.2, dd / (q[2] + 1e-6))
+            tx, ty = px + wx * lead - q[0], py + wy * lead - q[1]
             tn = hypot(tx, ty) or 1.0
             s = min(q[2] * dt, dd)
             q[0] += tx / tn * s
