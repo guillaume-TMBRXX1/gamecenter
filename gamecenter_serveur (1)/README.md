@@ -2648,6 +2648,37 @@ Une simulation spatiale qui déciderait aussi des gains reste une étape possibl
   avant le lancer). S'applique aussi aux semaines déjà en ligne. Mesures du dessin inchangées (vol le plus court 0,42 s,
   vitesse au 99e centile 33,4 yd/s).
 
+### 95. Causal léger, bloc 1 : la course après le contact (06/11/2026)
+Programme « causal léger, bloc par bloc » (décision de Guillaume, 05/11) : le résultat d'une action vient de ce qui se
+passe sur le terrain, sans réécrire le moteur. Prototype de mesure d'abord : ≈ + 7 % du temps d'un match pour toutes les
+phases, ≈ + 3 min sur le calcul du samedi (limite 75 min). Bloc 1 : la course après le premier contact.
+- **Avant** : yards = table V0.2 + bloc F (dont « puissance contre tackling ») + actions longues (échappée au-delà du 2e
+  rideau, compensée par un rabot) — le porteur ne décidait de rien sinon en moyenne.
+- **Module** `moteur/course_spatiale.py` (`apres_contact`, tests `moteur/tests/test_course_spatiale.py`) : jusqu'au premier
+  contact rien ne change (table + bloc F tirent les yards et le niveau du contact) ; le porteur part du point de contact
+  (profondeur du niveau : ligne, linebacker, second rideau ; jamais plus loin que les yards tirés), avec son élan ; les
+  onze défenseurs sont placés selon leur poste et ce niveau, le plaqueur du bloc F au contact. Pas de 0,1 s : le porteur
+  court vers l'en-but en s'écartant des défenseurs devant lui (agilité), chacun le poursuit avec un angle d'interception
+  (vitesse) ; au contact, plaquage tenté (tackling contre agilité ou puissance, plus sûr avec des coéquipiers à moins de
+  2,5 yards) : manqué, le défenseur est gêné et le porteur perd un peu d'élan ; réussi, il tombe vers l'avant. Touche et
+  en-but l'arrêtent ; le plaqueur crédité est celui qui l'arrête. Flux de hasard dédié (« course-spatiale ») : le hasard
+  du moteur n'est pas consommé. ≈ 0,1 ms par course.
+- **Notebook 12.2 untricies** (après 12.2 tricies) : pour une course du bloc F, ni actions longues ni rabot (l'échappée
+  vient de la simulation) et terme de contact du bloc F coupé (la simulation joue ce duel) ; journal additif
+  `run.spatial = {contact, apres, manques, sortie, td, plaqueur}`. Le dessin du site suit le plaqueur de la simulation
+  (`play.geo.tkl`). Contrôles : coupé, le moteur d'avant à l'identique ; allumé, déterministe et cohérent.
+  Interrupteur `GC_COURSE_SPATIALE=0` (moteur d'avant) ; `GC_CS_PARAMS` (JSON) pour la calibration.
+- **Calibration** (`outils/moteur/semaine_course_spatiale.py` : semaines de 276 matchs, puis réglage hors moteur sur les
+  11 869 courses d'une semaine enregistrée) : distribution des yards de course de la ligue, et un porteur du quart le mieux
+  noté gagne ≈ 1,2 yard de plus par course que celui du quart le moins bien noté (sans réglage, la vitesse et la puissance
+  donnaient 2,8 yards d'écart : trop pour l'équilibre). Vérification sur d'autres graines, moteur d'avant → bloc 1 : yards par course 6,14 → 6,16,
+  courses ≤ 0 11,5 → 11,2 %, 10+ 20,9 → 19,2 %, 20+ 2,5 → 3,3 %, 40+ 0,51 → 0,41 % ; points par match 52,0 → 52,7 ;
+  victoires à domicile 0,536 → 0,524 ; temps par match + 2 %. Une course arrêtée au niveau de la ligne rapporte moins
+  qu'avant (≈ 0,6 yard contre 3,3 : la ligne défensive est autour), une course qui atteint le second rideau plus.
+- **Correction au passage** (12.2 vicies quinquies) : un joueur blessé sur l'action qui précède un genou à terre (fin de
+  mi-temps ou de match) restait aligné sur le genou ; il est remplacé (audit : « aligné après sa blessure »).
+__SEMAINE__
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2825,7 +2856,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95).
 
 ## Test
 
