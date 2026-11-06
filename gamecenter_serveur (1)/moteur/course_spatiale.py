@@ -35,6 +35,7 @@ PARAMS = {
     "evitement": 6.0,          # yards : distance à laquelle le porteur évite un défenseur
     "p_plaquage": 0.62,        # réussite d'un plaquage à notes égales
     "p_arriere": 0.62,         # même chose pour un safety ou un corner (en terrain découvert, il rate plus souvent)
+    "p_contact": 0.62,         # le premier plaquage, celui du défenseur au contact (il est déjà sur lui)
     "k_plaquage": 0.012,       # par point (tackling − max(agilité, puissance) du porteur)
     "gene": 0.6,               # secondes de gêne après un plaquage manqué
     "chute": 0.6,              # yards gagnés en tombant (moyenne, + puissance)
@@ -106,8 +107,9 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     for x, y, pos, r, i in placer(defenseurs, niveau, dep, y0, plaqueur_id, rng):
         v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"])
         v *= 0.9 + 0.002 * (r.get("run_support", r.get("tackling", 75)) - 70)
-        D.append([x, y, v, r.get("tackling", 75), 0.0, i, P["p_arriere"] if pos in ("S", "CB") else P["p_plaquage"]])
-        # x, y, vitesse, tackling, gêne, id, réussite de base du plaquage
+        base = P["p_arriere"] if pos in ("S", "CB") else P["p_plaquage"]
+        D.append([x, y, v, r.get("tackling", 75), 0.0, i, P.get("p_contact", base) if i == plaqueur_id else base, base])
+        # x, y, vitesse, tackling, gêne, id, réussite de base de son prochain plaquage, réussite en terrain découvert
     if dep >= float(t_pre) - 1e-9 and t_pre <= 0:
         pass                                            # course stoppée derrière la ligne : pas de poussée
     else:
@@ -158,7 +160,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
                     plaque = True
                     break
                 manques += 1
-                q[4] = P["gene"]
+                q[4], q[6] = P["gene"], q[7]            # raté : ses plaquages suivants sont en terrain découvert
                 v *= P["perte"]                         # il casse le plaquage mais perd son élan
                 continue
             # angle de poursuite : le point où il coupe la course du porteur (s'il va tout droit à sa vitesse)
