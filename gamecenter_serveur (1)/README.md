@@ -2677,7 +2677,11 @@ phases, ≈ + 3 min sur le calcul du samedi (limite 75 min). Bloc 1 : la course 
   qu'avant (≈ 0,6 yard contre 3,3 : la ligne défensive est autour), une course qui atteint le second rideau plus.
 - **Correction au passage** (12.2 vicies quinquies) : un joueur blessé sur l'action qui précède un genou à terre (fin de
   mi-temps ou de match) restait aligné sur le genou ; il est remplacé (audit : « aligné après sa blessure »).
-__SEMAINE__
+- **Semaine de test** (calcul complet de la semaine du 09/11 sur une copie des données, notebook entier, cotes comprises) :
+  35 min 6 s (≈ 39 min pour les dernières semaines réelles) ; audit : 0 anomalie bloquante. Comparée aux semaines du 26/10
+  et du 02/11 : points par match 52,9 (53,8 et 52,1), overs 55,4 % (55,8 et 47,5), victoires à domicile 0,487 (0,469 et
+  0,529) ; yards par course 6,06 (6,25 et 5,90), courses de 20 yards et plus 2,8 % (1,5 et 2,3), de 40 et plus 0,17 par
+  match (0 et 0,08).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
