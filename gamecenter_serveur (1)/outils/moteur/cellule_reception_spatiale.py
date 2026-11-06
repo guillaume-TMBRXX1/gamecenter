@@ -6,7 +6,7 @@
 #
 # Avant : yards = table V0.2 + blocs A-C (profondeur de la cible, séparation, receveur contre défenseur) + actions
 # longues (passe profonde qui file, YAC, compensées par un rabot). Maintenant, pour une passe décidée et complétée :
-#   - jusqu'à la réception rien ne change : la table et les blocs A-C tirent les yards (T) ;
+#   - jusqu'à la réception rien ne change : la table, les blocs A-C et le profil du QB tirent les yards (T) ;
 #   - le receveur attrape au bout de sa route (profondeur de la route, jamais plus loin que T), en courant ; le défenseur
 #     qui le couvrait est à la séparation du bloc A (play.geo) ; les autres ont lu le lancer, la ligne a chargé le QB ;
 #   - moteur/course_spatiale.py (apres_reception) joue la suite comme au bloc 1 : poursuite, plaquages, touche, en-but ;
@@ -35,6 +35,7 @@ if "_RS_ARCH_BASE" not in globals():
     _RS_ARCH_BASE = _apply_archetype_modifier
     _RS_CREDIT_BASE = _credit_defender
     _RS_CLOCK_BASE = advance_game_clock
+    _RS_QB_BASE = _apply_qb_pass_modifier
     _RS_REF_MATCHS = (("MNL", "CTX", 32_001), ("VEC", "PRM", 32_002))
     _RS_REF = [(_g["home_score"], _g["away_score"], _rs_sig(_g)) for _g in
                (franchise_game(h, a, seed=s) for h, a, s in _RS_REF_MATCHS)]
@@ -61,11 +62,12 @@ def _rs_route(dec):
 
 
 def _apply_archetype_modifier(play, carrier, random_engine):
-    """Passe décidée et complétée : la suite de la réception se joue sur le terrain (ni actions longues ni rabot)."""
+    """Passe décidée et complétée : ni actions longues ni rabot (la suite de la réception se jouera sur le terrain)."""
     global ACTIONS_LONGUES_ENABLED
     c = _AL_CTX
     dec = c.get("dec") or {}
     geo = (dec.get("log") or {}).get("geo") or {}
+    _RS_CTX.clear()
     actif = (RECEPTION_SPATIALE_ENABLED and carrier is not None and play.outcome == PlayOutcome.PASS_COMPLETE
              and dec.get("action") == "LANCER" and geo.get("tgt") and _al_actif())
     if not actif:
@@ -75,15 +77,23 @@ def _apply_archetype_modifier(play, carrier, random_engine):
         play, info = _RS_ARCH_BASE(play, carrier, random_engine)
     finally:
         ACTIONS_LONGUES_ENABLED = garde
-    rec = next((x for x in geo.get("rec") or [] if x[0] == geo["tgt"]), None)
-    sep, couvreur = (rec[1], rec[3]) if rec else (1.5, None)
-    air, sens, cassure = _rs_route(dec)
-    r = CS.apres_reception(_rf_joueur(carrier), _rs_defense(c["de"], couvreur), air, play.yards_gained, geo["tgt"],
-                           sens, cassure, couvreur, sep, 100 - c["ligne"], c["g"], c["n"])
-    play.yards_gained = r["yards"]
-    _RS_CTX.clear()
-    _RS_CTX.update(n=c["n"], log=c["log"], de=c["de"], res={k: r[k] for k in ("air", "apres", "manques", "sortie", "td",
-                                                                               "plaqueur")})
+    _RS_CTX.update(n=c["n"], log=c["log"], de=c["de"], carrier=carrier, geo=geo, dec=dec, ligne=c["ligne"], g=c["g"])
+    return play, info
+
+
+def _apply_qb_pass_modifier(play, qb, random_engine):
+    """Profil du QB d'avant (ses yards comptent avant la réception), puis la suite de la réception sur le terrain."""
+    play, info = _RS_QB_BASE(play, qb, random_engine)
+    c = _RS_CTX
+    if c.get("geo") and "res" not in c and len(c["log"]) == c["n"] and play.outcome == PlayOutcome.PASS_COMPLETE:
+        geo = c["geo"]
+        rec = next((x for x in geo.get("rec") or [] if x[0] == geo["tgt"]), None)
+        sep, couvreur = (rec[1], rec[3]) if rec else (1.5, None)
+        air, sens, cassure = _rs_route(c["dec"])
+        r = CS.apres_reception(_rf_joueur(c["carrier"]), _rs_defense(c["de"], couvreur), air, play.yards_gained,
+                               geo["tgt"], sens, cassure, couvreur, sep, 100 - c["ligne"], c["g"], c["n"])
+        play.yards_gained = r["yards"]
+        c["res"] = {k: r[k] for k in ("air", "apres", "manques", "sortie", "td", "plaqueur")}
     return play, info
 
 
