@@ -120,9 +120,19 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
         pass                                            # course stoppée derrière la ligne : pas de poussée
     else:
         dep += max(0.0, rng.gauss(P["pousse"] + (pu - 70) * P["k_chute"], 0.6))   # il encaisse le premier choc et avance
-    px, py = dep, y0
     vmax, acc = vitesse_max(vit, P["vit_porteur"], P.get("pente", 0.075)), 3.0 + (acc0 - 60) * 0.08
-    v, t, manques, chemin = vmax * P.get("elan", 0.0), 0.0, 0, []
+    total, yards, fin, manques, chemin = _simuler(dep, y0, vmax * P.get("elan", 0.0), vmax, acc, ag, pu, dep, D, but, rng, P,
+                                                 trace)
+    return {"version": VERSION, "yards": yards, "contact": round(contact, 1), "apres": round(total - contact, 1),
+            "plaqueur": fin["plaqueur"], "manques": manques, "sortie": fin["sortie"], "td": fin["td"],
+            "chemin": chemin if trace else None}
+
+
+def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
+    """La course du porteur au milieu des défenseurs D (voir apres_contact), partie de (x0, y0) à la vitesse v ;
+    dep : point d'où l'usure d'une longue course se compte. Renvoie (total, yards entiers, fin, manques, chemin)."""
+    px, py = x0, y0
+    t, manques, chemin = 0.0, 0, []
     dt, ev, rayon = P["dt"], P["evitement"], P["rayon"]
     hypot = math.hypot
     fin = {"plaqueur": None, "sortie": False, "td": False}
@@ -194,6 +204,106 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     yards = int(k + (1 if rng.random() < total - k else 0))           # arrondi sans biais
     if fin["td"]:
         yards = int(math.ceil(but))
-    return {"version": VERSION, "yards": yards, "contact": round(contact, 1), "apres": round(total - contact, 1),
+    return total, yards, fin, manques, chemin
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Bloc 2 : la course après la réception (passe complétée)
+# ---------------------------------------------------------------------------------------------------------------------
+VERSION_RECEPTION = "reception-spatiale-1"
+
+PARAMS_RECEPTION = dict(PARAMS, **{
+    "p_contact": 0.55,         # le premier plaquage du défenseur qui couvrait le receveur
+    "elan": 0.7,               # le receveur attrape en courant : cette part de sa vitesse maximale
+    "lecture": 0.35,           # les autres défenseurs ont lu le lancer : part du chemin vers le point de réception
+    "lecture_max": 8.0,        # yards au plus pendant le vol du ballon
+    "air_bruit": 1.0,          # yards : le point de réception autour de la profondeur de la route
+    "ecart": 1.0,              # échelle de la séparation au moment de la réception
+    "dessus": (-4.0, 4.0),     # yards : un safety reste au-dessus d'une route profonde (par rapport à la réception)
+})
+
+LARGEUR = 53.3
+MILIEU = LARGEUR / 2
+# position en travers du receveur au snap, selon son rôle ; décalage de la route à la réception
+Y_ROLE = {"WR1": 8.0, "WR2": 45.3, "WR3": 17.0, "TE": 22.5, "RB": 28.0}
+SENS_ROUTE = {"INSIDE": 1, "OUTSIDE": -1, "HORIZONTAL": 1, "VERTICAL": 0}
+
+
+def point_reception(role, direction, decalage):
+    """Position en travers à la réception : place du rôle, puis la route (vers le milieu, la touche ou à travers)."""
+    y = Y_ROLE.get(role, MILIEU)
+    vers_milieu = 1 if y < MILIEU else -1
+    y += vers_milieu * SENS_ROUTE.get(direction or "", 0) * decalage
+    return min(LARGEUR - 2.0, max(2.0, y))
+
+
+def placer_reception(defenseurs, xc, yc, couvreur_id, sep, rng, P=PARAMS_RECEPTION):
+    """Défenseurs au moment de la réception : [x, y, poste, notes, id]. Le défenseur qui couvrait est à `sep` yards
+    (en retard, côté intérieur le plus souvent) ; la ligne a chargé le QB (derrière le jeu) ; les autres tenaient leur
+    zone et ont lu le lancer (une part du chemin vers le ballon)."""
+    out = []
+    for d in defenseurs:
+        pos, r, i = d.get("pos"), d.get("ratings") or {}, d.get("id")
+        if i == couvreur_id:
+            a = rng.uniform(0.0, 1.1)
+            cote = 1 if yc < MILIEU else -1                 # il vient de l'intérieur
+            if rng.random() < 0.3:
+                cote = -cote
+            x, y = xc - sep * math.cos(a), yc + cote * sep * math.sin(a)
+            out.append([x, min(LARGEUR - 0.5, max(0.5, y)), pos, r, i])
+            continue
+        if pos in ("EDGE", "DT"):
+            x, y = rng.uniform(-6.0, -1.0), MILIEU + rng.uniform(-6, 6)
+        elif pos == "LB":
+            x, y = rng.uniform(4.0, 9.0), MILIEU + rng.uniform(-12, 12)
+        elif pos == "S":
+            x, y = rng.uniform(10.0, 18.0), (rng.uniform(10, 22) if rng.random() < 0.5 else rng.uniform(31, 43))
+            x = max(x, xc + rng.uniform(*P["dessus"]))
+        else:
+            x, y = rng.uniform(3.0, 12.0), (rng.uniform(4, 12) if rng.random() < 0.5 else rng.uniform(41, 49))
+        if pos not in ("EDGE", "DT"):                       # il a lu le lancer : vers le point de réception
+            dx, dy = xc - x, yc - y
+            dd = math.hypot(dx, dy) or 1.0
+            s = min(P["lecture"] * dd, P["lecture_max"])
+            x, y = x + dx / dd * s, y + dy / dd * s
+            dd = math.hypot(xc - x, yc - y)
+            mini = max(1.2, sep + 0.5)                      # personne n'est plus près que celui qui couvrait
+            if dd < mini:
+                k = mini / (dd or 1.0)
+                x, y = xc - (xc - x) * k, yc - (yc - y) * k
+        out.append([x, min(LARGEUR - 0.5, max(0.5, y)), pos, r, i])
+    return out
+
+
+def apres_reception(receveur, defenseurs, air, t_pre, role, direction, decalage, couvreur_id, sep, but, graine, n,
+                    params=PARAMS_RECEPTION, trace=False):
+    """La course du receveur à partir de la réception.
+
+    receveur   : {"pos", "ratings"} ; defenseurs : les onze ({"id", "pos", "ratings"})
+    air        : profondeur de la route (yards depuis la ligne) ; t_pre : yards tirés avant ce bloc (table + blocs A-C)
+    role, direction, decalage : rôle du receveur (WR1…RB), sens et longueur de la cassure de sa route (position en
+                 travers) ; couvreur_id, sep : le défenseur qui couvrait et la séparation (yards) au lancer
+    Renvoie {"version", "yards" (total, entier), "air" (point de réception), "apres", "plaqueur", "manques", "sortie",
+             "td", "chemin" (si trace)}.
+    """
+    P = params
+    rng = aleatoire.flux("reception-spatiale", graine, n)
+    p = receveur.get("ratings") or {}
+    vit, acc0 = p.get("speed", 80), p.get("acceleration", p.get("speed", 80))
+    ag = p.get("elusiveness", p.get("route_running", 75))
+    pu = p.get("power", 65 if receveur.get("pos") == "WR" else 75)
+    xc = min(float(t_pre), float(air) + rng.uniform(-P["air_bruit"], P["air_bruit"]))
+    yc = point_reception(role, direction, decalage)
+    D = []
+    for x, y, pos, r, i in placer_reception(defenseurs, xc, yc, couvreur_id, max(0.4, sep * P["ecart"]), rng, P):
+        v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"],
+                        P.get("pente", 0.075))
+        v *= 0.9 + 0.002 * (r.get("run_support", r.get("tackling", 75)) - 70)
+        base = P["p_arriere"] if pos in ("S", "CB") else P["p_plaquage"]
+        D.append([x, y, v, r.get("tackling", 75), 0.0, i, P.get("p_contact", base) if i == couvreur_id else base, base])
+    vmax, acc = vitesse_max(vit, P["vit_porteur"], P.get("pente", 0.075)), 3.0 + (acc0 - 60) * 0.08
+    total, yards, fin, manques, chemin = _simuler(xc, yc, vmax * P.get("elan", 0.0), vmax, acc, ag, pu, xc, D, but, rng,
+                                                 P, trace)
+    return {"version": VERSION_RECEPTION, "yards": yards, "air": round(xc, 1), "apres": round(total - xc, 1),
             "plaqueur": fin["plaqueur"], "manques": manques, "sortie": fin["sortie"], "td": fin["td"],
             "chemin": chemin if trace else None}
