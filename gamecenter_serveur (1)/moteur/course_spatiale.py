@@ -34,6 +34,7 @@ PARAMS = {
     "rayon": 1.0,              # yards : distance de plaquage
     "evitement": 6.0,          # yards : distance à laquelle le porteur évite un défenseur
     "p_plaquage": 0.62,        # réussite d'un plaquage à notes égales
+    "p_arriere": 0.62,         # même chose pour un safety ou un corner (en terrain découvert, il rate plus souvent)
     "k_plaquage": 0.012,       # par point (tackling − max(agilité, puissance) du porteur)
     "gene": 0.6,               # secondes de gêne après un plaquage manqué
     "chute": 0.6,              # yards gagnés en tombant (moyenne, + puissance)
@@ -105,7 +106,8 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     for x, y, pos, r, i in placer(defenseurs, niveau, dep, y0, plaqueur_id, rng):
         v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"])
         v *= 0.9 + 0.002 * (r.get("run_support", r.get("tackling", 75)) - 70)
-        D.append([x, y, v, r.get("tackling", 75), 0.0, i])                 # x, y, vitesse, tackling, gêne, id
+        D.append([x, y, v, r.get("tackling", 75), 0.0, i, P["p_arriere"] if pos in ("S", "CB") else P["p_plaquage"]])
+        # x, y, vitesse, tackling, gêne, id, réussite de base du plaquage
     if dep >= float(t_pre) - 1e-9 and t_pre <= 0:
         pass                                            # course stoppée derrière la ligne : pas de poussée
     else:
@@ -150,7 +152,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
             dd = hypot(dx, dy)
             if dd < rayon:
                 aide = sum(1 for o in D if o is not q and o[4] <= 0 and hypot(px - o[0], py - o[1]) < 2.5)
-                if rng.random() < P["p_plaquage"] + (q[3] - max(ag, pu)) * P["k_plaquage"] + aide * P["renfort"]:
+                if rng.random() < q[6] + (q[3] - max(ag, pu)) * P["k_plaquage"] + aide * P["renfort"]:
                     px += max(0.0, rng.gauss(P["chute"] + (pu - 70) * P["k_chute"], 0.5))
                     fin["plaqueur"] = q[5]
                     plaque = True
