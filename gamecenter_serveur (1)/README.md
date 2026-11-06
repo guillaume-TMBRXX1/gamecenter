@@ -2711,6 +2711,35 @@ Suite du programme (section 95). Bloc 2 : ce que fait le receveur une fois le ba
   47,5), victoires à domicile 0,484 (0,469 et 0,529) ; yards par passe complétée 11,03 (11,30 et 10,85), de 20 yards et
   plus 14,2 % (11,6 et 13,3), de 40 et plus 0,74 par match (0,07 et 0,76).
 
+### 97. Causal léger, bloc 3 : la couverture (06/11/2026)
+Suite du programme (sections 95-96). Bloc 3 : la séparation d'un receveur au moment où le QB le lit.
+- **Avant** : séparation (bloc A, `moteur/reaction_defensive.py`) = écart de notes (talent de route contre talent de
+  couverture) / 20 + avantage de la route contre la couverture + bruit ; le statut (libre, serré, couvert, doublé) décide
+  de la lecture du QB, de la complétion et de l'interception. Un GO et un SLANT pesaient la vitesse de la même façon.
+- **Module** `moteur/couverture_spatiale.py` (tests `moteur/tests/test_couverture_spatiale.py`) : le terme d'écart de notes
+  vient d'un duel joué sur le terrain, au pas de 0,05 s. Le receveur court sa route (tige, cassure : angle et sens de
+  chaque route), à sa vitesse ; il perd moins de vitesse à la cassure s'il court bien. En homme, son défenseur part à son
+  coussin (presse en Cover 0 / 1 : le release se gagne), cède du terrain en reculant, se retourne quand le receveur arrive
+  sur lui (temps perdu), garde son mouvement le temps de réagir à la cassure (couverture contre qualité de route), puis
+  fonce ; au-dessus d'une route verticale, il la couvre. En zone, les défenseurs de la tranche tiennent un repère fixe
+  (flats et hooks, curls, tiers profonds), ferment sur le receveur qui entre dans leur rayon sans quitter leur zone ; le
+  safety prend la route verticale par-dessus. Séparation mesurée dans la fenêtre (cassure + 0,6 s, ou l'ouverture de la
+  route + le drop), ramenée en « pas » par une droite par famille, classe de route et groupe de rôle (RB, TE, WR) :
+  chaque groupe garde la moyenne et la dispersion de l'écart de notes d'avant, le duel décide des écarts entre joueurs.
+  Flux de hasard dédié (« couverture-spatiale »).
+- **Branchement** : `moteur.reaction_defensive.DUEL` (None : écart de notes, moteur d'avant à l'identique) ;
+  `decider_passe` passe la clé du flux. Le reste du bloc A ne change pas (avantages de couverture, bruit, checkdown, hot,
+  double), ni les blocs B-D. **Notebook 12.2 tritricies** (après 12.2 duotricies), contrôles : coupé, le moteur d'avant à
+  l'identique ; allumé, déterministe. Interrupteur `GC_COUVERTURE_SPATIALE=0` ; `GC_CV_PARAMS` (JSON) pour la calibration.
+- **Calibration** (banc `outils/moteur/semaine_course_spatiale.py --bloc 3`, 83 430 duels d'une semaine enregistrés) ;
+  vérification sur d'autres graines, moteur d'avant → bloc 3 : complétion 65,3 → 64,9 %, interceptions 2,02 → 2,03 %,
+  sacks 8,42 → 8,41 % des passes décidées ; cible libre au lancer 46,4 → 46,6 %, serrée 44,3 → 44,2 %, couverte 8,4 →
+  8,3 % ; yards par passe complétée 11,32 → 11,25 ; points par match 53,7 → 52,0 ; victoires à domicile 0,505 → 0,533
+  (0,495 → 0,438 sur la semaine de calibration : du bruit sur 276 matchs). Le duel suit l'écart de notes d'avant
+  (corrélation 0,3 à 0,7 en homme) mais pèse selon la route : la vitesse sur les routes profondes, la qualité de route
+  à la cassure, la presse sur les routes courtes.
+__SEMAINE3__
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2888,7 +2917,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97).
 
 ## Test
 

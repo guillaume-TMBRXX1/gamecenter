@@ -54,10 +54,25 @@ PARAMS = {
     "k_lateral": 0.3,
     "laisse": 5.0,                     # yards : un défenseur de zone ne s'écarte pas plus de son repère
     "vitesse_zone": 0.7,               # part de sa vitesse quand il ferme dans sa zone                  # zone profonde : yards de séparation par yard d'écart à son repère             # s : le receveur pressé met ce temps à se libérer (release)
-    # droite yards -> pas, par (famille, classe) : pas = a + b * yards
+    # droite yards -> pas, par (famille, classe, groupe de rôle) : pas = a + b * yards. Calibrée le 06/11/2026 sur les
+    # 83 430 duels d'une semaine (même moyenne et même dispersion que l'écart de notes d'avant, par groupe) :
     "droite": {
-        ("homme", "court"): (-1.2, 0.45), ("homme", "moyen"): (-1.2, 0.45), ("homme", "profond"): (-1.2, 0.45),
-        ("zone", "court"): (-1.2, 0.45), ("zone", "moyen"): (-1.2, 0.45), ("zone", "profond"): (-1.2, 0.45),
+        ("homme", "court", "RB"): (-1.0336, 0.5041),
+        ("homme", "court", "TE"): (-0.4665, 0.1313),
+        ("homme", "court", "WR"): (-0.4881, 0.1985),
+        ("homme", "moyen", "TE"): (-0.395, 0.215),
+        ("homme", "moyen", "WR"): (-0.5926, 0.2696),
+        ("homme", "profond", "RB"): (-1.6861, 1.4277),
+        ("homme", "profond", "TE"): (-0.7664, 0.585),
+        ("homme", "profond", "WR"): (-0.7571, 0.6173),
+        ("zone", "court", "RB"): (-0.5924, 0.0517),
+        ("zone", "court", "TE"): (-0.23, 0.07),
+        ("zone", "court", "WR"): (-0.3402, 0.1763),
+        ("zone", "moyen", "TE"): (-0.2043, 0.0855),
+        ("zone", "moyen", "WR"): (-0.3024, 0.1021),
+        ("zone", "profond", "RB"): (-1.1636, 0.0827),
+        ("zone", "profond", "TE"): (-0.6872, 0.2759),
+        ("zone", "profond", "WR"): (-0.3579, 0.1598),
     },
 }
 
@@ -241,7 +256,12 @@ def separation(role, route, classe, ouverture, receveur, defenseurs, famille, co
     return min(math.hypot(rx - z[0], ry - z[1]) for z in zs), {"t": round(t_fin, 2), "casse": t_casse}
 
 
-def en_pas(yards, famille, classe, params=PARAMS):
-    """Séparation en yards -> terme de duel du bloc A (« pas »)."""
-    a, b = params["droite"].get((famille, classe), (-1.2, 0.45))
+GROUPE = {"RB": "RB", "TE": "TE"}                 # les autres rôles : WR
+
+
+def en_pas(yards, famille, classe, role=None, params=PARAMS):
+    """Séparation en yards -> terme de duel du bloc A (« pas ») : droite par famille, classe de route et groupe de rôle
+    (RB, TE, WR : chaque groupe garde son niveau moyen du bloc A, le duel décide des écarts entre joueurs)."""
+    D = params["droite"]
+    a, b = D.get((famille, classe, GROUPE.get(role, "WR"))) or D.get((famille, classe, "WR")) or (-0.4, 0.15)
     return a + b * yards

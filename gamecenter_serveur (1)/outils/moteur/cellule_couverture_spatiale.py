@@ -47,7 +47,7 @@ def _cv_duel(role, lecture, joueur, defenseurs, famille, couverture, cle, ancien
     """Terme de duel de la séparation (bloc A) : le duel joué sur le terrain, ramené en pas."""
     yards, _ = CV.separation(role, lecture.get("route", ""), lecture.get("classe", "moyen"), lecture.get("ouverture", 1.5),
                              joueur, defenseurs, famille, couverture, cle[0], cle[1])
-    return CV.en_pas(yards, famille, lecture.get("classe", "moyen"))
+    return CV.en_pas(yards, famille, lecture.get("classe", "moyen"), role)
 
 
 def _cv_brancher(actif):
