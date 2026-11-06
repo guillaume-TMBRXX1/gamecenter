@@ -29,31 +29,34 @@ from . import aleatoire
 VERSION = "course-spatiale-1"
 
 PARAMS = {
+    # calibrés le 06/11/2026 (outils/moteur/semaine_course_spatiale.py, puis réglage hors moteur sur les 11 869 courses
+    # d'une semaine) : distribution des yards de course, points et avantage du terrain de la ligue ; un porteur du quart
+    # le mieux noté gagne ≈ 1,2 yard de plus par course que celui du quart le moins bien noté
     "dt": 0.1,                 # pas de temps (s)
     "t_max": 8.0,              # durée maximale après le contact
     "rayon": 1.0,              # yards : distance de plaquage
     "evitement": 6.0,          # yards : distance à laquelle le porteur évite un défenseur
-    "p_plaquage": 0.62,        # réussite d'un plaquage à notes égales
-    "p_arriere": 0.62,         # même chose pour un safety ou un corner (en terrain découvert, il rate plus souvent)
-    "p_contact": 0.62,         # le premier plaquage, celui du défenseur au contact (il est déjà sur lui)
-    "k_plaquage": 0.012,       # par point (tackling − max(agilité, puissance) du porteur)
-    "gene": 0.6,               # secondes de gêne après un plaquage manqué
-    "chute": 0.6,              # yards gagnés en tombant (moyenne, + puissance)
-    "k_chute": 0.03,           # par point de puissance au-delà de 70
+    "p_contact": 0.401,        # le premier plaquage, celui du défenseur au contact
+    "p_plaquage": 0.507,       # réussite d'un plaquage à notes égales (ligne, linebackers)
+    "p_arriere": 0.688,        # même chose pour un safety ou un corner
+    "k_plaquage": 0.011,       # par point (tackling − max(agilité, puissance) du porteur)
+    "renfort": 0.377,          # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
+    "gene": 1.184,             # secondes de gêne après un plaquage manqué
+    "perte": 0.913,            # plaquage cassé : le porteur garde cette part de sa vitesse
+    "chute": 0.1,              # yards gagnés en tombant (moyenne, + puissance)
+    "k_chute": 0.003,          # par point de puissance au-delà de 70 (chute et poussée)
+    "pousse": 0.0,             # yards de poussée au premier contact, + puissance
+    "elan": 0.787,             # au contact, le porteur court déjà : cette part de sa vitesse maximale
+    "pente": 0.035,            # yards par seconde par point de note de vitesse (écart entre rapides et lents)
     "vit_porteur": 1.0,        # échelle de vitesse du porteur
-    "pente": 0.075,            # yards par seconde par point de note de vitesse (écart entre rapides et lents)
-    "vit_defense": 1.0,        # échelle de vitesse des défenseurs
-    "perte": 0.55,             # plaquage cassé : le porteur garde cette part de sa vitesse (il perd son élan)
-    "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
-    "pousse": 1.0,             # yards de poussée au premier contact (il encaisse le choc et avance), + puissance
-    "vit_arriere": 1.0,        # échelle de vitesse des safeties et corners (angles de poursuite en profondeur)
-    "elan": 0.6,               # au contact, le porteur court déjà : cette part de sa vitesse maximale
-    "anticipe": 4.0,           # secondes : jusqu'où un défenseur anticipe le point d'interception
-    "fatigue": 0.0,            # longue course : vitesse perdue par yard au-delà de "fatigue_dep" yards après le contact
-    "fatigue_dep": 8.0,
-    "fatigue_min": 0.72,       # il garde au moins cette part de sa vitesse
+    "vit_defense": 1.146,      # échelle de vitesse des défenseurs (ligne, linebackers)
+    "vit_arriere": 1.093,      # échelle de vitesse des safeties et corners
+    "anticipe": 2.377,         # secondes : jusqu'où un défenseur anticipe le point d'interception
+    "fatigue": 0.001,          # longue course : vitesse perdue par yard au-delà de "fatigue_dep" yards après le contact
+    "fatigue_dep": 22.198,
+    "fatigue_min": 0.588,      # il garde au moins cette part de sa vitesse
     # profondeur du contact (yards depuis la ligne) selon le niveau du bloc F : uniforme [a, b]
-    "profondeur": {"ligne": (-0.5, 1.5), "linebacker": (2.0, 5.0), "second rideau": (6.0, 10.0)},
+    "profondeur": {"ligne": (-0.86, 1.14), "linebacker": (2.87, 5.87), "second rideau": (6.43, 10.43)},
 }
 
 # vitesse par défaut des postes sans note de vitesse (ligne défensive)
@@ -104,7 +107,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     p = porteur.get("ratings") or {}
     vit, acc0 = p.get("speed", 80), p.get("acceleration", p.get("speed", 80))
     ag, pu = p.get("elusiveness", 75), p.get("power", 75)
-    dep = profondeur_contact(t_pre, niveau, rng, P)
+    dep = contact = profondeur_contact(t_pre, niveau, rng, P)
     D = []
     for x, y, pos, r, i in placer(defenseurs, niveau, dep, y0, plaqueur_id, rng):
         v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"],
@@ -191,6 +194,6 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     yards = int(k + (1 if rng.random() < total - k else 0))           # arrondi sans biais
     if fin["td"]:
         yards = int(math.ceil(but))
-    return {"version": VERSION, "yards": yards, "contact": round(dep, 1), "apres": round(total - dep, 1),
+    return {"version": VERSION, "yards": yards, "contact": round(contact, 1), "apres": round(total - contact, 1),
             "plaqueur": fin["plaqueur"], "manques": manques, "sortie": fin["sortie"], "td": fin["td"],
             "chemin": chemin if trace else None}
