@@ -42,6 +42,8 @@ PARAMS = {
     "vit_defense": 1.0,        # échelle de vitesse des défenseurs
     "perte": 0.55,             # plaquage cassé : le porteur garde cette part de sa vitesse (il perd son élan)
     "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
+    "pousse": 1.0,             # yards de poussée au premier contact (il encaisse le choc et avance), + puissance
+    "vit_arriere": 1.0,        # échelle de vitesse des safeties et corners (angles de poursuite en profondeur)
     # profondeur du contact (yards depuis la ligne) selon le niveau du bloc F : uniforme [a, b]
     "profondeur": {"ligne": (-0.5, 1.5), "linebacker": (2.0, 5.0), "second rideau": (6.0, 10.0)},
 }
@@ -97,9 +99,13 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     dep = profondeur_contact(t_pre, niveau, rng, P)
     D = []
     for x, y, pos, r, i in placer(defenseurs, niveau, dep, y0, plaqueur_id, rng):
-        v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_defense"])
+        v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"])
         v *= 0.9 + 0.002 * (r.get("run_support", r.get("tackling", 75)) - 70)
         D.append([x, y, v, r.get("tackling", 75), 0.0, i])                 # x, y, vitesse, tackling, gêne, id
+    if dep >= float(t_pre) - 1e-9 and t_pre <= 0:
+        pass                                            # course stoppée derrière la ligne : pas de poussée
+    else:
+        dep += max(0.0, rng.gauss(P["pousse"] + (pu - 70) * P["k_chute"], 0.6))   # il encaisse le premier choc et avance
     px, py = dep, y0
     vmax, acc = vitesse_max(vit, P["vit_porteur"]), 3.0 + (acc0 - 60) * 0.08
     v, t, manques, chemin = 0.0, 0.0, 0, []
