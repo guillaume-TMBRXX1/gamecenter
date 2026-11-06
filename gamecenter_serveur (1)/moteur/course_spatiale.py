@@ -46,6 +46,7 @@ PARAMS = {
     "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
     "pousse": 1.0,             # yards de poussée au premier contact (il encaisse le choc et avance), + puissance
     "vit_arriere": 1.0,        # échelle de vitesse des safeties et corners (angles de poursuite en profondeur)
+    "elan": 0.6,               # au contact, le porteur court déjà : cette part de sa vitesse maximale
     "anticipe": 4.0,           # secondes : jusqu'où un défenseur anticipe le point d'interception
     "fatigue": 0.0,            # longue course : vitesse perdue par yard au-delà de "fatigue_dep" yards après le contact
     "fatigue_dep": 8.0,
@@ -116,7 +117,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
         dep += max(0.0, rng.gauss(P["pousse"] + (pu - 70) * P["k_chute"], 0.6))   # il encaisse le premier choc et avance
     px, py = dep, y0
     vmax, acc = vitesse_max(vit, P["vit_porteur"]), 3.0 + (acc0 - 60) * 0.08
-    v, t, manques, chemin = 0.0, 0.0, 0, []
+    v, t, manques, chemin = vmax * P.get("elan", 0.0), 0.0, 0, []
     dt, ev, rayon = P["dt"], P["evitement"], P["rayon"]
     hypot = math.hypot
     fin = {"plaqueur": None, "sortie": False, "td": False}
