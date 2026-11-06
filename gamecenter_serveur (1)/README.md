@@ -2738,7 +2738,14 @@ Suite du programme (sections 95-96). Bloc 3 : la séparation d'un receveur au mo
   (0,495 → 0,438 sur la semaine de calibration : du bruit sur 276 matchs). Le duel suit l'écart de notes d'avant
   (corrélation 0,3 à 0,7 en homme) mais pèse selon la route : la vitesse sur les routes profondes, la qualité de route
   à la cassure, la presse sur les routes courtes.
-__SEMAINE3__
+- **Correction au passage** (`moteur/rotations.py`) : un alignement figé (genou à terre, défense face au hurry-up) gardait
+  un blessé d'un groupe en rotation (RB, DT, EDGE) ; il est remplacé (la correction de la section 95 ne couvrait que les
+  postes hors rotation ; audit : « aligné après sa blessure »).
+- **Semaine de test** (calcul complet de la semaine du 09/11 sur une copie des données, blocs 1 à 3, cotes comprises) :
+  28 min 31 s ; audit : 0 anomalie bloquante. Comparée aux semaines du 26/10 et du 02/11 : points par match 51,2 (53,8
+  et 52,1), overs 46,0 % (55,8 et 47,5), victoires à domicile 0,558 (0,469 et 0,529) ; complétion 65,1 % (64,1 et 64,9),
+  interceptions 2,44 % des passes lancées (2,90 et 2,62), sacks 6,75 par match (7,10 et 6,84), yards par tentative 7,20
+  (7,24 et 7,04).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
