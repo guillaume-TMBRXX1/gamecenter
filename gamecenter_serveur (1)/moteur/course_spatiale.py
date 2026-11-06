@@ -213,13 +213,26 @@ def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
 VERSION_RECEPTION = "reception-spatiale-1"
 
 PARAMS_RECEPTION = dict(PARAMS, **{
-    "p_contact": 0.55,         # le premier plaquage du défenseur qui couvrait le receveur
-    "elan": 0.7,               # le receveur attrape en courant : cette part de sa vitesse maximale
-    "lecture": 0.35,           # les autres défenseurs ont lu le lancer : part du chemin vers le point de réception
-    "lecture_max": 8.0,        # yards au plus pendant le vol du ballon
-    "air_bruit": 1.0,          # yards : le point de réception autour de la profondeur de la route
-    "ecart": 1.0,              # échelle de la séparation au moment de la réception
-    "dessus": (-4.0, 4.0),     # yards : un safety reste au-dessus d'une route profonde (par rapport à la réception)
+    # calibrés le 06/11/2026 (semaine de test, puis réglage hors moteur sur les 12 819 réceptions d'une semaine
+    # enregistrée) : distribution des yards par passe complétée de la ligue
+    "p_contact": 0.918,        # le premier plaquage du défenseur qui couvrait le receveur
+    "p_plaquage": 0.549,       # ligne, linebackers
+    "p_arriere": 0.284,        # safeties et corners en terrain découvert
+    "k_plaquage": 0.009,
+    "renfort": 0.4,
+    "gene": 0.746,
+    "perte": 0.878,
+    "chute": 0.077,
+    "elan": 0.504,             # le receveur attrape en courant : cette part de sa vitesse maximale
+    "pente": 0.016,            # la vitesse pèse surtout par l'écart qu'elle crée avant la réception (blocs A-C)
+    "vit_defense": 0.988,
+    "vit_arriere": 1.149,
+    "anticipe": 2.27,
+    "lecture": 0.753,          # les autres défenseurs ont lu le lancer : part du chemin vers le point de réception
+    "lecture_max": 9.634,      # yards au plus pendant le vol du ballon
+    "air_bruit": 0.054,        # yards : le point de réception autour de la profondeur de la route
+    "ecart": 1.139,            # échelle de la séparation du bloc A au moment de la réception
+    "dessus": (0.732, 9.345),  # yards : un safety reste au-dessus d'une route profonde (par rapport à la réception)
 })
 
 LARGEUR = 53.3
