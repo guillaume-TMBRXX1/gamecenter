@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Semaine de test du causal léger, bloc 1 (la course après le contact) : joue une semaine complète de la ligue (chaque
-affiche une fois, 276 matchs à 24) avec le moteur du notebook, sans cotes ni écriture dans data/, et mesure la
-distribution des yards de course (cible : celle d'avant le bloc), les points, l'avantage du terrain et le temps.
+"""Semaine de test du causal léger, blocs 1 (la course après le contact) et 2 (la course après la réception) : joue une
+semaine complète de la ligue (chaque affiche une fois, 276 matchs à 24) avec le moteur du notebook, sans cotes ni écriture
+dans data/, et mesure la distribution des yards de course et de passe complétée (cible : celle d'avant le bloc), les
+points, l'avantage du terrain et le temps.
 
     python3 outils/moteur/semaine_course_spatiale.py --spatiale off --json /tmp/ref.json     # référence (moteur d'avant)
     python3 outils/moteur/semaine_course_spatiale.py --json /tmp/b1.json                      # cellule du dépôt
     python3 outils/moteur/semaine_course_spatiale.py --boucle /tmp/b                          # charge, puis une semaine par demande :
     echo '{"json": "/tmp/r.json", "spatiale": "on", "params": {"p_plaquage": 0.6}}' > /tmp/b/demande.json
+    python3 outils/moteur/semaine_course_spatiale.py --bloc 2 --json /tmp/b2.json             # bloc 2 (réception)
 
 Le moteur est chargé une fois (cellules jusqu'à 12.2 tricies, ≈ 8 min), puis la cellule du bloc (le fichier
 outils/moteur/cellule_course_spatiale.py, ou 12.2 untricies du notebook une fois branchée) est exécutée pour chaque
@@ -18,23 +20,26 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import rapport_calibration as rc     # noqa: E402
 
-JUSQUA = "12.2 tricies"
-CELLULE = "12.2 untricies"
+BLOCS = {1: ("12.2 tricies", "12.2 untricies", "cellule_course_spatiale.py", "GC_COURSE_SPATIALE", "GC_CS_PARAMS"),
+         2: ("12.2 untricies", "12.2 duotricies", "cellule_reception_spatiale.py", "GC_RECEPTION_SPATIALE", "GC_RS_PARAMS")}
+BLOC = [1]
 _NS = {}
 
 
 def _cellule(chemin=None):
     if chemin:
         return open(chemin, encoding="utf-8").read()
+    _, cellule, fichier, _, _ = BLOCS[BLOC[0]]
     nb = json.load(open(rc.NOTEBOOK, encoding="utf-8"))
     src = next(("".join(c["source"]) for c in nb["cells"]
-                if c["cell_type"] == "code" and CELLULE in "".join(c["source"])[:300]), None)
-    return src or open(os.path.join(HERE, "cellule_course_spatiale.py"), encoding="utf-8").read()
+                if c["cell_type"] == "code" and cellule in "".join(c["source"])[:300]), None)
+    return src or open(os.path.join(HERE, fichier), encoding="utf-8").read()
 
 
 def brancher(ns, spatiale="on", params=None, chemin=None):
-    os.environ["GC_COURSE_SPATIALE"] = "1" if spatiale == "on" else "0"
-    os.environ["GC_CS_PARAMS"] = json.dumps(params or {})
+    _, _, _, interrupteur, reglages = BLOCS[BLOC[0]]
+    os.environ[interrupteur] = "1" if spatiale == "on" else "0"
+    os.environ[reglages] = json.dumps(params or {})
     importlib.reload(importlib.import_module("moteur.course_spatiale"))
     here = os.getcwd()
     with tempfile.TemporaryDirectory() as tmp:
@@ -54,8 +59,15 @@ def _jouer(tache):
     t = time.perf_counter()
     g = ns["franchise_game"](h, a, seed=graine)
     sec = time.perf_counter() - t
-    m = {"hs": g["home_score"], "as": g["away_score"], "sec": sec, "runs": [], "niv": [], "manques": 0, "sim": 0}
+    m = {"hs": g["home_score"], "as": g["away_score"], "sec": sec, "runs": [], "niv": [], "manques": 0, "sim": 0,
+         "passes": [], "psim": 0, "pmanques": 0}
     for e in g["play_log"]:
+        if e.get("outcome") == "PASS_COMPLETE":
+            m["passes"].append(e.get("yards_gained") or 0)
+            y = (e.get("decision") or {}).get("yac")
+            if y:
+                m["psim"] += 1
+                m["pmanques"] += y.get("manques", 0)
         r = e.get("run")
         if r and e.get("outcome") == "RUN":
             m["runs"].append(e.get("yards_gained") or 0)
@@ -84,8 +96,21 @@ def mesurer(M):
                         "20+_par_match": round(sum(y >= 20 for y in runs) / n, 2), "max": max(runs),
                         "simulees": sum(m["sim"] for m in M),
                         "plaquages_manques_par_course": round(sum(m["manques"] for m in M) / max(1, sum(m["sim"] for m in M)), 2)},
+            "passes": _passes(M),
             "par_niveau": {k: {"n": len(v), "moyenne": round(statistics.mean(v), 2), "20+": round(sum(y >= 20 for y in v) / len(v), 4)}
                            for k, v in niv.items() if k}}
+
+
+def _passes(M):
+    p = [y for m in M for y in m.get("passes", [])]
+    if not p:
+        return {}
+    par = lambda k: round(sum(y >= k for y in p) / len(p), 4)
+    return {"n_par_match": round(len(p) / len(M), 1), "moyenne": round(statistics.mean(p), 3),
+            "mediane": statistics.median(p), "<=0": round(sum(y <= 0 for y in p) / len(p), 4), "5+": par(5),
+            "10+": par(10), "20+": par(20), "30+": par(30), "40+": par(40), "max": max(p),
+            "simulees": sum(m["psim"] for m in M),
+            "plaquages_manques_par_reception": round(sum(m["pmanques"] for m in M) / max(1, sum(m["psim"] for m in M)), 2)}
 
 
 def semaine(ns, graine, travailleurs, js=None):
@@ -139,9 +164,11 @@ def main():
     ap.add_argument("--travailleurs", type=int, default=os.cpu_count() or 1)
     ap.add_argument("--json")
     ap.add_argument("--boucle")
+    ap.add_argument("--bloc", type=int, choices=sorted(BLOCS), default=1)
     a = ap.parse_args()
+    BLOC[0] = a.bloc
     t0 = time.time()
-    ns, _ = rc.charger(jusqua=JUSQUA, decisions=True)
+    ns, _ = rc.charger(jusqua=BLOCS[a.bloc][0], decisions=True)
     _NS["ns"] = ns
     print(f"moteur chargé en {time.time() - t0:.0f} s", file=sys.stderr)
     if a.boucle:

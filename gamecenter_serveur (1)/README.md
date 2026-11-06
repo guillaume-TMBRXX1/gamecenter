@@ -2683,6 +2683,34 @@ phases, ≈ + 3 min sur le calcul du samedi (limite 75 min). Bloc 1 : la course 
   0,529) ; yards par course 6,06 (6,25 et 5,90), courses de 20 yards et plus 2,8 % (1,5 et 2,3), de 40 et plus 0,17 par
   match (0 et 0,08).
 
+### 96. Causal léger, bloc 2 : la course après la réception (06/11/2026)
+Suite du programme (section 95). Bloc 2 : ce que fait le receveur une fois le ballon attrapé.
+- **Avant** : yards d'une passe complétée = table V0.2 + blocs A-C (profondeur de la cible, séparation, receveur contre
+  défenseur) + profil du QB + actions longues (passe profonde qui file, YAC, compensées par un rabot).
+- **Module** `moteur/course_spatiale.py` (`apres_reception`, tests `moteur/tests/test_reception_spatiale.py`), même
+  simulation que le bloc 1 (boucle commune `_simuler`, bloc 1 inchangé à l'identique) : le receveur attrape au bout de sa
+  route (profondeur de la route, jamais plus loin que les yards tirés), en courant, à sa place en travers selon son rôle et
+  le sens de sa cassure ; le défenseur qui le couvrait est à la séparation du bloc A (celle de `play.geo`), venu de
+  l'intérieur le plus souvent ; les autres tenaient leur zone et ont lu le lancer (une part du chemin vers le ballon),
+  un safety reste au-dessus d'une route profonde ; la ligne a chargé le QB. Puis poursuite, plaquages (le premier, celui
+  du défenseur qui couvrait, est le plus sûr), touche, en-but. Flux de hasard dédié (« reception-spatiale »).
+- **Notebook 12.2 duotricies** (après 12.2 untricies) : pour une passe décidée et complétée, ni actions longues ni rabot ;
+  la simulation se joue après le profil du QB (ses yards comptent avant la réception) ; le plaqueur crédité est celui qui
+  arrête le receveur (avant : tiré au hasard parmi les défenseurs). Journal additif `decision.yac = {air, apres, manques,
+  sortie, td, plaqueur}`. Contrôles : coupé, le moteur d'avant à l'identique ; allumé, déterministe et cohérent.
+  Interrupteur `GC_RECEPTION_SPATIALE=0` ; `GC_RS_PARAMS` (JSON) pour la calibration.
+- **Calibration** (banc `outils/moteur/semaine_course_spatiale.py --bloc 2`, puis réglage hors moteur sur les 12 819
+  réceptions d'une semaine enregistrée). Vérification sur d'autres graines, moteur d'avant → bloc 2 : yards par passe
+  complétée 11,40 → 11,32, de 20 yards et plus 14,9 → 15,5 %, de 40 et plus 2,6 → 2,3 % ; points par match 52,7 → 53,7 ;
+  victoires à domicile 0,524 → 0,505. Le quart des receveurs les plus rapides gagne ≈ 2 yards de plus par réception que
+  le quart des plus lents (0,8 avant la simulation) : surtout les WR contre les TE, qui attrapent près de la ligne au
+  milieu du trafic.
+- **Semaine de test** (calcul complet de la semaine du 09/11 sur une copie des données, blocs 1 et 2, cotes comprises) :
+  37 min 52 s (35 min 6 s avec le bloc 1 seul ; limite 75 min) ; audit : 0 anomalie bloquante (une alerte : un match à
+  123 points). Comparée aux semaines du 26/10 et du 02/11 : points par match 52,0 (53,8 et 52,1), overs 48,2 % (55,8 et
+  47,5), victoires à domicile 0,484 (0,469 et 0,529) ; yards par passe complétée 11,03 (11,30 et 10,85), de 20 yards et
+  plus 14,2 % (11,6 et 13,3), de 40 et plus 0,74 par match (0,07 et 0,76).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2860,7 +2888,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96).
 
 ## Test
 
