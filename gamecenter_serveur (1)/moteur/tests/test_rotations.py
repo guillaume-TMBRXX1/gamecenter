@@ -190,6 +190,18 @@ class Alignement(unittest.TestCase):
         self.assertEqual(r.alignement("def", paquet="GOAL_LINE")[0]["CB2"], "X_LB4")
         self.assertEqual(r.alignement("def", paquet="4_3")[0]["CB2"], "X_CB2")
 
+    def test_figee_remplace_un_blesse(self):
+        """Alignement figé (genou à terre, défense face au hurry-up) : un blessé d'un groupe en rotation est remplacé."""
+        r = ro.Rotations("CTX", joueurs_match())
+        r.alignement("off", personnel="11")
+        r.blesser("X_RB1")
+        occ, subs = r.alignement("off", figee=True)
+        self.assertNotEqual(occ["RB"], "X_RB1")
+        self.assertIn("injury", [x["reason"] for x in subs])
+        r2 = ro.Rotations("CTX", joueurs_match())       # sans blessé, figé reste figé
+        a = r2.alignement("off", personnel="11")[0]
+        self.assertEqual(r2.alignement("off", personnel="11", figee=True)[0], a)
+
     def test_onze_distincts(self):
         r = ro.Rotations("CTX", joueurs_match())
         for per in ("10", "11", "12", "13", "21", "22"):

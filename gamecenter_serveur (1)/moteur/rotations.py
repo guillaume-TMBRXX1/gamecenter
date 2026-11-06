@@ -435,8 +435,8 @@ class Rotations:
         if len(cands) <= len(places):
             return {pl: self.base[c][pl] for pl in places}
         avant = {pl: self.dernier[c][pl] for pl in places}
-        if figee:
-            return avant
+        if figee and not any(i in self.indispo for i in avant.values()):
+            return avant                         # figée, sauf si un blessé y est encore : il est remplacé
         tit = [self.base[c][pl] for pl in places]
         cible = part_visee(self.equipe, groupe)
         reste_part = max(0.0, len(places) * (1.0 - cible))       # le 1er remplaçant prend le reste (RB2, DT3…)
