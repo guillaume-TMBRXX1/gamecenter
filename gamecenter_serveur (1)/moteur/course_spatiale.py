@@ -41,6 +41,7 @@ PARAMS = {
     "chute": 0.6,              # yards gagnés en tombant (moyenne, + puissance)
     "k_chute": 0.03,           # par point de puissance au-delà de 70
     "vit_porteur": 1.0,        # échelle de vitesse du porteur
+    "pente": 0.075,            # yards par seconde par point de note de vitesse (écart entre rapides et lents)
     "vit_defense": 1.0,        # échelle de vitesse des défenseurs
     "perte": 0.55,             # plaquage cassé : le porteur garde cette part de sa vitesse (il perd son élan)
     "renfort": 0.10,           # réussite du plaquage en plus par autre défenseur à moins de 2,5 yards
@@ -59,9 +60,9 @@ PARAMS = {
 VITESSE_POSTE = {"EDGE": 76, "DT": 66, "LB": 80, "S": 84, "CB": 86}
 
 
-def vitesse_max(note, echelle=1.0):
-    """Note de vitesse 60-99 -> 7,0 à 9,9 yards par seconde."""
-    return (7.0 + (note - 60) * 0.075) * echelle
+def vitesse_max(note, echelle=1.0, pente=0.075):
+    """Note de vitesse -> yards par seconde (pente 0,075 : 60-99 -> 7,0 à 9,9 ; 80 -> 8,5 quelle que soit la pente)."""
+    return (8.5 + (note - 80) * pente) * echelle
 
 
 def profondeur_contact(t_pre, niveau, rng, params=PARAMS):
@@ -106,7 +107,8 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     dep = profondeur_contact(t_pre, niveau, rng, P)
     D = []
     for x, y, pos, r, i in placer(defenseurs, niveau, dep, y0, plaqueur_id, rng):
-        v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"])
+        v = vitesse_max(r.get("speed", VITESSE_POSTE.get(pos, 75)), P["vit_arriere"] if pos in ("S", "CB") else P["vit_defense"],
+                        P.get("pente", 0.075))
         v *= 0.9 + 0.002 * (r.get("run_support", r.get("tackling", 75)) - 70)
         base = P["p_arriere"] if pos in ("S", "CB") else P["p_plaquage"]
         D.append([x, y, v, r.get("tackling", 75), 0.0, i, P.get("p_contact", base) if i == plaqueur_id else base, base])
@@ -116,7 +118,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
     else:
         dep += max(0.0, rng.gauss(P["pousse"] + (pu - 70) * P["k_chute"], 0.6))   # il encaisse le premier choc et avance
     px, py = dep, y0
-    vmax, acc = vitesse_max(vit, P["vit_porteur"]), 3.0 + (acc0 - 60) * 0.08
+    vmax, acc = vitesse_max(vit, P["vit_porteur"], P.get("pente", 0.075)), 3.0 + (acc0 - 60) * 0.08
     v, t, manques, chemin = vmax * P.get("elan", 0.0), 0.0, 0, []
     dt, ev, rayon = P["dt"], P["evitement"], P["rayon"]
     hypot = math.hypot
