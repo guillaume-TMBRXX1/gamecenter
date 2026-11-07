@@ -125,7 +125,7 @@ def apres_contact(porteur, defenseurs, niveau, t_pre, y0, plaqueur_id, but, grai
                                                  trace)
     return {"version": VERSION, "yards": yards, "contact": round(contact, 1), "apres": round(total - contact, 1),
             "plaqueur": fin["plaqueur"], "manques": manques, "sortie": fin["sortie"], "td": fin["td"],
-            "chemin": chemin if trace else None}
+            "chemin": chemin if trace else None, "trace": fin.get("trace") if trace else None}
 
 
 def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
@@ -136,6 +136,16 @@ def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
     dt, ev, rayon = P["dt"], P["evitement"], P["rayon"]
     hypot = math.hypot
     fin = {"plaqueur": None, "sortie": False, "td": False}
+    tr = None
+    if trace:                                           # trace complète (export du dessin) : porteur, défenseurs, plaquages
+        tr = {"c": [(px, py)], "d": {q[5]: [(q[0], q[1])] for q in D}, "ev": []}
+        fin["trace"] = tr
+
+    def _pas():
+        if tr is not None:
+            tr["c"].append((px, py))
+            for q in D:
+                tr["d"][q[5]].append((q[0], q[1]))
     while t < P["t_max"]:
         t += dt
         ax, ay = 1.0, 0.0                               # vers l'en-but, en s'écartant des défenseurs devant lui
@@ -157,9 +167,11 @@ def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
             chemin.append((round(px, 1), round(py, 1)))
         if py < 0.3 or py > 53.0:
             fin["sortie"] = True
+            _pas()
             break
         if px >= but:
             px, fin["td"] = but, True
+            _pas()
             break
         plaque = False
         for q in D:
@@ -174,8 +186,12 @@ def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
                     px += max(0.0, rng.gauss(P["chute"] + (pu - 70) * P["k_chute"], 0.5))
                     fin["plaqueur"] = q[5]
                     plaque = True
+                    if tr is not None:
+                        tr["ev"].append((round(t, 2), q[5], 1))
                     break
                 manques += 1
+                if tr is not None:
+                    tr["ev"].append((round(t, 2), q[5], 0))
                 q[4], q[6] = P["gene"], q[7]            # raté : ses plaquages suivants sont en terrain découvert
                 v *= P["perte"]                         # il casse le plaquage mais perd son élan
                 continue
@@ -195,6 +211,7 @@ def _simuler(x0, y0, v, vmax, acc, ag, pu, dep, D, but, rng, P, trace=False):
             s = min(q[2] * dt, dd)
             q[0] += tx / tn * s
             q[1] += ty / tn * s
+        _pas()
         if plaque:
             break
     if px >= but:                                       # plaqué en tombant dans l'en-but : touchdown
@@ -319,4 +336,29 @@ def apres_reception(receveur, defenseurs, air, t_pre, role, direction, decalage,
                                                  P, trace)
     return {"version": VERSION_RECEPTION, "yards": yards, "air": round(xc, 1), "apres": round(total - xc, 1),
             "plaqueur": fin["plaqueur"], "manques": manques, "sortie": fin["sortie"], "td": fin["td"],
-            "chemin": chemin if trace else None}
+            "chemin": chemin if trace else None, "trace": fin.get("trace") if trace else None}
+
+
+def trace_compacte(r, depart_x=0.0, pas=2, rayon=5.0, dt=None):
+    """Trace d'une simulation (apres_contact / apres_reception avec trace=True) pour le GameFeed : un point tous les
+    `pas` pas de temps (0,2 s par défaut), arrondi au dixième ; seulement les défenseurs passés à moins de `rayon` yards
+    du porteur ou qui ont tenté un plaquage. x depuis la ligne de mêlée, y en travers (0 à 53,3).
+    Renvoie {"dt", "c": [[x, y], …], "d": [[id, [[x, y], …]], …], "ev": [[t, id, 1 réussi / 0 manqué], …]} ou None."""
+    tr = r.get("trace") if isinstance(r, dict) else None
+    if not tr or not tr.get("c"):
+        return None
+    dt = (dt or PARAMS["dt"]) * pas
+    n = len(tr["c"])
+    garde = list(range(0, n, pas))
+    if garde[-1] != n - 1:
+        garde.append(n - 1)
+    rd = lambda p: [round(p[0], 1), round(p[1], 1)]
+    c = [rd(tr["c"][k]) for k in garde]
+    acteurs = {e[1] for e in tr["ev"]}
+    d = []
+    for i, pts in tr["d"].items():
+        proche = any(math.hypot(pts[k][0] - tr["c"][k][0], pts[k][1] - tr["c"][k][1]) < rayon for k in range(min(len(pts), n)))
+        if proche or i in acteurs:
+            d.append([i, [rd(pts[min(k, len(pts) - 1)]) for k in garde]])
+    ev = [[e[0], e[1], e[2]] for e in tr["ev"] if not (r.get("td") and e[2] == 1)]   # touchdown : personne ne l'arrête
+    return {"dt": round(dt, 2), "c": c, "d": d, "ev": ev}
