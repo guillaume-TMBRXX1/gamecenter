@@ -34,7 +34,7 @@ async function server(port,env){
 }
 const ouvrir=async(b,port,opts)=>{ const ctx=await b.newContext(Object.assign({viewport:{width:1440,height:1000}},opts||{}));
   const p=await ctx.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message));
-  await p.goto(`http://localhost:${port}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:60000}); return p; };
+  await p.goto(`http://localhost:${port}/`,{waitUntil:'domcontentloaded',timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000}); return p; };   /* like the other tests: the page, not every resource (slow runner) */
 const sched=async(p,f)=>{ await p.evaluate(()=>window.__gc.season.setView('schedule')); await p.waitForSelector('#viewSchedule .sch'); await p.click(`[data-schf="${f}"]`); await p.waitForTimeout(250); };
 
 (async()=>{
