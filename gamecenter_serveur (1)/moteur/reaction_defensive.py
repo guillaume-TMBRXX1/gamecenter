@@ -54,6 +54,11 @@ BONUS_CHECKDOWN = 0.6          # le checkdown est la soupape : la défense regar
 BONUS_HOT = 0.4                # contre 5-6 rushers, la route courte « hot » se libère
 BRUIT = 0.9
 
+# causal léger, bloc 3 (moteur.couverture_spatiale, branché par le notebook 12.2 tritricies) : None -> écart de notes ;
+# sinon DUEL(role=, lecture=, joueur=, defenseurs=, famille=, couverture=, cle=(graine, n° d'action), ancien=) donne le
+# terme de duel de la séparation (en pas), joué sur le terrain
+DUEL = None
+
 # chrono de la poche (secondes) : base, effet du niveau de pression (0-1, 03E), rushers en plus
 POCHE = {"base": 3.3, "pente_pression": 1.2, "rusher5": 0.30, "rusher6": 0.20, "bruit": 0.45, "min": 1.3}
 
@@ -147,7 +152,7 @@ class DefensiveReactionEngine:
 
     def react(self, concept_defensif, lectures, receveurs, defenseurs, niveau_pression, rng, bruit=BRUIT,
               echelle=ECHELLE_DUEL, bracket="", p_bracket=None, p_bracket_bonus=0.0, bonus_poche=0.0,
-              bonus_rusher5=0.0, appel=None):
+              bonus_rusher5=0.0, appel=None, cle=None):
         """
         concept_defensif : appel du coordinateur ("COVER_2", "BLITZ"…)
         lectures         : progression (moteur.progressions.progression)
@@ -165,6 +170,7 @@ class DefensiveReactionEngine:
                            Même tirage consommé qu'au bloc A.
         bonus_poche      : bloc D — protection (un RB reste bloquer) : secondes gagnées avant la pression ;
                            bonus_rusher5 : part du 5e rusher ramassée par ce bloqueur
+        cle              : (graine du match, n° d'action) — bloc 3 : flux du duel joué sur le terrain (DUEL)
         appel            : extension du playbook (moteur.playbook_expansion.appel_passe) — paquet défensif (coquille,
                            rushers, présentation, receveur laissé par un blitzeur…), jeu de rush, front, protection,
                            motion, shift, enchaînement. None : bloc D à l'identique (mêmes tirages, mêmes valeurs).
@@ -195,11 +201,16 @@ class DefensiveReactionEngine:
             if famille == "homme":
                 d = homme.get(role)
                 tc, nom_d = (talent_couverture(d), d.get("name", "")) if d else (60.0, "")
+                face = [d] if d else []
             else:
                 zone = _defenseurs_zone(l["classe"], defenseurs)
                 tc = sum(talent_couverture(d) for d in zone) / len(zone) if zone else 70.0
                 nom_d = "zone"
+                face = zone
             sep = POIDS_DUEL[famille] * (talent_route(j, role) - tc) / echelle
+            if DUEL is not None and cle is not None:     # bloc 3 : le duel joué sur le terrain
+                sep = DUEL(role=role, lecture=l, joueur=j, defenseurs=face, famille=famille, couverture=couverture,
+                           cle=cle, ancien=sep)
             sep += AVANTAGE.get(couverture, {}).get(l["classe"], 0.0)
             sep += AVANTAGE_ROUTE.get(couverture, {}).get(l["route"], 0.0)
             if l["niveau"] == "checkdown":

@@ -90,8 +90,9 @@ async function cas(b,F,nom,opt){
   check(s.btn,'un toucher (ou la souris) les fait revenir');
   /* un joueur touché ouvre sa fiche, même quand le match est tourné */
   /* la vue doit avoir dessiné au moins une fois (sinon project() rend −10000 : machine lente) */
-  await p.waitForFunction(()=>{ const G=window.__gc, v=G.views[G.views.length-1], pl=v&&v.g.off.find(Boolean); return !!pl&&v.project(pl.x,pl.y).x>-1e3; },null,{timeout:10000}).catch(()=>{});
-  const pt=await p.evaluate(()=>{ const G=window.__gc, v=G.views[G.views.length-1], g=v.g, pl=g.off.find(Boolean); const q=v.project(pl.x,pl.y);
+  /* la vue du match ouvert (celle du #modal) : le week-end, « Week in review » ajoute la sienne sur l'accueil après elle */
+  await p.waitForFunction(()=>{ const G=window.__gc, m=document.getElementById('modal'), v=G.views.filter(x=>m.contains(x.wrap)).pop(), pl=v&&v.g.off.find(Boolean); return !!pl&&v.project(pl.x,pl.y).x>-1e3; },null,{timeout:10000}).catch(()=>{});
+  const pt=await p.evaluate(()=>{ const G=window.__gc, md=document.getElementById('modal'), v=G.views.filter(x=>md.contains(x.wrap)).pop(), g=v.g, pl=g.off.find(Boolean); const q=v.project(pl.x,pl.y);
     const m=document.getElementById('modal'), turned=(e=>{ const t=getComputedStyle(e).transform; if(!t||t==='none') return false; const M=new DOMMatrix(t); return Math.abs(M.b)>0.5&&Math.abs(M.a)<0.5; })(m.querySelector('.m-panel'));
     return turned?{x:innerWidth-q.y,y:q.x}:{x:q.x,y:q.y}; });
   if(opt.hasTouch) await p.touchscreen.tap(Math.round(pt.x),Math.round(pt.y)); else await p.mouse.click(Math.round(pt.x),Math.round(pt.y));
