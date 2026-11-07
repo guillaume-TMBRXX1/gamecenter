@@ -3453,6 +3453,10 @@ function planScrimmage(g,call,imp){
             if(dd>m) T={x:p0.x+(T.x-p0.x)*m/dd,y:p0.y+(T.y-p0.y)*m/dd};
             def[ti]=kfCut(def[ti],s0,[[ue,T.x,T.y],[1,T.x,T.y]]); P.wDef[ti]=0; P.stop={i:ti,at:ue}; }
         }
+        /* step 5 (causal light block 2): after the catch, the engine's simulation — the receiver's path, the pursuit,
+           the tackles missed, the one who brings him down (the drawing above stays when there is none) */
+        const GS=imp.geo&&imp.geo.k==='pass'&&FL&&!imp.oob?imp.geo.sim:null;
+        if(GS&&GS.c.length>=2&&ue-uc>=0.05) simFrom(P,off,def,GS,tIdx,L,d,uc,ue,Fx,Fy,total,act,!!imp.td);
       } else if(imp.kind==='inc'){
         off[tIdx]=kfCut(off[tIdx],uc,[[Math.min(1,uc+0.12),C.x+d*1.6,C.y],[1,C.x+d*2.2,C.y]]);
         P.loose=[[uc,C.x,C.y],[Math.min(1,uc+0.1),C.x+d*2.6,C.y+rand(-1,1)],[1,C.x+d*2.6,C.y]];
@@ -3617,6 +3621,12 @@ function simRun(P,off,def,S,cs,L,d,tc,Fx,Fy,total,act,td){
   const ulast=clamp(tc-T/Math.max(1,act),0.2,Math.max(0.2,tc-0.18));
   let u0=null; for(let u=0.15;u<=ulast;u+=0.01){ if((kfAt(off[cs],u).x-L)*d>=sx0-0.2){ u0=u; break; } }
   if(u0==null) u0=ulast;
+  return simFrom(P,off,def,S,cs,L,d,u0,tc,Fx,Fy,total,act,td);
+}
+/* the simulated play from u0 (the contact, the catch) to tc (the stop): shared by the run (simRun) and the run after the
+   catch (step 5) */
+function simFrom(P,off,def,S,cs,L,d,u0,tc,Fx,Fy,total,act,td){
+  const n=S.c.length, sx0=S.c[0][0], sxe=S.c[n-1][0], T=Math.max(S.dt,(n-1)*S.dt);
   const p0=kfAt(off[cs],u0), ax=(p0.x-L)*d;
   /* the simulated path keeps its shape; the gap to the drawing at the contact and to the feed's spot at the end is
      shared out along it (the feed's yards are the simulation's: the gap is small, a few tenths) */
@@ -4148,15 +4158,19 @@ function geoOf(g,P,t,scr){
     const RANK={C:0,LG:1,RG:1,LT:2,RT:2,TE:3}, duels=[];
     for(const q of Array.isArray(G.duels)?G.duels:[]){ const b=ox[q[0]], r=b!=null&&OFF_SLOT[b]?RANK[OFF_SLOT[b][0]==='TE'?'TE':OFF_SLOT[b][0]]:null; if(r!=null) duels.push({r,m:num(q[2],0)}); }
     /* step 4 (07/11/2026, causal light block 1): the engine's simulation after the first contact (play.geo.sim) */
-    let sim=null; const S=G.sim;
-    if(S&&Array.isArray(S.c)&&S.c.length>=2&&S.c.every(q=>Array.isArray(q)&&q.length===2)){
-      const sd=[]; for(const q of Array.isArray(S.d)?S.d:[]){ const i=Array.isArray(q)?ix[q[0]]:null; if(i!=null&&Array.isArray(q[1])&&q[1].length===S.c.length) sd.push({i,p:q[1]}); }
-      sim={c:S.c,d:sd,dt:num(S.dt,0.2),ev:(Array.isArray(S.ev)?S.ev:[]).filter(Array.isArray).map(e=>({t:num(e[0],0),i:ix[e[1]]!=null?ix[e[1]]:null,ok:!!e[2]}))}; }
-    return {k:'run',cls:G.cls||'',duels,ct:G.ct||'B',tkl:G.tkl!=null&&ix[G.tkl]!=null?ix[G.tkl]:null,sim};
+    return {k:'run',cls:G.cls||'',duels,ct:G.ct||'B',tkl:G.tkl!=null&&ix[G.tkl]!=null?ix[G.tkl]:null,sim:geoSim(G.sim,ix)};
   }
   const rec=[]; for(const r of G.rec){ if(!Array.isArray(r)||GEO_SLOT[r[0]]==null) continue;
     rec.push({slot:GEO_SLOT[r[0]],sep:clamp(num(r[1],2),0.4,7),st:r[2],def:r[3]!=null&&ix[r[3]]!=null?ix[r[3]]:null,bust:!!r[4]}); }
-  return {k:'pass',rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null};
+  /* step 5 (07/11/2026, causal light block 2): the engine's simulation after the catch (play.geo.sim) */
+  return {k:'pass',rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null,sim:geoSim(G.sim,ix)};
+}
+/* play.geo.sim (moteur.course_spatiale.trace_compacte): the carrier's path, the defenders near him (by id -> their slot
+   among the eleven drawn), every tackle tried; null when absent or malformed */
+function geoSim(S,ix){
+  if(!S||!Array.isArray(S.c)||S.c.length<2||!S.c.every(q=>Array.isArray(q)&&q.length===2)) return null;
+  const sd=[]; for(const q of Array.isArray(S.d)?S.d:[]){ const i=Array.isArray(q)?ix[q[0]]:null; if(i!=null&&Array.isArray(q[1])&&q[1].length===S.c.length) sd.push({i,p:q[1]}); }
+  return {c:S.c,d:sd,dt:num(S.dt,0.2),ev:(Array.isArray(S.ev)?S.ev:[]).filter(Array.isArray).map(e=>({t:num(e[0],0),i:ix[e[1]]!=null?ix[e[1]]:null,ok:!!e[2]}))};
 }
 /* at the throw (t0), each receiver is as far from his defender as the engine had him: the engine's defender when he is
    free to cover, else the one drawn on him, else the nearest free one; he gets there at FL_VMAX at most */

@@ -30,6 +30,9 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
     const A=window.__gc.audio, M=A.manager(), wait=ms=>new Promise(r=>setTimeout(r,ms));
     A.setSound(true); for(let i=0;i<80&&!M.music.ready();i++) await wait(100);
     await wait(2500); const start=M.stats().music;
+    /* 07/11/2026 : le match à l'antenne peut être terminé (soir sans match en direct : le dernier match de la journée,
+       rejoué jusqu'au bout) ; le site joue alors le silence après le jingle de fin (AudioManager.focus). */
+    const f0=window.__gc.games[0]; start.fin=!!(f0&&f0.cur&&f0.cur.after&&f0.cur.after.status==='final');
     const mm=M.music, out={start};
     /* 20/10/2026 : l'état de départ vient du match à l'antenne à l'heure du test (un match en fin de partie le met en
        final_drive, plus tendu que red_zone : « la tension monte » échouait selon l'heure). Ensuite, le match à
@@ -47,7 +50,7 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
     S.mixMute.music=false; A.manager().apply(); await wait(1500); out.unmuted=mm.stats();
     return out; });
   console.log('   ',JSON.stringify(r));
-  check(r.start.pieces===8&&r.start.playing&&['pregame','gameplay','close_game','red_zone','final_drive','overtime'].includes(r.start.state),`8 pièces, musique dès le son allumé (${r.start.state} : le match à l'antenne décide)`);
+  check(r.start.pieces===8&&(r.start.fin?r.start.state==='silence':r.start.playing&&['pregame','gameplay','close_game','red_zone','final_drive','overtime'].includes(r.start.state)),`8 pièces, musique dès le son allumé (${r.start.state}${r.start.fin?', match à l\'antenne terminé':''} : le match à l'antenne décide)`);
   check(r.up.state==='red_zone','la tension monte tout de suite');
   check(r.down.state==='red_zone'&&r.down.want==='gameplay','redescente différée (pas de va-et-vient)');
   check(r.later.state==='gameplay','redescend après 20 s');
