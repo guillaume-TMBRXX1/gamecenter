@@ -144,12 +144,15 @@ def _point(chemin, s_cum, s):
     return chemin[-1]
 
 
-def separation(role, route, classe, ouverture, receveur, defenseurs, famille, couverture, graine, n, params=PARAMS):
+def separation(role, route, classe, ouverture, receveur, defenseurs, famille, couverture, graine, n, params=PARAMS,
+               trace=False):
     """Séparation (yards) du receveur dans sa fenêtre : à la cassure + FENETRE s (route qui casse), sinon quand le QB
     peut le lire (ouverture de la route + drop).
 
     receveur   : {"ratings"} ; defenseurs : en homme, [le défenseur assigné] ; en zone, ceux de la tranche
-    Renvoie (yards, détail) — détail : {"t", "casse"}.
+    Renvoie (yards, détail) — détail : {"t", "casse"} ; trace=True (dessin du site, aucun tirage de plus) : détail["trace"]
+    = {"r": chemin du receveur, "d": chemin de son défenseur (en zone : le plus proche à la fin), "id", "presse"}, un
+    point (x depuis la ligne, y en travers) tous les DT secondes du snap à la fenêtre.
     """
     P = params
     rng = aleatoire.flux("couverture-spatiale", graine, f"{n}|{role}")
@@ -196,7 +199,10 @@ def separation(role, route, classe, ouverture, receveur, defenseurs, famille, co
         t_reagit = (t_casse + reac) if (t_casse is not None and t_casse > 0) else None
         if t_casse is not None and t_casse <= 0:          # écran : il réagit au snap
             t_reagit = reac
+        td = [] if trace else None
         for k in range(1, k_fin + 1):
+            if td is not None:
+                td.append((dx, dy))
             t = k * DT
             px, py = chemin[k]
             if t_reagit is not None and t >= t_reagit:   # il a lu la cassure : il fonce sur le receveur
@@ -223,7 +229,11 @@ def separation(role, route, classe, ouverture, receveur, defenseurs, famille, co
             sep = (dx - rx) * P["devant_vertical"] + abs(dy - ry) * 0.5
         else:
             sep = math.hypot(rx - dx, ry - dy)
-        return sep + lateral, {"t": round(t_fin, 2), "casse": t_casse}
+        det = {"t": round(t_fin, 2), "casse": t_casse}
+        if td is not None:
+            td.append((dx, dy))
+            det["trace"] = {"r": chemin[:k_fin + 1], "d": td, "id": d.get("id"), "presse": bool(presse)}
+        return sep + lateral, det
     # zone : chaque défenseur de la tranche tient un point (repères fixes du terrain), ferme quand le receveur entre dans
     # son rayon ; la séparation est la distance au plus proche dans la fenêtre
     a, b = PROFONDEUR_ZONE.get(classe, PROFONDEUR_ZONE["moyen"])
@@ -236,7 +246,11 @@ def separation(role, route, classe, ouverture, receveur, defenseurs, famille, co
         zs.append([zx, zy, vitesse(_note(dr, "speed", 82)) * P["vitesse_zone"],
                    max(P["reaction_min"], P["reaction_zone"] - (_note(dr, "coverage", 75) - 75) * P["k_reaction"]
                        + (rr - 75) * P["k_reaction"] * 0.5), None, zx, zy])
+    tz = [[] for _ in zs] if trace else None
     for k in range(1, k_fin + 1):
+        if tz is not None:
+            for z, q in zip(zs, tz):
+                q.append((z[0], z[1]))
         t = k * DT
         px, py = chemin[k]
         for z in zs:
@@ -253,7 +267,14 @@ def separation(role, route, classe, ouverture, receveur, defenseurs, famille, co
                     if ll > P["laisse"]:                 # il ne quitte pas sa zone
                         nx, ny = z[5] + lx / ll * P["laisse"], z[6] + ly / ll * P["laisse"]
                     z[0], z[1] = nx, ny
-    return min(math.hypot(rx - z[0], ry - z[1]) for z in zs), {"t": round(t_fin, 2), "casse": t_casse}
+    dist = [math.hypot(rx - z[0], ry - z[1]) for z in zs]
+    det = {"t": round(t_fin, 2), "casse": t_casse}
+    if tz is not None:
+        i = min(range(len(zs)), key=dist.__getitem__)
+        tz[i].append((zs[i][0], zs[i][1]))
+        det["trace"] = {"r": chemin[:k_fin + 1], "d": tz[i], "id": ((defenseurs or [{}])[i] or {}).get("id"),
+                        "presse": False}
+    return min(dist), det
 
 
 GROUPE = {"RB": "RB", "TE": "TE"}                 # les autres rôles : WR
@@ -265,3 +286,20 @@ def en_pas(yards, famille, classe, role=None, params=PARAMS):
     D = params["droite"]
     a, b = D.get((famille, classe, GROUPE.get(role, "WR"))) or D.get((famille, classe, "WR")) or (-0.4, 0.15)
     return a + b * yards
+
+
+def trace_compacte(det, pas=4):
+    """play.geo.cov d'un receveur (dessin du site) : [casse, presse, défenseur, chemin du receveur, chemin du défenseur],
+    un point tous les pas × DT secondes (et le dernier), x depuis la ligne, y en travers, au dixième de yard ; None sans
+    trace."""
+    tr = (det or {}).get("trace")
+    if not tr or len(tr["r"]) != len(tr["d"]) or len(tr["r"]) < 2:
+        return None
+    n = len(tr["r"])
+    ks = list(range(0, n, pas))
+    if ks[-1] != n - 1:
+        ks.append(n - 1)
+    pt = lambda q: [round(q[0], 1), round(q[1], 1)]
+    casse = det.get("casse")
+    return [None if casse is None else round(casse, 2), 1 if tr["presse"] else 0, tr.get("id"),
+            [pt(tr["r"][k]) for k in ks], [pt(tr["d"][k]) for k in ks]]

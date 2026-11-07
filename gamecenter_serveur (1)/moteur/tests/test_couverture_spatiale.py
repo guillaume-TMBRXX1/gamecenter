@@ -91,3 +91,36 @@ class BlocA(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Trace(unittest.TestCase):
+    """Trajectoires, étape 6 : la trace du duel pour le dessin du site (play.geo.cov), sans rien changer au duel."""
+
+    CAS = (("SLANT", "court", 1.2, "homme", "Cover 1"), ("GO", "profond", 2.4, "homme", "Cover 0"),
+           ("CURL", "moyen", 1.8, "zone", "Cover 3"), ("POST", "profond", 2.6, "zone", "Cover 2"),
+           ("OUT", "court", 1.4, "zone", "Cover 4"))
+
+    def test_meme_duel(self):
+        for route, classe, ouv, fam, cov in self.CAS:
+            ds = [{"id": f"D{i}", "ratings": CB} for i in range(1 if fam == "homme" else 3)]
+            for k in range(40):
+                a = CV.separation("WR1", route, classe, ouv, {"ratings": ELITE}, ds, fam, cov, 7, k)
+                b = CV.separation("WR1", route, classe, ouv, {"ratings": ELITE}, ds, fam, cov, 7, k, trace=True)
+                self.assertEqual(a[0], b[0], (route, k))
+                self.assertNotIn("trace", a[1])
+                tr = b[1]["trace"]
+                self.assertEqual(len(tr["r"]), len(tr["d"]))
+                self.assertIn(tr["id"], {d["id"] for d in ds})
+                self.assertEqual(tr["r"][0], CV.DEPART_ROLE["WR1"])
+
+    def test_compacte(self):
+        ds = [{"id": "PRM_CB1", "ratings": CB}]
+        y, det = CV.separation("WR1", "GO", "profond", 2.4, {"ratings": ELITE}, ds, "homme", "Cover 3", 7, 1, trace=True)
+        c = CV.trace_compacte(det)
+        self.assertEqual(c[2], "PRM_CB1")
+        self.assertEqual(len(c[3]), len(c[4]))
+        self.assertGreaterEqual(len(c[3]), 3)
+        r, d = det["trace"]["r"][-1], det["trace"]["d"][-1]
+        self.assertEqual(c[3][-1], [round(r[0], 1), round(r[1], 1)])
+        self.assertEqual(c[4][-1], [round(d[0], 1), round(d[1], 1)])
+        self.assertIsNone(CV.trace_compacte({"t": 1.0}))
