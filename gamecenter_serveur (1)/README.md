@@ -2816,6 +2816,23 @@ courses perdaient plus d'un yard après le contact, jusqu'à − 23.
   52,3 ; victoires à domicile 0,507 → 0,502 ; 35 min 40 s ; audit : 0 anomalie bloquante (une alerte connue : une course
   sans porteur désigné, cas rare d'avant le chantier).
 
+### 101. Trajectoires du moteur, étape 5 : la course après la réception simulée dessinée (07/11/2026)
+Suite de l'étape 4 (section 99), pour le bloc 2 (course après la réception, section 96).
+- **Moteur** : la simulation de la réception (`apres_reception`, même boucle que la course) garde sa trace
+  (`trace=True`, aucun tirage ni résultat changé) ; **notebook 12.2 duotricies** : `play.geo.sim` dans le résumé de la
+  passe (additif, même format qu'une course : receveur et défenseurs proches tous les 0,2 s depuis la réception,
+  plaquages tentés ; ≈ 280 octets par réception). Semaine de test : toutes les réceptions simulées ont leur trace ; mêmes
+  matchs qu'avant (audit identique).
+- **Site** (et cellule 427, resynchronisée : son dessin des courses simulées retardait d'un état) : `geoSim` lit la trace
+  d'une course comme d'une passe ; `simFrom` joue la simulation d'un instant à un autre (commun à la course, après le
+  contact, et à la réception) ; pour une passe complétée (hors sortie en touche, dessinée à part), la course après la
+  réception est la simulation : le receveur suit son chemin simulé, décalé de son point de réception dessiné vers le point
+  du feed, les défenseurs le rejoignent sans saut, les plaquages manqués ont leur éclat, le plaqueur son anneau rouge.
+  Sans trace, le dessin d'avant.
+- **Tests** : `outils/site/test_receptions_simulees.js` (34 réceptions sur 34 dessinées depuis la simulation sur le match
+  de test `outils/site/matchs/sim-courses.json`, remplacé par un match qui porte les deux traces) ; courses simulées
+  47 / 48 ; aucun saut (31,2 yd/s au 99e centile).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
