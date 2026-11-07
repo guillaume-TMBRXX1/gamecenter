@@ -2771,7 +2771,11 @@ Suite du programme (sections 95-97). Bloc 4 : le temps avant la pression.
   sacks 8,41 → 8,34 % des passes décidées, yards par tentative 7,30 → 7,18 ; points par match 52,0 → 53,3 ; victoires
   à domicile 0,533 → 0,493. Sur la semaine de calibration : complétion 64,9 → 64,2 %, sacks 8,46 → 8,33 %, points 52,3 →
   52,3. Un décalage de la droite (+ 0,08 s) rendait la complétion (65,1 %) mais poussait les points à 55,0 : non retenu.
-__SEMAINE4__
+- **Semaine de test** (calcul complet de la semaine du 09/11 sur une copie des données, blocs 1 à 4, cotes comprises) :
+  30 min 22 s ; audit : 0 anomalie bloquante. Comparée aux semaines du 26/10 et du 02/11 : points par match 50,8 (53,8
+  et 52,1), overs 49,6 % (55,8 et 47,5), victoires à domicile 0,507 (0,469 et 0,529) ; complétion 64,4 % (64,1 et 64,9),
+  interceptions 2,75 % des passes lancées (2,90 et 2,62), sacks 6,51 par match (7,10 et 6,84), yards par tentative 7,07
+  (7,24 et 7,04).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
