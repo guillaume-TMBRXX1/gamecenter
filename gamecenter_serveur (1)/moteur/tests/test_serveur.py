@@ -478,9 +478,17 @@ class Comptes(Base):
         r = appel(serveur.api_login, {"pseudo": "Carla Test", "password": "motdepasse1", "token": autre}, "10.2.0.1")
         self.assertEqual((r["moved"], r["left_behind"]), (0, 1))  # même semaine déjà jouée par le compte : rien mélangé
         nouveau = appel(serveur.api_register, {"pseudo": "Dora Test", "password": "motdepasse1"})["token"]
-        r = appel(serveur.api_login, {"pseudo": "Dora Test", "password": "motdepasse1", "token": autre}, "10.2.0.2")
-        self.assertEqual(r["moved"], 1)
-        self.assertEqual(len(serveur.api_me(nouveau)["bets"]), 1)
+        old = serveur.WALLET_START
+        try:
+            serveur.WALLET_START = self.w.start                   # portefeuille reporté : l'invité garde ses paris
+            r = appel(serveur.api_login, {"pseudo": "Dora Test", "password": "motdepasse1", "token": autre}, "10.2.0.2")
+            self.assertEqual((r["moved"], r["left_behind"]), (0, 1))
+            serveur.WALLET_START = "2099-01-05"                   # semaines à 1 000 $ : repris par le compte
+            r = appel(serveur.api_login, {"pseudo": "Dora Test", "password": "motdepasse1", "token": autre}, "10.2.0.2")
+            self.assertEqual(r["moved"], 1)
+            self.assertEqual(len(serveur.api_me(nouveau)["bets"]), 1)
+        finally:
+            serveur.WALLET_START = old
 
     def test_limite_d_essais(self):
         appel(serveur.api_register, {"pseudo": "Eve Test", "password": "motdepasse1"})
@@ -543,6 +551,70 @@ class Classement(Base):
         s = serveur.api_leaderboard(joueur, "season")
         self.assertEqual(s["me"]["name"], "Hugo Test")
         self.assertIsNotNone(s["me"]["rank"])
+
+
+class Portefeuille(Base):
+    """Portefeuille qui suit le joueur (07/11/2026) : à partir de GC_WALLET_START le solde passe d'une semaine à
+    l'autre ; à 0 (et sans pari ouvert), une recharge de 1 000 $ ; le classement de la semaine ne voit que la semaine."""
+
+    def setUp(self):
+        ws = sorted(serveur._WEEKS.values(), key=lambda w: w.monday)
+        if len(ws) < 2:
+            self.skipTest("il faut deux semaines")
+        self.prev, self.cur = ws[-2], ws[-1]
+        self._start = serveur.WALLET_START
+        serveur.WALLET_START = self.prev.start
+
+    def tearDown(self):
+        serveur.WALLET_START = self._start
+
+    def refill(self, tok):
+        return appel(serveur.api_refill, {"token": tok})
+
+    def test_report_et_recharge(self):
+        g = next(x for x in sorted(self.prev.reg, key=lambda x: (x["ko"], x["id"]))
+                 if x["result"]["home"] != x["result"]["away"])
+        perd = "away" if g["result"]["home"] > g["result"]["away"] else "home"
+        gagne = "home" if perd == "away" else "away"
+        a_l_heure(g["ko"] - 120_000)
+        self.assertIs(serveur.current_week(), self.prev)
+        q = lambda side, stake: dict(self.pick(g["id"], "ml", side, stake=stake), title=g["id"])
+        ruine, sage = self.joueur("Ruiné")["token"], self.joueur("Sage")["token"]
+        for tok, side, stake in ((ruine, perd, 1000), (sage, gagne, 100)):
+            q1 = self.prev.quote(f"{g['id']}:ml:{side}", serveur.now_ms())
+            r = self.parier(tok, [{"key": f"{g['id']}:ml:{side}", "price_dec": q1["price_dec"], "line": None,
+                                   "stake": stake, "title": g["id"]}])
+            self.assertEqual(len(r["accepted"]), 1, r)
+        self.assertEqual(serveur.api_me(ruine)["balance"], 0)
+        self.assertEqual(self.refus(409, self.refill, ruine).detail, "open_bets")   # pari ouvert : pas encore
+        # semaine suivante : le solde est reporté, plus de remise à 1 000 $
+        a_l_heure(self.cur.reg[0]["ko"] - 120_000)
+        self.assertIs(serveur.current_week(), self.cur)
+        me = serveur.api_me(sage)
+        prix = next(b for b in serveur.api_history(sage, self.prev.start)["bets"])["price_dec"]
+        self.assertTrue(me["carry"])
+        self.assertAlmostEqual(me["base"], round(serveur.BANKROLL - 100 + 100 * prix, 2))
+        self.assertAlmostEqual(me["balance"], me["base"])
+        self.assertFalse(me["refill"]["ok"])
+        self.assertEqual(self.refus(409, self.refill, sage).detail, "not_empty")
+        me = serveur.api_me(ruine)
+        self.assertEqual((me["balance"], me["refill"]["ok"]), (0, True))
+        r = self.parier(ruine, [self.pick(self.cur.reg[0]["id"], stake=10)])
+        self.assertEqual(r["rejected"][0]["reason"], "balance")
+        r = self.refill(ruine)
+        self.assertEqual((r["ok"], r["balance"], r["base"]), (True, serveur.BANKROLL, serveur.BANKROLL))
+        self.assertEqual(self.refus(409, self.refill, ruine).detail, "not_empty")
+        r = self.parier(ruine, [self.pick(self.cur.reg[0]["id"], stake=10)])
+        self.assertEqual((len(r["accepted"]), r["balance"]), (1, serveur.BANKROLL - 10))
+        # le classement de la semaine ne voit que la semaine : la recharge n'y compte pas
+        lb = {x["name"]: x for x in serveur.api_leaderboard(ruine)["top"]}
+        self.assertAlmostEqual(lb["Ruiné"]["net"], -10)
+        # semaines d'avant GC_WALLET_START : 1 000 $ par semaine, pas de recharge
+        serveur.WALLET_START = "2099-01-05"
+        me = serveur.api_me(sage)
+        self.assertEqual((me["carry"], me["base"]), (False, serveur.BANKROLL))
+        self.assertEqual(self.refus(409, self.refill, sage).detail, "refill_off")
+        self.refus(401, self.refill, "inconnu")
 
 
 class Ajustement(Base):
