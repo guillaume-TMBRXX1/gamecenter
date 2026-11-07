@@ -39,8 +39,10 @@ PARAMS = {
     "ramasse_marge": 8.0,        # marge du blitzeur ramassé (il a l'élan, le bloqueur est en retard)
     "trafic": 0.8,               # s : retard au plus d'un blitzeur libre à travers le trafic
     "t_max": 8.0,
-    # droite temps simulé -> temps avant la pression du moteur, par nombre de rushers (3, 4, 5, 6 et plus)
-    "droite": {3: (0.0, 1.0), 4: (0.0, 1.0), 5: (0.0, 1.0), 6: (0.0, 1.0)},
+    # droite temps simulé -> temps avant la pression du moteur, par nombre de rushers (3, 4, 5, 6 et plus) ; calibrée
+    # le 07/11/2026 sur les 21 791 poches d'une semaine (même moyenne et même dispersion que le temps tiré d'avant ;
+    # à trois rushers, celle de quatre)
+    "droite": {3: (2.2127, 0.4826), 4: (2.2127, 0.4826), 5: (1.4665, 0.6421), 6: (-0.2193, 1.7853)},
 }
 VITESSE_POSTE = {"EDGE": 7.6, "DT": 6.8, "LB": 8.0, "S": 8.4, "CB": 8.6}
 PREFERENCE_RUSH = {"EDGE_RUSH": "edge", "INTERIOR_COLLAPSE": "interior", "INTERIOR_STUNT": "interior",

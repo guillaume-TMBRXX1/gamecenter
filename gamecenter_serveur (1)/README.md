@@ -2747,6 +2747,32 @@ Suite du programme (sections 95-96). Bloc 3 : la séparation d'un receveur au mo
   interceptions 2,44 % des passes lancées (2,90 et 2,62), sacks 6,75 par match (7,10 et 6,84), yards par tentative 7,20
   (7,24 et 7,04).
 
+### 98. Causal léger, bloc 4 : la poche (07/11/2026)
+Suite du programme (sections 95-97). Bloc 4 : le temps avant la pression.
+- **Avant** : le temps avant la pression était tiré (bloc A, `moteur/reaction_defensive.py` : base, niveau des unités,
+  rushers, appel, bruit — l'essentiel de sa dispersion), puis la poche (`moteur/poche.py`, étape 7.1) désignait le duel
+  perdu à cet instant. Un tackle dominant changeait qui arrivait, pas quand.
+- **Module** `moteur/poche_spatiale.py` (tests `moteur/tests/test_poche_spatiale.py`) : chaque duel de la passe
+  (`moteur.poche.affecter` : EDGE contre tackle, DT contre guard, centre qui double, blitzeurs pris par le centre, le RB
+  ou le TE, sinon libres) est joué au pas de 0,05 s : contact, défaite du bloc d'autant plus rapide que la marge du
+  rusher (pass_rush, force contre pass_block, force) est grande, enfoncement du bloqueur à l'intérieur, course jusqu'au
+  QB reculé à 7 yards ; le bord fait le tour (chemin plus long) ; une double équipe freine ; un blitzeur libre lit le
+  snap et fonce à sa vitesse à travers le trafic, parfois ramassé tard par une ligne qui glisse ; le jeu de rush avantage
+  le type de duel qu'il vise. Le premier rusher dans le rayon du QB fait la pression : c'est le duel perdu, les autres
+  cèdent à leur instant (forme de la poche, « collapse »). Son temps est ramené à l'échelle du moteur par une droite par
+  nombre de rushers : même moyenne et même dispersion que le temps tiré d'avant. Flux de hasard dédié (« poche-spatiale »).
+- **Branchement** : `moteur.poche.SIMULATION` (None : moteur d'avant à l'identique) ; `decider_passe` remplace le temps
+  avant la pression et donne les instants à la poche. Le reste ne change pas : décision et lecture du QB (bloc B),
+  réaction dans la poche, couverture (bloc 3), champs `play.pocket` du GameFeed (le dessin du site suit tel quel).
+  **Notebook 12.2 quattuortricies** (après 12.2 tritricies), contrôles : coupé, le moteur d'avant à l'identique ;
+  allumé, déterministe. Interrupteur `GC_POCHE_SPATIALE=0` ; `GC_PS_PARAMS` (JSON) pour la calibration.
+- **Calibration** (banc `outils/moteur/semaine_course_spatiale.py --bloc 4`, 21 791 poches d'une semaine enregistrées) ;
+  vérification sur d'autres graines, moteur d'avant → bloc 4 : complétion 64,9 → 64,4 %, interceptions 2,03 → 2,17 %,
+  sacks 8,41 → 8,34 % des passes décidées, yards par tentative 7,30 → 7,18 ; points par match 52,0 → 53,3 ; victoires
+  à domicile 0,533 → 0,493. Sur la semaine de calibration : complétion 64,9 → 64,2 %, sacks 8,46 → 8,33 %, points 52,3 →
+  52,3. Un décalage de la droite (+ 0,08 s) rendait la complétion (65,1 %) mais poussait les points à 55,0 : non retenu.
+__SEMAINE4__
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2924,7 +2950,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98).
 
 ## Test
 
