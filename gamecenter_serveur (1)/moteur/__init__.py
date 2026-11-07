@@ -115,6 +115,11 @@ def decider_passe(concept, formation, concept_defensif, receveurs, defenseurs, q
         prot = [roles[r] for r in dict.fromkeys(retire) if roles.get(r)]
         P = poche_mod.Poche(poche_mod.affecter(poche["ligne"], poche["rushers"], etat.rushers, prot),
                             flux(FLUX_POCHE, graine_match, numero_action), rush=(appel or {}).get("rush"))
+        if poche_mod.SIMULATION is not None:     # bloc 4 : les duels de protection joués sur le terrain
+            P.temps_sim, ttp = poche_mod.SIMULATION(P.duels, graine_match, numero_action, etat.rushers,
+                                                    (appel or {}).get("rush"), ancien=etat.temps_pression)
+            if ttp is not None:
+                etat.temps_pression = round(max(reaction_defensive.POCHE["min"], ttp), 2)
     decision = _QB.decide(etat, lectures, qb, rng, poche=P) if P is not None else _QB.decide(etat, lectures, qb, rng)
     if P is not None:
         decision.poche = P
