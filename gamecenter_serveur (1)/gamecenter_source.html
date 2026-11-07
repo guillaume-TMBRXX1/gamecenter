@@ -521,6 +521,9 @@
   .bal{font:700 34px/1 var(--f-display);font-variant-numeric:tabular-nums;margin-top:10px}
   .bal-sub{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--ink-3)}
   .delta{color:var(--cyan);font:600 12px var(--f-mono)}
+  .refill{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+  .refill p{margin:0;flex:1 1 100%}
+  .refill .chip-btn,.refill .cta{height:44px;width:auto;flex:1 1 auto;justify-content:center}
   .pl{margin-top:18px}
   .pl-bars{display:flex;gap:4px;height:70px;position:relative}
   .pl-bars::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line-2)}
@@ -2464,6 +2467,7 @@
       <div class="w-top"><span class="label">Balance</span><span class="label">Play money</span></div>
       <div class="bal" data-balance>$0.00</div>
       <div class="bal-sub"><span class="delta" id="balDelta">+$0.00</span><span>this week</span></div>
+      <div class="refill" id="refillBox" hidden></div>
       <div class="pl">
         <div class="pl-bars" id="plBars"></div>
         <div class="pl-days" id="plDays"></div>
@@ -8017,6 +8021,10 @@ function welcomeInit(){
    A bet settles by itself at the final whistle (futures once decided): moneyline tie = stake returned.
    Bets are kept in this browser (localStorage); preview time has its own wallet, separate from real time. */
 const BANKROLL=1000, MIN_STAKE=1;
+/* Wallet that follows the player (07/11/2026): on the server, from GC_WALLET_START, the balance carries from one week to
+   the next (WALLET_BASE = what the wallet held when this week opened, refills included). At 0 the player refills $1,000:
+   a click and a confirm for now, a rewarded video once Google AdSense is approved. */
+let WALLET_BASE=BANKROLL, WALLET_CARRY=false, REFILL_AMT=BANKROLL, REFILL_UI='';
 const SET_KEY='gc-settings-v1';
 const QUICK_SETS={s:[5,10,25,50],m:[10,25,50,100],l:[25,50,100,250]};
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
@@ -8169,7 +8177,7 @@ function ledger(t){
     if(r.st==='open'){ open++; atRisk+=r.stake; continue; }
     back+=r.ret; if(r.st==='won') won++; if(r.st==='lost') lost++;
     day[clamp(Math.floor((r.sat-WEEK_MON)/864e5),0,6)]+=r.ret-r.stake; }
-  return {rows,staked:r2(staked),back:r2(back),balance:r2(BANKROLL-staked+back),net:r2(back-(staked-atRisk)),won,lost,open,atRisk:r2(atRisk),day:day.map(r2)};
+  return {rows,staked:r2(staked),back:r2(back),balance:r2((SERVER?WALLET_BASE:BANKROLL)-staked+back),net:r2(back-(staked-atRisk)),won,lost,open,atRisk:r2(atRisk),day:day.map(r2)};
 }
 function placeable(t){ return t>=WEEK_OPEN&&t<WEEK_RESET; }
 
@@ -8408,7 +8416,7 @@ function seasonTotals(){
   document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(L.balance));
   if(QB_ON) qbSync(btn,rt);
   const fine=document.querySelector('#slipFoot .fine');
-  if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · $${BANKROLL.toLocaleString('en-US')} play money a week${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
+  if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · ${SERVER&&WALLET_CARRY?'play money, carried week to week':`$${BANKROLL.toLocaleString('en-US')} play money a week`}${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
 }
 function seasonPlace(){
   const btn=document.getElementById('place'), act=btn.dataset.act, t=nowMs();
@@ -8490,8 +8498,28 @@ function walletRender(t){
   document.getElementById('kpiBets').textContent=L.rows.length;
   document.getElementById('kpiHit').textContent=L.won+L.lost?Math.round(L.won/(L.won+L.lost)*100)+'%':'—';
   document.getElementById('kpiOpen').textContent=L.open;
+  refillRender(L);
   return L;
 }
+function refillCan(L){ return !!(SERVER&&WALLET_CARRY&&PLAYER&&PLAYER.token&&L.balance<MIN_STAKE&&!L.open); }
+function refillRender(L){
+  const box=document.getElementById('refillBox'); if(!box) return;
+  const on=refillCan(L); if(!on) REFILL_UI='';
+  const amt=money(REFILL_AMT).replace(/\.00$/,''), k=on+REFILL_UI;
+  if(box._k===k) return; box._k=k; box.hidden=!on; if(!on){ box.innerHTML=''; return; }
+  box.innerHTML = REFILL_UI==='busy' ? `<p>Refilling your wallet…</p>`
+    : REFILL_UI==='ask' ? `<p>Add ${amt} of play money to your wallet?</p><button class="cta" type="button" data-refill="go">Refill ${amt}</button><button class="chip-btn" type="button" data-refill="no">Cancel</button>`
+    : `<p>Your wallet is empty. Refill it to keep playing.</p><button class="chip-btn" type="button" data-refill="ask">Refill ${amt}</button>`;
+}
+async function refillGo(){
+  REFILL_UI='busy'; walletRender(nowMs());
+  try{ const r=await api('/wallet/refill',{method:'POST',body:JSON.stringify({token:PLAYER.token})});
+    WALLET_BASE=r.base; REFILL_UI=''; HIST.at=0; sfxUi('won'); toast(`Wallet refilled · ${money(r.amount)} of play money`); }
+  catch(e){ REFILL_UI=''; toastErr({open_bets:'Refill once your open bets are settled.',not_empty:'Your wallet is not empty yet.',refill_off:'Refills start with the carried-over wallet.'}[e.message]||`The wallet was not refilled: ${e.message}. Try again.`); }
+  BET_SIG=''; renderSlip(); walletRender(nowMs()); renderView(true);
+}
+document.addEventListener('click',e=>{ const b=SERVER&&e.target.closest&&e.target.closest('[data-refill]'); if(!b) return;
+  const a=b.dataset.refill; if(a==='go') refillGo(); else { REFILL_UI=a==='ask'?'ask':''; walletRender(nowMs()); } });
 let BET_SIG='';
 function betTick(t){
   /* preview time moved back: bets placed after the new time have not happened yet */
@@ -8532,9 +8560,9 @@ function renderBets(t){
       <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?betKind(r):r.sub)} · ${esc(betContext(r,t))}</small>${legsHTML(r,t)}</th>
       <td>${fmtO(r.price)}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]}</span></td>
       <td class="bt-ret">${r.st==='open'?money(r2(r.stake*betDec(r))):money(r.ret)}${r.st==='open'?'<small>to return</small>':''}</td><td><div class="bt-acts">${cashHTML(r,t)}${go}</div></td></tr>`; }).join('');
-  el.innerHTML=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${SW.week.index}</b> · $${BANKROLL.toLocaleString('en-US')} of play money · resets Monday 00:00 Brussels${CLOCK.demo?' · <b>preview wallet</b> (kept apart from real time)':''}</p>${SERVER?histSeg():''}</div>
+  el.innerHTML=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${SW.week.index}</b> · ${SERVER&&WALLET_CARRY?'play money · your balance carries over to next week':`$${BANKROLL.toLocaleString('en-US')} of play money · resets Monday 00:00 Brussels`}${CLOCK.demo?' · <b>preview wallet</b> (kept apart from real time)':''}</p>${SERVER?histSeg():''}</div>
     <div class="bt-kpis">
-      <div class="card bt-k"><span class="label">Balance</span><b>${money(L.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>
+      <div class="card bt-k"><span class="label">Balance</span><b>${money(L.balance)}</b><small>${SERVER&&WALLET_CARRY?`${money(WALLET_BASE)} when the week opened`:`of $${BANKROLL.toLocaleString('en-US')}`}</small></div>
       <div class="card bt-k"><span class="label">Settled P/L</span><b class="${L.net<0?'dn':'up'}">${sgn(L.net)}</b><small>${L.won} won · ${L.lost} lost</small></div>
       <div class="card bt-k"><span class="label">At risk</span><b>${money(L.atRisk)}</b><small>${L.open} open bet${L.open===1?'':'s'}</small></div>
       <div class="card bt-k"><span class="label">Hit rate</span><b>${hit}</b><small>${L.rows.length} bet${L.rows.length===1?'':'s'} placed</small></div>
@@ -8546,7 +8574,7 @@ function renderBets(t){
     </div>
     ${SERVER?`<div class="card bt-card"><div class="card-h"><h2>Leaderboard</h2><div class="seg" role="tablist" aria-label="Leaderboard">${[['week',`Week ${SW.week.index}`],['season','Season']].map(([k,l])=>`<button type="button" role="tab" data-lbscope="${k}" aria-selected="${LB.scope===k}">${l}</button>`).join('')}</div></div><div id="lbBox">${leaderboardHTML()}</div></div>`:''}
     <div class="card bt-rules"><span class="label">House rules</span><ul>
-      <li>$${BANKROLL.toLocaleString('en-US')} every Monday at 00:00 (Brussels). What is left of last week, and any bet still open, is lost at the reset.</li>
+      <li>${SERVER&&WALLET_CARRY?`You start with $${BANKROLL.toLocaleString('en-US')}. Your balance carries over from one week to the next. Once it is empty and no bet is open, refill it with $${REFILL_AMT.toLocaleString('en-US')} from the wallet card.`:`$${BANKROLL.toLocaleString('en-US')} every Monday at 00:00 (Brussels). What is left of last week, and any bet still open, is lost at the reset.`}</li>
       <li>Singles and combos, minimum $${MIN_STAKE}. Moneyline, spread and total before and during each game; futures between slots (singles only).</li>
       <li>Combos: 2 to 6 picks, one per game. Every pick must win; a pushed pick counts at 1.00 and the rest still pays.</li>
       <li>Cash out any open bet at its fair value minus 5 % (price taken ÷ price now, leg by leg). Not while a spread or total line has moved, nor on futures while games are live.</li>
@@ -9200,8 +9228,8 @@ function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),dec
   cash:b.cashed_at!=null?{at:b.cashed_at,amt:b.cashed_amt}:null}; }
 async function serverWalletLoad(){
   if(!PLAYER||!PLAYER.token){ WAL={bets:[]}; return; }
-  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.fav_team=me.fav_team||null; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account,fav_team:PLAYER.fav_team}); WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
-  catch(e){ if(e.status===401){ PLAYER=null; WAL={bets:[]}; try{ localStorage.removeItem(PLAYER_KEY); }catch(_){} BET_SIG=''; renderSlip(); renderView(true); } }
+  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.fav_team=me.fav_team||null; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account,fav_team:PLAYER.fav_team}); WALLET_BASE=me.base!=null?me.base:BANKROLL; WALLET_CARRY=!!me.carry; if(me.refill) REFILL_AMT=me.refill.amount; WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
+  catch(e){ if(e.status===401){ PLAYER=null; WAL={bets:[]}; WALLET_BASE=BANKROLL; try{ localStorage.removeItem(PLAYER_KEY); }catch(_){} BET_SIG=''; renderSlip(); renderView(true); } }
 }
 async function ensurePlayer(){
   if(PLAYER&&PLAYER.token) return PLAYER;
@@ -9266,14 +9294,14 @@ function pastHTML(){
   const head=`<div class="view-head"><h2>My bets</h2><p class="eyebrow"><b>Week ${w.index||''}</b> · ${esc(HIST.sel)} · final results</p>${histSeg()}</div>`;
   if(!d) return head+'<div class="card bt-card"><p class="st-none">Loading that week…</p></div>';
   if(d.error) return head+`<div class="card bt-card"><p class="st-none">That week could not be loaded: ${esc(d.error)}. Pick it again to retry.</p></div>`;
-  const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), net=r2(d.balance-BANKROLL);
+  const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), base=d.base!=null?d.base:BANKROLL, net=r2(d.balance-base);
   const hit=d.won+d.lost?Math.round(d.won/(d.won+d.lost)*100)+'%':'—';
   const tr=d.bets.slice().sort((a,b)=>b.pt-a.pt).map(r=>{ const legs=r.legs?{legs:r.legs.map(l=>({title:l.title,price:amOf(l.price_dec)}))}:{};
     return `<tr class="bt-${r.st}"><td class="tl bt-when">${esc(dStr(r.pt))}<small>${esc(tStr(r.pt))}</small></td>
       <th scope="row" class="tl"><span class="bt-t">${esc(r.title)}</span><small>${esc(r.legs?betKind(r):r.sub)}</small>${legsHTML(legs,0,true)}</th>
       <td>${fmtO(amOf(r.price_dec))}</td><td>${money(r.stake)}</td><td><span class="bt-st ${r.st}">${ST_LAB[r.st]||r.st}</span></td><td class="bt-ret">${money(r.ret)}</td></tr>`; }).join('');
   return head+`<div class="bt-kpis">
-      <div class="card bt-k"><span class="label">Final balance</span><b>${money(d.balance)}</b><small>of $${BANKROLL.toLocaleString('en-US')}</small></div>
+      <div class="card bt-k"><span class="label">Final balance</span><b>${money(d.balance)}</b><small>${base===BANKROLL?`of $${BANKROLL.toLocaleString('en-US')}`:`started at ${money(base)}`}</small></div>
       <div class="card bt-k"><span class="label">Week P/L</span><b class="${net<0?'dn':'up'}">${sgn(net)}</b><small>${d.won} won · ${d.lost} lost</small></div>
       <div class="card bt-k"><span class="label">Bets</span><b>${d.bets.length}</b><small>${d.open?d.open+' still open':'all settled'}</small></div>
       <div class="card bt-k"><span class="label">Hit rate</span><b>${hit}</b><small>won ÷ (won + lost)</small></div></div>
@@ -9290,13 +9318,16 @@ async function leaderboardLoad(force){
     LB.data[sc]=await api('/leaderboard?'+q); LB.at[sc]=Date.now(); const el=document.getElementById('lbBox'); if(el&&LB.scope===sc) el.innerHTML=leaderboardHTML(); }
   catch(e){} finally{ LB.busy=false; }
 }
+/* week boards rank this week's result only (net), never the carried-over wallet or a refill */
+function lbNet(r){ return r.net!=null?r.net:r2(r.balance-BANKROLL); }
+function lbSgn(v){ return v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)); }
 function leaderboardHTML(){
   const sc=LB.scope, d=LB.data[sc]; if(!d) return '<p class="st-none">Loading the leaderboard…</p>';
   if(sc==='week'){
     if(!d.top.length) return '<p class="st-none">Nobody has placed a bet this week yet: the first bet puts you on the board.</p>';
-    const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td>${money(r.balance)}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
+    const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${lbNet(r)<0?'dn':lbNet(r)>0?'up':''}">${lbSgn(lbNet(r))}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
     const mine=d.me&&!d.top.some(r=>r.me)?row(d.me):'';
-    return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Balance</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · balances include open bets at their stake</p>`;
+    return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Week P/L</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · this week’s bets only, open bets count at their stake</p>`;
   }
   const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v));
   const cta=PLAYER&&PLAYER.account?'':`<div class="lb-cta"><span>${PLAYER?'You play as a guest. Create an account to join the season leaderboard: your bets so far come with you.':'Create a free account to join the season leaderboard.'}</span><button class="chip-btn" type="button" data-view-go="settings">Create an account</button></div>`;
@@ -9391,10 +9422,10 @@ async function leagueForm(f){
 function lgTable(d){
   const sc=d.scope, sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), own=d.league.owner;
   const rows=d.rows.map(r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.owner?'<span class="lg-own" title="Created the league">★</span>':''}${r.me?' <span class="lb-you">you</span>':''}</th>
-    <td class="${sc==='season'?(r.net<0?'dn':r.net>0?'up':''):''}">${sc==='season'?sgn(r.net):money(r.balance)}</td><td>${sc==='season'?r.weeks:r.bets}</td><td>${r.won}–${r.lost}</td>
+    <td class="${(sc==='season'?r.net:lbNet(r))<0?'dn':(sc==='season'?r.net:lbNet(r))>0?'up':''}">${sc==='season'?sgn(r.net):lbSgn(lbNet(r))}</td><td>${sc==='season'?r.weeks:r.bets}</td><td>${r.won}–${r.lost}</td>
     ${own?`<td>${r.me?'':`<button type="button" class="lg-x" data-lg="${LG.confirm==='kick:'+r.id?'kick':'confirm'}" data-arg="${LG.confirm==='kick:'+r.id?esc(r.id):'kick:'+esc(r.id)}" title="Remove ${esc(r.name)}" aria-label="Remove ${esc(r.name)}">${LG.confirm==='kick:'+r.id?'Remove?':'×'}</button>`}</td>`:''}</tr>`).join('');
-  return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Member</th><th>${sc==='season'?'Net P/L':'Balance'}</th><th>${sc==='season'?'Weeks':'Bets'}</th><th>W–L</th>${own?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="np-note">${sc==='season'?'Net winnings added up over the season · a bet counts once it is settled':'This week’s wallets · balances include open bets at their stake'} · members without a bet come last, without a rank</p>`;
+  return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Member</th><th>${sc==='season'?'Net P/L':'Week P/L'}</th><th>${sc==='season'?'Weeks':'Bets'}</th><th>W–L</th>${own?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="np-note">${sc==='season'?'Net winnings added up over the season · a bet counts once it is settled':'This week’s bets only · open bets count at their stake'} · members without a bet come last, without a rank</p>`;
 }
 function renderLeagues(t){
   const el=document.getElementById('viewLeagues'); if(!el) return;

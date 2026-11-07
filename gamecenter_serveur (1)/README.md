@@ -2833,6 +2833,26 @@ Suite de l'étape 4 (section 99), pour le bloc 2 (course après la réception, s
   de test `outils/site/matchs/sim-courses.json`, remplacé par un match qui porte les deux traces) ; courses simulées
   47 / 48 ; aucun saut (31,2 yd/s au 99e centile).
 
+### 102. Portefeuille qui suit le joueur et recharge (07/11/2026)
+Avant : 1 000 $ chaque lundi, le reste de la semaine perdu. Maintenant (serveur seulement), le solde passe d'une semaine à
+l'autre.
+- **Report** : à partir de la semaine `GC_WALLET_START` (défaut `2026-11-09`), le portefeuille au début d'une semaine =
+  1 000 $ + gains nets des semaines précédentes depuis cette date (un pari encore ouvert compte pour sa mise) + recharges
+  (`wallet_base`, `serveur.py`). Les semaines plus anciennes gardent leur règle et ne comptent pas : aucun solde négatif
+  hérité de l'ancien système.
+- **Recharge** : `POST /api/wallet/refill {token}` ajoute 1 000 $ (`REFILL`) quand le solde est sous la mise minimale et
+  qu'aucun pari n'est ouvert (sinon 409 `not_empty`, `open_bets`, ou `refill_off` avant `GC_WALLET_START`). Table
+  `refills` (joueur, semaine, instant, montant, `via`). Dans la page : bouton « Refill $1,000 » sur la carte du
+  portefeuille, puis confirmation. Quand Google AdSense aura validé le site, la confirmation sera remplacée par une
+  vidéo récompensée (`via = video`).
+- **Classements** : la semaine (générale et ligues) se classe sur son propre résultat, colonne « Week P/L » (`net`) ;
+  ni le report ni une recharge n'y comptent. La saison ne change pas (somme des gains nets).
+- **Connexion** : dans les semaines du portefeuille reporté, les paris d'un invité ne passent plus sur un compte existant
+  (deux portefeuilles ne se mélangent pas) ; créer un compte sur la clé de l'invité garde tout, comme avant.
+- `/api/me` renvoie aussi `base`, `carry` et `refill {amount, ok}` ; `/api/history` renvoie `base` par semaine.
+- Mode sans serveur (page seule, stockage du navigateur) : inchangé, 1 000 $ par semaine.
+- Test : `moteur/tests/test_serveur.py`, `Portefeuille`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -2977,7 +2997,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/api/delta?have=id:n,…` | état public + actions nouvelles |
 | POST | `/api/players` | nouvelle clé de joueur `{token, name}` |
 | POST | `/api/players/me` | changer de nom `{token, name}` |
-| GET | `/api/me?token=` | paris de la semaine et solde |
+| GET | `/api/me?token=` | paris de la semaine et solde (portefeuille reporté : `base`, `carry`, `refill`) |
+| POST | `/api/wallet/refill` | `{token}` → recharge de 1 000 $ quand le solde est vide et aucun pari ouvert (section 102) |
 | POST | `/api/bets` | `{token, picks:[{key, price_dec, line, stake, title, sub}]}` → acceptés / refusés (et pourquoi) |
 | GET | `/api/leaderboard` | classement de la semaine |
 | GET | `/api/backup?key=` | sauvegarde .zip (base + semaines), si `GC_ADMIN_KEY` est définie |
@@ -3010,7 +3031,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102).
 
 ## Test
 
