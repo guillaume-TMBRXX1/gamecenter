@@ -14,7 +14,10 @@
 #   - ni actions longues ni rabot pour ces courses (l'échappée vient de la simulation) ; le terme de contact du bloc F
 #     (K_CONTACT) est coupé (la simulation joue ce duel).
 # Hasard : flux « course-spatiale|<graine>|<n° d'action> » (le hasard du moteur n'est pas consommé).
-# Journal (additif) : run.spatial = {contact, apres, manques, sortie, td, plaqueur}.
+# Journal (additif) : run.spatial = {contact, apres, manques, sortie, td, plaqueur}. GameFeed (additif, 07/11/2026) :
+# play.geo.sim = la trace de la simulation pour le dessin du site (moteur.course_spatiale.trace_compacte : porteur et
+# défenseurs proches tous les 0,2 s depuis le contact, x depuis la ligne de mêlée, y en travers ; plaquages manqués et
+# réussi : [instant, défenseur, 0 / 1]).
 # Interrupteur COURSE_SPATIALE_ENABLED (GC_COURSE_SPATIALE=0 : moteur d'avant, à l'identique, contrôlé ci-dessous).
 
 import importlib as _cs_il
@@ -63,9 +66,10 @@ def _apply_archetype_modifier(play, carrier, random_engine):
         ACTIONS_LONGUES_ENABLED = garde
     but = 100 - (_AL_CTX.get("ligne") if _AL_CTX.get("n") == c["n"] else c.get("ligne", 25))
     r = CS.apres_contact(_rf_joueur(carrier), _rf_defense(c["de"]), _CS_NIVEAU.get(e["contact"], "linebacker"),
-                         play.yards_gained, _cs_y0(e), e.get("plaqueur"), but, c["g"], c["n"])
+                         play.yards_gained, _cs_y0(e), e.get("plaqueur"), but, c["g"], c["n"], trace=True)
     play.yards_gained = r["yards"]
     e["spatial"] = {k: r[k] for k in ("contact", "apres", "manques", "sortie", "td", "plaqueur")}
+    e["spatial_trace"] = CS.trace_compacte(r)          # le dessin du site (play.geo.sim) : porteur, défenseurs, plaquages
     if r["plaqueur"]:
         e["plaqueur"] = r["plaqueur"]                  # le plaqueur crédité (12.2 quindecies) est celui qui l'arrête
     return play, info
@@ -77,9 +81,13 @@ def advance_game_clock(game_clock, seconds_elapsed):
     c = _RF_CTX
     e = c.get("etat")
     if e is not None and e.get("spatial") and c.get("n") is not None and len(c.get("log") or []) > c["n"]:
-        run = c["log"][c["n"]].get("run")
+        ent = c["log"][c["n"]]
+        run = ent.get("run")
         if run is not None and "spatial" not in run:
             run["spatial"] = dict(e["spatial"])
+            geo = ent.get("geo_run")
+            if geo is not None and e.get("spatial_trace"):   # export du dessin (12.2 tricies : geo_run -> play.geo)
+                geo["sim"] = e["spatial_trace"]
     return r
 
 

@@ -74,6 +74,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : coups d'envoi et retours" node outils/site/test_retours.js
   lancer "Site : punts et retours" node outils/site/test_punts.js
   lancer "Site : jeu de course dessiné (bloc F)" node outils/site/test_courses.js
+  lancer "Site : course après le contact simulée par le moteur (play.geo.sim)" node outils/site/test_courses_simulees.js
   lancer "Site : dessin naturel des actions (passes, réception, interception, plaqueur, sauts)" node outils/site/test_actions.js
   lancer "Site : horloge continue, chrono des 40 s, temps morts" node outils/site/test_horloge.js
   lancer "Site : checks avant le snap (audible, motion, défense qui se décale)" node outils/site/test_audibles.js
