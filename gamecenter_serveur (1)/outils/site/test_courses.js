@@ -6,7 +6,8 @@
 // Vérifie, course par course : au snap, autant de défenseurs dans la boîte (moins de 7 yards de la ligne, ± 7,5 yards du
 // ballon) que le moteur ; le porteur passe par le côté choisi (gauche / droite de l'attaque) ; cutback : il finit de
 // l'autre côté du trou ; rebond : il passe plus large que le trou ; le plaqueur (anneau rouge) est sur le porteur à la
-// fin de l'action et il est du bon niveau (ligne, linebackers, secondaire) ; aucune erreur JS.
+// fin de l'action et il est du bon niveau (ligne, linebackers, secondaire) — sauf une course dessinée depuis la
+// simulation du moteur (play.geo.sim) : son plaqueur est celui qui l'a arrêté ; aucune erreur JS.
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), os=require('os'), {spawn}=require('child_process');
 const ROOT=path.resolve(__dirname,'..','..'), WEEKS=path.resolve(process.argv[2]||path.join(ROOT,'data','weeks')), PORT=8138;
@@ -72,7 +73,7 @@ async function server(){
           o.box=g.def.filter(q=>(q.x-L)*d<7&&Math.abs(q.y-by)<=7.5).length;
           const rb=pl.off[7], at=t=>{ for(let j=1;j<rb.length;j++) if(rb[j][0]>=t) return rb[j]; return rb[rb.length-1]; };
           o.side=Math.sign(pl.hole-by)||0; o.by=by; o.hole=pl.hole;
-          o.ys=rb.map(q=>q[2]); o.end=pl.spot; o.stop=pl.stop?{i:pl.stop.i,at:pl.stop.at}:null;
+          o.ys=rb.map(q=>q[2]); o.end=pl.spot; o.stop=pl.stop?{i:pl.stop.i,at:pl.stop.at}:null; o.sim=!!pl.sim;
           o.carrier7=pl.carrier.some(c=>c[3]===7&&c[2]==='off'); o.dl=null;
         }
         if(P0&&P0.run&&ph==='play'&&g.phase!=='play'&&out[P0.seq]&&!out[P0.seq].fin){   /* the end of the play */
@@ -99,7 +100,9 @@ async function server(){
     const tk=C.filter(o=>!o.td&&o.run.contact), tkKo=tk.filter(o=>!o.stop||o.dist==null||o.dist>2.5);
     check(tk.length>0&&tkKo.length<=Math.ceil(tk.length*0.05),`le plaqueur (anneau rouge) est sur le porteur à la fin : ${tk.length-tkKo.length} / ${tk.length}`);
     const lvl={line:[0,1,2,3,4,5,8],'second level':[4,5,8],secondary:[6,7,9,10]};
-    const lvKo=tk.filter(o=>o.stop&&!lvl[o.run.contact].includes(o.stop.i));
+    /* a run drawn from the engine's simulation (play.geo.sim, 07/11/2026): the tackler is whoever brought him down in
+       the simulation, at any level — only the drawing before it keeps the level of the first contact */
+    const lvKo=tk.filter(o=>o.stop&&!o.sim&&!lvl[o.run.contact].includes(o.stop.i));
     check(!lvKo.length,`le plaqueur est du bon niveau (ligne, linebackers, secondaire)`+(lvKo.length?` : ${lvKo.length} écarts`:''));
     check(R.status==='final','match rejoué jusqu\'au bout');
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs[0]:''));

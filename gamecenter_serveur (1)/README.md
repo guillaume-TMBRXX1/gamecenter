@@ -2777,6 +2777,31 @@ Suite du programme (sections 95-97). Bloc 4 : le temps avant la pression.
   interceptions 2,75 % des passes lancées (2,90 et 2,62), sacks 6,51 par match (7,10 et 6,84), yards par tentative 7,07
   (7,24 et 7,04).
 
+### 99. Trajectoires du moteur, étape 4 : la course simulée dessinée (07/11/2026)
+Le causal léger (sections 95-98) décide des résultats sur le terrain, mais le site redessinait l'action à partir du seul
+résultat : la différence ne se voyait pas. Étape 4, les courses (bloc 1) :
+- **Moteur** : `moteur/course_spatiale.py` garde, quand on le lui demande (`trace=True`, sans changer aucun tirage ni
+  résultat), la trace complète de la simulation après le contact ; `trace_compacte` la résume pour le GameFeed : le
+  porteur et les défenseurs passés à moins de 5 yards de lui (ou qui ont tenté un plaquage) tous les 0,2 s, x depuis la
+  ligne de mêlée, y en travers, et chaque plaquage tenté `[instant, défenseur, 1 réussi / 0 manqué]` (sur un touchdown,
+  personne ne l'arrête). **Notebook 12.2 untricies** : `play.geo.sim` (additif, ≈ 410 octets par course, ≈ + 5 % de
+  GameFeed). Semaine de test : 1 736 des 1 759 courses du bloc F ont leur trace ; mêmes matchs qu'avant (audit identique).
+- **Site** (et cellule 427) : `geoOf` lit `play.geo.sim` (défenseurs par identifiant, comme aux étapes 1-3) ; `simRun`
+  prend le relais du dessin quand le porteur atteint la profondeur du contact (au plus tard quand la simulation a encore
+  le temps d'écran de se jouer à son rythme) : il suit le chemin simulé, décalé de sa position dessinée au contact vers le
+  point du feed à la fin ; chaque défenseur de la simulation rejoint son chemin simulé assez tôt pour y être au contact
+  sans dépasser `FL_VMAX` (sinon après le contact, le temps de combler l'écart), puis le suit ; un plaquage manqué est un
+  éclat bref, couleur de l'attaque, sur le défenseur (ou sur le porteur, de son côté, quand le dessin n'a pas pu l'amener
+  si près à temps) ; celui qui l'arrête a l'anneau rouge. Sans `play.geo.sim` (semaines d'avant), le dessin d'avant.
+- **Tests** : `outils/site/test_courses_simulees.js` (match de test `outils/site/matchs/sim-courses.json`) : 39 des 41
+  courses du match dessinées depuis la simulation, le porteur sur le chemin simulé et sur le point du feed, un éclat par
+  plaquage manqué à côté du porteur, l'anneau rouge sur le plaqueur, rien sans la trace ; `test_courses.js` : le plaqueur
+  d'une course simulée est celui qui l'a arrêté, à n'importe quel niveau ; `test_actions.js` : aucun saut (37,2 yd/s au
+  99e centile). Moteur : `moteur/tests/test_course_spatiale.py` (la trace ne change rien, format compact).
+- **À corriger ensuite (bloc 1)** : quand plusieurs défenseurs sont devant lui, l'évitement du porteur le fait parfois
+  reculer (2,5 % des courses perdent plus d'un yard après le contact, jusqu'à − 23) ; le dessin le montre tel quel. Un
+  plancher sur l'avancée du porteur le corrige, avec un petit recalibrage.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

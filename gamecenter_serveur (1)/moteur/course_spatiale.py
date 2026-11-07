@@ -360,4 +360,5 @@ def trace_compacte(r, depart_x=0.0, pas=2, rayon=5.0, dt=None):
         proche = any(math.hypot(pts[k][0] - tr["c"][k][0], pts[k][1] - tr["c"][k][1]) < rayon for k in range(min(len(pts), n)))
         if proche or i in acteurs:
             d.append([i, [rd(pts[min(k, len(pts) - 1)]) for k in garde]])
-    return {"dt": round(dt, 2), "c": c, "d": d, "ev": [[e[0], e[1], e[2]] for e in tr["ev"]]}
+    ev = [[e[0], e[1], e[2]] for e in tr["ev"] if not (r.get("td") and e[2] == 1)]   # touchdown : personne ne l'arrête
+    return {"dt": round(dt, 2), "c": c, "d": d, "ev": ev}

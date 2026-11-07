@@ -84,5 +84,30 @@ class Hasard(unittest.TestCase):
         self.assertGreater(len(set(a)), 3)
 
 
+class Trace(unittest.TestCase):
+    """Export du dessin (play.geo.sim, 07/11/2026) : la trace ne change rien au résultat ; format compact."""
+
+    def test_meme_resultat(self):
+        for k in range(60):
+            a = CS.apres_contact(_porteur(), _defense(), "linebacker", 6, 26.0, "D4", 60, 13, k)
+            b = CS.apres_contact(_porteur(), _defense(), "linebacker", 6, 26.0, "D4", 60, 13, k, trace=True)
+            self.assertEqual((a["yards"], a["plaqueur"], a["manques"]), (b["yards"], b["plaqueur"], b["manques"]))
+
+    def test_format_compact(self):
+        for k in range(60):
+            r = CS.apres_contact(_porteur(95, 90, 95), _defense(tackling=64), "linebacker", 6, 26.0, "D4", 14, 13, k, trace=True)
+            t = CS.trace_compacte(r)
+            self.assertEqual(t["dt"], 0.2)
+            self.assertGreaterEqual(len(t["c"]), 2)
+            ids = {d[0] for d in t["d"]}
+            for i, pts in t["d"]:
+                self.assertEqual(len(pts), len(t["c"]))
+            for tt, i, ok in t["ev"]:
+                self.assertIn(i, ids)                    # chaque plaquage tenté a son défenseur dans la trace
+            self.assertEqual(sum(1 for e in t["ev"] if e[2] == 0), r["manques"])
+            self.assertEqual([e[1] for e in t["ev"] if e[2] == 1], [r["plaqueur"]] if r["plaqueur"] else [])
+        self.assertIsNone(CS.trace_compacte(CS.apres_contact(_porteur(), _defense(), "ligne", 2, 26.0, "D4", 60, 13, 1)))
+
+
 if __name__ == "__main__":
     unittest.main()
