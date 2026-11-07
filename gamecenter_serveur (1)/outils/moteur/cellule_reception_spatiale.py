@@ -13,7 +13,10 @@
 #     le plaqueur crédité est celui qui l'arrête ;
 #   - ni actions longues ni rabot pour ces passes (la longue course après la réception vient de la simulation).
 # Hasard : flux « reception-spatiale|<graine>|<n° d'action> » (le hasard du moteur n'est pas consommé).
-# Journal (additif) : decision.yac = {air, apres, manques, sortie, td, plaqueur}.
+# Journal (additif) : decision.yac = {air, apres, manques, sortie, td, plaqueur}. GameFeed (additif, 07/11/2026) :
+# play.geo.sim = la trace de la simulation pour le dessin du site (moteur.course_spatiale.trace_compacte : receveur et
+# défenseurs proches tous les 0,2 s depuis la réception, x depuis la ligne de mêlée, y en travers ; plaquages manqués et
+# réussi : [instant, défenseur, 0 / 1]).
 # Interrupteur RECEPTION_SPATIALE_ENABLED (GC_RECEPTION_SPATIALE=0 : moteur d'avant, à l'identique, contrôlé ci-dessous).
 
 import importlib as _rs_il
@@ -91,8 +94,11 @@ def _apply_qb_pass_modifier(play, qb, random_engine):
         sep, couvreur = (rec[1], rec[3]) if rec else (1.5, None)
         air, sens, cassure = _rs_route(c["dec"])
         r = CS.apres_reception(_rf_joueur(c["carrier"]), _rs_defense(c["de"], couvreur), air, play.yards_gained,
-                               geo["tgt"], sens, cassure, couvreur, sep, 100 - c["ligne"], c["g"], c["n"])
+                               geo["tgt"], sens, cassure, couvreur, sep, 100 - c["ligne"], c["g"], c["n"], trace=True)
         play.yards_gained = r["yards"]
+        tr = CS.trace_compacte(r)                      # le dessin du site (play.geo.sim) : receveur, défenseurs, plaquages
+        if tr:
+            geo["sim"] = tr
         c["res"] = {k: r[k] for k in ("air", "apres", "manques", "sortie", "td", "plaqueur")}
     return play, info
 
