@@ -18,8 +18,9 @@
 # Le reste ne change pas (avantages de couverture, bruit, checkdown, double, blocs B-D). Hasard : flux
 # « couverture-spatiale|<graine>|<action>|<rôle> » (le hasard du moteur n'est pas consommé).
 # GameFeed (additif, trajectoires étape 6, 07/11/2026) : play.geo.cov = la trace de chaque duel pour le dessin du site
-# (moteur.couverture_spatiale.trace_compacte) : {"dt": 0,2, "r": [[rôle, cassure (s), presse 0 / 1, défenseur, chemin du
-# receveur, chemin du défenseur], …]}, du snap à la fenêtre, x depuis la ligne de mêlée, y en travers (repères du moteur).
+# (moteur.couverture_spatiale.trace_compacte) : {"dt": 0,3, "r": [[rôle, cassure (s), presse 0 / 1, défenseur, chemin du
+# receveur, chemin du défenseur], …]}, du snap à la fenêtre, x depuis la ligne de mêlée, y en travers (repères du moteur),
+# en dixièmes de yard (entiers).
 # Interrupteur COUVERTURE_SPATIALE_ENABLED (GC_COUVERTURE_SPATIALE=0 : moteur d'avant, à l'identique, contrôlé ci-dessous).
 
 import importlib as _cv_il
@@ -65,7 +66,7 @@ def _DECISION_PASS_HOOK(offense_team, defense_team, chosen, def_concept, u_off, 
     if geo and _CV_TR:
         r = [[x[0]] + _CV_TR[x[0]] for x in geo.get("rec") or [] if _CV_TR.get(x[0])]
         if r:
-            geo["cov"] = {"dt": round(CV.DT * 4, 2), "r": r}
+            geo["cov"] = {"dt": round(CV.DT * 6, 2), "r": r}
     _CV_TR.clear()
     return play, dec
 

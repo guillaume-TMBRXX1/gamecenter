@@ -288,10 +288,10 @@ def en_pas(yards, famille, classe, role=None, params=PARAMS):
     return a + b * yards
 
 
-def trace_compacte(det, pas=4):
+def trace_compacte(det, pas=6):
     """play.geo.cov d'un receveur (dessin du site) : [casse, presse, défenseur, chemin du receveur, chemin du défenseur],
-    un point tous les pas × DT secondes (et le dernier), x depuis la ligne, y en travers, au dixième de yard ; None sans
-    trace."""
+    un point tous les pas × DT secondes (et le dernier), x depuis la ligne, y en travers, en dixièmes de yard (entiers :
+    le GameFeed reste léger) ; None sans trace."""
     tr = (det or {}).get("trace")
     if not tr or len(tr["r"]) != len(tr["d"]) or len(tr["r"]) < 2:
         return None
@@ -299,7 +299,7 @@ def trace_compacte(det, pas=4):
     ks = list(range(0, n, pas))
     if ks[-1] != n - 1:
         ks.append(n - 1)
-    pt = lambda q: [round(q[0], 1), round(q[1], 1)]
+    pt = lambda q: [int(round(q[0] * 10)), int(round(q[1] * 10))]
     casse = det.get("casse")
     return [None if casse is None else round(casse, 2), 1 if tr["presse"] else 0, tr.get("id"),
             [pt(tr["r"][k]) for k in ks], [pt(tr["d"][k]) for k in ks]]

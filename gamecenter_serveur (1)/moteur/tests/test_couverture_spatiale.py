@@ -121,6 +121,7 @@ class Trace(unittest.TestCase):
         self.assertEqual(len(c[3]), len(c[4]))
         self.assertGreaterEqual(len(c[3]), 3)
         r, d = det["trace"]["r"][-1], det["trace"]["d"][-1]
-        self.assertEqual(c[3][-1], [round(r[0], 1), round(r[1], 1)])
-        self.assertEqual(c[4][-1], [round(d[0], 1), round(d[1], 1)])
+        self.assertEqual(c[3][-1], [round(r[0] * 10), round(r[1] * 10)])
+        self.assertEqual(c[4][-1], [round(d[0] * 10), round(d[1] * 10)])
+        self.assertTrue(all(isinstance(v, int) for q in c[3] + c[4] for v in q))
         self.assertIsNone(CV.trace_compacte({"t": 1.0}))
