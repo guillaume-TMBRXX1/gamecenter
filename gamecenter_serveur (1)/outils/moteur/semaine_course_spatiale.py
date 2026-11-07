@@ -22,7 +22,8 @@ import rapport_calibration as rc     # noqa: E402
 
 BLOCS = {1: ("12.2 tricies", "12.2 untricies", "cellule_course_spatiale.py", "GC_COURSE_SPATIALE", "GC_CS_PARAMS"),
          2: ("12.2 untricies", "12.2 duotricies", "cellule_reception_spatiale.py", "GC_RECEPTION_SPATIALE", "GC_RS_PARAMS"),
-         3: ("12.2 duotricies", "12.2 tritricies", "cellule_couverture_spatiale.py", "GC_COUVERTURE_SPATIALE", "GC_CV_PARAMS")}
+         3: ("12.2 duotricies", "12.2 tritricies", "cellule_couverture_spatiale.py", "GC_COUVERTURE_SPATIALE", "GC_CV_PARAMS"),
+         4: ("12.2 tritricies", "12.2 quattuortricies", "cellule_poche_spatiale.py", "GC_POCHE_SPATIALE", "GC_PS_PARAMS")}
 BLOC = [1]
 _NS = {}
 

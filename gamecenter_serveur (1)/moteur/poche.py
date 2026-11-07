@@ -46,6 +46,10 @@ REACTION = {
     "sort": {"base": 0.14, "mob": 0.012, "pa": 0.006, "collapse": 0.12, "min": 0.03, "max": 0.70,
              "gain": (0.50, 0.90)},                                                              # escape
 }
+# causal léger, bloc 4 (moteur.poche_spatiale, branché par le notebook 12.2 quattuortricies) : None -> temps avant la
+# pression tiré (moteur d'avant) ; sinon SIMULATION(duels, graine, n, rushers, rush) -> (instant de chaque duel, temps
+# avant la pression) ; ancien= : le temps tiré d'avant. Les duels joués sur le terrain donnent le temps et le duel perdu
+SIMULATION = None
 AVANCE = 0.12                    # la pression arrive d'autant plus tôt : compense le temps gagné en réagissant (calibration)
 EN_COURANT = {"inc": 1.10, "int": 1.08, "classes": ("court", "moyen")}   # lancer en courant : précision, routes
 FIN_HORS_POCHE = {"throwaway": 1.4, "scramble": 1.3, "sack": 1.0}        # sorti de la poche : il peut jeter le ballon
@@ -124,6 +128,7 @@ class Poche:
         self.duels, self.ttp, self.rng, self.rush = duels, None, rng, rush
         self.premier, self.second, self.forme, self.cote = None, None, "clean", None
         self.reaction = None
+        self.temps_sim = None                    # bloc 4 : instant où chaque rusher atteint le QB (simulation)
 
     def armer(self, ttp):
         """Le temps avant la pression du QB (bloc B : poche, pocket awareness) : quel duel cède alors, et les suivants."""
@@ -133,6 +138,13 @@ class Poche:
 
     def _pression(self):
         if not self.duels:
+            return
+        if self.temps_sim:                       # bloc 4 : le premier arrivé est le duel perdu, les autres à leur instant
+            t0 = min(self.temps_sim)
+            i0 = self.temps_sim.index(t0)
+            for i, d in enumerate(self.duels):
+                d["t"] = round(self.ttp + (self.temps_sim[i] - t0), 2)
+            self._forme(i0)
             return
         pref = RUSH_COTE.get(self.rush or "")
         w = []
@@ -157,6 +169,9 @@ class Poche:
             else:
                 moy = SECOND["base"] * math.exp(-_borne(d["marge"], -30.0, 30.0) / SECOND["echelle"])
                 d["t"] = round(self.ttp + self.rng.expovariate(1.0 / max(0.1, moy)), 2)
+        self._forme(i0)
+
+    def _forme(self, i0):
         self.premier = self.duels[i0]
         autres = sorted((d for d in self.duels if d is not self.premier), key=lambda d: d["t"])
         self.second = autres[0] if autres else None
