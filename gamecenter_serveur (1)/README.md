@@ -2798,9 +2798,23 @@ résultat : la différence ne se voyait pas. Étape 4, les courses (bloc 1) :
   plaquage manqué à côté du porteur, l'anneau rouge sur le plaqueur, rien sans la trace ; `test_courses.js` : le plaqueur
   d'une course simulée est celui qui l'a arrêté, à n'importe quel niveau ; `test_actions.js` : aucun saut (37,2 yd/s au
   99e centile). Moteur : `moteur/tests/test_course_spatiale.py` (la trace ne change rien, format compact).
-- **À corriger ensuite (bloc 1)** : quand plusieurs défenseurs sont devant lui, l'évitement du porteur le fait parfois
-  reculer (2,5 % des courses perdent plus d'un yard après le contact, jusqu'à − 23) ; le dessin le montre tel quel. Un
-  plancher sur l'avancée du porteur le corrige, avec un petit recalibrage.
+- **Corrigé ensuite (section 100)** : quand plusieurs défenseurs étaient devant lui, l'évitement du porteur le faisait
+  parfois reculer ; le dessin le montrait tel quel.
+
+### 100. Causal léger : le porteur ne recule plus (07/11/2026)
+Constat (étape 4, section 99, le dessin le rendait visible) : devant plusieurs défenseurs, l'évitement du porteur de la
+simulation (`moteur/course_spatiale.py`, boucle commune aux blocs 1 et 2) pouvait l'emmener en arrière : 2,5 % des
+courses perdaient plus d'un yard après le contact, jusqu'à − 23.
+- **Correction** : `avance_min` (0,2) — sa direction garde toujours une part vers l'en-but : il esquive, glisse de côté,
+  ne recule jamais (test `moteur/tests/test_course_spatiale.py`, `Avance`). Réception (bloc 2) : presque aucun receveur
+  ne reculait, aucun recalibrage (yards par passe complétée 11,33 → 11,38 sur la semaine enregistrée).
+- **Bloc 1 recalé** (réglage hors moteur, recherche locale autour des réglages du 06/11, sur les 11 869 courses
+  enregistrées) : yards par course 6,12 (cible 6,11), courses ≤ 0 11,0 % (11,8), 20+ 2,8 % (2,45), 40+ 0,45 % (0,44) ;
+  écart entre le quart le mieux noté et le moins bien noté des porteurs : 1,3 yard.
+- **Semaine de test** (même semaine du 09/11, mêmes graines, avant → après) : courses de − 3 yards ou pire 2,6 → 1,3 %, la
+  pire − 26 → − 9 ; yards par course 5,88 → 5,93 ; courses ≤ 0 12,2 → 12,2 % ; 20+ 2,7 → 2,5 % ; points par match 50,8 →
+  52,3 ; victoires à domicile 0,507 → 0,502 ; 35 min 40 s ; audit : 0 anomalie bloquante (une alerte connue : une course
+  sans porteur désigné, cas rare d'avant le chantier).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
