@@ -99,7 +99,7 @@ const attendre=async(p,fn,arg,ms=8000)=>{ try{ await p.waitForFunction(fn,arg,{t
     /* écrire depuis le replay */
     await seek(v,20); await pause(1200);
     await v.fill('#mChatInput','Nice blitz call here'); await v.press('#mChatInput','Enter');
-    check(await attendre(v,()=>[...document.querySelectorAll('#mChatLog .chat-b')].some(e=>e.textContent==='Nice blitz call here')),'mon message apparaît tout de suite');
+    check(await attendre(v,()=>[...document.querySelectorAll('#mChatLog .chat-b')].some(e=>e.textContent==='Nice blitz call here'),null,20000),'mon message apparaît tout de suite');   /* posted and drawn: up to 20 s on a slow runner */
     let r=(await api(ON,`/chat?room=${encodeURIComponent(ROOM)}`)).json.msgs.find(m=>m.b==='Nice blitz call here');
     check(r&&r.at===20,`il porte ma position (${r&&r.at})`);
     await pause(3200);

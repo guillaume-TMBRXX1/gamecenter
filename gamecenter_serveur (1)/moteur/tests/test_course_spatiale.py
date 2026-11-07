@@ -84,6 +84,16 @@ class Hasard(unittest.TestCase):
         self.assertGreater(len(set(a)), 3)
 
 
+class Avance(unittest.TestCase):
+    """07/11/2026 : devant plusieurs défenseurs, l'évitement le faisait reculer (jusqu'à − 23 yards) ; il ne recule plus."""
+
+    def test_ne_recule_jamais(self):
+        for k in range(200):
+            r = CS.apres_contact(_porteur(70, 65, 95), _defense(tackling=60), "linebacker", 6, 26.0, "D4", 80, 21, k, trace=True)
+            xs = [p[0] for p in r["trace"]["c"]]
+            self.assertTrue(all(b >= a - 1e-9 for a, b in zip(xs, xs[1:])), (k, xs))
+
+
 class Trace(unittest.TestCase):
     """Export du dessin (play.geo.sim, 07/11/2026) : la trace ne change rien au résultat ; format compact."""
 

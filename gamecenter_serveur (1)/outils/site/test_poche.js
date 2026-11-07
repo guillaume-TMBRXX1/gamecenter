@@ -34,8 +34,11 @@ const duels=(o,d)=>{ const r=(i,pos)=>({id:`${d}_${pos}${i}`,name:`Rusher${pos}$
 function feedAvecPoche(){
   const all=feeds();
   for(const {file,src} of all){
-    const F=JSON.parse(fs.readFileSync(file,'utf8')), P=F.plays.filter(p=>p.pocket&&!p.presnap);
-    if(P.some(p=>pk(p).reaction==='step_up')&&P.some(p=>pk(p).on_run)&&P.some(p=>p.result==='sack'&&pk(p).beaten!=null)) return {F,src:src+' (réel)'};
+    /* 07/11/2026 : on the passes the site draws in the pocket (not a bootleg, drawn as a rollout) — a step up or a throw
+       on the run on a ball actually thrown, a sack by the rusher who won his duel */
+    const F=JSON.parse(fs.readFileSync(file,'utf8')), P=F.plays.filter(p=>p.pocket&&!p.presnap&&p.call&&p.call.concept!=='BOOT');
+    const lance=p=>p.decision&&p.decision.action==='LANCER'&&['complete','incomplete','interception','touchdown'].includes(p.result);
+    if(P.some(p=>pk(p).reaction==='step_up'&&lance(p))&&P.some(p=>pk(p).on_run&&lance(p))&&P.some(p=>p.result==='sack'&&pk(p).beaten!=null)) return {F,src:src+' (réel)'};
   }
   const {file,src}=all.find(x=>JSON.parse(fs.readFileSync(x.file,'utf8')).plays.some(P=>P.show&&P.decision))||all[0];
   const F=JSON.parse(fs.readFileSync(file,'utf8')), H=F.game.home.abbr, A=F.game.away.abbr;
@@ -103,13 +106,14 @@ async function server(){
     check(clean.length&&clean.every(x=>Math.abs(x.fwd)<1.0&&x.lat<1.0),`poche propre : le QB reste à son drop (${clean.length})`);
     const tot=kind(x=>(x.reac==='step_up'||x.run)&&x.result!=='sack'), tard=tot.filter(x=>x.qbMoveU!=null);   /* réception très précoce : pas le temps de bouger */
     check(tard.length>=tot.length/2,`le QB a le temps de réagir sur la plupart des passes (${tard.length}/${tot.length})`);
-    const su=kind(x=>x.reac==='step_up'&&x.result!=='sack'&&x.qbMoveU!=null);
+    const su=kind(x=>x.drawn&&x.reac==='step_up'&&x.result!=='sack'&&x.qbMoveU!=null);
     if(su.some(x=>!(x.fwd>1.2))) console.log('   ',JSON.stringify(su.map(x=>({fwd:+x.fwd.toFixed(2),u:x.qbMoveU,rel:x.release}))));
     check(su.length&&su.every(x=>x.fwd>1.2),`step up : le QB avance dans la poche (${su.length})`);
-    const es=kind(x=>x.run&&x.qbMoveU!=null);
+    const es=kind(x=>x.drawn&&x.run&&x.qbMoveU!=null&&!['sack','run','penalty'].includes(x.result));   /* flushed, then sacked, scrambling or the play wiped out by a flag : no throw drawn */
     if(es.some(x=>!(x.lat>4&&x.release!=null&&x.release>=x.qbMoveU-0.03))) console.log('   ',JSON.stringify(es.map(x=>({lat:+x.lat.toFixed(1),rel:x.release,u:x.qbMoveU,res:x.result}))));
     check(es.length&&es.every(x=>x.lat>4&&x.release!=null&&x.release>=x.qbMoveU-0.03),`escape : le QB sort sur le côté, le ballon part après sa sortie (${es.length})`);
-    const sk=kind(x=>x.result==='sack'&&x.shape!=='clean'&&!/fumble/i.test(x.line));   /* 31/10 : un sack avec fumble, le commentateur parle du ballon */
+    const sk=kind(x=>x.drawn&&x.result==='sack'&&x.shape!=='clean'&&!/fumble/i.test(x.line));   /* bootleg: a rollout, no pocket drawn */   /* 31/10 : un sack avec fumble, le commentateur parle du ballon */
+    if(sk.some(x=>!(x.sacker!=null&&x.sacker===x.beatenSlot))) console.log('   ',JSON.stringify(sk.map(x=>({seq:x.seq,sacker:x.sacker,beaten:x.beatenSlot,shape:x.shape,reac:x.reac,run:x.run}))));
     check(sk.length&&sk.every(x=>x.sacker!=null&&x.sacker===x.beatenSlot),`sack : le rusher du duel perdu fait le sack (${sk.length})`);
     check(su.every(x=>/steps up in the pocket/.test(x.text))&&es.every(x=>/flushed (left|right), throws on the run/.test(x.text))&&sk.every(x=>/beats .*|collapses|unblocked/.test(x.text)),
       'play-by-play : « steps up », « flushed …, throws on the run », « X beats Y »');

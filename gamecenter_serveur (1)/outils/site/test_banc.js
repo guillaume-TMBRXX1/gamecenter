@@ -121,7 +121,7 @@ async function server(){
           if(qb){ out.qbSpot=sm.off[6]&&sm.off[6].id===qb.in; }
           const note=/comes in/.test(G.rpFeedItem(g,P).text), line=(G.playLine(Object.assign({},g,{idx:k}),P)||{}).text||'';
           const notable=subs.some(x=>x.pos==='QB'&&x.reason==='garbage')||subs.some(x=>x.side==='def'&&x.pos==='CB2'&&RO[x.in].pos==='LB');
-          if(notable){ out.notes.push(note); out.lines.push(/comes in|is in at quarterback|on the field/.test(line)); }
+          if(notable){ out.notes.push(note); if(P.result!=='penalty') out.lines.push(/comes in|is in at quarterback|on the field/.test(line)); }   /* 07/11/2026 : a flag, the commentator talks about the flag first */
           else out.quiet.push(!note&&!/comes in|is in at quarterback/.test(line));
         }
       });
@@ -129,7 +129,8 @@ async function server(){
       G.rpSeek(g,F.plays.length-1); g.paused=false; for(let i=0;i<20000&&!(g.status==='final'&&G.rpDone(g)>=F.plays.length);i++) G.stepGame(g,0.01);
       out.fin={status:g.status,done:G.rpDone(g),n:F.plays.length};
       g.idx=F.plays.length-1;
-      const sm=G.slotMap(g), qbi=sm.off.findIndex(x=>x&&x.pos==='QB'), h=G.playerCardHTML(g,'off',qbi);
+      /* the QB's card, or the first player on the field (07/11/2026 : the game ends on a punt, the punter in his spot) */
+      const sm=G.slotMap(g), qb0=sm.off.findIndex(x=>x&&x.pos==='QB'), qbi=qb0>=0?qb0:sm.off.findIndex(Boolean), h=G.playerCardHTML(g,'off',qbi);
       out.finalCard=h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(-300);
       out.energy=/Energy at the final whistle<\/span><b>\d+/.test(h); out.depthLine=/Depth<\/span><b>(Starter|Backup)/.test(h);
       const tot={home:0,away:0}; const c=L.cum[L.cum.length-1];
