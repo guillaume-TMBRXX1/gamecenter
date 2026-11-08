@@ -34,7 +34,7 @@ concurrency:
 jobs:
   produire:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 150   # 08/11/2026 : causal léger (blocs 1 à 4) et traces des trajectoires, le calcul dépasse 70 min sur les machines de GitHub
     defaults:
       run:
         working-directory: "gamecenter_serveur (1)"   # dossier du serveur dans ce dépôt (le même que Railway)
@@ -52,7 +52,7 @@ jobs:
           python -m ipykernel install --user
       - name: Tester les modules du moteur (quelques secondes)
         run: python -m unittest discover -s moteur/tests -t .
-      - name: Calculer la semaine (≈ 45 min si elle est à produire)
+      - name: Calculer la semaine (≈ 75 min si elle est à produire)
         run: python generer_semaine.py --suivante --data data --notebook NFL_Sim_GameCenter.ipynb
       - name: Contrôler le moteur (audit de toutes les semaines)
         # bloque la publication si une anomalie grave est trouvée (score faux, horloge, semaine dupliquée…)
