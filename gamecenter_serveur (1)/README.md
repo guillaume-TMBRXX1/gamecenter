@@ -2853,6 +2853,18 @@ l'autre.
 - Mode sans serveur (page seule, stockage du navigateur) : inchangé, 1 000 $ par semaine.
 - Test : `moteur/tests/test_serveur.py`, `Portefeuille`.
 
+### 103. Trajectoires du moteur, étape 6 (partie moteur) : la trace des duels de couverture (07/11/2026)
+Pour le bloc 3 (la couverture, section 97). Découpée en deux : le moteur d'abord, pour que la semaine régénérée porte
+déjà la trace ; le dessin sur le site viendra ensuite (il lit les fichiers de match, sans régénérer la semaine).
+- **Moteur** : `couverture_spatiale.separation(..., trace=True)` garde le chemin du receveur et celui de son défenseur
+  (en zone : le plus proche à la fin), du snap à la fenêtre, sans aucun tirage de plus ; `trace_compacte` en fait un
+  point toutes les 0,3 s, en dixièmes de yard entiers.
+- **Notebook 12.2 tritricies** : `play.geo.cov = {"dt": 0.3, "r": [[rôle, cassure, presse, défenseur, chemin du
+  receveur, chemin du défenseur], …]}` dans le résumé de chaque passe décidée (additif ; x depuis la ligne de mêlée,
+  y en travers, repères du moteur). Contrôle : chaque passe du match de contrôle a sa trace, sur les rôles de `rec`.
+- **Semaine de test** : 22 345 passes sur 22 345 avec leur trace ; mêmes matchs qu'avant (276 sur 276), audit identique
+  (0 anomalie bloquante) ; ≈ 720 octets par passe, + 56 Ko par match (semaine : 150 Mo au lieu de 135).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
