@@ -2907,7 +2907,7 @@ concurrency:
 jobs:
   produire:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 150   # 08/11/2026 : causal léger (blocs 1 à 4) et traces des trajectoires, le calcul dépasse 70 min sur les machines de GitHub
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
