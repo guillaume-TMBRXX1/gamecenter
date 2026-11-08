@@ -2865,6 +2865,23 @@ déjà la trace ; le dessin sur le site viendra ensuite (il lit les fichiers de 
 - **Semaine de test** : 22 345 passes sur 22 345 avec leur trace ; mêmes matchs qu'avant (276 sur 276), audit identique
   (0 anomalie bloquante) ; ≈ 720 octets par passe, + 56 Ko par match (semaine : 150 Mo au lieu de 135).
 
+### 104. Trajectoires du moteur, étape 6 (dessin) : les duels de couverture sur le terrain (08/11/2026)
+Suite de la section 103 : le site lit `play.geo.cov` (`geoCovP`) et dessine les duels (`geoCovDraw`).
+- **Receveurs** (sauf la cible) : du snap à la fenêtre du duel, le chemin du moteur depuis leur position dessinée
+  (miroir quand la formation les met de l'autre côté), puis la suite de leur route dessinée. **La cible** garde sa route
+  dessinée (l'attrapé, son instant et la suite s'y dessinent).
+- **Défenseurs** : celui du moteur (ou, à défaut, celui que le dessin met sur le receveur) se place là où le moteur le
+  met par rapport au receveur — presse, coussin, recul, retard à la cassure —, rejoint depuis son alignement au plus vite
+  que `FL_VMAX` permet (`geoCovDef`), jusqu'au lancer ; ensuite, la lecture du ballon (dessin d'avant).
+- **Correctif** (courses et réceptions simulées, étapes 4 et 5) : un défenseur de la simulation ne court plus au-delà de
+  `FL_VMAX` (une réception tardive lui laissait trop peu de temps : sauts jusqu'à 368 yd/s sur la semaine de test) ; le
+  plaqueur quitte son chemin à temps pour finir sur le porteur.
+- **Tests** : `outils/site/test_couverture_simulee.js` (66 passes sur 67 avec leurs duels dessinés, 228 duels ; receveurs
+  sur le chemin du moteur et défenseurs à leur place, écart 0,000 yd ; 11,0 yd/s au plus avant le lancer) ; match de test
+  `sim-courses.json` remplacé par le même match avec les trois traces. Reste ouvert : sur une semaine avec les traces,
+  `test_actions` dépasse encore ses seuils (sauts tardifs après une réception près de la touche, présents avant ce
+  changement : 45 yd/s au 99e centile au lieu de 123 avant le correctif ; la ligne droite après la réception, 0,30).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

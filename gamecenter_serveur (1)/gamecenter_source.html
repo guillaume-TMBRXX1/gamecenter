@@ -3314,6 +3314,8 @@ function planScrimmage(g,call,imp){
       under.forEach((i,j)=>{ const n=under.length, y=n===1?by:by+(-1+2*j/(n-1))*9; deep(i,dc==='COVER_2'&&j===Math.floor(n/2)?11:7,y); });
     }
     for(let i=0;i<11;i++) if(!def[i]) def[i]=[[0,D[i].x,D[i].y],[1,D[i].x+d*1,D[i].y]];
+    /* step 6: the coverage duels as the engine played them (play.geo.cov) */
+    if(FL&&imp.geo&&imp.geo.k==='pass'&&imp.geo.cov&&imp.kind!=='scramble') P.covSim=geoCovDraw(imp.geo.cov,off,def,routes,covOf,rushers,act,d,tIdx);
 
     /* ---- scramble (engine block B): drop, the pocket closes, the QB escapes to the side and runs ---- */
     if(imp.kind==='scramble'){
@@ -3357,7 +3359,9 @@ function planScrimmage(g,call,imp){
         uc+=0.01;
       }
       if(rk!==rk0){ off[tIdx]=rk; routes[tIdx]=rk;
-        const ci=covOf[tIdx]; if(ci!=null) def[ci]=shadowKf(D[ci],rk,0.07,d*1.1,sideOf(kfAt(rk,0.5).y,by)*0.8); }
+        const ci=covOf[tIdx], ct=P.covSim&&P.covSim.s[tIdx];
+        if(ct&&ct.i!=null&&ct.i===ci) def[ci]=geoCovDef(ct,rk,D[ci],act);   /* step 6: his duel, along the shortened route */
+        else if(ci!=null) def[ci]=shadowKf(D[ci],rk,0.07,d*1.1,sideOf(kfAt(rk,0.5).y,by)*0.8); }
     }
     else {
       let want;
@@ -3655,7 +3659,12 @@ function simFrom(P,off,def,S,cs,L,d,u0,tc,Fx,Fy,total,act,td){
     else { pts=[[u0,s0.x,s0.y]]; const K=Math.max(3,Math.ceil(gap/(0.6*FL_VMAX*Math.max(0.05,du))));
       for(let k=1;k<n;k++){ const w=Math.min(1,k/K), bq=kfAt(def[q.i],U(k)); pts.push([U(k),lerp(bq.x,MX(k,q.p[k][0]),w),lerp(bq.y,MY(k,q.p[k][1]),w)]); }
       def[q.i]=def[q.i].filter(r=>r[0]<u0); }
-    if(tk&&tk.i===q.i) pts[pts.length-1]=[tc,Fx+d*0.7,Fy+(Fy<m0y?0.5:-0.5)];
+    if(tk&&tk.i===q.i){   /* the tackler ends on the carrier: he leaves his path in time to get there (08/11/2026) */
+      const T={x:Fx+d*0.7,y:Fy+(Fy<m0y?0.5:-0.5)}, s=leadAt(pts,tc,T,tc,act,pts[0][0]), b=kfAt(pts,s);
+      pts=pts.filter(r=>r[0]<s).concat(s>pts[0][0]?[[s,b.x,b.y]]:[],[[tc,T.x,T.y]]); }
+    /* never faster than FL_VMAX (08/11/2026): a catch late in the play leaves little time to join the simulation or
+       to end on the carrier — he goes as far as he can */
+    for(let j=1;j<pts.length;j++){ const c=capTo({x:pts[j-1][1],y:pts[j-1][2]},{x:pts[j][1],y:pts[j][2]},pts[j][0]-pts[j-1][0],act); pts[j]=[pts[j][0],c.x,c.y]; }
     const e=pts[pts.length-1]; def[q.i]=def[q.i].concat(pts,[[1,e[1],e[2]]]); P.wDef[q.i]=0; }
   P.miss=S.ev.filter(e=>!e.ok&&e.i!=null&&def[e.i]).map(e=>({i:e.i,at:u0+(tc-u0)*Math.min(1,e.t/T)}));
   if(tk) P.stop={i:tk.i,at:tc};
@@ -4167,7 +4176,59 @@ function geoOf(g,P,t,scr){
   const rec=[]; for(const r of G.rec){ if(!Array.isArray(r)||GEO_SLOT[r[0]]==null) continue;
     rec.push({slot:GEO_SLOT[r[0]],sep:clamp(num(r[1],2),0.4,7),st:r[2],def:r[3]!=null&&ix[r[3]]!=null?ix[r[3]]:null,bust:!!r[4]}); }
   /* step 5 (07/11/2026, causal light block 2): the engine's simulation after the catch (play.geo.sim) */
-  return {k:'pass',rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null,sim:geoSim(G.sim,ix)};
+  /* step 6 (07/11/2026, causal light block 3): the coverage duels as the engine played them (play.geo.cov) */
+  return {k:'pass',rec,tt:num(G.tt,0),tgt:G.tgt!=null?GEO_SLOT[G.tgt]:null,sim:geoSim(G.sim,ix),cov:geoCovP(G.cov,ix)};
+}
+/* play.geo.cov (moteur.couverture_spatiale.trace_compacte): per receiver, his path and his defender's from the snap to
+   his window, a point every dt s (the last one sooner), x from the line of scrimmage, y across, in tenths of a yard */
+function geoCovP(C,ix){
+  if(!C||!Array.isArray(C.r)) return null;
+  const ok=a=>Array.isArray(a)&&a.length>=2&&a.every(q=>Array.isArray(q)&&q.length===2&&isFinite(q[0])&&isFinite(q[1]));
+  const out=[]; for(const e of C.r){ if(!Array.isArray(e)||e.length<6||GEO_SLOT[e[0]]==null||!ok(e[4])||!ok(e[5])||e[4].length!==e[5].length) continue;
+    out.push({slot:GEO_SLOT[e[0]],i:e[3]!=null&&ix[e[3]]!=null?ix[e[3]]:null,presse:!!e[2],R:e[4].map(q=>[q[0]/10,q[1]/10]),D:e[5].map(q=>[q[0]/10,q[1]/10])}); }
+  return out.length?{dt:num(C.dt,0.3),r:out}:null;
+}
+/* the duels on the field: each receiver runs the engine's path from his stance (mirrored when the drawn formation has
+   him on the other side), his defender stays where the engine had him relative to the receiver (from his own
+   alignment, joined without a jump); after the duel's window both carry on with the drawn route. The target keeps
+   his drawn route (the catch, its timing and the run after it are drawn on it): only his defender plays the duel */
+function geoCovDraw(C,off,def,routes,covOf,rushers,act,d,tIdx){
+  const used=new Set(), S={}, skip={}; let n=0; const no=w=>{ skip[w]=(skip[w]||0)+1; };
+  for(const e of C.r){
+    const rk=off[e.slot]; if(!rk||e.R.length<2){ no('route'); continue; }
+    const m=e.R.length, us=[0]; for(let k=1;k<m-1;k++) us.push(k*C.dt);
+    if(m>=2){ const a=m>=3?Math.hypot(e.R[m-2][0]-e.R[m-3][0],e.R[m-2][1]-e.R[m-3][1]):0, b=Math.hypot(e.R[m-1][0]-e.R[m-2][0],e.R[m-1][1]-e.R[m-2][1]);
+      us.push((m-2)*C.dt+(a>0.05?clamp(C.dt*b/a,0.05,C.dt):C.dt)); }
+    const u=us.map(t=>t/act), uE=u[m-1]; if(uE>0.8){ no('long'); continue; }
+    const S0=kfAt(rk,0), E0=e.R[0], sy=(S0.y<26.65)===(E0[1]<26.65)?1:-1;
+    const at=q=>({x:S0.x+d*(q[0]-E0[0]),y:S0.y+sy*(q[1]-E0[1])});
+    const pr=e.R.map(at); if(pr.some(p=>p.y<0.5||p.y>52.8)){ no('touche'); continue; }
+    const dE={x:pr[m-1].x-kfAt(rk,uE).x,y:pr[m-1].y-kfAt(rk,uE).y};
+    let nk=rk;
+    if(e.slot!==tIdx){ nk=[[0,S0.x,S0.y]]; for(let k=1;k<m;k++) nk.push([u[k],pr[k].x,pr[k].y]);
+      for(const q of rk) if(q[0]>uE+0.02) nk.push([q[0],q[1]+dE.x,clamp(q[2]+dE.y,0.8,52.5)]);
+      off[e.slot]=nk; for(const r in routes) if(routes[r]===rk) routes[r]=nk; }
+    const rel=e.D.map((q,k)=>({x:d*(q[0]-e.R[k][0]),y:sy*(q[1]-e.R[k][1])}));
+    let i=e.i!=null&&!rushers.has(e.i)&&!used.has(e.i)&&def[e.i]?e.i:covOf[e.slot];
+    if(i==null||rushers.has(i)||used.has(i)||!def[i]) i=null;
+    const info={i,u,uE,rel}; S[e.slot]=info; n++;
+    if(i==null) continue;
+    used.add(i); for(const r in covOf) if(covOf[r]===i) delete covOf[r]; covOf[e.slot]=i;
+    def[i]=geoCovDef(info,nk,kfAt(def[i],0),act);
+  }
+  return {n,s:S,skip};
+}
+/* the defender of a duel along the receiver's keyframes rk: at the engine's offset to him, joined from D0 (his drawn
+   alignment) as fast as FL_VMAX allows (I.ub: when he is there); after the window, the last offset */
+function geoCovDef(I,rk,D0,act){
+  const m=I.u.length, L=I.rel[m-1], ts=I.u.slice(1).map((u,k)=>[u,I.rel[k+1]]);
+  for(const q of rk) if(q[0]>I.uE+0.02) ts.push([q[0],L]);
+  const kf=[[0,D0.x,D0.y]]; let p=D0, pu=0; I.ub=null;
+  for(const [u,r] of ts){ const c=kfAt(rk,u), T={x:clamp(c.x+r.x,0,120),y:clamp(c.y+r.y,0.8,52.5)};
+    p=capTo(p,T,u-pu,act*0.98); if(I.ub==null&&Math.hypot(p.x-T.x,p.y-T.y)<1e-6) I.ub=u;
+    kf.push([u,p.x,p.y]); pu=u; }
+  if(I.ub==null) I.ub=2;
+  return kf;
 }
 /* play.geo.sim (moteur.course_spatiale.trace_compacte): the carrier's path, the defenders near him (by id -> their slot
    among the eleven drawn), every tackle tried; null when absent or malformed */
