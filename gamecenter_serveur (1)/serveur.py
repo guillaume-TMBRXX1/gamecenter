@@ -78,6 +78,12 @@ def play_ends(plays):
 
 OPEN_AFTER_FINAL_MIN = 30      # une semaine ouvre aux paris 30 min après la Grand Final de la précédente (au plus tard le lundi 00:00)
 BANKROLL, MIN_STAKE = 1000.0, 1.0
+# Portefeuille qui suit le joueur (07/11/2026) : à partir de la semaine GC_WALLET_START, le solde n'est plus remis à
+# 1 000 $ chaque lundi, il passe d'une semaine à l'autre. Les semaines plus anciennes gardent leur règle (1 000 $ par
+# semaine) et ne comptent pas dans le portefeuille. Un joueur à 0 (moins que la mise minimale, aucun pari ouvert)
+# recharge REFILL ; en attendant la validation de Google AdSense (vidéo récompensée), il clique et confirme.
+WALLET_START = os.environ.get("GC_WALLET_START", "2026-11-09")
+REFILL = 1000.0
 CASH_FEE = 0.05                # cash-out : valeur juste − 5 % (étape 2)
 COMBO_MIN, COMBO_MAX = 2, 6    # combinés : 2 à 6 sélections, une par match, pas de futures
 
@@ -536,6 +542,11 @@ with db() as _c:
     CREATE TABLE IF NOT EXISTS league_members(league TEXT, player TEXT, joined INTEGER, PRIMARY KEY(league, player));
     CREATE INDEX IF NOT EXISTS league_members_p ON league_members(player);
     """)
+    # Portefeuille qui suit le joueur : recharges de REFILL (via = « click » aujourd'hui, « video » plus tard).
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS refills(id TEXT PRIMARY KEY, player TEXT, week TEXT, at INTEGER, amount REAL, via TEXT);
+    CREATE INDEX IF NOT EXISTS refills_p ON refills(player);
+    """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -632,7 +643,9 @@ def player_bets(pid, week):
         return [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=? AND week=? ORDER BY pt", (pid, week.start))]
 
 
-def ledger(week, bets, t):
+def ledger(week, bets, t, base=BANKROLL):
+    """Paris d'une semaine à l'instant t. base = montant au début de la semaine (1 000 $, ou le portefeuille reporté,
+    voir wallet_base) ; solde = base − mises + retours (un pari ouvert compte pour sa mise)."""
     staked = back = 0.0; won = lost = open_ = 0; rows = []
     for b in bets:
         if b["pt"] > t:
@@ -644,7 +657,51 @@ def ledger(week, bets, t):
         else:
             back += ret; won += st == "won"; lost += st == "lost"
         rows.append(dict(b, st=st, ret=ret))
-    return {"bets": rows, "balance": round(BANKROLL - staked + back, 2), "won": won, "lost": lost, "open": open_}
+    return {"bets": rows, "balance": round(base - staked + back, 2), "base": round(base, 2), "won": won, "lost": lost,
+            "open": open_}
+
+
+# ---- portefeuille qui suit le joueur (07/11/2026) ----
+def wallet_on(week):
+    """Semaine où le solde est reporté (GC_WALLET_START et après) ; avant : 1 000 $ par semaine, comme avant."""
+    return week.start >= WALLET_START
+
+
+def wallet_base(pid, week, t):
+    """Montant du portefeuille au début de `week` : 1 000 $ + gains nets des semaines précédentes depuis WALLET_START
+    (un pari encore ouvert compte pour sa mise) + recharges faites jusqu'à t (y compris pendant cette semaine)."""
+    if not wallet_on(week):
+        return BANKROLL
+    weeks = {w.start: w for w in load_weeks().values()}
+    with db() as c:
+        bets = [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=? AND week>=? AND week<?",
+                                              (pid, WALLET_START, week.start))]
+        refilled = c.execute("SELECT COALESCE(SUM(amount), 0) FROM refills WHERE player=? AND at<=? AND week>=? AND week<=?",
+                             (pid, t, WALLET_START, week.start)).fetchone()[0]
+    base = BANKROLL + refilled
+    for b in bets:
+        w = weeks.get(b["week"])
+        if w is None or b["pt"] > t:      # semaine retirée du serveur : comme un pari remboursé
+            continue
+        st, ret = w.settle(b, t)
+        base += (0.0 if st == "open" else ret) - b["stake"]
+    return round(base, 2)
+
+
+def wallet(pid, week, t):
+    """Les paris de la semaine avec le solde du portefeuille (base reportée)."""
+    return ledger(week, player_bets(pid, week), t, wallet_base(pid, week, t))
+
+
+def refill_ok(week, L):
+    """Recharge possible : portefeuille reporté, solde sous la mise minimale, aucun pari ouvert (« s'il arrive à 0 »)."""
+    if not wallet_on(week):
+        return "refill_off"
+    if L["open"]:
+        return "open_bets"
+    if L["balance"] >= MIN_STAKE:
+        return "not_empty"
+    return None
 
 
 # ---- classement de la saison : somme des gains nets de chaque semaine ----
@@ -1568,7 +1625,8 @@ async def api_register(req: Request):
 @app.post("/api/account/login")
 async def api_login(req: Request):
     """Connexion. Si le navigateur avait une clé d'invité avec des paris, ces paris passent sur le compte pour
-    chaque semaine où le compte n'a encore rien joué (jamais deux portefeuilles mélangés dans une même semaine)."""
+    chaque semaine où le compte n'a encore rien joué (jamais deux portefeuilles mélangés dans une même semaine).
+    Semaines du portefeuille reporté (GC_WALLET_START et après) : les paris de l'invité restent à l'invité."""
     body = await _json(req)
     name, pw = str(body.get("pseudo") or ""), str(body.get("password") or "")
     ip = req.client.host if req.client else "?"
@@ -1587,7 +1645,7 @@ async def api_login(req: Request):
             mine = {r[0] for r in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (p["id"],))}
             for (wk,) in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (guest["id"],)).fetchall():
                 n = c.execute("SELECT COUNT(*) FROM bets WHERE player=? AND week=?", (guest["id"], wk)).fetchone()[0]
-                if wk in mine:
+                if wk in mine or wk >= WALLET_START:     # portefeuille reporté : jamais deux portefeuilles mélangés
                     kept += n
                 else:
                     c.execute("UPDATE bets SET player=? WHERE player=? AND week=?", (p["id"], guest["id"], wk)); moved += n
@@ -1632,13 +1690,13 @@ def api_me(token: str = ""):
     if not p:
         raise HTTPException(401, "Clé de joueur inconnue.")
     w = _need_week(); t = now_ms()
-    L = ledger(w, player_bets(p["id"], w), t)
+    L = wallet(p["id"], w, t)
     rows = season_rows(t)
     mine = next((r for r in rows if r["id"] == p["id"]), None)
     season = {"rank": mine["rank"] if mine else None, "net": mine["net"] if mine else season_net(p["id"], t)["net"],
               "players": len(rows)}
     return {"name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team"), "week": w.start, "now": t,
-            "season": season, **L}
+            "season": season, "carry": wallet_on(w), "refill": {"amount": REFILL, "ok": refill_ok(w, L) is None}, **L}
 
 
 # ------------------------------------------------------------------ « My team » : équipe favorite d'un compte
@@ -2079,7 +2137,7 @@ async def api_bets(req: Request):
         t = now_ms()
         if not (w.open <= t < w.reset):
             raise HTTPException(409, "Les paris de cette semaine sont fermés.")
-        bal = ledger(w, player_bets(p["id"], w), t)["balance"]
+        bal = wallet(p["id"], w, t)["balance"]
         rows = []
 
         def take(stake, rej):
@@ -2170,8 +2228,29 @@ async def api_cashout(req: Request):
             return {"ok": False, "reason": "value", "amount": amt}
         with db() as c:
             c.execute("UPDATE bets SET cashed_at=?, cashed_amt=? WHERE id=?", (t, amt, b["id"]))
-        bal = ledger(w, player_bets(p["id"], w), t)["balance"]
+        bal = wallet(p["id"], w, t)["balance"]
     return {"ok": True, "id": b["id"], "amount": amt, "at": t, "balance": bal}
+
+
+@app.post("/api/wallet/refill")
+async def api_refill(req: Request):
+    """Recharge du portefeuille (07/11/2026) : REFILL quand le solde est sous la mise minimale et qu'aucun pari n'est
+    ouvert. Aujourd'hui la page demande une confirmation ; plus tard, une vidéo récompensée (Google AdSense, via=video)."""
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    w = _need_week()
+    with _db_lock:
+        t = now_ms()
+        why = refill_ok(w, wallet(p["id"], w, t))
+        if why:
+            raise HTTPException(409, why)
+        with db() as c:
+            c.execute("INSERT INTO refills(id, player, week, at, amount, via) VALUES(?,?,?,?,?,?)",
+                      ("r" + uuid.uuid4().hex[:16], p["id"], w.start, t, REFILL, "click"))
+        L = wallet(p["id"], w, t)
+    return {"ok": True, "amount": REFILL, "at": t, "balance": L["balance"], "base": L["base"]}
 
 
 @app.get("/api/history")
@@ -2186,23 +2265,25 @@ def api_history(token: str = "", week: str = ""):
         w = weeks.get(week)
         if w is None:
             raise HTTPException(404, "Semaine inconnue.")
-        L = ledger(w, player_bets(p["id"], w), t)
+        L = wallet(p["id"], w, t)
         return {"week": w.start, "index": w.doc["week"]["index"], "current": w is cur, "now": t, **L}
     with db() as c:
         played = {r[0] for r in c.execute("SELECT DISTINCT week FROM bets WHERE player=?", (p["id"],))}
     out = []
     for start in sorted(played & set(weeks), reverse=True):
         w = weeks[start]
-        L = ledger(w, player_bets(p["id"], w), t)
+        L = wallet(p["id"], w, t)
         a = _season_agg(L["bets"], [w], t)
-        out.append({"week": start, "index": w.doc["week"]["index"], "current": w is cur, "balance": L["balance"],
+        out.append({"week": start, "index": w.doc["week"]["index"], "current": w is cur, "balance": L["balance"], "base": L["base"],
                     "net": a["net"], "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"], "open": L["open"]})
     return {"now": t, "weeks": out}
 
 
 @app.get("/api/leaderboard")
 def api_leaderboard(token: str = "", scope: str = "week"):
-    """scope=week : soldes de la semaine en cours (tous les joueurs) ; scope=season : gains nets cumulés (comptes)."""
+    """scope=week : soldes de la semaine en cours (tous les joueurs) ; scope=season : gains nets cumulés (comptes).
+    La semaine se classe sur son propre résultat (1 000 $ + gains de la semaine, « net »), jamais sur le portefeuille
+    reporté : ni les semaines d'avant ni une recharge ne changent le classement de la semaine."""
     w = _need_week(); t = now_ms()
     me = player_by_token(token)
     if scope == "season":
@@ -2222,7 +2303,7 @@ def api_leaderboard(token: str = "", scope: str = "week"):
         L = ledger(w, player_bets(p["id"], w), t)
         if not L["bets"]:
             continue
-        rows.append({"name": p["name"], "balance": L["balance"], "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"],
+        rows.append({"name": p["name"], "balance": L["balance"], "net": round(L["balance"] - BANKROLL, 2), "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"],
                      "account": bool(p.get("login")), "me": bool(me and me["id"] == p["id"])})
     rows.sort(key=lambda r: (-r["balance"], r["name"]))
     for i, r in enumerate(rows):
@@ -2459,6 +2540,7 @@ def ligue_classement(lid, scope, t):
         for m in membres:
             Lg = ledger(w, player_bets(m["id"], w), t)
             rows.append({"id": m["id"], "name": m["name"], "owner": m["id"] == L["owner"], "balance": Lg["balance"],
+                         "net": round(Lg["balance"] - BANKROLL, 2),
                          "bets": len(Lg["bets"]), "won": Lg["won"], "lost": Lg["lost"]})
         rows.sort(key=lambda r: (not r["bets"], -r["balance"], r["name"].casefold()))
     k = 0
