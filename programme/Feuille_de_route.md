@@ -1120,6 +1120,12 @@ divisions. Ajout : bilan et rang de la ligue sous le code des équipes dans le t
 **Étape 6 terminée.** Prochain : la suite du programme (à définir avec Guillaume).
 
 ## À surveiller (repris de l'étape 4)
+- **Équilibre de 12.3 hors de 40-60 %** (mesuré le 09/11 pendant FO-1, avant tout choix des supporters) : 34,8 % (PLS)
+  à 70,4 % (MNL), 9 franchises hors de la plage (BST, GLT, GMB, GRZ, LTC, MNL, PLS, VEC, ZPH). Antérieur à FO-1 (causal
+  léger ?) : à traiter dans une étape à part. README du serveur, section 105.
+- **FO-1, cotes en direct** : avec des choix des supporters tirés au hasard sur tous les leviers à la fois, le rendement
+  des outsiders en direct monte à +8,5 % (intervalle −2,0 à +21,1 %, sous le seuil de 13.4) ; une seule question par
+  semaine en pratique (4e essai au hasard : −13,9 %). À revoir si 13.4 se rapproche du seuil.
 - **MNL 55,7 %** au test d'équilibre (dans 40-60 %, au-dessus des autres) : la baisse des fumbles profite surtout à
   l'équipe qui court le plus ; à suivre sur les semaines réelles.
 - Cotes en direct recalibrées pour V21 (13.4 : outsiders −0,3 %) ; à re-vérifier si l'adaptation change.

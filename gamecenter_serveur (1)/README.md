@@ -2942,7 +2942,21 @@ ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni si
     Effet moyen d'une option sur les victoires (franchises qui l'ont tirée, écart au moteur d'aujourd'hui) : 4e essai
     prudent −3,1 points, agressif +1,7 ; plus de course +1,2, plus de passe −3,1 ; blitz moins −0,7, plus +0,3 ;
     zone −0,3, homme +2,3 ; passes courtes −0,8, longues +1,8 — aucun levier ne fait gagner nettement plus à lui seul (bruit d'une franchise ≈ 3,7 points).
-  - **Déterminisme** : mêmes graines, mêmes matchs (deux passages identiques).
+  - **Déterminisme** : mêmes graines, mêmes matchs — choix au hasard (profondeur) rejoués deux fois et contre le passage
+    complet : signatures identiques ; base = « coordinateur » partout, match par match.
+  - **13.2 et 13.4 sans recalibrage** (rejouées avec CONTROLES, cotes calculées avec les choix) — 4e essai au hasard :
+    z² 1,14, biais −0,0 %, Brier moteur 0,2429 (formule 0,2495), spread 50,3 %, over 50,6 %, rendement −3,6 % ; en direct :
+    écart moyen 0,024, extrêmes ±0,017, outsiders −13,9 %. **Mixte** (chaque franchise un levier et une option au hasard) :
+    z² 1,05, biais −0,2 %, Brier 0,2412 (0,2496), spread 50,4 %, over 52,1 %, rendement −4,0 % ; en direct : écart moyen
+    0,016, extrêmes ±0,023, outsiders +8,5 % (intervalle à 90 % : −2,0 % à +21,1 %, sous le seuil mais à surveiller).
+- **Semaine de test** (semaine du 16/11 calculée depuis la vraie semaine du 09/11, cotes à 20 simulations, copie des
+  données) : coupé (`GC_SUPPORTERS=0`) et allumé sans fichier — `week.json` et les 279 GameFeed identiques hors `fans`,
+  `fan_vote` et `game.fans_plan` ; avec un fichier (CTX agressif 12 votes, VEC prudent 8, GMB agressif 40 ; AEG 4 votes,
+  MNL option inconnue, BST égalité → coordinateur) : 3 franchises au choix des supporters, `adjustments.before` identiques
+  au passage coupé (rien de reporté), `fan_vote` = course / passe pour la semaine 9 ; 640 s contre 647 (pas de coût) ;
+  audit : 0 anomalie bloquante (coupé et avec fichier).
+- **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
+  [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
