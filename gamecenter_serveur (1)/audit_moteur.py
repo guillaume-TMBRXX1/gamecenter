@@ -534,6 +534,10 @@ def check_fans(A, name, w):
                 bad(f"{t} : coordinateur mais {v} ≠ {r.get('coordinator')}")
         else:
             bad(f"{t} : source {r.get('source')}")
+        ligne = r.get("go_min_yard_line")
+        if ligne and _fo is not None and ligne["value"] != ligne["coordinator"] and \
+                not _fo.LIGNE_4E_BORNES[0] <= ligne["value"] <= _fo.LIGNE_4E_BORNES[1]:
+            bad(f"{t} : go_min_yard_line {ligne['value']} hors de {_fo.LIGNE_4E_BORNES}")
         avant = ((adj.get(t) or {}).get("before") or {}).get(r.get("setting"))
         if avant is not None and avant != r.get("coordinator"):
             bad(f"{t} : choix reporté dans l'ajustement hebdomadaire ({r.get('setting')} {avant} ≠ {r.get('coordinator')})")

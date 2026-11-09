@@ -411,6 +411,27 @@ Interrupteur du notebook : `BLESSURES_ENABLED` (`GC_BLESSURES=0`, moteur de 7.3 
 `game.injuries`, `game.injury_model`, `roster[].injury / status / absence` ; week.json : `injuries` (absents,
 signatures, nouvelles absences). Mesures : README du serveur, section 70. Tests : `test_blessures.py`.
 
+## Front office : les leviers des supporters (étape FO-1, notebook 12.2 quinquatricies, 09/11/2026)
+
+```
+week.json (semaine précédente) ── apply_staff_snapshots ──> coordinateurs de la semaine
+GC_FANS (facultatif) ── supporters.lire_fichier / choix_de_semaine ──> un choix par franchise (sinon : coordinateur)
+supporters.appliquer : réglage au bas / en haut des bornes du coordinateur ──> cotes, matchs, playoffs de la semaine
+run_week : supporters.restaurer AVANT weekly_adjustment ──> staffs_next_week sans les choix (pas de dérive)
+week.json : fans (appliqué), fan_vote (question suivante) · GameFeed : game.fans_plan
+```
+
+| Fichier | Rôle |
+|---|---|
+| `supporters.py` | `LEVIERS` (id, intitulés anglais, options [bas, coordinateur, haut], réglage, côté), `ROTATION` et `levier_de_semaine(index)` (même question pour toutes les franchises, `ORIGINE` = 8 : le 4e essai la semaine du 16/11), `placer` / `valeur` / `bornes`, `BORNES_COUVERTURE` et `BORNES_PROFONDEUR` (leviers 4-5, validées le 09/11), `LIGNE_4E` (le 4e essai déplace aussi `go_min_yard_line` de ± 8 yards, borné à 30-62), `lire_fichier`, `choix_de_semaine` (format du fichier GC_FANS dans la docstring ; `MIN_VOTES` = 5, égalité = coordinateur), `appliquer` / `restaurer`, `poids_profondeur`, `question` (fan_vote), `controle`. Python pur, sans hasard |
+
+Les cinq leviers : `quatrieme` (go_max_to_go + ligne), `course_passe` (pass_shift), `blitz` (blitz_rate) — bornes = `bands`
+des coordinateurs (12.1) — ; `couverture` (poids MAN des couvertures × `FANS_SEMAINE["man_weight"]`) et `profondeur`
+(concepts longs × k, courts et écrans ÷ k, budget de passe gardé : `FANS_SEMAINE["deep_weight"]`), lus par deux
+enveloppes de la cellule (`_fr_defensive_concept`, `franchise_playbook`) qui ne tirent aucun hasard. Interrupteur
+`SUPPORTERS_ENABLED` (`GC_SUPPORTERS=0` : moteur d'aujourd'hui, ni `fans` ni `fan_vote`). Mesures : README du serveur,
+section 105. Tests : `test_supporters.py` ; audit : `check_fans`, `check_fans_plan`.
+
 ## Étape 6 — plus de franchises (palier 1 : 8 équipes, palier 2 : 12, palier 3 : 16, palier 4 : 20, puis 24)
 
 Les franchises 05-08 de la bible des identités (AXM Axiom Falcons, GLT Glitch Hornets, CPH Cipher Lynx, NVA Nova

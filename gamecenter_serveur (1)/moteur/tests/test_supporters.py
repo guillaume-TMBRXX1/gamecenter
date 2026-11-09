@@ -126,6 +126,22 @@ class TestBornes(unittest.TestCase):
         self.assertEqual(fo.placer((1, 4), "milieu", entier=True), 3)
         self.assertEqual(fo.placer((0.1, 0.2), "milieu"), 0.15)
 
+    def test_ligne_du_4e_essai(self):
+        """Décision du 09/11 : la ligne (go_min_yard_line) bouge aussi de LIGNE_4E yards, bornée, puis restaurée."""
+        self.assertEqual(fo.LIGNE_4E, 8)
+        for a, s in staffs_24().items():
+            ligne = s.offense.go_min_yard_line
+            vus = {}
+            for c in fo.options("quatrieme"):
+                s2 = copy.deepcopy(s)
+                rec = fo.appliquer(s2, a, "quatrieme", c, {})
+                v = s2.offense.go_min_yard_line
+                self.assertTrue(fo.LIGNE_4E_BORNES[0] <= v <= fo.LIGNE_4E_BORNES[1] or v == ligne, (a, c, v))
+                vus[c] = v
+                fo.restaurer(s2, a, "quatrieme", rec, {})
+                self.assertEqual(s2.offense.go_min_yard_line, ligne)
+            self.assertTrue(vus["prudent"] >= vus["coordinateur"] == ligne >= vus["agressif"], (a, vus))
+
     def test_leviers_sans_attribut(self):
         s = staff({}, {})
         sem = {}
@@ -280,6 +296,8 @@ class TestNotebook(unittest.TestCase):
         i_run = s15.index("run_week(")
         self.assertTrue(i_snap < i_app < i_run)                 # après la reprise des staffs, avant les cotes
         self.assertIn("SUPPORTERS_ENABLED", s15)
+        s131 = next(s for s in cs if "13.1 — COTES DU MOTEUR" in s[:400])
+        self.assertEqual(s131.count('globals().get("supporters_cle", lambda: None)()'), 2)   # les deux clés du cache
 
 
 if __name__ == "__main__":
