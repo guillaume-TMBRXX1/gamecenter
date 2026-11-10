@@ -85,7 +85,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
   part.
 - Tests : `moteur/tests/test_supporters.py` ; `audit_moteur.py` contrôle `fans.applied` (bornes, rotation, rien de reporté).
 
-### FO-2 — Serveur : les votes *(serveur)*
+### FO-2 — Serveur : les votes *(serveur)* — ✅ 10/11 (README section 107)
 
 - Tables `fan_votes(player, week, team, lever, choice, at)` (une ligne par joueur, semaine et levier) ; colonne
   `fav_team_at` dans `players`.
@@ -94,7 +94,8 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
   lundi) ; limite de requêtes comme pour les ligues.
 - API : `GET /api/fans` (question de ma franchise, mon vote, heure de fermeture ; résultat seulement après le verrou),
   `POST /api/fans/vote`, `GET /api/fans/results?team=` (après le verrou, pour toutes les franchises : page Teams),
-  `GET /api/admin/fans?key=…&week=…` (export pour le calcul, seulement après le verrou). Interrupteur `GC_FANS`.
+  `GET /api/admin/fans?key=…&week=…` (export pour le calcul, seulement après le verrou). Interrupteur `GC_FRONT_OFFICE`
+  (et non `GC_FANS`, déjà la variable du notebook pour le fichier des choix).
 - Tests : `moteur/tests/test_supporters_serveur.py` (règles, verrou, pourcentages cachés, export, changement de
   franchise, minimum de 5 votes, égalité).
 
