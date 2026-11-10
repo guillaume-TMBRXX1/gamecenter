@@ -3870,16 +3870,21 @@ function trackUpdate(g,P,uu){
 }
 
 /* JEU_FLUIDE: from one frame to the next, nobody moves faster than his own keyframes, the ball carrier or FL_VMAX —
-   the pull toward the carrier (chasers) never makes a player jump, nor its end when the ball changes hands */
+   the pull toward the carrier (chasers) never makes a player jump, nor its end when the ball changes hands. And never,
+   whatever the keyframes say, faster than JUMP_VMAX (10/11/2026: a keyframe cut at the catch near the sideline, at the
+   end of the release or when a simulated defender joins his path made a player jump up to 126 yd/s for one frame) —
+   the carrier too: the ball follows him. */
+const JUMP_VMAX=3*FL_VMAX;
 function smoothMoves(g,P,uu,car){
   const raw={off:P.off.map(k=>kfAt(k,uu)),def:P.def.map(k=>kfAt(k,uu))}, S=P.smooth;
   if(S&&uu>S.u&&uu-S.u<0.2){
     const dt=(uu-S.u)*(P.act||P.dur), cpN=car?(car.side==='off'?g.off:g.def)[car.idx]:null, cpO=car&&S.car&&S.car.side===car.side&&S.car.idx===car.idx?S.cp:null;
     const cs=cpN&&cpO?Math.hypot(cpN.x-cpO.x,cpN.y-cpO.y):0;
     for(const sd of ['off','def']){ const A=sd==='off'?g.off:g.def;
-      for(let i=0;i<11;i++){ if(car&&car.side===sd&&car.idx===i) continue;
+      for(let i=0;i<11;i++){ const isCar=car&&car.side===sd&&car.idx===i;
         const q=S[sd][i], r0=S.raw[sd][i], r1=raw[sd][i];
-        const lim=Math.max(Math.hypot(r1.x-r0.x,r1.y-r0.y),cs,FL_VMAX*dt)*1.05, dd=Math.hypot(A[i].x-q.x,A[i].y-q.y);
+        const lim=isCar?JUMP_VMAX*dt:Math.min(Math.max(Math.hypot(r1.x-r0.x,r1.y-r0.y),cs,FL_VMAX*dt)*1.05,JUMP_VMAX*dt),
+              dd=Math.hypot(A[i].x-q.x,A[i].y-q.y);
         if(dd>lim) A[i]={x:q.x+(A[i].x-q.x)*lim/dd, y:q.y+(A[i].y-q.y)*lim/dd}; } }
   }
   const cp=car?(car.side==='off'?g.off:g.def)[car.idx]:null;
@@ -4085,8 +4090,10 @@ const RP_POST=1.7, RP_HALF=4, RP_FINAL=12;
    game clock at 0 with the game still live), so a live board knows it before the next play exists. The server keeps
    the same timeline (serveur.py BREAK_SEC, sent in #gf-server): live boards, live prices and bet settlement agree. */
 const BRK_SEC={q:10,half:40};
-function brkKind(P){ const A=P&&P.after; if(!A) return null;
-  if(P.try_follows) return null;   /* bloc 2: the conversion is still to come — the break follows it */
+function brkKind(P,N){ const A=P&&P.after; if(!A) return null;
+  /* bloc 2: the conversion is still to come — the break follows it; unless the feed already puts it in the next quarter
+     (a pick-six on the last play of Q1, week of 09/11): then this touchdown ends the quarter (N: the next play) */
+  if(P.try_follows) return N&&N.quarter!==P.quarter&&A.status==='live'&&P.clock_end!=null&&num(P.clock_end,1)<=0 ? 'q' : null;
   if(A.status==='half') return 'half';
   return A.status==='live'&&P.clock_end!=null&&num(P.clock_end,1)<=0 ? 'q' : null; }
 /* breaks are for the match itself: never in a teaser, a spoiler-free preview or a still tile */
@@ -4537,12 +4544,12 @@ function rpCommit(g){
   g.p=num(P.win_prob_home,g.p); g.odds=rpOdds(P.odds);
   if(g.idx===0) g.hist=[g.p]; else g.hist.push(g.p);
   g.hs=A.score.home; g.as=A.score.away;
-  if(A.status==='final' || (g.idx>=g.plays.length-1 && !(g.growing&&brkKind(P)))){
+  if(A.status==='final' || (g.idx>=g.plays.length-1 && !(g.growing&&brkKind(P,g.plays[g.idx+1])))){
     g.status='final'; g.pause=RP_FINAL; g.phase='done'; g.carrier=null;
     g.brk=brkOn(g)?{kind:'final',q:num(P.quarter,4)}:null; g.brkHide=false;
     return;
   }
-  const b=brkOn(g)?brkKind(P):null;
+  const b=brkOn(g)?brkKind(P,g.plays[g.idx+1]):null;
   if(b){   /* the break: the field stays on the play that ended the period, the next play is entered when it is over */
     if(b==='half') g.status='half';
     g.brk={kind:b,q:num(P.quarter,1),dur:BRK_SEC[b]}; g.brkHide=false;
@@ -4583,7 +4590,7 @@ function stepReplay(g,dt){
     if(!REDUCED && g.t-g.tt>0.04){ g.trail.push({x:g.ball.x,y:g.ball.y}); recordTracks(g); g.tt=g.t; if(g.trail.length>160) g.trail.shift(); }
     if(u>=1){ g.phase='post'; g.t=0; g.dur=g.cur&&g.cur.show?num(g.cur.show.post,RP_POST):RP_POST; rpResolve(g); onResolve(g); }
   } else if(g.phase==='post'){
-    if(g.t>=g.dur){ if(g.growing&&g.idx>=g.plays.length-1&&!(g.cur&&g.cur.after&&g.cur.after.status==='final')&&!(brkOn(g)&&brkKind(g.cur))) return; rpCommit(g); onCommit(g); }
+    if(g.t>=g.dur){ if(g.growing&&g.idx>=g.plays.length-1&&!(g.cur&&g.cur.after&&g.cur.after.status==='final')&&!(brkOn(g)&&brkKind(g.cur,g.plays[g.idx+1]))) return; rpCommit(g); onCommit(g); }
   }
 }
 function makeReplayGame(id,feed,o){
@@ -6784,7 +6791,7 @@ function revealed(g,t){
 const _tl=new WeakMap();
 function tlOf(f){ const P=f.plays, m=_tl.get(f); if(m&&m.P===P&&m.n===P.length) return m;
   const st=new Array(P.length), du=new Array(P.length), bk=new Array(P.length); let off=0, t=0;
-  for(let i=0;i<P.length;i++){ st[i]=t; du[i]=psec(P[i]); t+=du[i]; const b=brkKind(P[i]); bk[i]=b; if(b){ off+=BRK_SEC[b]; t+=BRK_SEC[b]; } }
+  for(let i=0;i<P.length;i++){ st[i]=t; du[i]=psec(P[i]); t+=du[i]; const b=brkKind(P[i],P[i+1]); bk[i]=b; if(b){ off+=BRK_SEC[b]; t+=BRK_SEC[b]; } }
   const r={P,n:P.length,st,du,bk,total:off,end:t}; _tl.set(f,r); return r; }
 /* where the broadcast of game s is at t: done = plays already over; brk = the break running after play done-1 and
    its end (ms), or null */

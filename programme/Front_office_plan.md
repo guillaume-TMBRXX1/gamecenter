@@ -14,7 +14,11 @@ Plan préparé le 09/11/2026, après validation par Guillaume des écrans montr�
   rapports et badges, plus tard).
 - Votent les **comptes dont c'est la franchise favorite** (My team). Pourcentages **cachés jusqu'à la fermeture**.
   Moins de **5 votes** (ou égalité) : le coordinateur décide (« the coordinator kept his plan »).
-- **Premier levier : le 4e essai** (prudent / choix du coordinateur / agressif).
+- ~~Premier levier : le 4e essai~~ → **décision du 09/11 : plusieurs questions dès le départ, qui alternent** d'une
+  semaine à l'autre. La même question pour toutes les franchises une semaine donnée, rotation fixe par index de semaine :
+  4e essai → course / passe → blitz → couverture → profondeur des passes (le 4e essai la semaine du 16/11). Trois
+  réponses : un côté, « Coordinator's call » (aucun changement), l'autre côté. Bornes des leviers 4-5, ligne du 4e essai
+  (± 8 yd) et intitulés anglais validés le 09/11 (FO-1, README du serveur section 105).
 
 ## Le rythme d'une semaine
 
@@ -67,22 +71,19 @@ Si le serveur ne répond pas le samedi, **le calcul ne s'arrête pas** : les coo
 Chaque étape : tests unitaires et navigateur, `audit_moteur.py`, une section du README, la feuille de route à jour,
 une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'identique).
 
-### FO-1 — Moteur : le levier du 4e essai *(notebook + module)*
+### FO-1 — Moteur : les leviers des supporters, en rotation *(notebook + module)* — ✅ 09/11 (README section 105)
 
-- Nouveau module `moteur/supporters.py` : la liste des leviers (`quatrieme` d'abord), leurs options
-  (`prudent`, `coordinateur`, `agressif`) et `appliquer(oc, choix)` qui place `go_max_to_go` (et `go_min_yard_line`)
-  au bas, au milieu ou en haut des `bands` du coordinateur. **Seulement pour la semaine** : la valeur n'est pas
-  reportée dans `staffs_next_week` (sinon l'ajustement hebdomadaire dériverait).
-- Notebook (cellule de reprise des staffs) : lit `GC_FANS` (facultatif), applique les choix après
-  `apply_staff_snapshots` et **avant** les cotes ; écrit `week.json → fans` (`applied`, `source`, `votes`) et
-  `game.fans_plan` dans chaque GameFeed. Interrupteur `GC_SUPPORTERS` (`0` : V-actuelle à l'identique).
-- Écrit aussi la question suivante, `week.json → fan_vote` (levier, options, et pour chaque franchise ce que fait
-  son coordinateur cette semaine).
-- **Mesures** (graines du 12.3) : 4es essais tentés par match pour chaque option (ordre de grandeur attendu, d'après les
-  Hornets cette semaine : ≈ 0,4 · 0,7 · 1,2) ; équilibre 40-60 % inchangé avec toutes les franchises au choix du
-  coordinateur (résultats identiques) et avec des choix tirés au hasard ; 13.2 / 13.4 sans recalibrage ; déterminisme.
-- Tests : `moteur/tests/test_supporters.py` (bornes respectées, prudent ≤ coordinateur ≤ agressif, rien de reporté
-  dans la semaine suivante, fichier absent ou illisible = coordinateurs).
+- `moteur/supporters.py` : catalogue des cinq leviers (id, intitulés anglais, options, réglage, côté), rotation
+  (`levier_de_semaine(index)`), placement au bas ou en haut des bornes du coordinateur (bands du notebook pour le 4e
+  essai, course / passe et blitz ; tables d'identité pour la couverture et la profondeur), format et validation du
+  fichier `GC_FANS`. **Seulement pour la semaine** : restauré avant l'ajustement hebdomadaire (`staffs_next_week`).
+- Notebook : cellule 12.2 quinquatricies ; 15.1 lit `GC_FANS` et applique après `apply_staff_snapshots`, avant les
+  cotes ; `week.json → fans` et `fan_vote`, `game.fans_plan`. Interrupteur `GC_SUPPORTERS`.
+- Mesures (`outils/moteur/banc_supporters.py`, graines du 12.3) : effet de chaque option visible sur une semaine ;
+  « coordinateur » partout = matchs identiques ; choix au hasard sans levier gagnant à lui seul ; 13.2 / 13.4 ;
+  déterminisme. **Constat** : l'équilibre de 12.3 est déjà hors de 40-60 % avant FO-1 (34,8 % à 70,4 %), à traiter à
+  part.
+- Tests : `moteur/tests/test_supporters.py` ; `audit_moteur.py` contrôle `fans.applied` (bornes, rotation, rien de reporté).
 
 ### FO-2 — Serveur : les votes *(serveur)*
 
@@ -113,7 +114,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
   marche, le choix en vigueur cette semaine.
 - Le lundi : l'écran 4 (sans la partie draft) — résultat et pourcentages, « Your vote », le prochain match avec
   « Fans' plan », la nouvelle question.
-- Match centre : ligne « 4th downs » avec la puce « Fans' plan » ; page Teams : le choix des supporters de chaque
+- Match centre : la ligne du levier de la semaine (« 4th downs », part des courses, blitz…) avec la puce « Fans' plan » ; page Teams : le choix des supporters de chaque
   franchise, en lecture seule.
 - Invités et comptes sans franchise : une invitation à créer un compte / choisir son équipe. Téléphone 390 px.
   Marge en bas pour le bouton « Bet slip ».
@@ -148,12 +149,12 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 ### FO-7 — Plus tard
 
 - Rubrique « Fans' call » dans Week in review.
-- Autres leviers : course / passe (`pass_shift`, bornes déjà présentes), titulaire disputé ; rotation des questions.
+- Autres leviers : titulaire disputé (la rotation des cinq premiers leviers est faite en FO-1).
 - Draft board et points : seulement si Guillaume le décide.
 
 ## Points à confirmer au fil des étapes
 
 1. La fenêtre de la draft : vendredi 12:00 → 23:30 (proposé), ou ouverte plus tôt dans la semaine.
-2. FO-1 : la même question (4e essai) chaque semaine tant qu'il n'y a qu'un levier — ou une semaine sur deux.
+2. ~~FO-1 : la même question chaque semaine~~ — tranché le 09/11 : cinq questions en rotation.
 3. FO-3 : ajouter les deux secrets GitHub (`GC_ADMIN_KEY`, adresse du site) — action de Guillaume.
 4. FO-5 : accepter le décalage d'une semaine des retraites (nécessaire pour annoncer la dernière saison).
