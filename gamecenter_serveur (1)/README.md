@@ -2971,7 +2971,16 @@ ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni si
 - **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
   [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
 
-### 106. Front office FO-2 : le vote des supporters côté serveur (10/11/2026)
+### 106. Plus de sauts à la source : jet sweep, fumble ramassé, réception tardive près de la touche (10/11/2026)
+Complète la section 105 (plafond de `smoothMoves` à `JUMP_VMAX`, qui empêche tout saut d'une image à l'autre) en
+corrigeant, dans le dessin, les images clés qui le provoquaient :
+- **réception tardive près de la touche** : la sortie se dessine après l'attrapé (ses instants étaient fixes, 0,88 puis
+  0,95 ; une réception à 0,88 ou après faisait bondir le receveur) ;
+- **jet sweep** : un receveur aligné loin de la remise prend le temps d'y arriver (au plus `FL_VMAX`), le QB garde le
+  ballon un peu plus longtemps ;
+- **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là).
+
+### 107. Front office FO-2 : le vote des supporters côté serveur (10/11/2026)
 Plan : `programme/Front_office_plan.md`. Serveur seulement : le site viendra en FO-4, le passage au moteur en FO-3.
 - **La question** vient de la semaine en cours : le moteur écrit `week.json → fan_vote` (FO-1), c'est-à-dire la
   question de la semaine suivante, la même pour toutes les franchises, avec trois options. La première question
@@ -3168,7 +3177,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
 | GET | `/teams`, `/teams/<nom>` | pages des franchises, lisibles sans JavaScript (section 79) |
 | GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
-| GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 106) |
+| GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 107) |
 | POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
 | GET | `/api/fans/results?team=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) |
 | GET | `/api/admin/fans?key=&week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY`, après le verrou) |
@@ -3195,7 +3204,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 106).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107).
 
 ## Test
 

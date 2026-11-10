@@ -85,7 +85,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
   part.
 - Tests : `moteur/tests/test_supporters.py` ; `audit_moteur.py` contrôle `fans.applied` (bornes, rotation, rien de reporté).
 
-### FO-2 — Serveur : les votes *(serveur)* — ✅ 10/11 (README section 106)
+### FO-2 — Serveur : les votes *(serveur)* — ✅ 10/11 (README section 107)
 
 - Tables `fan_votes(player, week, team, lever, choice, at)` (une ligne par joueur, semaine et levier) ; colonne
   `fav_team_at` dans `players`.
