@@ -2980,6 +2980,13 @@ corrigeant, dans le dessin, les images clés qui le provoquaient :
   ballon un peu plus longtemps ;
 - **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là).
 
+### 107. Pick-six en fin de 1er ou de 3e quart-temps : la transformation reste dans le quart-temps (10/11/2026)
+`moteur.actions_longues.fin_de_periode` traitait déjà le pick-six sur la dernière action d'une mi-temps ou du match ;
+sur la dernière action du 1er ou du 3e quart-temps, sa transformation passait au quart-temps suivant (semaine du 09/11,
+w7-r204). Elle y reste maintenant, horloge à 0, et la pause de fin de quart-temps vient après elle, comme après un
+touchdown ordinaire. Le site et le serveur affichaient déjà la pause au bon endroit pour les semaines calculées avant
+(section 105, `break_kind(p, nxt)`) ; les semaines suivantes ont des données justes. Test : `test_actions_longues`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
