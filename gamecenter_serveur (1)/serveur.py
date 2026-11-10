@@ -34,6 +34,7 @@ from moteur import meme_match as _mm
 from moteur import rivalites as _riv
 from moteur import empreinte as _emp
 from moteur import recap_semaine as _rev
+from moteur import supporters as _fo
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -524,7 +525,8 @@ with db() as _c:
     # ce joueur. Sans compte on parie comme avant (« invité ») ; le compte garde le portefeuille sur tous les appareils
     # et donne une place au classement de la saison. Migration douce : colonnes ajoutées à la base existante.
     _cols = {r[1] for r in _c.execute("PRAGMA table_info(players)")}
-    for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER"), ("fav_team", "TEXT")):
+    for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER"), ("fav_team", "TEXT"),
+                       ("fav_team_at", "INTEGER")):        # FO-2 : depuis quand le compte tient sa franchise favorite
         if _col not in _cols:
             _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
     _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
@@ -552,6 +554,12 @@ with db() as _c:
     _c.executescript("""
     CREATE TABLE IF NOT EXISTS refills(id TEXT PRIMARY KEY, player TEXT, week TEXT, at INTEGER, amount REAL, via TEXT);
     CREATE INDEX IF NOT EXISTS refills_p ON refills(player);
+    """)
+    # Front office FO-2 : le vote des supporters, une ligne par joueur, semaine (lundi où le choix s'applique) et levier.
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS fan_votes(player TEXT, week TEXT, team TEXT, lever TEXT, choice TEXT, at INTEGER,
+                                         PRIMARY KEY(player, week, lever));
+    CREATE INDEX IF NOT EXISTS fan_votes_wt ON fan_votes(week, team);
     """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
@@ -1722,8 +1730,234 @@ async def api_fav_team(req: Request):
         if not _TEAM_RE.match(team) or team not in known:
             raise HTTPException(400, "unknown_team")
     with _db_lock, db() as c:
-        c.execute("UPDATE players SET fav_team=? WHERE id=?", (team, p["id"]))
+        if team != p.get("fav_team"):       # FO-2 : changer de franchise retire le vote ouvert ; on revote le lundi suivant
+            c.execute("UPDATE players SET fav_team=?, fav_team_at=? WHERE id=?", (team, now_ms(), p["id"]))
+            q = fans_question()
+            if q:
+                c.execute("DELETE FROM fan_votes WHERE player=? AND week=?", (p["id"], q["fan_vote"]["week"]))
     return {"fav_team": team}
+
+
+# ------------------------------------------------------------------ Front office FO-2 : le vote des supporters
+# programme/Front_office_plan.md. La semaine en cours (week.json → fan_vote, écrit par le moteur, FO-1) porte la question
+# de la semaine suivante : la même pour toutes les franchises, trois options. Votent les comptes dont c'est la franchise
+# favorite (« My team »), tenue depuis le lundi de la semaine (changer de franchise retire le vote ; on revote le lundi
+# suivant). Vote modifiable jusqu'au verrou du vendredi (standings_locked_at). Pourcentages cachés jusqu'au verrou ;
+# moins de supporters.MIN_VOTES votes ou égalité en tête : le coordinateur décide. Après le verrou, l'export
+# /api/admin/fans (GC_ADMIN_KEY) donne le fichier GC_FANS que le calcul du samedi passe au moteur (FO-3).
+# Interrupteur GC_FRONT_OFFICE=off : routes coupées (404), rien n'est enregistré.
+FAN_VOTE_MAX_JOUEUR, FAN_VOTE_MAX_IP = 30, 300        # votes en 15 min (comme les essais de code des ligues)
+
+
+def front_office_on():
+    return os.environ.get("GC_FRONT_OFFICE", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def _fo_need():
+    if not front_office_on():
+        raise HTTPException(404, "front_office_off")
+
+
+def fans_question(t=None):
+    """La semaine dont la question est ouverte (ou fermée, en attendant la semaine suivante) : {week, fan_vote, lock,
+    monday} ou None (semaine calculée avant FO-1 : pas de question)."""
+    w = current_week(t)
+    fv = w.doc.get("fan_vote") if w else None
+    if not fv or not fv.get("lever") or not fv.get("week"):
+        return None
+    return {"week": w, "fan_vote": fv, "lock": w.lock, "monday": w.monday}
+
+
+def fans_counts(week, team=None):
+    """{équipe: {option: votes}} pour la semaine (lundi où le choix s'applique)."""
+    out = defaultdict(dict)
+    with db() as c:
+        sql = "SELECT team, choice, COUNT(*) n FROM fan_votes WHERE week=?" + (" AND team=?" if team else "") + \
+              " GROUP BY team, choice"
+        for r in c.execute(sql, (week, team) if team else (week,)):
+            out[r["team"]][r["choice"]] = r["n"]
+    return out
+
+
+def fans_result(counts, options):
+    """Résultat d'une franchise : votes, pourcentages, choix retenu (« coordinateur » sous MIN_VOTES votes ou à
+    égalité en tête) et source (fans / coordinators) — la règle que le moteur applique aussi (supporters.choix_de_semaine)."""
+    counts = {o: int(counts.get(o, 0)) for o in options}
+    n = sum(counts.values())
+    pct = {o: (round(100 * v / n) if n else 0) for o, v in counts.items()}
+    top = sorted(counts.items(), key=lambda kv: -kv[1])
+    tie = len(top) >= 2 and top[0][1] == top[1][1]
+    if n < _fo.MIN_VOTES or tie or top[0][0] == _fo.COORD:
+        choice, source = _fo.COORD, "coordinators"
+    else:
+        choice, source = top[0][0], "fans"
+    return {"votes": n, "counts": counts, "pct": pct, "choice": choice, "source": source}
+
+
+def _fan_options(fv):
+    return [o["id"] for o in fv.get("options") or []]
+
+
+def _fans_eligible(p, q):
+    """None si le compte peut voter, sinon la raison."""
+    if not p or not p.get("login"):
+        return "account_required"
+    team = p.get("fav_team")
+    if not team:
+        return "no_team"
+    if team not in (q["fan_vote"].get("teams") or {}):
+        return "unknown_team"
+    if p.get("fav_team_at") and p["fav_team_at"] >= q["monday"]:
+        return "team_changed"            # franchise choisie cette semaine : le vote compte à partir du lundi suivant
+    return None
+
+
+def _closed_vote(t):
+    """La dernière question fermée : (semaine qui la portait, fan_vote) — celle de cette semaine après le verrou, sinon
+    celle de la semaine d'avant (le choix en vigueur cette semaine)."""
+    q = fans_question(t)
+    if q and t >= q["lock"]:
+        return q["week"], q["fan_vote"]
+    cur = current_week(t)
+    if not cur:
+        return None, None
+    prev = [w for w in load_weeks().values() if w.monday < cur.monday and (w.doc.get("fan_vote") or {}).get("week") == cur.start]
+    if prev:
+        w = max(prev, key=lambda x: x.monday)
+        return w, w.doc["fan_vote"]
+    return None, None
+
+
+def _fans_question_public(fv, team=None):
+    out = {k: fv.get(k) for k in ("week", "index", "lever", "label", "question", "side", "setting", "options")}
+    if team:
+        out["team"] = dict((fv.get("teams") or {}).get(team) or {}, abbr=team)
+    return out
+
+
+def _iso(ms):
+    return datetime.fromtimestamp(ms / 1000, TZ).isoformat()
+
+
+@app.get("/api/fans")
+def api_fans(token: str = ""):
+    """Le vote de ma franchise : la question, mon vote, l'heure de fermeture ; le résultat seulement après le verrou ;
+    le choix en vigueur cette semaine (week.json → fans.applied)."""
+    _fo_need()
+    t = now_ms()
+    p = player_by_token(token) if token else None
+    q = fans_question(t)
+    cur = current_week(t)
+    team = p.get("fav_team") if p else None
+    applied = ((cur.doc.get("fans") or {}).get("applied") or {}).get(team) if cur and team else None
+    out = {"enabled": True, "now": t, "account": bool(p and p.get("login")), "team": team,
+           "in_force": dict(applied, lever=(cur.doc.get("fans") or {}).get("lever")) if applied else None}
+    if not q:
+        return dict(out, open=False, reason="no_question")
+    fv = q["fan_vote"]
+    closed = t >= q["lock"]
+    why = _fans_eligible(p, q)
+    out.update(open=not closed, closed=closed, closes_at=_iso(q["lock"]), reason=why,
+               question=_fans_question_public(fv, team if team in (fv.get("teams") or {}) else None))
+    if p and p.get("login"):
+        with db() as c:
+            r = c.execute("SELECT choice, team FROM fan_votes WHERE player=? AND week=? AND lever=?",
+                          (p["id"], fv["week"], fv["lever"])).fetchone()
+        out["my_vote"] = r["choice"] if r else None
+    if closed and team in (fv.get("teams") or {}):
+        out["result"] = fans_result(fans_counts(fv["week"], team).get(team, {}), _fan_options(fv))
+    return out
+
+
+@app.post("/api/fans/vote")
+async def api_fans_vote(req: Request):
+    """{token, choice} : vote (ou change son vote) pour sa franchise favorite, jusqu'au verrou."""
+    _fo_need()
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    t = now_ms()
+    q = fans_question(t)
+    if not q:
+        raise HTTPException(409, "no_question")
+    if t >= q["lock"]:
+        raise HTTPException(409, "vote_closed")
+    why = _fans_eligible(p, q)
+    if why:
+        raise HTTPException(403 if why == "account_required" else 409, why)
+    fv = q["fan_vote"]
+    choice = str(body.get("choice") or "")
+    if choice not in _fan_options(fv):
+        raise HTTPException(400, "unknown_choice")
+    keys = (("fanvote", p["id"]), FAN_VOTE_MAX_JOUEUR), (("fanvoteip", _ip(req)), FAN_VOTE_MAX_IP)
+    if _too_many_fails(*keys):
+        raise HTTPException(429, "too_many_attempts")
+    _note_fail(*(k for k, _ in keys))
+    with _db_lock, db() as c:
+        c.execute("INSERT INTO fan_votes(player, week, team, lever, choice, at) VALUES(?,?,?,?,?,?) "
+                  "ON CONFLICT(player, week, lever) DO UPDATE SET team=excluded.team, choice=excluded.choice, at=excluded.at",
+                  (p["id"], fv["week"], p["fav_team"], fv["lever"], choice, t))
+    return {"ok": True, "my_vote": choice, "team": p["fav_team"], "week": fv["week"], "lever": fv["lever"],
+            "closes_at": _iso(q["lock"])}
+
+
+@app.get("/api/fans/results")
+def api_fans_results(team: str = ""):
+    """Après le verrou : le résultat de la dernière question fermée, pour une franchise (team=) ou pour toutes
+    (page Teams). Avant le premier verrou : 409 not_closed."""
+    _fo_need()
+    t = now_ms()
+    w, fv = _closed_vote(t)
+    if not fv:
+        raise HTTPException(409, "not_closed")
+    team = team.strip().upper()
+    teams = [team] if team else sorted(fv.get("teams") or {})
+    if team and team not in (fv.get("teams") or {}):
+        raise HTTPException(404, "unknown_team")
+    counts, opts = fans_counts(fv["week"]), _fan_options(fv)
+    return {"week": fv["week"], "lever": fv["lever"], "label": fv.get("label"), "question": fv.get("question"),
+            "options": fv.get("options"), "closed_at": _iso(w.lock),
+            "teams": {a: fans_result(counts.get(a, {}), opts) for a in teams}}
+
+
+def fans_export(week):
+    """Le fichier GC_FANS (format : moteur/supporters.py) de la semaine `week` (lundi où les choix s'appliquent), ou
+    None si aucune question n'a été posée pour cette semaine."""
+    src = [w for w in load_weeks().values() if (w.doc.get("fan_vote") or {}).get("week") == week]
+    if not src:
+        return None, None
+    w = max(src, key=lambda x: x.monday)
+    fv = w.doc["fan_vote"]
+    counts, opts = fans_counts(week), _fan_options(fv)
+    teams = {}
+    for a in sorted(fv.get("teams") or {}):
+        r = fans_result(counts.get(a, {}), opts)
+        if r["votes"]:
+            teams[a] = {"choice": r["choice"], "votes": r["votes"], "counts": r["counts"]}
+    return w, {"version": 1, "week": week, "lever": fv["lever"], "closed_at": _iso(w.lock), "teams": teams}
+
+
+@app.get("/api/admin/fans")
+def api_admin_fans(key: str = "", week: str = ""):
+    """Export pour le calcul du samedi (GC_ADMIN_KEY), seulement après le verrou. week = lundi où les choix s'appliquent
+    (défaut : la dernière question fermée)."""
+    _fo_need()
+    admin = os.environ.get("GC_ADMIN_KEY", "")
+    if len(admin) < 16 or not secrets.compare_digest(str(key), admin):
+        raise HTTPException(403, "Non autorisé.")
+    t = now_ms()
+    if not week:
+        _, fv = _closed_vote(t)
+        if not fv:
+            raise HTTPException(409, "not_closed")
+        week = fv["week"]
+    w, doc = fans_export(week)
+    if not doc:
+        raise HTTPException(404, "no_question")
+    if t < w.lock:
+        raise HTTPException(409, "not_closed")
+    return doc
 
 
 # ------------------------------------------------------------------ rappels avant le coup d'envoi (bloc 2, étape 6)
