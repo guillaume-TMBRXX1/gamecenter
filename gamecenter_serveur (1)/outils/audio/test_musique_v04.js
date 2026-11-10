@@ -50,7 +50,9 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
     S.mixMute.music=false; A.manager().apply(); await wait(1500); out.unmuted=mm.stats();
     return out; });
   console.log('   ',JSON.stringify(r));
-  check(r.start.pieces===8&&(r.start.fin?r.start.state==='silence':r.start.playing&&['pregame','gameplay','close_game','red_zone','final_drive','overtime'].includes(r.start.state)),`8 pièces, musique dès le son allumé (${r.start.state}${r.start.fin?', match à l\'antenne terminé':''} : le match à l'antenne décide)`);
+  /* 10/11/2026 : « fin » est lu 2,5 s après le son allumé ; AudioManager.focus a choisi à l'allumage (pregame si le match
+   n'était pas encore fini). Le match à l'antenne qui se termine pendant ces 2,5 s laisse donc pregame : les deux sont justes. */
+check(r.start.pieces===8&&(r.start.fin?(r.start.state==='silence'||r.start.state==='pregame'):r.start.playing&&['pregame','gameplay','close_game','red_zone','final_drive','overtime'].includes(r.start.state)),`8 pièces, musique dès le son allumé (${r.start.state}${r.start.fin?', match à l\'antenne terminé':''} : le match à l'antenne décide)`);
   check(r.up.state==='red_zone','la tension monte tout de suite');
   check(r.down.state==='red_zone'&&r.down.want==='gameplay','redescente différée (pas de va-et-vient)');
   check(r.later.state==='gameplay','redescend après 20 s');

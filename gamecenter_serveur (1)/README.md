@@ -2955,6 +2955,19 @@ ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni si
   MNL option inconnue, BST égalité → coordinateur) : 3 franchises au choix des supporters, `adjustments.before` identiques
   au passage coupé (rien de reporté), `fan_vote` = course / passe pour la semaine 9 ; 640 s contre 647 (pas de coût) ;
   audit : 0 anomalie bloquante (coupé et avec fichier).
+- **Correctifs pour le contrôle des PR (10/11)**, hors leviers. Les échecs venaient de la semaine du 09/11 et de
+  l'heure du test, pas de FO-1.
+  - **Pauses** : dans `w7-r204`, un pick-six tombe sur la dernière action du Q1 et la transformation est exportée dans
+    le Q2. `break_kind(p, nxt)` (serveur) et `brkKind(P, N)` (site, cellule 427 régénérée) mettent alors la pause après
+    le touchdown. Test unitaire et parité site / serveur avec ce match.
+  - **Sauts** : `smoothMoves` plafonne tout joueur à `JUMP_VMAX` = 3 × `FL_VMAX` (33 yd/s) d'une image à l'autre,
+    porteur compris. Avant, une coupure d'images clés à la réception près de la touche, en fin de libération ou quand
+    un défenseur simulé rejoint son chemin faisait sauter un joueur jusqu'à 126 yd/s pendant une image.
+    `test_actions` passe de 45,1 yd/s au 99e centile à 33,0.
+  - **« Le receveur file droit »** : seuil relevé à 0,35 (décision de Guillaume). Sur les réceptions courtes, le
+    receveur rejoint en travers le point d'arrivée du feed : 0,30 sur les semaines du 02/11 et du 09/11, à la limite.
+  - **Test musique** : quand le match à l'antenne se termine entre l'allumage du son et la mesure (2,5 s),
+    « pregame » est juste aussi.
 - **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
   [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
 
