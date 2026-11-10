@@ -2882,6 +2882,20 @@ Suite de la section 103 : le site lit `play.geo.cov` (`geoCovP`) et dessine les 
   `test_actions` dépasse encore ses seuils (sauts tardifs après une réception près de la touche, présents avant ce
   changement : 45 yd/s au 99e centile au lieu de 123 avant le correctif ; la ligne droite après la réception, 0,30).
 
+### 105. Plus de sauts sur le terrain (semaine du 09/11, avec les traces des trajectoires) (09/11/2026)
+Sur une semaine qui porte les traces (sections 99 à 104), `test_actions` relevait des sauts (126 yd/s au plus, 45 au
+99e centile). Corrigé dans le dessin, sans toucher au moteur :
+- **réception tardive près de la touche** : la sortie se dessine après l'attrapé (ses instants étaient fixes, 0,88 puis
+  0,95 ; une réception à 0,88 ou après faisait bondir le receveur) ;
+- **jet sweep** : un receveur aligné loin de la remise prend le temps d'y arriver (au plus `FL_VMAX`), le QB garde le
+  ballon un peu plus longtemps ;
+- **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là) ;
+- **lissage** (`smoothMoves`) : personne d'autre que le porteur n'est dessiné à plus de `SM_VMAX` = 28 yd/s d'écran ; il
+  rattrape sur les images suivantes ;
+- `test_actions` : la ligne droite après la réception ne vaut que pour les réceptions que le site dessine (celles que le
+  moteur simule suivent leur chemin, `test_receptions_simulees.js`).
+Résultat sur la semaine du 09/11 : 36,4 yd/s au 99e centile, 52,7 au plus.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

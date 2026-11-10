@@ -3569,9 +3569,12 @@ function planScrimmage(g,call,imp){
     off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y],[0.5,L+d*0.8,by-side*2.5],[1,L+d*1.5,by-side*3.5]];
     P.carrier=[[0.08,1,'off',6]];
   } else if(imp.target===8||imp.target===9||imp.target===10||imp.target===5){   /* jet / Z sweep: the receiver takes it in motion */
-    const w=O[imp.target]; off[imp.target]=[[0,w.x,w.y],[hU,mesh.x,mesh.y+side*0.4],[Math.min(0.5,hU+0.24),L-d*0.6,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
-    off[7]=[[0,rb.x,rb.y],[hU,mesh.x,mesh.y-side],[1,L+d*1.5,by-side*3]];
-    P.carrier=[[0.08,hU,'off',6],[hU,1,'off',imp.target]];
+    /* 09/11/2026: a receiver lined up far from the mesh takes the time to get there (no faster than FL_VMAX): the
+       quarterback holds the ball a little longer */
+    const w=O[imp.target], hJ=FL?Math.min(0.42,Math.max(hU,Math.hypot(mesh.x-w.x,mesh.y-w.y)/(0.9*FL_VMAX*act))):hU;
+    off[imp.target]=[[0,w.x,w.y],[hJ,mesh.x,mesh.y+side*0.4],[Math.max(hJ+0.12,Math.min(0.5,hJ+0.24)),L-d*0.6,holeY],[0.88,Fx,Fy],[1,Fx,Fy]];
+    off[7]=[[0,rb.x,rb.y],[hJ,mesh.x,mesh.y-side],[1,L+d*1.5,by-side*3]];
+    P.carrier=[[0.08,hJ,'off',6],[hJ,1,'off',imp.target]];
   }
   if(call.formation==='WILDCAT'){   /* wildcat: direct snap to the back; the quarterback, split wide, blocks his man */
     const q=O[6]; off[6]=[[0,q.x,q.y],[0.4,q.x+d*2.6,q.y],[1,q.x+d*3.8,q.y]];
@@ -3710,7 +3713,11 @@ function addFumble(P,rec){
   let best=0, bd=1e9;
   for(let i=0;i<11;i++){ const p=kfAt(other[i],tf); const dd=(p.x-cp.x)**2+(p.y-cp.y)**2; if(dd<bd){bd=dd;best=i;} }
   last[1]=tf;
-  if(JEU_FLUIDE){ const tr=tf+0.03; other[best]=kfCut(other[best],leadAt(other[best],tr,cp,tf,P.act||P.dur,0.5),[[tr,cp.x,cp.y],[1,rec.x,rec.y]]);
+  if(JEU_FLUIDE){   /* 09/11/2026: he gets to the ball no faster than FL_VMAX (it lies there until he does) */
+    const act=P.act||P.dur, o=other[best], s0=leadAt(o,tf+0.03,cp,tf,act,0.12), p0=kfAt(o,s0);
+    const tr=Math.min(0.95,Math.max(tf+0.03,s0+Math.hypot(cp.x-p0.x,cp.y-p0.y)/(FL_VMAX*act)));
+    other[best]=kfCut(o,s0,[[tr,cp.x,cp.y],[1,rec.x,rec.y]]);
+    if(tr>tf+0.031&&!P.loose) P.loose=[[tf,cp.x,cp.y],[1,cp.x,cp.y]];
     P.carrier.push([tr,1,side==='off'?'def':'off',best]); (side==='off'?P.wDef:P.wOff)[best]=0; }
   else {
   other[best]=other[best].filter(k=>k[0]<tf).concat([[tf+0.01,cp.x,cp.y],[1,rec.x,rec.y]]);
@@ -3872,6 +3879,7 @@ function trackUpdate(g,P,uu){
 
 /* JEU_FLUIDE: from one frame to the next, nobody moves faster than his own keyframes, the ball carrier or FL_VMAX —
    the pull toward the carrier (chasers) never makes a player jump, nor its end when the ball changes hands */
+const SM_VMAX=28;   /* yards a second of screen: no one but the ball carrier is drawn faster (09/11/2026) */
 function smoothMoves(g,P,uu,car){
   const raw={off:P.off.map(k=>kfAt(k,uu)),def:P.def.map(k=>kfAt(k,uu))}, S=P.smooth;
   if(S&&uu>S.u&&uu-S.u<0.2){
@@ -3880,7 +3888,9 @@ function smoothMoves(g,P,uu,car){
     for(const sd of ['off','def']){ const A=sd==='off'?g.off:g.def;
       for(let i=0;i<11;i++){ if(car&&car.side===sd&&car.idx===i) continue;
         const q=S[sd][i], r0=S.raw[sd][i], r1=raw[sd][i];
-        const lim=Math.max(Math.hypot(r1.x-r0.x,r1.y-r0.y),cs,FL_VMAX*dt)*1.05, dd=Math.hypot(A[i].x-q.x,A[i].y-q.y);
+        /* 09/11/2026: and never faster than SM_VMAX on screen, whatever the keyframes ask (a defender pulled to the
+           ball carrier late, a block across the field): he catches up on the next frames */
+        const lim=Math.min(Math.max(Math.hypot(r1.x-r0.x,r1.y-r0.y),cs,FL_VMAX*dt)*1.05,Math.max(cs*1.05,SM_VMAX*dt)), dd=Math.hypot(A[i].x-q.x,A[i].y-q.y);
         if(dd>lim) A[i]={x:q.x+(A[i].x-q.x)*lim/dd, y:q.y+(A[i].y-q.y)*lim/dd}; } }
   }
   const cp=car?(car.side==='off'?g.off:g.def)[car.idx]:null;

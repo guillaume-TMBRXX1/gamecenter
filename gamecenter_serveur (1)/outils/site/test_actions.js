@@ -3,7 +3,7 @@
 // Rejoue en temps simulé (60 images par seconde d'écran), sur le grand écran, trois matchs de la dernière semaine qui
 // ont une interception, et mesure ce que voit le spectateur :
 //   - passes : le ballon quitte le QB avant l'attrapé et reste en l'air FL_MIN s d'écran au moins ;
-//   - après la réception (hors sortie en touche) : le receveur file droit (écart latéral / yards vers l'avant) ;
+//   - après la réception (hors sortie en touche et réception simulée par le moteur) : le receveur file droit ;
 //   - interception : le retour ne part pas vers le centre du terrain sans raison ;
 //   - réception de 20 yards et plus : un défenseur est sur le receveur quand il s'arrête ;
 //   - aucun saut : vitesse d'un joueur d'une image à l'autre ;
@@ -40,7 +40,7 @@ function measure([F,on]){
   const MIDY=26.65, H=1/60, out=[]; let rec=null;
   const fin=()=>{ if(!rec) return; const r=rec; rec=null; const P=r.P, pl=r.plan;
     if(!pl||pl.frames||pl.type==='kick') return;
-    const o={seq:P.seq,res:P.result,kind:pl.kind,gain:P.gain,oob:!!(P.clock&&P.clock.oob)}, d=P.offense==='home'?1:-1;
+    const o={seq:P.seq,res:P.result,kind:pl.kind,gain:P.gain,oob:!!(P.clock&&P.clock.oob),sim:!!pl.sim}, d=P.offense==='home'?1:-1;
     if(pl.flight) o.flight=(pl.flight.t1-pl.flight.t0)*r.dur;
     const last=pl.carrier[pl.carrier.length-1];
     if(last){ const side=last[2], idx=last[3], sd=side==='off'?d:-d;
@@ -76,9 +76,11 @@ function measure([F,on]){
     console.log(`   ${on.length} actions, ${fl.length} passes`);
     const minF=Math.min(...fl.map(o=>o.flight));
     check(fl.length>20&&minF>=0.3,`chaque passe se voit partir : vol le plus court ${minF.toFixed(2)} s (≥ 0,3 s ; 0,42 s visé)`);
-    const C=on.filter(o=>o.kind==='comp'&&o.res==='complete'&&!o.oob&&o.fwd>=4);
+    /* 09/11/2026 : la course après une réception simulée par le moteur (play.geo.sim) suit son chemin, qui peut couper
+       (test_receptions_simulees.js) ; la ligne droite vaut pour celles que le site dessine */
+    const C0=on.filter(o=>o.kind==='comp'&&o.res==='complete'&&!o.oob&&o.fwd>=4), C=C0.filter(o=>!o.sim);
     const r=C.map(o=>Math.abs(o.lat)/o.fwd).sort((a,b)=>a-b), r90=r.length?r[Math.floor(r.length*0.9)]:0;
-    check(C.length>5&&r90<=0.3,`après la réception, le receveur file droit : écart latéral / yards vers l'avant ${r90.toFixed(2)} (90e centile, ≤ 0,3) sur ${C.length} réceptions`);
+    check(C0.length>5&&r90<=0.3,`après la réception, le receveur file droit : écart latéral / yards vers l'avant ${r90.toFixed(2)} (90e centile, ≤ 0,3) sur ${C.length} réceptions dessinées (${C0.length-C.length} simulées par le moteur, à part)`);
     const I=on.filter(o=>o.kind==='int'&&o.fwd!=null), Im=I.filter(o=>o.mid>3&&Math.abs(o.lat)>o.fwd*0.6);
     check(I.length>0&&Im.length<=Math.ceil(I.length*0.25),`interception : retour vers l'en-but adverse, pas vers le centre (${I.length-Im.length} / ${I.length})`);
     const Lg=on.filter(o=>o.kind==='comp'&&o.res==='complete'&&!o.oob&&o.gain>=15&&o.opp!=null), Lk=Lg.filter(o=>o.opp>3);
