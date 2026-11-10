@@ -32,6 +32,10 @@ try:                                    # étape 7.4 : les blessures, l'infirmer
     from moteur import blessures as _bl
 except Exception:
     _bl = None
+try:                                    # Front office FO-1 : les leviers des supporters
+    from moteur import supporters as _fo
+except Exception:
+    _fo = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -423,6 +427,7 @@ def check_week(A, folder):
         except Exception as e:
             A.add(BLOQUANT, name, g["id"], None, f"fichier du match illisible : {e}"); continue
         check_semaine_blesses(A, name, g, feed, blesses)
+        check_fans_plan(A, name, g, feed, w.get("fans"))
         check_scout(A, name, g, feed)
         nb = check_rotations(A, name, g, feed)
         if nb:
@@ -440,6 +445,7 @@ def check_week(A, folder):
     check_progression(A, name, w)
     check_film(A, name, folder, w)
     check_infirmerie(A, name, w)
+    check_fans(A, name, w)
     porteurs = Counter(nom for nom, _ in tous_noms)
     doublons = sorted(nom for nom, _ in banc_noms if porteurs[nom] > 1)
     if doublons:
@@ -490,6 +496,66 @@ def check_week(A, folder):
             if not any({g["home"], g["away"]} == champs for g in semis):
                 A.add(BLOQUANT, name, None, None, f"finale de conférence {conf} : {sorted(champs)} attendus")
     return stats
+
+
+def check_fans(A, name, w):
+    """FO-1 : week.json → fans (choix des supporters appliqués) dans les bornes de chaque coordinateur, le levier de la
+    rotation, rien de reporté dans l'ajustement hebdomadaire ; fan_vote = la question suivante. Semaine sans « fans »
+    (avant FO-1, ou GC_SUPPORTERS=0) : rien à contrôler."""
+    fans, bad = w.get("fans"), (lambda m: A.add(BLOQUANT, name, None, None, f"fans : {m}"))
+    if not fans:
+        if w.get("fan_vote"):
+            bad("fan_vote sans fans")
+        return
+    idx = (w.get("week") or {}).get("index")
+    lv = fans.get("lever")
+    if _fo is not None:
+        if lv not in _fo.LEVIERS:
+            return bad(f"levier inconnu {lv}")
+        if idx is not None and lv != _fo.levier_de_semaine(idx):
+            bad(f"levier {lv} ≠ rotation de la semaine {idx} ({_fo.levier_de_semaine(idx)})")
+        fv = w.get("fan_vote") or {}
+        if idx is not None and fv.get("lever") != _fo.levier_de_semaine(idx + 1):
+            bad(f"fan_vote {fv.get('lever')} ≠ rotation de la semaine {idx + 1}")
+    applied = fans.get("applied") or {}
+    if set(applied) != set(w.get("teams") or applied):
+        bad(f"franchises {sorted(set(w.get('teams') or {}) ^ set(applied))[:5]}")
+    adj = w.get("adjustments") or {}
+    for t, r in sorted(applied.items()):
+        b, v = r.get("bands"), r.get("value")
+        if not b or not isinstance(v, (int, float)) or not b[0] <= v <= b[1]:
+            bad(f"{t} : {r.get('setting')} = {v} hors des bornes {b}")
+        if r.get("source") == "fans":
+            if _fo is not None and (r.get("choice") not in _fo.options(lv) or r.get("choice") == _fo.COORD
+                                    or (r.get("votes") or 0) < _fo.MIN_VOTES):
+                bad(f"{t} : choix des supporters invalide ({r.get('choice')}, {r.get('votes')} votes)")
+        elif r.get("source") == "coordinators":
+            if v != r.get("coordinator"):
+                bad(f"{t} : coordinateur mais {v} ≠ {r.get('coordinator')}")
+        else:
+            bad(f"{t} : source {r.get('source')}")
+        ligne = r.get("go_min_yard_line")
+        if ligne and _fo is not None and ligne["value"] != ligne["coordinator"] and \
+                not _fo.LIGNE_4E_BORNES[0] <= ligne["value"] <= _fo.LIGNE_4E_BORNES[1]:
+            bad(f"{t} : go_min_yard_line {ligne['value']} hors de {_fo.LIGNE_4E_BORNES}")
+        avant = ((adj.get(t) or {}).get("before") or {}).get(r.get("setting"))
+        if avant is not None and avant != r.get("coordinator"):
+            bad(f"{t} : choix reporté dans l'ajustement hebdomadaire ({r.get('setting')} {avant} ≠ {r.get('coordinator')})")
+
+
+def check_fans_plan(A, name, g, feed, fans):
+    """FO-1 : game.fans_plan de chaque GameFeed = fans.applied des deux équipes."""
+    fp = (feed.get("game") or {}).get("fans_plan")
+    if not fans:
+        if fp:
+            A.add(BLOQUANT, name, g["id"], None, "game.fans_plan sans fans dans week.json")
+        return
+    for side in ("home", "away"):
+        r = (fans.get("applied") or {}).get(g[side]) or {}
+        x = (fp or {}).get(side) or {}
+        if fp is None or fp.get("lever") != fans.get("lever") or any(x.get(k) != r.get(k) for k in ("choice", "source", "votes")):
+            A.add(BLOQUANT, name, g["id"], None, f"game.fans_plan {side} ≠ fans.applied de {g[side]}")
+            return
 
 
 def check_infirmerie(A, name, w):

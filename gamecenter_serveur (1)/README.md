@@ -2882,19 +2882,103 @@ Suite de la section 103 : le site lit `play.geo.cov` (`geoCovP`) et dessine les 
   `test_actions` dépasse encore ses seuils (sauts tardifs après une réception près de la touche, présents avant ce
   changement : 45 yd/s au 99e centile au lieu de 123 avant le correctif ; la ligne droite après la réception, 0,30).
 
-### 105. Plus de sauts sur le terrain (semaine du 09/11, avec les traces des trajectoires) (09/11/2026)
-Sur une semaine qui porte les traces (sections 99 à 104), `test_actions` relevait des sauts (126 yd/s au plus, 45 au
-99e centile). Corrigé dans le dessin, sans toucher au moteur :
+### 105. Front office FO-1 : les leviers des supporters dans le moteur (09/11/2026)
+Plan : `programme/Front_office_plan.md`. Décisions de Guillaume (09/11) : **plusieurs questions dès le départ, qui
+alternent** — la même pour les 24 franchises une semaine donnée, rotation fixe par index de semaine ; trois réponses
+(un côté, « Coordinator's call » = aucun changement, l'autre côté) ; bornes des leviers 4-5, ligne du 4e essai,
+ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni site, ni workflow).
+- **Module** `moteur/supporters.py` (Python pur, sans hasard ; tests `moteur/tests/test_supporters.py`) : catalogue
+  `LEVIERS`, `ROTATION` (`quatrieme` → `course_passe` → `blitz` → `couverture` → `profondeur`, le 4e essai la semaine du
+  16/11, index 8), réglage placé au bas ou en haut des bornes du coordinateur, lecture et validation du fichier
+  `GC_FANS`, `appliquer` / `restaurer`, question de la semaine suivante.
+
+  | Levier | Question (site) | Options | Réglage | Bornes |
+  |---|---|---|---|---|
+  | `quatrieme` | How bold should we be on fourth down? | Play it safe · Coordinator's call · Go for it | `go_max_to_go` + `go_min_yard_line` ± 8 yd | bands du coordinateur offensif ; ligne bornée à 30-62 |
+  | `course_passe` | Should we lean on the run or the pass? | More runs · … · More passes | `pass_shift` | bands du coordinateur offensif |
+  | `blitz` | How often should the defense send extra rushers? | Blitz less · … · Blitz more | `blitz_rate` | bands du coordinateur défensif |
+  | `couverture` | Zone or man-to-man coverage? | More zone · … · More man-to-man | poids MAN des couvertures | `BORNES_COUVERTURE` (identité : part d'homme −12/+15 points pour les défenses « homme », −10/+12 sinon, AEG/NVA/MRD plafonnées à 10 %) |
+  | `profondeur` | Short passes or deep shots? | Shorter passes · … · Deeper passes | concepts longs × k, courts ÷ k (budget de passe gardé) | `BORNES_PROFONDEUR` (verticales 0,8-1,4 ; courtes 0,65-1,25 ; autres 0,7-1,35) |
+
+- **Notebook** : cellule **12.2 quinquatricies** (après la poche) — enveloppes `_fr_defensive_concept` et
+  `franchise_playbook` pour les leviers sans attribut (`FANS_SEMAINE`, vide = aucun effet, aucun tirage),
+  `supporters_appliquer` / `supporters_restaurer` / `supporters_question` / `supporters_plan`, contrôles (chaque
+  levier et chaque option dans les bornes de chaque coordinateur, « coordinateur » = moteur d'avant, restauration
+  exacte). **15.1** lit `GC_FANS` et applique les choix juste après `apply_staff_snapshots`, avant `run_week` (donc
+  avant les cotes) ; **14.1** (`run_week(…, fans=)`) les restaure avant `weekly_adjustment` (staffs_next_week ne dérive
+  pas) et écrit la question suivante ; **14.2** exporte `week.json → fans` et `fan_vote`, `game.fans_plan` dans chaque
+  GameFeed ; **13.1** : `supporters_cle()` dans les deux clés du cache des cotes. Interrupteur `GC_SUPPORTERS=0` :
+  moteur d'aujourd'hui, ni `fans` ni `fan_vote`.
+- **Format du fichier GC_FANS** (produit par le serveur en FO-3, `data/fans/fans_<lundi>.json`) :
+  `{"version": 1, "week": "<lundi>", "lever": "<levier de la rotation>", "closed_at": "…", "teams": {"CTX":
+  {"choice": "agressif", "votes": 37, "counts": {"prudent": 5, "coordinateur": 10, "agressif": 22}}, …}}`. Fichier
+  absent ou illisible, autre semaine, autre levier, franchise absente, option inconnue, moins de 5 votes, égalité en tête
+  des `counts` : le coordinateur décide (`source: "coordinators"`), sans erreur.
+- **week.json** : `fans = {version, lever, label, side, setting, file, file_read, applied: {équipe: {choice, source
+  ("fans" | "coordinators"), votes, setting, coordinator, value, bands[, go_min_yard_line]}}}` ; `fan_vote = {index,
+  week, lever, label, question, side, setting, options: [{id, label}], teams: {équipe: {current, bands, values}}}`.
+  **GameFeed** : `game.fans_plan = {lever, label, side, home: {choice, source, votes}, away: {…}}`.
+- **Audit** (`audit_moteur.py`, `check_fans`, `check_fans_plan`) : `fans.applied` dans les bornes (et la ligne du 4e essai
+  dans 30-62), levier = rotation de la semaine, `fan_vote` = rotation de la suivante, choix des supporters valables
+  (≥ 5 votes), « coordinateur » = valeur du coordinateur, rien de reporté (`adjustments.before` = valeur du
+  coordinateur), `game.fans_plan` = `fans.applied`.
+- **Mesures** (`python3 outils/moteur/banc_supporters.py`, test d'équilibre de 12.3 : 2 208 matchs par passage, mêmes
+  graines ; toutes les franchises sur la même option) :
+
+  | Levier | Ce qu'on voit | Bas · coordinateur · haut | Par équipe sur une semaine (23 matchs) | Points / match (bas · haut ; réf. 53,3) |
+  |---|---|---|---|---|
+  | 4e essai (go_max_to_go + ligne ± 8 yd) | 4es tentés par équipe et par match | 0,57 · 0,87 · 1,59 | écart au-dessus de 2 fois le bruit pour 20 franchises sur 24 (pas AEG, BST, CMT, MRD : déjà très prudentes) | 52,4 · 54,9 |
+  | 4e essai, go_max_to_go seul (mesuré, non retenu) | idem | 0,68 · 0,87 · 1,17 | 7 sur 24 | 52,7 · 54,2 |
+  | Course / passe | part des courses | 42,5 % · 38,7 % · 34,1 % | 24 sur 24 | 52,0 · 54,4 |
+  | Blitz | taux de blitz | 8,6 % · 13,4 % · 18,7 % | 24 sur 24 | 53,8 · 52,9 |
+  | Couverture | homme sur les passes (couverture lue) ; appels MAN | 30,2 % · 34,6 % · 39,9 % ; 7,3 % · 11,6 % · 17,0 % | 24 sur 24 | 53,6 · 52,8 |
+  | Profondeur | passes longues appelées ; yards dans l'air (complétées) | 29,0 % · 39,8 % · 49,8 % ; 6,10 · 6,65 · 7,14 | 24 sur 24 | 51,4 · 55,2 |
+
+  - **Toutes sur « coordinateur »** : les 2 208 matchs identiques au moteur sans la cellule (signature action par action).
+  - **Équilibre** : le moteur d'aujourd'hui est déjà hors de 40-60 % au test d'équilibre de 12.3 — 34,8 % (PLS) à
+    70,4 % (MNL), 9 franchises hors de la plage (BST, GLT, GMB, GRZ, LTC, MNL, PLS, VEC, ZPH ; constat antérieur à
+    FO-1, à traiter à part). Choix tirés au hasard (une option par franchise, un passage par levier) : 5 à 9 franchises
+    hors de la plage, jamais plus qu'aujourd'hui (4e essai : 31,0 % à 66,9 %, PLS plus bas que sans supporters).
+    Effet moyen d'une option sur les victoires (franchises qui l'ont tirée, écart au moteur d'aujourd'hui) : 4e essai
+    prudent −3,1 points, agressif +1,7 ; plus de course +1,2, plus de passe −3,1 ; blitz moins −0,7, plus +0,3 ;
+    zone −0,3, homme +2,3 ; passes courtes −0,8, longues +1,8 — aucun levier ne fait gagner nettement plus à lui seul (bruit d'une franchise ≈ 3,7 points).
+  - **Déterminisme** : mêmes graines, mêmes matchs — choix au hasard (profondeur) rejoués deux fois et contre le passage
+    complet : signatures identiques ; base = « coordinateur » partout, match par match.
+  - **13.2 et 13.4 sans recalibrage** (rejouées avec CONTROLES, cotes calculées avec les choix) — 4e essai au hasard :
+    z² 1,14, biais −0,0 %, Brier moteur 0,2429 (formule 0,2495), spread 50,3 %, over 50,6 %, rendement −3,6 % ; en direct :
+    écart moyen 0,024, extrêmes ±0,017, outsiders −13,9 %. **Mixte** (chaque franchise un levier et une option au hasard) :
+    z² 1,05, biais −0,2 %, Brier 0,2412 (0,2496), spread 50,4 %, over 52,1 %, rendement −4,0 % ; en direct : écart moyen
+    0,016, extrêmes ±0,023, outsiders +8,5 % (intervalle à 90 % : −2,0 % à +21,1 %, sous le seuil mais à surveiller).
+- **Semaine de test** (semaine du 16/11 calculée depuis la vraie semaine du 09/11, cotes à 20 simulations, copie des
+  données) : coupé (`GC_SUPPORTERS=0`) et allumé sans fichier — `week.json` et les 279 GameFeed identiques hors `fans`,
+  `fan_vote` et `game.fans_plan` ; avec un fichier (CTX agressif 12 votes, VEC prudent 8, GMB agressif 40 ; AEG 4 votes,
+  MNL option inconnue, BST égalité → coordinateur) : 3 franchises au choix des supporters, `adjustments.before` identiques
+  au passage coupé (rien de reporté), `fan_vote` = course / passe pour la semaine 9 ; 640 s contre 647 (pas de coût) ;
+  audit : 0 anomalie bloquante (coupé et avec fichier).
+- **Correctifs pour le contrôle des PR (10/11)**, hors leviers. Les échecs venaient de la semaine du 09/11 et de
+  l'heure du test, pas de FO-1.
+  - **Pauses** : dans `w7-r204`, un pick-six tombe sur la dernière action du Q1 et la transformation est exportée dans
+    le Q2. `break_kind(p, nxt)` (serveur) et `brkKind(P, N)` (site, cellule 427 régénérée) mettent alors la pause après
+    le touchdown. Test unitaire et parité site / serveur avec ce match.
+  - **Sauts** : `smoothMoves` plafonne tout joueur à `JUMP_VMAX` = 3 × `FL_VMAX` (33 yd/s) d'une image à l'autre,
+    porteur compris. Avant, une coupure d'images clés à la réception près de la touche, en fin de libération ou quand
+    un défenseur simulé rejoint son chemin faisait sauter un joueur jusqu'à 126 yd/s pendant une image.
+    `test_actions` passe de 45,1 yd/s au 99e centile à 33,0.
+  - **« Le receveur file droit »** : seuil relevé à 0,35 (décision de Guillaume). Sur les réceptions courtes, le
+    receveur rejoint en travers le point d'arrivée du feed : 0,30 sur les semaines du 02/11 et du 09/11, à la limite.
+  - **Test musique** : quand le match à l'antenne se termine entre l'allumage du son et la mesure (2,5 s),
+    « pregame » est juste aussi.
+- **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
+  [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
+
+### 106. Plus de sauts à la source : jet sweep, fumble ramassé, réception tardive près de la touche (10/11/2026)
+Complète la section 105 (plafond de `smoothMoves` à `JUMP_VMAX`, qui empêche tout saut d'une image à l'autre) en
+corrigeant, dans le dessin, les images clés qui le provoquaient :
 - **réception tardive près de la touche** : la sortie se dessine après l'attrapé (ses instants étaient fixes, 0,88 puis
   0,95 ; une réception à 0,88 ou après faisait bondir le receveur) ;
 - **jet sweep** : un receveur aligné loin de la remise prend le temps d'y arriver (au plus `FL_VMAX`), le QB garde le
   ballon un peu plus longtemps ;
-- **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là) ;
-- **lissage** (`smoothMoves`) : personne d'autre que le porteur n'est dessiné à plus de `SM_VMAX` = 28 yd/s d'écran ; il
-  rattrape sur les images suivantes ;
-- `test_actions` : la ligne droite après la réception ne vaut que pour les réceptions que le site dessine (celles que le
-  moteur simule suivent leur chemin, `test_receptions_simulees.js`).
-Résultat sur la semaine du 09/11 : 36,4 yd/s au 99e centile, 52,7 au plus.
+- **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
@@ -3074,7 +3158,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105.
 
 ## Test
 

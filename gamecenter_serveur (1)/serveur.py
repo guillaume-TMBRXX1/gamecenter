@@ -44,10 +44,16 @@ PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 BREAK_SEC = {"q": 10, "half": 40}
 
 
-def break_kind(p):
-    """Pause après l'action p : « half » (mi-temps), « q » (fin d'un quart-temps, horloge à 0, match en cours), None."""
+def break_kind(p, nxt=None):
+    """Pause après l'action p : « half » (mi-temps), « q » (fin d'un quart-temps, horloge à 0, match en cours), None.
+    nxt : l'action suivante (si elle est connue)."""
     a = p.get("after") or {}
-    if p.get("try_follows"):            # bloc 2 : la transformation suit le touchdown, la pause vient après elle
+    if p.get("try_follows"):            # bloc 2 : la transformation suit le touchdown, la pause vient après elle —
+        # sauf quand le feed la met déjà dans le quart-temps suivant (pick-six sur la dernière action du 1er quart-temps,
+        # semaine du 09/11, w7-r204) : la fin du quart-temps est alors ce touchdown (10/11/2026)
+        if (nxt is not None and nxt.get("quarter") != p.get("quarter") and a.get("status") == "live"
+                and p.get("clock_end") is not None and p["clock_end"] <= 0):
+            return "q"
         return None
     if a.get("status") == "half":
         return "half"
@@ -67,10 +73,10 @@ def play_ends(plays):
     """Fin (s après le coup d'envoi) de chaque action à l'écran : l'action i commence après les actions 0..i-1 (chacune
     play_sec) et les pauses qui les suivent. Croissant : révélées à l'instant t = bisect(ends, t)."""
     ends, t = [], 0.0
-    for p in plays:
+    for i, p in enumerate(plays):
         t += play_sec(p)
         ends.append(t)
-        b = break_kind(p)
+        b = break_kind(p, plays[i + 1] if i + 1 < len(plays) else None)
         if b:
             t += BREAK_SEC[b]
     return ends

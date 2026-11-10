@@ -44,10 +44,11 @@ class TestServeur(unittest.TestCase):
         n = 0
         for nom, f in feeds():
             P = f["plays"]
-            kinds = [(serveur.break_kind(p), p["quarter"]) for p in P if serveur.break_kind(p)]
+            nx = lambda i: P[i + 1] if i + 1 < len(P) else None
+            kinds = [(serveur.break_kind(p, nx(i)), p["quarter"]) for i, p in enumerate(P) if serveur.break_kind(p, nx(i))]
             # fin de période ⇔ changement de quart-temps à l'action suivante
             for i, p in enumerate(P[:-1]):
-                self.assertEqual(bool(serveur.break_kind(p)), P[i + 1]["quarter"] != p["quarter"], (nom, i))
+                self.assertEqual(bool(serveur.break_kind(p, P[i + 1])), P[i + 1]["quarter"] != p["quarter"], (nom, i))
             self.assertIsNone(serveur.break_kind(P[-1]), nom)
             self.assertEqual([k for k, _ in kinds][:3], ["q", "half", "q"], nom)
             self.assertEqual([q for _, q in kinds][:3], [1, 2, 3], nom)
@@ -65,6 +66,11 @@ class TestServeur(unittest.TestCase):
         mi = dict(cv, quarter=2, after={"status": "half"})
         self.assertIsNone(serveur.break_kind(dict(td, quarter=2)))
         self.assertEqual(serveur.break_kind(mi), "half")
+        # la transformation déjà dans le quart-temps suivant (pick-six à 0:00 du Q1, semaine du 09/11) : pause après le TD
+        cv2 = dict(cv, quarter=2, clock_start=240, clock_end=240)
+        self.assertEqual(serveur.break_kind(td, cv2), "q")
+        self.assertIsNone(serveur.break_kind(td, cv))                    # cas ordinaire : la pause suit la transformation
+        self.assertIsNone(serveur.break_kind(cv2))
 
     def test_durees(self):
         self.assertTrue(8 <= serveur.BREAK_SEC["q"] <= 12)
@@ -130,7 +136,7 @@ class TestParite(unittest.TestCase):
             "const num=(v,f)=>(typeof v==='number'&&isFinite(v))?v:f; const PLAY_SEC=6.5;",
             h[h.index("const psec="):h.index("\n", h.index("const psec="))],
             m.group(0),
-            h[h.index("function brkKind(P)"):h.index("/* breaks are for the match itself")],
+            h[h.index("function brkKind(P"):h.index("/* breaks are for the match itself")],
             h[h.index("const _tl=new WeakMap();"):h.index("/* where the broadcast of game s is at t")],
             "const fs=require('fs'); const out={};",
             "for(const p of process.argv.slice(2)){ const f=JSON.parse(fs.readFileSync(p)); const L=tlOf(f);",
@@ -138,6 +144,8 @@ class TestParite(unittest.TestCase):
             "process.stdout.write(JSON.stringify(out));",
         ])
         files = [os.path.join(w, "games", f) for w in SEMAINES for f in sorted(os.listdir(os.path.join(w, "games")))][:120]
+        # pick-six sur la dernière action du Q1, transformation exportée dans le Q2 (semaine du 09/11)
+        files += [f for f in (os.path.join(w, "games", "w7-r204.json") for w in SEMAINES) if os.path.isfile(f)]
         # un match avec play.show (horloge continue, moteur/ecran.py, 14/10/2026) : temps d'écran variable par action
         from moteur import ecran
         F = json.load(open(files[0], encoding="utf-8"))
@@ -160,7 +168,8 @@ class TestParite(unittest.TestCase):
                 self.assertEqual(len(ends), len(res[p]["ends"]))
                 for a, b in zip(ends, res[p]["ends"]):
                     self.assertAlmostEqual(a, b, places=6)
-                self.assertEqual(res[p]["bk"], [serveur.break_kind(x) for x in P])
+                self.assertEqual(res[p]["bk"], [serveur.break_kind(x, P[i + 1] if i + 1 < len(P) else None)
+                                                for i, x in enumerate(P)])
             self.assertEqual(res[p]["total"], int(m.group(1)) * 2 + int(m.group(2)))
 
 
