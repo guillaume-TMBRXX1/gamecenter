@@ -2971,6 +2971,48 @@ ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni si
 - **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
   [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
 
+### 106. Front office FO-2 : le vote des supporters côté serveur (10/11/2026)
+Plan : `programme/Front_office_plan.md`. Serveur seulement : le site viendra en FO-4, le passage au moteur en FO-3.
+- **La question** vient de la semaine en cours : le moteur écrit `week.json → fan_vote` (FO-1), c'est-à-dire la
+  question de la semaine suivante, la même pour toutes les franchises, avec trois options. La première question
+  apparaîtra dans la semaine du 16/11 (calculée samedi) : course ou passe, pour la semaine du 23/11. Une semaine
+  calculée avant FO-1 n'a pas de question (`no_question`).
+- **Règles** :
+  - seuls les comptes votent, et seulement pour leur franchise favorite (« My team ») ;
+  - une voix par compte : une ligne par joueur, semaine et levier, modifiable jusqu'au verrou du vendredi
+    (`standings_locked_at`) ;
+  - pourcentages cachés jusqu'au verrou ;
+  - moins de 5 votes, égalité en tête, ou « coordinateur » en tête : le coordinateur décide. C'est la règle de
+    `moteur/supporters.py`, et un test vérifie que les deux donnent le même choix ;
+  - changer de franchise retire le vote de la semaine. Le vote ne compte que pour la franchise tenue depuis le lundi
+    (colonne `players.fav_team_at`), donc le compte revote le lundi suivant (`team_changed`). Un compte qui avait
+    déjà une franchise avant FO-2 peut voter ;
+  - limite : 30 votes en 15 min par joueur, 300 par adresse IP (`429 too_many_attempts`).
+- **Base** : table `fan_votes(player, week, team, lever, choice, at)`, où `week` est le lundi où le choix
+  s'applique. Colonne `players.fav_team_at`. Migration douce, comme les autres colonnes.
+- **API** :
+  - `GET /api/fans?token=` renvoie :
+    - la question, avec la partie de ma franchise (réglage actuel du coordinateur, bornes, valeur de chaque option) ;
+    - `my_vote`, `closes_at`, `open` / `closed` ;
+    - `reason` : `account_required`, `no_team`, `unknown_team`, `team_changed` ;
+    - `result` après le verrou ;
+    - `in_force`, le choix appliqué cette semaine (`week.json → fans.applied`).
+  - `POST /api/fans/vote {token, choice}`.
+  - `GET /api/fans/results?team=` : le résultat de la dernière question fermée, pour une franchise ou pour toutes
+    (page Teams). Avant le verrou, c'est la question de la semaine d'avant, donc le choix en vigueur.
+  - `GET /api/admin/fans?key=&week=` : le fichier `GC_FANS` (format : `moteur/supporters.py`, avec `counts`),
+    seulement après le verrou et avec `GC_ADMIN_KEY`. Il ne contient que les franchises qui ont voté.
+- **Interrupteur** : `GC_FRONT_OFFICE=off`, les routes répondent 404 et rien n'est enregistré. Le plan prévoyait le
+  nom `GC_FANS`, mais c'est déjà la variable du notebook (le chemin du fichier des choix, FO-1) : un nom différent
+  évite qu'une même variable veuille dire deux choses dans le calcul du samedi.
+- **Tests** : `moteur/tests/test_supporters_serveur.py`, 11 tests :
+  - question et vote, réservés aux comptes ;
+  - choix inconnu, verrou, pourcentages cachés ;
+  - 5 votes au minimum, égalité, même règle que le moteur ;
+  - changement de franchise, limite de votes ;
+  - export lu tel quel par le moteur, résultats publics, résultats de la semaine d'avant ;
+  - pas de question, interrupteur.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3126,6 +3168,10 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/admin/chat` | chat : page de modération (si `GC_CHAT` = `read` ou `on`, section 72) |
 | GET | `/teams`, `/teams/<nom>` | pages des franchises, lisibles sans JavaScript (section 79) |
 | GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
+| GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 106) |
+| POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
+| GET | `/api/fans/results?team=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) |
+| GET | `/api/admin/fans?key=&week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY`, après le verrou) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
@@ -3149,7 +3195,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105.
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 106).
 
 ## Test
 
