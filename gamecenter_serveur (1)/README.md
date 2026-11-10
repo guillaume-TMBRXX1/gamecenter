@@ -2971,6 +2971,15 @@ ordre de la rotation et intitulés validés. Moteur seulement (ni serveur, ni si
 - **Outil** : `python3 outils/moteur/banc_supporters.py [--passages base,coord,quatrieme:agressif,hasard:blitz…]
   [--graines 4] [--sortie f.json]` (≈ 8 min de chargement, ≈ 3 min par passage de 2 208 matchs sur 4 cœurs).
 
+### 106. Plus de sauts à la source : jet sweep, fumble ramassé, réception tardive près de la touche (10/11/2026)
+Complète la section 105 (plafond de `smoothMoves` à `JUMP_VMAX`, qui empêche tout saut d'une image à l'autre) en
+corrigeant, dans le dessin, les images clés qui le provoquaient :
+- **réception tardive près de la touche** : la sortie se dessine après l'attrapé (ses instants étaient fixes, 0,88 puis
+  0,95 ; une réception à 0,88 ou après faisait bondir le receveur) ;
+- **jet sweep** : un receveur aligné loin de la remise prend le temps d'y arriver (au plus `FL_VMAX`), le QB garde le
+  ballon un peu plus longtemps ;
+- **fumble perdu** : celui qui ramasse le ballon y va au plus à `FL_VMAX` (le ballon reste au sol jusque-là).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
