@@ -229,6 +229,31 @@ class TestProfondeur(unittest.TestCase):
         self.assertEqual(fo.poids_profondeur(lignes, 1.0), [2.0, 3.0, 1.0, 1.0])
 
 
+class TestChiffres(unittest.TestCase):
+    """FO-4 : les chiffres de la semaine (écran Front office) depuis les GameFeed."""
+
+    def feed(self):
+        jeu = lambda off, down, typ, k, dk=None: {"offense": off, "down": down,
+                                                 "call": {"type": typ, "concept": k, "defense": {"concept": dk}}}
+        return {"plays": [jeu("home", 1, "run", "INSIDE_RUN", "BLITZ"), jeu("home", 2, "pass", "DEEP_POST", "MAN"),
+                          jeu("home", 3, "pass", "QUICK_SLANT", "COVER_2"), jeu("home", 4, "punt", None),
+                          jeu("away", 4, "run", "POWER", "MAN"), jeu("away", 1, "pass", "SCREEN", "BLITZ"),
+                          jeu("away", 4, "field_goal", None), jeu("home", 1, "run", "KNEEL")]}
+
+    def test_mesurer_et_chiffres(self):
+        m = fo.mesurer_match(self.feed(), "CTX", "VEC")
+        self.assertEqual(m["CTX"], {"q4": 1, "go4": 0, "snaps": 3, "runs": 1, "passes": 2, "longs": 1, "dsnaps": 2,
+                                    "blitz": 1, "man": 1})
+        self.assertEqual(m["VEC"], {"q4": 2, "go4": 1, "snaps": 2, "runs": 1, "passes": 1, "longs": 0, "dsnaps": 3,
+                                    "blitz": 1, "man": 1})
+        c = fo.chiffres("course_passe", {a: [v] for a, v in m.items()})
+        self.assertEqual(c["teams"]["CTX"], {"value": round(1 / 3, 4), "games": 1})
+        self.assertAlmostEqual(c["league"], (1 / 3 + 1 / 2) / 2, places=3)       # moyenne des valeurs des franchises
+        self.assertEqual(fo.chiffres("quatrieme", {"CTX": [m["CTX"]]})["teams"]["CTX"]["value"], 0.0)
+        self.assertIsNone(fo.chiffres("profondeur", {"X": []})["teams"]["X"]["value"])
+        self.assertEqual(set(fo.MESURE), set(fo.LEVIERS))
+
+
 class TestQuestion(unittest.TestCase):
     def test_fan_vote(self):
         S = staffs_24()

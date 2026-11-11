@@ -3104,6 +3104,56 @@ dans le calcul du samedi, et les cotes sont calculées avec eux.
   - `test_supporters_serveur.py` : la clé dans l'en-tête ;
   - `test_alerte_semaine.py` : l'étape est classée.
 
+### 111. Front office FO-4 : le vote des supporters sur le site (11/11/2026)
+Plan : `programme/Front_office_plan.md`. Avec FO-1 à FO-3, **le vote fonctionne de bout en bout**. Les écrans validés
+le 07/11 (captures iPad) ne sont pas dans le dépôt : le rendu suit la liste d'éléments du plan et le style de My team.
+Captures de contrôle : `FO_CAPTURES=<dossier> node outils/site/test_front_office.js`.
+- **My team** : un sélecteur **Overview / Front office** (la Draft viendra en FO-6).
+  - Overview : la page d'avant, avec un rappel « Vote now » tant que le compte n'a pas voté et que le vote est ouvert.
+  - Front office, d'abord **le choix en vigueur cette semaine** (révélation du lundi) :
+    - la question, la réponse retenue et les pourcentages de chaque option ;
+    - le nombre de votes et la raison quand le coordinateur décide (moins de 5 votes, égalité, « coordinateur » en
+      tête) ;
+    - « Your vote » ;
+    - le prochain match de la franchise, avec la puce « Fans' plan ».
+  - Front office, ensuite **la question de la semaine suivante** :
+    - le levier, la semaine visée et la question ;
+    - les chiffres de la semaine de l'équipe pour ce levier, avec la moyenne de la ligue (`stats` de `/api/fans`) ;
+    - trois options, chacune avec une phrase d'explication ;
+    - « Cast my vote », puis « Change vote » quand on choisit une autre option, et la puce « Your vote » sur l'option
+      votée ;
+    - le compte à rebours jusqu'au vendredi 23:30 ; les pourcentages restent cachés.
+  - Après le verrou, la carte devient « The fans have spoken » (« Applies next week »), sans bouton de vote.
+  - Enfin, « How the fans' vote works ».
+- **Cas particuliers** :
+  - invité : l'invitation à créer un compte parle du vote ;
+  - compte sans franchise ou qui en change : une phrase explique le vote, et le fait qu'un changement de franchise
+    retire le vote de la semaine ;
+  - franchise changée cette semaine : options désactivées et raison affichée (`team_changed`).
+- **Page Teams** : la ligne « Fans' plan this week » de chaque franchise, en lecture seule. Elle vient de `fans` dans
+  l'état public de la semaine (`Week.public_state`).
+- **Match centre** : en tête des statistiques d'équipe, la ligne du levier de la semaine, mesurée dans le match
+  jusqu'à l'action à l'écran (4es essais tentés, part des courses, blitz, homme à homme, passes intermédiaires et
+  profondes). La puce « Fans' plan » s'affiche sur l'équipe dont les supporters ont décidé (`game.fans_plan`).
+- **Téléphone 390 px** : options l'une sous l'autre, barres sous les libellés, bouton de vote pleine largeur, marge
+  de 84 px en bas pour le bouton « Bet slip ».
+- **Serveur** :
+  - drapeau `front_office` dans la page ;
+  - `fans` dans l'état public de la semaine (choix, source et votes de chaque franchise) ;
+  - `/api/fans` renvoie aussi `stats`, calculé sur les matchs terminés de la semaine
+    (`moteur/supporters.py` : `mesurer_match`, `chiffres`, `MESURE`, mêmes définitions que l'empreinte de jeu ; en
+    cache par nombre de matchs finis) ;
+  - `/api/fans/results?token=` renvoie aussi `my_vote`.
+- **Interrupteur** : `GC_FRONT_OFFICE=off` donne My team et Teams comme avant, sans onglets ni ligne.
+- **Cellule 427** : seul l'appel du Match centre y est reporté, protégé, car le replay du notebook n'a pas de vote.
+- **Tests** : `outils/site/test_front_office.js` (30 contrôles), ajouté aux tests navigateur (groupe site) :
+  - avant le verrou : invité, rappel sur Overview, onglets, choix en vigueur (67 % / 33 %, 6 votes), question,
+    trois options, chiffres, compte à rebours, pourcentages cachés, « Cast my vote » puis « Change vote »
+    enregistrés sur le serveur, page Teams (CTX et VEC), ligne du Match centre, franchise changée, téléphone ;
+  - après le verrou : « The fans have spoken », coordinateur, « Your vote », plus de bouton, aucune option marquée
+    « Fans' plan » ;
+  - interrupteur coupé ; aucune erreur JS.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3261,7 +3311,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
 | GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 107) |
 | POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
-| GET | `/api/fans/results?team=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) |
+| GET | `/api/fans/results?team=&token=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) ; `my_vote` avec `token` (section 111) |
 | GET | `/api/admin/fans?week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY` dans l'en-tête `X-Admin-Key` ou `?key=`, après le verrou ; section 110) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 

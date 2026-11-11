@@ -137,6 +137,25 @@ class TestVoteSupporters(unittest.TestCase):
             self.assertEqual(c.execute("SELECT COUNT(*) FROM fan_votes").fetchone()[0], 1)   # une ligne par joueur
         self.assertEqual(serveur.api_fans(tok)["in_force"]["choice"], "agressif")         # le choix de cette semaine
 
+    def test_ecran_front_office(self):
+        """FO-4 : chiffres de la semaine dans /api/fans, mon vote dans les résultats, choix en vigueur dans l'état public."""
+        tok = self.joueur()
+        r = serveur.api_fans(tok)
+        self.assertIn("stats", r)
+        self.assertEqual(set(r["stats"]), {"value", "games", "league"})
+        ops = fo.options(self.prev.doc["fan_vote"]["lever"])
+        with serveur._db_lock, serveur.db() as c:
+            pid = c.execute("SELECT id FROM players WHERE token=?", (tok,)).fetchone()[0]
+            c.execute("INSERT INTO fan_votes(player, week, team, lever, choice, at) VALUES(?,?,?,?,?,0)",
+                      (pid, self.w.start, "CTX", self.prev.doc["fan_vote"]["lever"], ops[2]))
+        res = serveur.api_fans_results("CTX", tok)
+        self.assertEqual(res["my_vote"], {"choice": ops[2], "team": "CTX"})
+        self.assertNotIn("my_vote", serveur.api_fans_results("CTX"))
+        pub = self.w.public_state(self.t)
+        self.assertEqual(pub["fans"]["applied"]["CTX"], {"choice": "agressif", "source": "fans", "votes": 9})
+        with mock.patch.dict(os.environ, {"GC_FRONT_OFFICE": "off"}):
+            self.assertNotIn("fans", self.w.public_state(self.t))
+
     def test_comptes_seulement(self):
         invite = self.joueur(compte=False)
         self.assertEqual(serveur.api_fans(invite)["reason"], "account_required")

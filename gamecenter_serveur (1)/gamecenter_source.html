@@ -183,6 +183,47 @@
   .mt-st{background:var(--l1);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
   .mt-st b{font:700 18px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
   .mt-hist{margin-top:12px}
+  /* FO-4: My team › Front office (the fans' vote) */
+  .mt-tabs{margin:0 0 14px;align-self:flex-start}
+  .fo-wrap{display:flex;flex-direction:column;gap:14px}
+  .fo-card h3{margin:6px 0 4px;font:700 20px/1.2 var(--f-display);letter-spacing:.01em}
+  .fo-eyebrow{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+  .fo-when{font:600 12px var(--f-mono);color:var(--ink-3)}
+  .fo-q{margin:0 0 8px;color:var(--ink-2);font-size:13.5px}
+  .fo-stat{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}.fo-stat b{color:var(--ink);font-variant-numeric:tabular-nums}.fo-stat span{color:var(--ink-3)}
+  .fo-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .fo-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:84px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--l1);color:var(--ink);text-align:left;cursor:pointer}
+  .fo-opt b{font:700 15px/1.2 var(--f-display);letter-spacing:.02em}.fo-opt small{font-size:12px;color:var(--ink-3);line-height:1.35}
+  .fo-opt:hover:not(:disabled){border-color:var(--ink-3)}
+  .fo-opt[aria-checked="true"]{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan);background:var(--l2)}
+  .fo-opt:disabled{cursor:not-allowed;opacity:.65}
+  .fo-opt:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .fo-opt .fo-chip{position:absolute;top:8px;right:8px}
+  .fo-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:14px}
+  .fo-cast{height:46px;padding:0 22px;width:auto}
+  .fo-hint{font-size:12px;color:var(--ink-3)}
+  .fo-msg{margin:10px 0 0;font-size:13px;color:var(--pink)}.fo-msg.ok{color:var(--cyan)}.fo-msg[role="note"]{color:var(--ink-2)}
+  .fo-chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;background:var(--cyan);color:var(--cyan-ink);font:700 10.5px/1 var(--f-ui);letter-spacing:.04em;white-space:nowrap;vertical-align:middle}
+  .fo-chip.off{background:var(--l3);color:var(--ink-2)}.fo-chip.sm{height:17px;padding:0 6px;font-size:9.5px}
+  .fo-verdict{margin:2px 0 10px;font-size:14px}.fo-verdict b{font:700 17px var(--f-display);color:var(--cyan)}.fo-verdict span{color:var(--ink-2);font-size:12.5px}
+  .fo-bars{display:flex;flex-direction:column;gap:8px}
+  .fo-bar{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr) 44px;gap:10px;align-items:center;font-size:13px}
+  .fo-bt{height:10px;border-radius:5px;background:var(--l2);overflow:hidden}.fo-bt i{display:block;height:100%;background:var(--ink-3);border-radius:5px}
+  .fo-bar.win .fo-bt i{background:var(--cyan)}.fo-bar b{text-align:right;font-variant-numeric:tabular-nums}.fo-bar.win b{color:var(--cyan)}
+  .fo-mine{margin:10px 0 0;font-size:13px;color:var(--ink-2)}.fo-mine b{color:var(--ink)}
+  .fo-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
+  .fo-next .link{margin-left:auto}
+  .fo-how summary{cursor:pointer;font-weight:600;font-size:13.5px}.fo-how ul{margin:10px 0 0;padding-left:18px;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .fo-teaser{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 14px}.fo-teaser .chip-btn{margin-left:auto}
+  .fo-invite{margin:6px 0 12px;font-size:13px;color:var(--ink-2)}
+  .fo-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--l1);font-size:13px}
+  .fo-line b{font:700 15px var(--f-display);color:var(--cyan)}.fo-line span:last-child{color:var(--ink-3)}
+  @media (max-width:760px){
+    .fo-opts{grid-template-columns:1fr}.fo-opt{min-height:0}
+    .fo-bar{grid-template-columns:minmax(0,1fr) 44px}.fo-bar .fo-bt{grid-column:1 / -1;grid-row:2}
+    .fo-cast{flex:1 1 100%}
+    .fo-wrap{padding-bottom:84px}                     /* room for the "Bet slip" button */
+  }
   .mt-res{font-size:12px;color:var(--ink-2);white-space:nowrap}
   .mt-pick{margin:10px 0 12px}
   .tr-row span.lv{color:var(--pink);font-weight:700}
@@ -5509,6 +5550,7 @@ function renderStats(g){
       if(a.pen||h.pen||(g.gf&&g.gf.game&&g.gf.game.penalty_model)) rows.push(['Penalties (yards)',`${a.pen} (${a.peny})`,`${h.pen} (${h.peny})`,-1,a.peny,h.peny]);   /* step 7.2 */
       /* engine block C: contested catches (won / thrown), coverage busts given up */
       if(a.bc+h.bc>0) rows.push(['Contested catches',`${a.cw}/${a.ct}`,`${h.cw}/${h.ct}`,1,a.cw,h.cw],['Coverage busts allowed',a.bust,h.bust,-1]);
+      const fr=typeof foGameRow==='function'?foGameRow(g,n):null; if(fr) rows.unshift(fr);   /* FO-4: the lever of the week, with each team's fans' plan (absent from the notebook's cell 427) */
       body.innerHTML=`<div class="st-scroll"><table class="tst"><thead><tr><th scope="col">Team stats</th><th scope="col"><span class="abbr">${A.abbr}</span></th><th scope="col"><span class="abbr">${H.abbr}</span></th></tr></thead><tbody>${rows.map(([l,va,vh,better,na,nh])=>{
         const x=na!=null?na:parseFloat(va), y=nh!=null?nh:parseFloat(vh); let ca='', ch='';
         if(better && isFinite(x) && isFinite(y) && x!==y){ if((x>y)===(better>0)) ca='lead'; else ch='lead'; }
@@ -6729,6 +6771,9 @@ document.addEventListener('click',e=>{
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
   if(t.closest('[data-favchange]')){ MT_PICK=true; renderView(true); return; }
   if(t.closest('[data-favcancel]')){ MT_PICK=false; renderView(true); return; }
+  const mtb=t.closest('[data-mttab]'); if(mtb){ MT_TAB=mtb.dataset.mttab; FO_MSG=''; renderView(true); if(MT_TAB==='fo') loadFans(true); return; }
+  const foc=t.closest('[data-fochoice]'); if(foc){ if(!foc.disabled&&FO&&FO.question){ FO_SEL={lever:FO.question.lever,choice:foc.dataset.fochoice}; FO_MSG=''; renderView(true); } return; }
+  if(t.closest('[data-fovote]')){ foVote(); return; }
   const tm=t.closest('[data-team]'); if(tm){ TEAM_SEL=TEAM_SEL===tm.dataset.team?null:tm.dataset.team; renderView(true); return; }
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
   const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled) togglePick(odd.dataset.key); return; }
@@ -7466,6 +7511,7 @@ function teamDetailHTML(abbr,t,mine){
   const up=mine?teamUpcomingRows(abbr,t):'';
   return `<div class="card team-page"><div class="tp-head"><span class="badge lg">${T.abbr}</span><div><h2>${esc(T.name)}</h2><p class="eyebrow"><b>${esc(tStyle(T))}</b> · ${esc(tIdent(T))}${r&&(r.w+r.l+r.t)?` · ${r.w}-${r.l}${r.t?'-'+r.t:''} · #${r.rank}`:''}</p></div></div>
       ${stats}
+      ${!mine?foTeamLineHTML(abbr):''}
       ${RIV_ON?rivTeamPanel(abbr):''}
       ${FP_ON?fpTeamPanel(abbr):''}
       <div class="tp-grid"><div class="panel"><span class="label">Coordinators</span><div class="pc-line"><span>Offense</span><b>${esc(T.coordinators.offense)}</b></div><div class="pc-line"><span>Defense</span><b>${esc(T.coordinators.defense)}</b></div>
@@ -7511,24 +7557,169 @@ function curPlayer(){ try{ return PLAYER; }catch(e){ return null; } }   /* PLAYE
 function renderMyteam(t){
   const el=document.getElementById('viewMyteam'); if(!el) return;
   const P0=curPlayer(), fav=P0&&P0.account?P0.fav_team:null, S=standingsAt(t), agg=seasonAgg(t);
-  const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',');
+  const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',')
+    +'|'+MT_TAB+'|'+FO_AT+'|'+(FO_SEL?FO_SEL.choice:'')+'|'+FO_MSG+'|'+FO_BUSY;
   if(el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
-  if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.</p><button type="button" class="chip-btn" data-view-go="settings">Create an account or sign in</button></div>`; return; }
+  if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.${FO_ON?' Its fans vote each week on the game plan: 4th downs, run or pass, blitz…':''}</p><button type="button" class="chip-btn" data-view-go="settings">Create an account or sign in</button></div>`; return; }
   if(!fav||MT_PICK){
-    el.innerHTML=head+`<div class="card"><span class="label">Pick your team</span><div class="team-grid mt-pick">${Object.values(SW.teams).map(T=>`<button type="button" class="card team-card" data-favteam="${T.abbr}" aria-pressed="${fav===T.abbr}"><span class="badge">${T.abbr}</span><span class="tc-n">${esc(T.name)}</span><span class="tc-s">${esc(tStyle(T))}</span></button>`).join('')}</div>
+    el.innerHTML=head+`<div class="card"><span class="label">Pick your team</span>${FO_ON&&!fav?'<p class="fo-invite">Pick your franchise to join its fans’ vote: one question a week on the game plan, applied to the next week’s games.</p>':''}${FO_ON&&fav?'<p class="fo-invite">Switching teams removes this week’s fans’ vote; you can vote for your new team from Monday.</p>':''}<div class="team-grid mt-pick">${Object.values(SW.teams).map(T=>`<button type="button" class="card team-card" data-favteam="${T.abbr}" aria-pressed="${fav===T.abbr}"><span class="badge">${T.abbr}</span><span class="tc-n">${esc(T.name)}</span><span class="tc-s">${esc(tStyle(T))}</span></button>`).join('')}</div>
       ${fav?'<button type="button" class="chip-btn" data-favcancel>Keep '+esc(SW.teams[fav]?SW.teams[fav].name:fav)+'</button>':''}<p class="np-note" id="mtErr" role="alert"></p></div>`;
     return;
   }
   if(!SW.teams[fav]){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>${esc(fav)} is not in this week's league</b></p><button type="button" class="chip-btn" data-favchange>Pick another team</button></div>`; return; }
-  el.innerHTML=head+`<div class="mt-bar"><span class="badge">${fav}</span><b>${esc(SW.teams[fav].name)}</b><button type="button" class="chip-btn" data-favchange>Change team</button></div>`+teamDetailHTML(fav,t,true);
+  const bar=`<div class="mt-bar"><span class="badge">${fav}</span><b>${esc(SW.teams[fav].name)}</b><button type="button" class="chip-btn" data-favchange>Change team</button></div>`;
+  if(!FO_ON){ el.innerHTML=head+bar+teamDetailHTML(fav,t,true); return; }
+  if(FO&&FO.team!==fav) FO=null;                 /* team changed since the last load */
+  const tabs=`<div class="seg mt-tabs" role="tablist" aria-label="My team">${[['overview','Overview'],['fo','Front office']].map(([k,l])=>`<button type="button" role="tab" data-mttab="${k}" aria-selected="${MT_TAB===k}">${l}</button>`).join('')}</div>`;
+  if(MT_TAB==='fo'){ el.innerHTML=head+bar+tabs+renderFrontOffice(fav,t); return; }
+  loadFans();
+  el.innerHTML=head+bar+tabs+foTeaserHTML()+teamDetailHTML(fav,t,true);
 }
 async function setFavTeam(team){
   const e=document.getElementById('mtErr');
   try{ const r=await api('/account/team',{method:'POST',body:JSON.stringify({token:PLAYER.token,team})});
-    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; renderView(true); }
+    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_MSG=''; renderView(true); }
   catch(err){ if(e) e.textContent=err.status===401?'Sign in to your account first.':'Could not save your team. Try again.'; }
+}
+
+/* ---------- My team › Front office (FO-4): the fans' vote ----------
+   Each week the fans of a franchise (accounts whose My team it is) answer one question — the same for every team, a
+   fixed rotation: 4th downs, run or pass, blitz, coverage, passing depth. Three answers: one side, the coordinator's
+   call, the other side. Votes close Friday 23:30 (the standings lock); the result is applied by the engine to next
+   week's games (and their odds), inside each coordinator's identity. Server: /api/fans, /api/fans/vote,
+   /api/fans/results (serveur.py, FO-2). Percentages stay hidden until the vote closes. */
+const FO_ON=!!(SERVER&&SERVER.front_office&&SEASON);
+let MT_TAB='overview', FO=null, FO_R=null, FO_AT=0, FO_LOAD=false, FO_SEL=null, FO_MSG='', FO_BUSY=false;
+const FO_COORD="Coordinator's call";
+const FO_INFO={
+  quatrieme:{stat:'4th downs gone for',lab:{prudent:'Play it safe',coordinateur:FO_COORD,agressif:'Go for it'},
+    desc:{prudent:'Punt and kick more often',coordinateur:"Keep the coordinator's plan",agressif:'Go for it on more 4th downs'}},
+  course_passe:{stat:'Run plays',lab:{plus_course:'More runs',coordinateur:FO_COORD,plus_passe:'More passes'},
+    desc:{plus_course:'Lean on the ground game',coordinateur:"Keep the coordinator's plan",plus_passe:'Put the ball in the air more'}},
+  blitz:{stat:'Blitz calls',lab:{moins:'Blitz less',coordinateur:FO_COORD,plus:'Blitz more'},
+    desc:{moins:'Rush four, cover more',coordinateur:"Keep the coordinator's plan",plus:'Send extra rushers more often'}},
+  couverture:{stat:'Man-to-man calls',lab:{zone:'More zone',coordinateur:FO_COORD,homme:'More man-to-man'},
+    desc:{zone:'Sit back in zone more often',coordinateur:"Keep the coordinator's plan",homme:'Play tight man-to-man more often'}},
+  profondeur:{stat:'Intermediate & deep throws',lab:{courtes:'Shorter passes',coordinateur:FO_COORD,longues:'Deeper passes'},
+    desc:{courtes:'Quick, short throws',coordinateur:"Keep the coordinator's plan",longues:'Push the ball downfield'}}};
+const FO_LONG=new Set(['IN','CROSS','Y_CROSS','LEVELS','DOUBLE_DIG','FLOOD','SAIL','DAGGER','DEEP_CROSS','CHAMP','SALEM','DEEP_POST','CORNER','DOUBLE_POST','FOUR_VERTS','SWITCH_VERTICALS','DIVIDE']);
+const FO_RUN=/^(INSIDE_RUN|TRAP|DRAW|WHAM|QB_DRAW|POWER|COUNTER|PIN_PULL|OUTSIDE_RUN|BUCK_SWEEP|COUNTER_SWEEP|POWER_TOSS|JET_SWEEP|JET_ACTION|END_AROUND|REVERSE|DOUBLE_REVERSE|READ_OPTION|POWER_READ|INVERTED_VEER|MIDLINE_OPTION|SHOVEL_OPTION|SPEED_OPTION|TRIPLE_OPTION|QB_SWEEP|RPO_ALERT|RPO_INSIDE_ZONE|RPO_OUTSIDE_ZONE|RPO_PEEK|RPO_POWER|RPO_READ)$/;
+function foLabel(lever,choice){ const i=FO_INFO[lever]; return (i&&i.lab[choice])||choice; }
+const foPc=v=>v==null?'—':Math.round(100*v)+'%';
+function foLeft(ms){ const m=Math.max(0,Math.round(ms/60000)), d=Math.floor(m/1440), h=Math.floor(m%1440/60), mm=m%60;
+  return d?`${d} d ${h} h`:h?`${h} h ${mm} min`:`${mm} min`; }
+function foWeek(s){ try{ return new Date(s+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){ return s; } }
+async function loadFans(force){
+  if(!FO_ON||FO_LOAD) return;
+  if(!force&&FO&&Date.now()-FO_AT<90e3) return;
+  FO_LOAD=true;
+  const tok=PLAYER&&PLAYER.token?encodeURIComponent(PLAYER.token):'';
+  try{ FO=await api('/fans?token='+tok); }catch(e){ FO=FO&&!FO.error?FO:{error:true}; }
+  const fav=FO&&FO.team;
+  try{ FO_R=fav?await api('/fans/results?team='+encodeURIComponent(fav)+'&token='+tok):null; }catch(e){ FO_R=null; }
+  FO_AT=Date.now(); FO_LOAD=false;
+  if(VIEW==='myteam') renderView(true);
+}
+function foWhy(r){
+  if(r.source==='fans') return '';
+  if(r.votes<5) return `Fewer than 5 votes (${r.votes}): the coordinator kept his plan.`;
+  const v=Object.values(r.counts||{}).sort((a,b)=>b-a);
+  return v.length>1&&v[0]===v[1]?'A tie at the top: the coordinator kept his plan.':"The fans backed the coordinator's plan.";
+}
+/* the result of the last closed vote: this week's fans' plan (Monday reveal), or next week's once the vote has closed */
+function foResultHTML(R,fav,t){
+  const r=R&&R.teams&&R.teams[fav]; if(!r) return '';
+  const inForce=R.week===SW.week.start, lv=R.lever, mine=R.my_vote&&R.my_vote.team===fav?R.my_vote.choice:null;
+  const bars=(R.options||[]).map(o=>{ const p=r.pct[o.id]||0, win=r.source==='fans'&&o.id===r.choice;
+    return `<div class="fo-bar${win?' win':''}"><span class="fo-bl">${esc(o.label)}${win?' <span class="fo-chip">Fans’ plan</span>':''}</span><span class="fo-bt"><i style="width:${p}%"></i></span><b>${p}%</b></div>`; }).join('');
+  let next='';
+  if(inForce){ const g=SCHED.filter(x=>(x.home===fav||x.away===fav)&&gStatus(x,t)!=='final'&&revealed(x,t)).sort((a,b)=>a.ko-b.ko)[0];
+    if(g){ const home=g.home===fav, opp=home?g.away:g.home, st=gStatus(g,t);
+      next=`<div class="fo-next"><span class="label">Next game</span><b>${home?'vs':'@'} ${TEAMS[opp].abbr}</b><span>${st==='live'?'Live now':esc(dStr(g.ko)+' · '+tStr(g.ko))}</span>${r.source==='fans'?`<span class="fo-chip">Fans’ plan · ${esc(foLabel(lv,r.choice))}</span>`:`<span class="fo-chip off">${FO_COORD}</span>`}<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch':'Open'}</button></div>`; } }
+  return `<div class="card fo-card fo-res" data-fo="result"><div class="fo-eyebrow"><span class="label">${esc(R.label||'')}</span><span class="fo-when">${inForce?'Applied this week':'Applies next week'} · ${r.votes} vote${r.votes===1?'':'s'}</span></div>
+    <h3>${inForce?'This week’s fans’ plan':'The fans have spoken'}</h3>
+    <p class="fo-q">${esc(R.question||'')}</p>
+    <p class="fo-verdict"><b>${esc(r.source==='fans'?foLabel(lv,r.choice):FO_COORD)}</b>${foWhy(r)?` · <span>${esc(foWhy(r))}</span>`:''}</p>
+    <div class="fo-bars">${bars}</div>
+    ${mine?`<p class="fo-mine">Your vote: <b>${esc(foLabel(lv,mine))}</b></p>`:''}${next}</div>`;
+}
+function foReasonText(why,F){
+  const fav=F&&F.team, T=fav&&SW.teams[fav]?SW.teams[fav].name:fav;
+  return {account_required:'Create an account (Settings) to vote for your team.',no_team:'Pick your team first.',
+    unknown_team:`${T||'Your team'} is not in this week's question.`,
+    team_changed:`You picked ${T} this week: your vote counts from Monday.`}[why]||'';
+}
+function foQuestionHTML(F,fav,t){
+  const q=F.question, lv=q.lever, inf=FO_INFO[lv]||{desc:{},stat:''}, mine=F.my_vote||null;
+  const sel=FO_SEL&&FO_SEL.lever===lv?FO_SEL.choice:mine, end=Date.parse(F.closes_at), can=!F.reason&&F.open;
+  const st=F.stats, stat=st&&st.value!=null?`<p class="fo-stat">This week: <b>${foPc(st.value)}</b> ${esc(inf.stat.toLowerCase())}${st.league!=null?` <span>· league ${foPc(st.league)}</span>`:''}${st.games?` <span>· ${st.games} game${st.games===1?'':'s'}</span>`:''}</p>`:'<p class="fo-stat"><span>This week’s numbers appear after the first games.</span></p>';
+  const opts=(q.options||[]).map(o=>`<button type="button" class="fo-opt" role="radio" aria-checked="${sel===o.id}" data-fochoice="${esc(o.id)}"${can?'':' disabled'}><b>${esc(o.label)}</b><small>${esc(inf.desc[o.id]||'')}</small>${mine===o.id?'<span class="fo-chip">Your vote</span>':''}</button>`).join('');
+  const label=!mine?'Cast my vote':sel&&sel!==mine?'Change vote':'Vote cast';
+  const msg=FO_MSG==='ok'?'<p class="fo-msg ok" role="status">Vote saved. You can change it until the vote closes.</p>':FO_MSG?`<p class="fo-msg" role="alert">${esc(FO_MSG)}</p>`:'';
+  return `<div class="card fo-card" data-fo="question"><div class="fo-eyebrow"><span class="label">${esc(q.label||'')} · week of ${esc(foWeek(q.week))}</span><span class="fo-when" data-fo="closes">${F.open?`Closes ${esc(dStr(end)+' · '+tStr(end))} · in ${foLeft(end-t)}`:'Voting closed'}</span></div>
+    <h3>${esc(q.question||'')}</h3>${stat}
+    <div class="fo-opts" role="radiogroup" aria-label="${esc(q.question||'')}">${opts}</div>
+    ${F.reason?`<p class="fo-msg" role="note">${esc(foReasonText(F.reason,F))}</p>`:''}
+    <div class="fo-act"><button type="button" class="cta fo-cast" data-fovote${can&&sel&&sel!==mine&&!FO_BUSY?'':' disabled'}>${label}</button><span class="fo-hint">Percentages stay hidden until the vote closes.</span></div>${msg}</div>`;
+}
+function foHowHTML(){
+  return `<details class="card fo-how"><summary>How the fans’ vote works</summary><ul>
+    <li>One question a week, the same for every franchise. It changes every week: 4th downs, run or pass, blitz, coverage, passing depth.</li>
+    <li>Your team’s fans vote until Friday 23:30 (Brussels). One vote per account; you can change it until then.</li>
+    <li>The winning answer is applied to next week’s games, inside your coordinator’s identity — and the odds are computed with it.</li>
+    <li>Fewer than 5 votes, or a tie at the top: the coordinator keeps his plan.</li>
+    <li>Switching teams during the week removes your vote; you can vote for your new team from Monday.</li></ul></details>`;
+}
+function renderFrontOffice(fav,t){
+  if(!FO){ loadFans(); return '<div class="card"><p class="st-none">Loading the fans’ vote…</p></div>'; }
+  loadFans();
+  if(FO.error) return '<div class="card"><p class="st-empty"><b>The fans’ vote is unavailable right now</b>Try again in a moment.</p></div>';
+  let h=foResultHTML(FO_R,fav,t);
+  if(FO.question&&FO.open) h+=foQuestionHTML(FO,fav,t);
+  else if(FO.question&&FO.closed&&!(FO_R&&FO_R.week===FO.question.week)) h+=foQuestionHTML(FO,fav,t);
+  else if(!FO.question) h+=`<div class="card fo-card"><p class="st-empty"><b>No fans’ vote this week</b>The next question opens on Monday, for the week after.</p></div>`;
+  return `<div class="fo-wrap">${h}${foHowHTML()}</div>`;
+}
+/* My team › Overview: a nudge while the vote is open and this account has not voted */
+function foTeaserHTML(){
+  if(!FO_ON||!FO||!FO.question||!FO.open||FO.my_vote||FO.reason) return '';
+  const end=Date.parse(FO.closes_at);
+  return `<div class="card fo-teaser"><span class="label">Fans’ vote · ${esc(FO.question.label||'')}</span><b>${esc(FO.question.question||'')}</b><span class="fo-when">Closes in ${foLeft(end-nowMs())}</span><button type="button" class="chip-btn" data-mttab="fo">Vote now</button></div>`;
+}
+async function foVote(){
+  if(!FO||!FO.question||FO_BUSY) return;
+  const lv=FO.question.lever, c=FO_SEL&&FO_SEL.lever===lv?FO_SEL.choice:null; if(!c) return;
+  FO_BUSY=true; FO_MSG='';
+  try{ const r=await api('/fans/vote',{method:'POST',body:JSON.stringify({token:PLAYER.token,choice:c})}); FO.my_vote=r.my_vote; FO_SEL=null; FO_MSG='ok'; }
+  catch(e){ FO_MSG={vote_closed:'Voting has closed for this week.',team_changed:foReasonText('team_changed',FO),too_many_attempts:'Too many changes in a short time. Try again in a few minutes.',
+      account_required:foReasonText('account_required',FO),no_question:'There is no question this week.'}[e.message]||'Could not save your vote. Try again.';
+    if(e.message==='vote_closed') loadFans(true); }
+  FO_BUSY=false; renderView(true);
+}
+/* Teams (read-only): what each franchise's fans chose for this week */
+function foTeamLineHTML(abbr){
+  const F=FO_ON&&SW.fans, r=F&&F.applied&&F.applied[abbr]; if(!r) return '';
+  return `<div class="fo-line"><span class="label">Fans’ plan this week · ${esc(F.label||'')}</span><b>${esc(r.source==='fans'?foLabel(F.lever,r.choice):FO_COORD)}</b><span>${r.votes} vote${r.votes===1?'':'s'}</span></div>`;
+}
+/* Match centre: the lever of the week, measured in this game up to the play on screen, with the fans' plan of each team */
+function foGameStat(g,n,lever){
+  const c={home:{q4:0,go4:0,snaps:0,runs:0,passes:0,longs:0,dsnaps:0,blitz:0,man:0},away:{q4:0,go4:0,snaps:0,runs:0,passes:0,longs:0,dsnaps:0,blitz:0,man:0}};
+  for(let i=0;i<n&&i<g.plays.length;i++){ const P=g.plays[i], o=P.offense, d=o==='home'?'away':'home', C=P.call||{}, k=C.concept;
+    if(!c[o]) continue;
+    if(P.down===4&&['run','pass','punt','field_goal'].includes(C.type)){ c[o].q4++; if((C.type==='run'||C.type==='pass')&&k!=='KNEEL'&&k!=='SPIKE') c[o].go4++; }
+    if((C.type!=='run'&&C.type!=='pass')||!k||k==='KNEEL'||k==='SPIKE') continue;
+    const run=FO_RUN.test(k); c[o].snaps++; if(run) c[o].runs++; else { c[o].passes++; if(FO_LONG.has(k)) c[o].longs++; }
+    const dd=(C.defense||{}).concept; c[d].dsnaps++; if(dd==='BLITZ') c[d].blitz++; if(dd==='MAN') c[d].man++; }
+  const f=x=>({quatrieme:`${x.go4} of ${x.q4}`,course_passe:x.snaps?foPc(x.runs/x.snaps):'—',blitz:x.dsnaps?foPc(x.blitz/x.dsnaps):'—',
+    couverture:x.dsnaps?foPc(x.man/x.dsnaps):'—',profondeur:x.passes?foPc(x.longs/x.passes):'—'})[lever]||'—';
+  return {home:f(c.home),away:f(c.away)};
+}
+function foGameRow(g,n){
+  const FP=FO_ON&&g.gf&&g.gf.game&&g.gf.game.fans_plan; if(!FP||!FO_INFO[FP.lever]) return null;
+  const v=foGameStat(g,n,FP.lever), cell=s=>{ const r=FP[s]; return `${v[s]}${r&&r.source==='fans'?` <span class="fo-chip sm" title="Fans’ plan: ${esc(foLabel(FP.lever,r.choice))}">${esc(foLabel(FP.lever,r.choice))}</span>`:''}`; };
+  return [`${esc(FO_INFO[FP.lever].stat)} <span class="fo-chip sm">Fans’ plan</span>`,cell('away'),cell('home'),0];
 }
 
 /* ---------- History (bloc 2, étape 5): seasons, franchises, records, careers ----------

@@ -93,6 +93,7 @@ if [ $SITE = 1 ]; then
   lancer "Site : classement des joueurs (Ranking)" node outils/site/test_classement.js
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js
   lancer "Site : ligues privées" node outils/site/test_ligues.js
+  lancer "Site : Front office, le vote des supporters (My team, Teams, Match centre)" node outils/site/test_front_office.js
   lancer "Site : Insights (semaine, face-à-face, récap du jour, cadenas) et retrait d.Exhibition" node outils/site/test_insights.js
   lancer "Site : calendrier filtré par franchise, paris sous un match" node outils/site/test_schedule.js
   lancer "Site : actions longues, retours d.interception et pick-six" node outils/site/test_actions_longues.js

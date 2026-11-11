@@ -288,6 +288,11 @@ class Week:
                 return bool(g) and (self.status(g, t) == "final" or self.revealed_plays(g, t) > x.get("seq", 0))
             for k in ("in_week", "in_week_signings"):
                 out["injuries"][k] = [x for x in d["injuries"].get(k) or [] if joue(x)]
+        if d.get("fans") and front_office_on():     # FO-4 : le choix des supporters de cette semaine (page Teams)
+            f = d["fans"]
+            out["fans"] = {"lever": f.get("lever"), "label": f.get("label"), "side": f.get("side"),
+                           "applied": {a: {k: r.get(k) for k in ("choice", "source", "votes")}
+                                       for a, r in (f.get("applied") or {}).items()}}
         if cs == self.nslots:
             out["standings"], out["seeds"] = d["standings"], d["seeds"]
         if self.status(self.final, t) == "final":
@@ -980,6 +985,8 @@ def page(request: Request = None):
         srv["quick_bet"] = False
     if accueil_on():                                 # première visite (étape 9.3) : sans GC_ACCUEIL=1, la page d'avant
         srv["accueil"] = True
+    if front_office_on():                            # FO-4 : My team › Front office (vote des supporters, section 111)
+        srv["front_office"] = True
     if os.environ.get("GC_NETTETE", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["nettete_off"] = True                    # netteté du terrain (section 90) : la règle de fluidité d'avant
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
@@ -989,7 +996,7 @@ def page(request: Request = None):
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
                       "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,kfAt,missSpot,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,fluide:v=>{if(v!==undefined)JEU_FLUIDE=!!v;return JEU_FLUIDE;},psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
-                      "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},"
+                      "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},fo:{foGameRow,foGameStat,FO_ON},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
@@ -1839,6 +1846,33 @@ def _iso(ms):
     return datetime.fromtimestamp(ms / 1000, TZ).isoformat()
 
 
+_FANS_CHIFFRES, _FANS_MATCH = {}, {}
+
+
+def fans_chiffres(w, t, levier):
+    """FO-4 : ce que le levier fait bouger, pour chaque franchise, sur les matchs terminés de la semaine w à l'instant t
+    (moteur/supporters.py, chiffres) ; en cache par nombre de matchs finis."""
+    jeux = [g for g in w.sched if w.status(g, t) == "final" and w.teams_known(g, t)]
+    cle = (w.start, levier, len(jeux))
+    d = _FANS_CHIFFRES.get(cle)
+    if d is None:
+        comptes = defaultdict(list)
+        for g in jeux:
+            k = (w.folder, g["id"])
+            m = _FANS_MATCH.get(k)
+            if m is None:
+                m = _FANS_MATCH[k] = _fo.mesurer_match(w.feed(g["id"]), g["home"], g["away"])
+            for side in ("home", "away"):
+                comptes[g[side]].append(m[g[side]])
+        d = _fo.chiffres(levier, comptes)
+        if len(_FANS_CHIFFRES) > 32:
+            _FANS_CHIFFRES.clear()
+        if len(_FANS_MATCH) > 2000:
+            _FANS_MATCH.clear()
+        _FANS_CHIFFRES[cle] = d
+    return d
+
+
 @app.get("/api/fans")
 def api_fans(token: str = ""):
     """Le vote de ma franchise : la question, mon vote, l'heure de fermeture ; le résultat seulement après le verrou ;
@@ -1859,6 +1893,9 @@ def api_fans(token: str = ""):
     why = _fans_eligible(p, q)
     out.update(open=not closed, closed=closed, closes_at=_iso(q["lock"]), reason=why,
                question=_fans_question_public(fv, team if team in (fv.get("teams") or {}) else None))
+    if team in (fv.get("teams") or {}) and fv["lever"] in _fo.MESURE:   # FO-4 : les chiffres de la semaine
+        c = fans_chiffres(q["week"], t, fv["lever"])
+        out["stats"] = dict(c["teams"].get(team) or {"value": None, "games": 0}, league=c["league"])
     if p and p.get("login"):
         with db() as c:
             r = c.execute("SELECT choice, team FROM fan_votes WHERE player=? AND week=? AND lever=?",
@@ -1903,9 +1940,9 @@ async def api_fans_vote(req: Request):
 
 
 @app.get("/api/fans/results")
-def api_fans_results(team: str = ""):
+def api_fans_results(team: str = "", token: str = ""):
     """Après le verrou : le résultat de la dernière question fermée, pour une franchise (team=) ou pour toutes
-    (page Teams). Avant le premier verrou : 409 not_closed."""
+    (page Teams). Avant le premier verrou : 409 not_closed. token= : mon vote à cette question (my_vote)."""
     _fo_need()
     t = now_ms()
     w, fv = _closed_vote(t)
@@ -1916,9 +1953,16 @@ def api_fans_results(team: str = ""):
     if team and team not in (fv.get("teams") or {}):
         raise HTTPException(404, "unknown_team")
     counts, opts = fans_counts(fv["week"]), _fan_options(fv)
-    return {"week": fv["week"], "lever": fv["lever"], "label": fv.get("label"), "question": fv.get("question"),
-            "options": fv.get("options"), "closed_at": _iso(w.lock),
-            "teams": {a: fans_result(counts.get(a, {}), opts) for a in teams}}
+    out = {"week": fv["week"], "lever": fv["lever"], "label": fv.get("label"), "question": fv.get("question"),
+           "options": fv.get("options"), "closed_at": _iso(w.lock),
+           "teams": {a: fans_result(counts.get(a, {}), opts) for a in teams}}
+    p = player_by_token(token) if token else None
+    if p and p.get("login"):
+        with db() as c:
+            r = c.execute("SELECT choice, team FROM fan_votes WHERE player=? AND week=? AND lever=?",
+                          (p["id"], fv["week"], fv["lever"])).fetchone()
+        out["my_vote"] = {"choice": r["choice"], "team": r["team"]} if r else None
+    return out
 
 
 def fans_export(week):

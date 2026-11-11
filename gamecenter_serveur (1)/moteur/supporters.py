@@ -298,3 +298,60 @@ def controle(equipes, staffs):
             if s in NEUTRE and not b[0] <= NEUTRE[s] <= b[1]:
                 err.append(f"{a} {lv} : {NEUTRE[s]} hors de {b}")
     return err
+
+
+# =====================================================================================================================
+# 4. CHIFFRES DE LA SEMAINE (FO-4 : écran Front office) — sur les GameFeed des matchs terminés
+# =====================================================================================================================
+# ce que chaque levier fait bouger, mesuré sur les matchs d'une franchise : (numérateur, dénominateur)
+MESURE = {"quatrieme": ("go4", "q4"), "course_passe": ("runs", "snaps"), "blitz": ("blitz", "dsnaps"),
+          "couverture": ("man", "dsnaps"), "profondeur": ("longs", "passes")}
+_COURSES = frozenset(("INSIDE_RUN", "TRAP", "DRAW", "WHAM", "QB_DRAW", "POWER", "COUNTER", "PIN_PULL", "OUTSIDE_RUN",
+                      "BUCK_SWEEP", "COUNTER_SWEEP", "POWER_TOSS", "JET_SWEEP", "JET_ACTION", "END_AROUND", "REVERSE",
+                      "DOUBLE_REVERSE", "READ_OPTION", "POWER_READ", "INVERTED_VEER", "MIDLINE_OPTION", "SHOVEL_OPTION",
+                      "SPEED_OPTION", "TRIPLE_OPTION", "QB_SWEEP", "RPO_ALERT", "RPO_INSIDE_ZONE", "RPO_OUTSIDE_ZONE",
+                      "RPO_PEEK", "RPO_POWER", "RPO_READ"))
+
+
+def mesurer_match(feed, home, away):
+    """Comptes d'un match terminé pour chaque franchise : {abbr: {q4, go4, snaps, runs, passes, longs, dsnaps, blitz,
+    man}} (mêmes définitions que moteur/empreinte.py ; « longs » : concepts intermédiaires et profonds, LONGS)."""
+    abbr = {"home": home, "away": away}
+    vide = lambda: {"q4": 0, "go4": 0, "snaps": 0, "runs": 0, "passes": 0, "longs": 0, "dsnaps": 0, "blitz": 0, "man": 0}
+    M = {home: vide(), away: vide()}
+    for p in feed.get("plays") or []:
+        att = abbr.get(p.get("offense"))
+        if not att:
+            continue
+        d = M[away if att == home else home]
+        c = p.get("call") or {}
+        typ, k = c.get("type"), c.get("concept")
+        if p.get("down") == 4 and typ in ("run", "pass", "punt", "field_goal"):
+            M[att]["q4"] += 1
+            M[att]["go4"] += typ in ("run", "pass") and k not in ("KNEEL", "SPIKE")
+        if typ not in ("run", "pass") or not k or k in ("KNEEL", "SPIKE"):
+            continue
+        o = M[att]
+        course = k in _COURSES
+        o["snaps"] += 1
+        o["runs"] += course
+        if not course:
+            o["passes"] += 1
+            o["longs"] += k in LONGS
+        dd = (c.get("defense") or {}).get("concept")
+        d["dsnaps"] += 1
+        d["blitz"] += dd == "BLITZ"
+        d["man"] += dd == "MAN"
+    return M
+
+
+def chiffres(levier, comptes):
+    """comptes = {abbr: [comptes de ses matchs]} -> {"teams": {abbr: {"value", "games"}}, "league": moyenne | None}."""
+    num, den = MESURE[levier]
+    out = {}
+    for a, ms in comptes.items():
+        n, d = sum(m[num] for m in ms), sum(m[den] for m in ms)
+        out[a] = {"value": round(n / d, 4) if d else None, "games": len(ms)}
+    vals = [v["value"] for v in out.values() if v["value"] is not None]
+    return {"teams": out, "league": round(sum(vals) / len(vals), 4) if vals else None}
+
