@@ -3076,6 +3076,10 @@ dans le calcul du samedi, et les cotes sont calculées avec eux.
   - Fichier présent mais pas lu par le moteur : anomalie bloquante.
   - Fichier lu mais absent du dépôt : alerte.
   - Les bornes restent contrôlées par `check_fans` (FO-1).
+- **Contrôle des PR** (`.github/workflows/controle.yml`, décision de Guillaume du 11/11) : l'installation de
+  Playwright et de Chromium (et de ffmpeg) se fait en trois essais, avec une pause de 30 puis 60 s et une relecture de
+  l'index apt entre deux essais. Le 11/11, les miroirs Ubuntu étaient injoignables depuis les machines GitHub, et les
+  deux jobs navigateur échouaient avant tout test.
 - **Secrets GitHub à ajouter par Guillaume** (dépôt → Settings → Secrets and variables → Actions) :
   - `GC_ADMIN_KEY` : la même valeur que la variable `GC_ADMIN_KEY` de Railway ;
   - `GC_SITE_URL` : `https://snapline.live`.
