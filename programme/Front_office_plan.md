@@ -108,7 +108,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 - `audit_moteur.py` : ce qui est appliqué (`fans.applied`) correspond au fichier, et reste dans les bornes.
 - Échec de la récupération : calcul normal avec les coordinateurs, annotation d'alerte (pas d'échec du workflow).
 
-### FO-4 — Site : Front office et révélation du lundi *(site)*
+### FO-4 — Site : Front office et révélation du lundi *(site)* — ✅ 11/11 (README section 111)
 
 - My team : sélecteur **Overview / Front office** (Draft viendra en FO-6). Front office = l'écran 1 validé : question,
   trois options, chiffres de la semaine de l'équipe, compte à rebours, « Cast my vote » / « Change vote », comment ça
