@@ -142,7 +142,11 @@ class TestVoteSupporters(unittest.TestCase):
         tok = self.joueur()
         r = serveur.api_fans(tok)
         self.assertIn("stats", r)
-        self.assertEqual(set(r["stats"]), {"value", "games", "league"})
+        self.assertEqual(set(r["stats"]), {"value", "games", "counts", "league", "projections"})
+        self.assertEqual(list(r["stats"]["projections"]), fo.options(self.w.doc["fan_vote"]["lever"]))
+        inf = r["in_force"]                     # choix en vigueur : CTX agressif (9 votes) ; part, avant → maintenant
+        self.assertEqual((inf["choice"], inf["source"]), ("agressif", "fans"))
+        self.assertTrue({"share", "before", "now", "label"} <= set(inf))
         ops = fo.options(self.prev.doc["fan_vote"]["lever"])
         with serveur._db_lock, serveur.db() as c:
             pid = c.execute("SELECT id FROM players WHERE token=?", (tok,)).fetchone()[0]

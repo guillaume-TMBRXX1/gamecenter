@@ -112,14 +112,15 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 
 - My team : sélecteur **Overview / Front office** (Draft viendra en FO-6). Front office = l'écran 1 validé : question,
   trois options, chiffres de la semaine de l'équipe, compte à rebours, « Cast my vote » / « Change vote », comment ça
-  marche, le choix en vigueur cette semaine.
+  marche, le choix en vigueur cette semaine. Refait le 11/11 d'après les captures iPad (projection par option, tuiles
+  Faced / Went for it / Converted / League avg, titre avec le nom du coordinateur, « In effect this week »).
 - Le lundi : l'écran 4 (sans la partie draft) — résultat et pourcentages, « Your vote », le prochain match avec
   « Fans' plan », la nouvelle question.
 - Match centre : la ligne du levier de la semaine (« 4th downs », part des courses, blitz…) avec la puce « Fans' plan » ; page Teams : le choix des supporters de chaque
   franchise, en lecture seule.
 - Invités et comptes sans franchise : une invitation à créer un compte / choisir son équipe. Téléphone 390 px.
   Marge en bas pour le bouton « Bet slip ».
-- Tests : `outils/site/test_front_office.js` (avant et après le verrou, invité, compte d'une autre franchise,
+- Tests : `outils/site/test_front_office.js` (jeudi, lundi et après le verrou, invité, compte d'une autre franchise,
   téléphone, interrupteur).
 
 **À la fin de FO-4, le vote fonctionne de bout en bout** : première semaine utilisable par le public.

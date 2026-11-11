@@ -4,16 +4,22 @@
 // Les semaines publiées n'ont pas encore de question (le moteur l'écrit à partir de la semaine du 16/11) : la copie de la
 // semaine en cours reçoit une question (fan_vote, 4e essai) et un choix appliqué (fans), la semaine d'avant la question
 // qui a décidé de cette semaine (course / passe, 6 votes de supporters de CTX en base) ; un match reçoit game.fans_plan.
-// Vérifie, avant le verrou du vendredi :
+// Écrans validés sur l'iPad (11/11). Vérifie, jeudi soir (vote ouvert) :
 //   - invité : invitation à créer un compte (qui parle du vote) ;
-//   - compte de CTX : onglets Overview / Front office, rappel « Vote now » sur Overview ; Front office : le choix en
-//     vigueur cette semaine (pourcentages, « Your vote », prochain match et « Fans' plan »), la question, trois options,
-//     les chiffres de la semaine, le compte à rebours ; « Cast my vote » puis « Change vote » (enregistrés sur le serveur) ;
+//   - compte de VEC : rappel « Vote now » sur Overview ;
+//   - compte de CTX : onglets Overview / Front office ; écran de vote par défaut : « Fan vote · for week N », titre avec
+//     le nom du coordinateur, trois cartes (« AI default » sur Coordinator's call, projection par match), les chiffres
+//     de la semaine (Faced / Went for it / Converted / League avg), le compte à rebours, aucune part du vote avant le
+//     verrou ; colonne « How it works » et « In effect this week » (More passing · 67 %, 6 votes, part des courses
+//     avant → maintenant) ; « Cast my vote » puis « Change my vote » (enregistrés sur le serveur) ; « See the vote » :
+//     la révélation (« The … fans have decided », barres triées, prochain match, cotes et « Fans' plan »), « Vote » y
+//     ramène ;
 //   - compte qui a changé de franchise cette semaine : options désactivées, raison affichée ;
 //   - page Teams : le choix des supporters de chaque franchise, en lecture seule ; Match centre : la ligne du levier ;
 //   - téléphone 390 px : options l'une sous l'autre, pas de défilement horizontal, marge pour le bouton « Bet slip » ;
-// après le verrou : « The fans have spoken » (1 vote : le coordinateur décide), « Your vote », plus de bouton de vote ;
-// interrupteur GC_FRONT_OFFICE=off : ni onglets ni ligne sur Teams. Aucune erreur JS.
+// lundi matin : la révélation s'affiche d'abord ; après le verrou : « The … fans have decided » pour la semaine
+// suivante (1 vote : le coordinateur décide), « Your vote », plus de bouton de vote ; interrupteur GC_FRONT_OFFICE=off :
+// ni onglets ni ligne sur Teams. Aucune erreur JS.
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), os=require('os'), {spawn, spawnSync}=require('child_process');
 const ROOT=path.resolve(__dirname,'..','..'), WEEKS=path.join(ROOT,'data','weeks'), PORT=8183, URL0=`http://localhost:${PORT}`;
@@ -99,35 +105,61 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
     const tabs=await p.$$eval('#viewMyteam .mt-tabs [data-mttab]',bs=>bs.map(b=>b.textContent.trim()));
     check(tabs.join('|')==='Overview|Front office',`My team : onglets Overview / Front office (${tabs.join(' | ')})`);
     await frontOffice(p); await p.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:15000});
-    const res=await texte(p,'#viewMyteam [data-fo="result"]');
-    check(/This week’s fans’ plan/.test(res)&&/More passes/.test(res)&&/67%/.test(res)&&/33%/.test(res)&&/6 votes/.test(res),`le choix en vigueur cette semaine : « More passes », 67 % / 33 %, 6 votes`);
-    check(/Next game/.test(res)||!/Next game/.test(res),'prochain match (s’il en reste un cette semaine)');
-    const qtxt=await texte(p,'#viewMyteam [data-fo="question"]');
-    check(/How bold should we be on fourth down\?/.test(qtxt)&&/week of/.test(qtxt),'la question de la semaine suivante');
+    check(!!(await p.$('#viewMyteam [data-foscreen="vote"]')),'jeudi : l’écran de vote par défaut');
+    const qtxt=await texte(p,'#viewMyteam [data-fo="question"]'), COORD=W.teams.CTX.coordinators.offense;
+    check(new RegExp('Fan vote · for week '+(W.week.index+1),'i').test(qtxt),`« Fan vote · for week ${W.week.index+1} »`);
+    check(qtxt.includes(`4th down next week: how bold should ${COORD} be?`),`titre avec le coordinateur offensif (${COORD})`);
     check((await p.$$('#viewMyteam [data-fochoice]')).length===3,'trois options');
-    check(/This week:/.test(qtxt),'les chiffres de la semaine de l’équipe');
-    check(/Closes .* in \d/.test(qtxt),'compte à rebours avant la fermeture');
-    check(!/%/.test(qtxt.replace(/This week:.*?(game|appear)/,'')),'pourcentages du vote cachés avant le verrou');
-    await capture(p,'1-front-office-avant-vote','#viewMyteam');
+    const coordTxt=await texte(p,'#viewMyteam [data-fochoice="coordinateur"]');
+    check(/AI default/.test(coordTxt)&&coordTxt.includes(COORD.split(' ').slice(-1)[0]+'’s usual plan'),'« AI default » et le plan du coordinateur sur Coordinator’s call');
+    const st=(await api('/fans?token='+A.token)).json.stats;
+    if(st&&st.games){
+      check(/per game, as this week/.test(coordTxt)&&/go-for-its per game/.test(await texte(p,'#viewMyteam [data-fochoice="agressif"]')),'projection par option (go-for-its par match)');
+      const tiles=await p.$$eval('#viewMyteam .fo-tile span',e=>e.map(x=>x.textContent.trim().toLowerCase()));
+      check(tiles.join('|')==='faced|went for it|converted|league avg / game',`chiffres de la semaine : ${tiles.join(' · ')}`);
+      check(qtxt.includes(`on 4th down this week · ${st.games} game`),`« … on 4th down this week · ${st.games} games »`);
+    } else check(/numbers appear after the first game/.test(qtxt),'pas encore de match : les chiffres viendront');
+    check(/Closes \w{3} 23:30 · \d/.test(qtxt),'compte à rebours avant la fermeture (« Closes Fri 23:30 · … »)');
+    check(!/%/.test(qtxt),'aucune part du vote avant le verrou');
+    const inf=await texte(p,'#viewMyteam [data-fo="in-force"]');
+    check(/In effect this week/.test(inf)&&/More passing · 67\s?%/.test(inf)&&/Votes\s?6/.test(inf)&&/Run share\s?\d+\s?% → \d+\s?%/.test(inf),`« In effect this week » : More passing · 67 %, 6 votes, part des courses (${inf.slice(0,90)})`);
+    check(/How it works/.test(await texte(p,'#viewMyteam .fo-how')),'colonne « How it works »');
+    await capture(p,'1-vote','#viewMyteam');
     const cast=await p.evaluate(()=>{ const c=document.querySelector('#viewMyteam [data-fovote]'); return {d:c.disabled,t:c.textContent}; });
     check(cast.d&&/Cast my vote/.test(cast.t),'« Cast my vote », désactivé tant qu’aucune option n’est choisie');
     await p.click('#viewMyteam [data-fochoice="agressif"]');
+    check(await p.evaluate(()=>getComputedStyle(document.querySelector('#viewMyteam [data-fochoice="agressif"]')).color==='rgb(255, 255, 255)'),'option choisie : carte foncée, texte blanc');
     await p.click('#viewMyteam [data-fovote]');
     await p.waitForSelector('#viewMyteam .fo-msg.ok',{timeout:10000});
     check((await api('/fans?token='+A.token)).json.my_vote==='agressif','vote enregistré sur le serveur (« Go for it »)');
     await p.click('#viewMyteam [data-fochoice="prudent"]');
-    check(/Change vote/.test(await p.textContent('#viewMyteam [data-fovote]')),'« Change vote » quand on choisit une autre option');
+    check(/Change my vote/.test(await p.textContent('#viewMyteam [data-fovote]')),'« Change my vote » quand on choisit une autre option');
     await p.click('#viewMyteam [data-fovote]'); await p.waitForSelector('#viewMyteam .fo-msg.ok',{timeout:10000});
     check((await api('/fans?token='+A.token)).json.my_vote==='prudent','vote changé (« Play it safe »)');
     check(/Your vote/.test(await texte(p,'#viewMyteam [data-fochoice="prudent"]')),'« Your vote » sur l’option votée');
-    await capture(p,'2-front-office-vote-enregistre','#viewMyteam [data-fo="question"]');
+    await capture(p,'2-vote-enregistre','#viewMyteam [data-fo="question"]');
+    /* la révélation du vote qui a décidé de cette semaine */
+    await p.click('#viewMyteam [data-foview="reveal"]'); await p.waitForSelector('#viewMyteam [data-fo="result"]',{timeout:10000});
+    const rev=await texte(p,'#viewMyteam .fo-rev'), res=await texte(p,'#viewMyteam [data-fo="result"]');
+    check(rev.includes(`The ${W.teams.CTX.name} fans have decided`)&&new RegExp('Week '+W.week.index+' · results of the fan votes','i').test(rev),'révélation : « Week N · results of the fan votes », « The … fans have decided »');
+    const bars=await p.$$eval('#viewMyteam [data-fo="result"] .fo-bar',e=>e.map(x=>x.textContent.replace(/\s+/g,' ').trim()));
+    check(/^More passes\s?67\s?%/.test(bars[0])&&/^More runs\s?33\s?%/.test(bars[1])&&/0\s?%$/.test(bars[2]),`barres triées, la gagnante en tête (${bars.join(' | ')})`);
+    check(/Run or pass · 6 votes/i.test(res)&&/In effect for every .* game this week/.test(res),'« Run or pass · 6 votes », « In effect for every … game this week »');
+    const nx=await texte(p,'#viewMyteam .fo-nextc');
+    if(await p.$('#viewMyteam .fo-match')){
+      check(/Fans’ plan/.test(nx)&&/More passes · the odds include it/.test(nx)&&(await p.$$('#viewMyteam .fo-match .odd')).length===2,'prochain match : cotes et « Fans’ plan · More passes · the odds include it »');
+    } else check(/No game left/.test(nx),'plus de match cette semaine');
+    check(/New fan vote · for week/i.test(nx)&&/How bold on 4th down next week\?/.test(nx)&&/You voted Play it safe/.test(nx),'nouvelle question : « How bold on 4th down next week? », mon vote rappelé');
+    await capture(p,'3-revelation','#viewMyteam');
+    await p.click('#viewMyteam .fo-nextc [data-foview="vote"]'); await p.waitForSelector('#viewMyteam [data-foscreen="vote"]',{timeout:10000});
+    check(true,'« Change » ramène à l’écran de vote');
     await p.click('#viewMyteam [data-mttab="overview"]'); await p.waitForSelector('#viewMyteam .team-page',{timeout:10000});
     check(!(await p.$('#viewMyteam .fo-teaser')),'Overview : plus de rappel une fois le vote fait');
 
     /* ---- page Teams et Match centre ---- */
     await p.click('.rail-btn[data-view="teams"]'); await p.click('#viewTeams [data-team="CTX"]');
     await p.waitForSelector('#viewTeams .fo-line',{timeout:10000});
-    await capture(p,'4-teams-ctx','#viewTeams .team-page');
+    await capture(p,'5-teams-ctx','#viewTeams .team-page');
     check(/More passes/.test(await texte(p,'#viewTeams .fo-line'))&&/6 votes/.test(await texte(p,'#viewTeams .fo-line')),'Teams : le choix des supporters de CTX, en lecture seule');
     await p.click('#viewTeams [data-team="CTX"]'); await p.click('#viewTeams [data-team="VEC"]'); await p.waitForSelector('#viewTeams .fo-line',{timeout:10000});
     check(/Coordinator's call/.test(await texte(p,'#viewTeams .fo-line')),'Teams : VEC, le coordinateur');
@@ -149,11 +181,22 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
     const lay=await ph.evaluate(()=>{ const o=[...document.querySelectorAll('#viewMyteam .fo-opt')].map(e=>e.getBoundingClientRect());
       return {sw:document.documentElement.scrollWidth, w:innerWidth, stacked:o.length===3&&o[1].top>o[0].bottom-1&&o[2].top>o[1].bottom-1,
         pad:parseFloat(getComputedStyle(document.querySelector('#viewMyteam .fo-wrap')).paddingBottom)}; });
-    if(CAP){ await ph.waitForTimeout(400); await ph.screenshot({path:path.join(CAP,'5-telephone.png'),fullPage:true}); }
+    if(CAP){ await ph.waitForTimeout(400); await ph.screenshot({path:path.join(CAP,'6-telephone.png'),fullPage:true}); }
     check(lay.sw<=lay.w,`téléphone : pas de défilement horizontal (${lay.sw} px pour ${lay.w})`);
     check(lay.stacked,'téléphone : les trois options l’une sous l’autre');
     check(lay.pad>=60,`téléphone : marge en bas pour le bouton « Bet slip » (${lay.pad} px)`);
     errs.push(...ph.errs); await ph.context().close();
+  }finally{ await arreter(srv); }
+
+  /* ---- lundi matin : la révélation d'abord ---- */
+  srv=await server(iso(Date.parse(LUNDI+'T09:00:00'+(W.week.standings_locked_at.match(/([+-]\d\d:\d\d|Z)$/)||['','Z'])[1])));
+  try{
+    const A=(await api('/account/login',{pseudo:'FanCTX',password:'motdepasse1'})).json;
+    const p=await ouvrir(b); await connecter(p,{token:A.token,name:A.name,fav:'CTX'}); await myteam(p); await frontOffice(p);
+    await p.waitForSelector('#viewMyteam [data-foscreen]',{timeout:15000});
+    check(!!(await p.$('#viewMyteam [data-foscreen="reveal"]')),'lundi : la révélation s’affiche d’abord');
+    check(/Vote|Change/.test(await texte(p,'#viewMyteam .fo-nextc [data-foview="vote"]')),'lundi : bouton vers la nouvelle question');
+    errs.push(...p.errs);
   }finally{ await arreter(srv); }
 
   /* ---- après le verrou du vendredi ---- */
@@ -163,10 +206,11 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
     const p=await ouvrir(b); await connecter(p,{token:A.token,name:A.name,fav:'CTX'}); await myteam(p); await frontOffice(p);
     await p.waitForSelector('#viewMyteam [data-fo="result"]',{timeout:15000});
     const res=await texte(p,'#viewMyteam [data-fo="result"]');
-    check(/The fans have spoken/.test(res)&&/Applies next week/.test(res)&&/Fewer than 5 votes/.test(res)&&/Coordinator's call/.test(res),'après le verrou : résultat de la semaine suivante (1 vote : le coordinateur décide)');
-    check(/Your vote: Play it safe/.test(res),'après le verrou : « Your vote »');
-    check(!(await p.$('#viewMyteam [data-fo="result"] .fo-bar.win'))&&!/Fans’ plan/.test(res),'après le verrou : le coordinateur décide, aucune option marquée « Fans’ plan »');
-    await capture(p,'6-apres-le-verrou','#viewMyteam');
+    check(/fans have decided/.test(await texte(p,'#viewMyteam .fo-rev'))&&/Applies next week/.test(res)&&/Fewer than 5 votes/.test(res),'après le verrou : résultat de la semaine suivante (1 vote : le coordinateur décide)');
+    check(/✓ Your vote/.test(res),'après le verrou : « Your vote »');
+    check(/Coordinator's call/.test(await texte(p,'#viewMyteam .fo-win'))&&/Coordinator's call/.test(await texte(p,'#viewMyteam .fo-bar.win')),'après le verrou : « Coordinator’s call » retenu (barre mise en avant)');
+    check(/opens on Monday/.test(await texte(p,'#viewMyteam .fo-nextc')),'après le verrou : la prochaine question ouvre lundi');
+    await capture(p,'4-apres-le-verrou','#viewMyteam');
     check(!(await p.$('#viewMyteam [data-fovote]')),'après le verrou : plus de bouton de vote');
     errs.push(...p.errs);
   }finally{ await arreter(srv); }

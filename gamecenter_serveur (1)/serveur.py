@@ -1873,6 +1873,27 @@ def fans_chiffres(w, t, levier):
     return d
 
 
+def fans_in_force(cur, t, team, applied):
+    """FO-4 : le choix en vigueur cette semaine pour ma franchise (week.json → fans.applied), avec la part de l'option
+    retenue au vote qui l'a décidé et le chiffre du levier la semaine d'avant → cette semaine (« before » → « now »)."""
+    F = cur.doc.get("fans") or {}
+    lv = F.get("lever")
+    out = dict(applied, lever=lv, label=F.get("label"), share=None, before=None, now=None)
+    if applied.get("source") == "fans":
+        prev = [w for w in load_weeks().values() if w.monday < cur.monday
+                and (w.doc.get("fan_vote") or {}).get("week") == cur.start]
+        if prev:
+            fv = max(prev, key=lambda x: x.monday).doc["fan_vote"]
+            r = fans_result(fans_counts(cur.start, team).get(team, {}), _fan_options(fv))
+            out["share"] = (r.get("pct") or {}).get(applied.get("choice"))
+    if lv in _fo.MESURE:
+        avant = [w for w in load_weeks().values() if w.monday < cur.monday]
+        if avant:
+            out["before"] = (fans_chiffres(max(avant, key=lambda x: x.monday), t, lv)["teams"].get(team) or {}).get("value")
+        out["now"] = (fans_chiffres(cur, t, lv)["teams"].get(team) or {}).get("value")
+    return out
+
+
 @app.get("/api/fans")
 def api_fans(token: str = ""):
     """Le vote de ma franchise : la question, mon vote, l'heure de fermeture ; le résultat seulement après le verrou ;
@@ -1885,7 +1906,7 @@ def api_fans(token: str = ""):
     team = p.get("fav_team") if p else None
     applied = ((cur.doc.get("fans") or {}).get("applied") or {}).get(team) if cur and team else None
     out = {"enabled": True, "now": t, "account": bool(p and p.get("login")), "team": team,
-           "in_force": dict(applied, lever=(cur.doc.get("fans") or {}).get("lever")) if applied else None}
+           "in_force": fans_in_force(cur, t, team, applied) if applied else None}
     if not q:
         return dict(out, open=False, reason="no_question")
     fv = q["fan_vote"]
@@ -1895,7 +1916,9 @@ def api_fans(token: str = ""):
                question=_fans_question_public(fv, team if team in (fv.get("teams") or {}) else None))
     if team in (fv.get("teams") or {}) and fv["lever"] in _fo.MESURE:   # FO-4 : les chiffres de la semaine
         c = fans_chiffres(q["week"], t, fv["lever"])
-        out["stats"] = dict(c["teams"].get(team) or {"value": None, "games": 0}, league=c["league"])
+        st = c["teams"].get(team) or {"value": None, "games": 0, "counts": None}
+        out["stats"] = dict(st, league=c["league"],
+                            projections=_fo.projections(fv["lever"], st["value"], fv["teams"].get(team)))
     if p and p.get("login"):
         with db() as c:
             r = c.execute("SELECT choice, team FROM fan_votes WHERE player=? AND week=? AND lever=?",
