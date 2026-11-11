@@ -99,6 +99,18 @@ class FinDePeriode(unittest.TestCase):
         self.assertEqual(P[0]["possession_change"], "turnover")
         self.assertEqual(AL.fin_de_periode(P), 0)                    # déjà en ordre : rien
 
+    def test_pick_six_en_fin_de_quart_temps(self):
+        """Fin du 1er quart-temps (semaine du 09/11, w7-r204) : la transformation reste au 1er, horloge à 0, et la pause
+        de fin de quart-temps vient après elle."""
+        P = [{"quarter": 1, "result": "interception", "int_return": {"td": True}, "try_follows": True,
+              "after": {"status": "live"}, "clock_end": 0},
+             {"quarter": 2, "result": "pat_good", "clock_start": 240, "clock_end": 240, "after": {"status": "live"}},
+             {"quarter": 2, "result": "kickoff", "after": {"status": "live"}}]
+        self.assertEqual(AL.fin_de_periode(P), 1)
+        self.assertEqual([(p["quarter"], p["after"]["status"]) for p in P], [(1, "live"), (1, "live"), (2, "live")])
+        self.assertEqual((P[1]["clock_start"], P[1]["clock_end"]), (0, 0))
+        self.assertEqual(AL.fin_de_periode(P), 0)
+
     def test_sans_pick_six(self):
         P = [{"quarter": 2, "result": "touchdown", "after": {"status": "live"}},
              {"quarter": 2, "result": "pat_good", "after": {"status": "half"}}]

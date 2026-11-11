@@ -2841,14 +2841,20 @@ function specialFormation(g,type,P){
   const d=dirOf(g), L=g.los, by=g.bally, fx=x=>clamp(x,0.8,119.2), fy=y=>clamp(y,2.5,50.8);
   if(type==='kickoff'){
     /* feed convention: the receiving team is the offense; the ball is kicked from los_x toward spot.x */
-    const S=P&&P.spot&&isFinite(P.spot.x)?P.spot.x:L-d*60, kd=Math.sign(S-L)||-d; g.kd=kd;
+    const S=P&&P.spot&&isFinite(P.spot.x)?P.spot.x:L-d*60, KR=P&&P.kick_return;
+    /* 11/11/2026: a return that comes back past the kicking line (a kickoff return touchdown, a long return) ends
+       behind it: the kick still went the other way (the spot is kick - return yards from the line) */
+    const kr=KR&&!KR.touchback?num(KR.kick,0)-num(KR.return,0):null;
+    let kd=Math.sign(S-L)||-d; if(kr!=null&&Math.abs(kr)>0.5&&Math.sign(S-L)) kd=Math.sign(S-L)*Math.sign(kr);
+    g.kd=kd;
     const lane=[4.5,9,13.5,18,22.5,MIDY,31,35.5,40,44.5,49];
     const def=lane.map((y,i)=>i===5?{x:fx(L-kd*7),y:MIDY-1}:{x:fx(L-kd*1),y:fy(y+rand(-.3,.3))});
     const front=[10,18,MIDY,35,43];
     const off=[];
     front.forEach((y,i)=>off[i]={x:fx(L+kd*11+rand(-.6,.6)),y:fy(y)});
     off[5]={x:fx(L+kd*22),y:12}; off[8]={x:fx(L+kd*22),y:22}; off[9]={x:fx(L+kd*22),y:31}; off[10]={x:fx(L+kd*22),y:41};
-    off[7]={x:fx(S+kd*1.5),y:MIDY-1.5}; off[6]={x:fx(S-kd*5),y:MIDY+6};
+    const R=kr!=null?clamp(L+kd*num(KR.kick,60),0.5,119.5):S;   /* the returners wait where the ball comes down */
+    off[7]={x:fx(R+kd*1.5),y:MIDY-1.5}; off[6]={x:fx(R-kd*5),y:MIDY+6};
     return {off,def};
   }
   g.kd=d;

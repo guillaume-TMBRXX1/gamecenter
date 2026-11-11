@@ -57,16 +57,21 @@ async function server(){
     await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
     const R=await p.evaluate(async F=>{
       const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
-      const seen={}, out=[];
+      const seen={}, out=[], seenK={}, kicks=[];
       for(let i=0;i<80000&&!(g.status==='final'&&g.paused);i++){
         G.stepGame(g,0.05);
-        const P=g.cur; if(!P||!P.kick_return||seen[P.seq]) continue;
+        const P=g.cur; if(!P||!P.kick_return) continue;
+        /* 11/11/2026 : le ballon part du côté de l'équipe qui reçoit, même quand le retour revient au-delà de la ligne
+           du botté (touchdown sur retour, w7-r87) : il retombe à « kick » yards de la ligne, à « return » yards de l'arrivée */
+        if(g.phase==='play'&&g.plan&&g.plan.kind==='kickoff'&&g.plan.flight&&!seenK[P.seq]){ seenK[P.seq]=1; const fl=g.plan.flight;
+          kicks.push({seq:P.seq,kr:P.kick_return,from:fl.from.x,to:fl.to.x,sx:g.plan.spot.x}); }
+        if(seen[P.seq]) continue;
         if(g.idx===g.plays.indexOf(P)&&g.phase!=='presnap'&&g.chip&&g.chip.t&&/KICKOFF|TOUCHBACK|RETURN|TOUCHDOWN/.test(g.chip.t)){
           seen[P.seq]=1; out.push({seq:P.seq,kr:P.kick_return,result:P.result,chip:g.chip.t,text:g.lastText,hs:g.hs,as:g.as,want:P.after.score}); }
       }
       const st=G.computeStats(g,g.plays.length), pl={};
       for(const s of ['home','away']) for(const k in st.pl[s]){ const x=st.pl[s][k]; if(x.kr) pl[s+':'+x.name]=x.kr; }
-      return {out,status:g.status,hs:g.hs,as:g.as,team:{kr:st.team.home.kr+st.team.away.kr,kry:st.team.home.kry+st.team.away.kry},pl};
+      return {out,kicks,status:g.status,hs:g.hs,as:g.as,team:{kr:st.team.home.kr+st.team.away.kr,kry:st.team.home.kry+st.team.away.kry},pl};
     },F);
     const C=R.out;
     console.log('   ',JSON.stringify(C.slice(0,3)).slice(0,400));
@@ -80,6 +85,8 @@ async function server(){
     const byName={}; for(const P of ret){ const n=(P.players.carrier||{}).name; if(n){ const k=P.offense+':'+n; byName[k]=(byName[k]||0)+P.kick_return.return; } }
     check(Object.keys(byName).length>0&&Object.entries(byName).every(([k,y])=>R.pl[k]&&R.pl[k].y===y),'retours par joueur = GameFeed');
     check(R.status==='final'&&R.hs===F.game.final_score.home&&R.as===F.game.final_score.away,`score final ${R.as}-${R.hs} = GameFeed`);
+    const KR=R.kicks.filter(k=>!k.kr.touchback), mal=KR.filter(k=>!((k.to<=1||k.to>=119||Math.abs(Math.abs(k.to-k.from)-k.kr.kick)<=1.5)&&Math.abs(Math.abs(k.to-k.sx)-k.kr.return)<=1.5));
+    check(KR.length>0&&!mal.length,`le ballon retombe du côté de l'équipe qui reçoit, à « kick » yards (${KR.length-mal.length} / ${KR.length}${KR.some(k=>k.kr.td)?', dont un touchdown sur retour':''})`+(mal.length?' : action '+mal[0].seq:''));
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs[0]:''));
   }finally{ await b.close(); srv.kill(); }
   console.log(fail?`${fail} échec(s)`:'OK'); process.exit(fail?1:0);
