@@ -3146,7 +3146,7 @@ Captures de contrôle : `FO_CAPTURES=<dossier> node outils/site/test_front_offic
   - `/api/fans/results?token=` renvoie aussi `my_vote`.
 - **Interrupteur** : `GC_FRONT_OFFICE=off` donne My team et Teams comme avant, sans onglets ni ligne.
 - **Cellule 427** : seul l'appel du Match centre y est reporté, protégé, car le replay du notebook n'a pas de vote.
-- **Tests** : `outils/site/test_front_office.js` (31 contrôles), ajouté aux tests navigateur (groupe site) :
+- **Tests** : `outils/site/test_front_office.js` (30 contrôles), ajouté aux tests navigateur (groupe site) :
   - avant le verrou : invité, rappel sur Overview, onglets, choix en vigueur (67 % / 33 %, 6 votes), question,
     trois options, chiffres, compte à rebours, pourcentages cachés, « Cast my vote » puis « Change vote »
     enregistrés sur le serveur, page Teams (CTX et VEC), ligne du Match centre, franchise changée, téléphone ;
