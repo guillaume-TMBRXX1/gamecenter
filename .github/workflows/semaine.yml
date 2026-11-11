@@ -52,6 +52,15 @@ jobs:
           python -m ipykernel install --user
       - name: Tester les modules du moteur (quelques secondes)
         run: python -m unittest discover -s moteur/tests -t .
+      - name: Récupérer les votes des supporters
+        # Front office FO-3 : data/fans/fans_<lundi>.json depuis le serveur (après le verrou du vendredi), passé au
+        # notebook par generer_semaine.py. Jamais bloquant : secrets absents, serveur injoignable ou vote pas fermé =
+        # annotation d'alerte, les coordinateurs décident (README section 110).
+        continue-on-error: true
+        env:
+          GC_SITE_URL: ${{ secrets.GC_SITE_URL }}
+          GC_ADMIN_KEY: ${{ secrets.GC_ADMIN_KEY }}
+        run: python outils/ci/votes_supporters.py --data data
       - name: Calculer la semaine (≈ 75 min si elle est à produire)
         run: python generer_semaine.py --suivante --data data --notebook NFL_Sim_GameCenter.ipynb
       - name: Contrôler le moteur (audit de toutes les semaines)
@@ -68,6 +77,7 @@ jobs:
             mkdir -p data/weeks/week_test-alerte && echo "essai de l'alerte" > data/weeks/week_test-alerte/LISEZMOI.txt
           fi
           git add data/weeks
+          if [ -d data/fans ]; then git add data/fans; fi   # FO-3 : les votes des supporters, archivés avec la semaine
           if git diff --cached --quiet; then
             echo "Aucune nouvelle semaine."
           else
@@ -75,6 +85,9 @@ jobs:
             mkdir -p "$RUNNER_TEMP/semaine"
             for d in $(git diff --cached --name-only --relative | sed -n 's#^data/weeks/\([^/]*\)/.*#\1#p' | sort -u); do
               cp -r "data/weeks/$d" "$RUNNER_TEMP/semaine/"
+            done
+            for f in $(git diff --cached --name-only --relative -- data/fans); do
+              mkdir -p "$RUNNER_TEMP/semaine/fans" && cp "$f" "$RUNNER_TEMP/semaine/fans/"
             done
             git commit -q -m "Nouvelle semaine $(ls data/weeks | tail -1)"
             if [ "$TEST_ECHEC" = push ]; then echo "::error::Push refusé (essai simulé de l'alerte)"; exit 1; fi
@@ -139,6 +152,9 @@ jobs:
             if [ -e "data/weeks/$b" ]; then echo "$b est déjà dans le dépôt"; else cp -r "$d" data/weeks/; fi
           done
           git add data/weeks
+          if [ -d "$RUNNER_TEMP/semaine/fans" ]; then   # FO-3 : les votes des supporters de la semaine
+            mkdir -p data/fans && cp -n "$RUNNER_TEMP"/semaine/fans/* data/fans/ && git add data/fans
+          fi
           if git diff --cached --quiet; then echo "Semaine déjà dans le dépôt : rien à repousser."; exit 0; fi
           git commit -q -m "Nouvelle semaine $(ls data/weeks | tail -1)"
           if [ -n "$TEST_ECHEC" ]; then git push --dry-run origin "HEAD:${GITHUB_REF_NAME}"; echo "Essai : rien n'est poussé."; exit 0; fi

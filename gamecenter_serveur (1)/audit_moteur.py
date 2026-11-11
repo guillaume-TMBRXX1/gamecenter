@@ -446,6 +446,7 @@ def check_week(A, folder):
     check_film(A, name, folder, w)
     check_infirmerie(A, name, w)
     check_fans(A, name, w)
+    check_fans_fichier(A, name, w, folder)
     porteurs = Counter(nom for nom, _ in tous_noms)
     doublons = sorted(nom for nom, _ in banc_noms if porteurs[nom] > 1)
     if doublons:
@@ -541,6 +542,33 @@ def check_fans(A, name, w):
         avant = ((adj.get(t) or {}).get("before") or {}).get(r.get("setting"))
         if avant is not None and avant != r.get("coordinator"):
             bad(f"{t} : choix reporté dans l'ajustement hebdomadaire ({r.get('setting')} {avant} ≠ {r.get('coordinator')})")
+
+
+def check_fans_fichier(A, name, w, folder):
+    """FO-3 : le fichier des votes versé au dépôt (data/fans/fans_<lundi>.json, à côté de data/weeks) et ce que le
+    moteur a appliqué (fans.applied) se correspondent, franchise par franchise ; un fichier lu par le moteur mais absent
+    du dépôt est signalé (archive incomplète, la semaine ne serait plus rejouable à l'identique)."""
+    fans = w.get("fans")
+    if not fans or _fo is None:
+        return
+    lundi = (w.get("week") or {}).get("start")
+    chemin = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(folder))), "fans", f"fans_{lundi}.json")
+    present = os.path.isfile(chemin)
+    if fans.get("file_read") and not present:
+        A.add(ALERTE, name, None, None, f"fans : {fans.get('file')} lu par le moteur mais absent du dépôt (data/fans)")
+        return
+    if not present:
+        return
+    if not fans.get("file_read"):
+        A.add(BLOQUANT, name, None, None, f"fans : data/fans/fans_{lundi}.json présent mais pas lu par le moteur")
+        return
+    attendu = _fo.choix_de_semaine(_fo.lire_fichier(chemin), lundi, fans.get("lever"), list(fans.get("applied") or {}))
+    for t, r in sorted((fans.get("applied") or {}).items()):
+        e = attendu.get(t) or {}
+        if (r.get("choice"), r.get("source"), r.get("votes")) != (e.get("choice"), e.get("source"), e.get("votes")):
+            A.add(BLOQUANT, name, None, None, f"fans : {t} appliqué {r.get('choice')} ({r.get('source')}, "
+                                              f"{r.get('votes')} votes) ≠ fichier {e.get('choice')} ({e.get('source')}, "
+                                              f"{e.get('votes')} votes)")
 
 
 def check_fans_plan(A, name, g, feed, fans):
