@@ -3105,53 +3105,68 @@ dans le calcul du samedi, et les cotes sont calculées avec eux.
   - `test_alerte_semaine.py` : l'étape est classée.
 
 ### 111. Front office FO-4 : le vote des supporters sur le site (11/11/2026)
-Plan : `programme/Front_office_plan.md`. Avec FO-1 à FO-3, **le vote fonctionne de bout en bout**. Les écrans validés
-le 07/11 (captures iPad) ne sont pas dans le dépôt : le rendu suit la liste d'éléments du plan et le style de My team.
-Captures de contrôle : `FO_CAPTURES=<dossier> node outils/site/test_front_office.js`.
-- **My team** : un sélecteur **Overview / Front office** (la Draft viendra en FO-6).
-  - Overview : la page d'avant, avec un rappel « Vote now » tant que le compte n'a pas voté et que le vote est ouvert.
-  - Front office, d'abord **le choix en vigueur cette semaine** (révélation du lundi) :
-    - la question, la réponse retenue et les pourcentages de chaque option ;
-    - le nombre de votes et la raison quand le coordinateur décide (moins de 5 votes, égalité, « coordinateur » en
-      tête) ;
-    - « Your vote » ;
-    - le prochain match de la franchise, avec la puce « Fans' plan ».
-  - Front office, ensuite **la question de la semaine suivante** :
-    - le levier, la semaine visée et la question ;
-    - les chiffres de la semaine de l'équipe pour ce levier, avec la moyenne de la ligue (`stats` de `/api/fans`) ;
-    - trois options, chacune avec une phrase d'explication ;
-    - « Cast my vote », puis « Change vote » quand on choisit une autre option, et la puce « Your vote » sur l'option
-      votée ;
-    - le compte à rebours jusqu'au vendredi 23:30 ; les pourcentages restent cachés.
-  - Après le verrou, la carte devient « The fans have spoken » (« Applies next week »), sans bouton de vote.
-  - Enfin, « How the fans' vote works ».
-- **Cas particuliers** :
-  - invité : l'invitation à créer un compte parle du vote ;
-  - compte sans franchise ou qui en change : une phrase explique le vote, et le fait qu'un changement de franchise
-    retire le vote de la semaine ;
-  - franchise changée cette semaine : options désactivées et raison affichée (`team_changed`).
-- **Page Teams** : la ligne « Fans' plan this week » de chaque franchise, en lecture seule. Elle vient de `fans` dans
-  l'état public de la semaine (`Week.public_state`).
+Plan : `programme/Front_office_plan.md`. Avec FO-1 à FO-3, **le vote fonctionne de bout en bout**. Le rendu suit les
+écrans validés sur l'iPad (captures envoyées par Guillaume le 11/11) : l'écran de vote et la révélation du lundi. La
+draft de ces captures viendra en FO-6. Les intitulés restent ceux validés le 09/11 (Play it safe · Coordinator's call ·
+Go for it, etc.). Captures de contrôle : `FO_CAPTURES=<dossier> node outils/site/test_front_office.js`.
+- **My team** : un sélecteur **Overview / Front office**. Overview : la page d'avant, avec un rappel « Vote now » tant
+  que le compte n'a pas voté et que le vote est ouvert.
+- **Front office, écran de vote** (par défaut du mardi au vendredi 23:30) :
+  - carte principale : « Fan vote · for week N », pastille rouge « Closes Fri 23:30 · 2 d 4 h », grand titre avec le
+    nom du coordinateur (offensif pour 4e essai, course / passe et profondeur ; défensif pour blitz et couverture),
+    ex. « 4th down next week: how bold should Rhys Calloway be? », et la phrase « Applies to every … game of week N,
+    within the team's identity… » ;
+  - trois cartes d'option : intitulé, puce « AI default » sur Coordinator's call, une phrase, et la **projection**
+    (« ≈ 0.6 go-for-its per game », « ≈ 0.9 per game, as this week », « ≈ 41 % run plays ») ; la carte choisie passe
+    en bleu foncé, « ✓ Your vote » sur l'option votée ;
+  - « <Franchise> on 4th down this week · N games » et quatre tuiles (4e essai : Faced, Went for it, Converted x / y,
+    League avg / game ; course / passe : Run plays, Pass plays, Run share, League avg ; blitz, couverture et
+    profondeur : l'équivalent) ;
+  - « Cast my vote », puis « Change my vote » quand on choisit une autre option ; « One vote per account · free / You
+    can change it until Friday 23:30 · shares revealed at close » ; les parts du vote restent cachées ;
+  - colonne de droite : « How it works » (1-2-3, plus la règle des 5 votes et du changement de franchise) et « In
+    effect this week » (ex. « More passing · 67 % », votes, part des courses la semaine d'avant → cette semaine,
+    lien « See the vote »).
+- **Front office, révélation** (par défaut le lundi, et après le verrou du vendredi) :
+  - « Week N · results of the fan votes », « The <franchise> fans have decided » ;
+  - carte du résultat : « Run or pass · 6 votes », « ✓ Your vote », la réponse retenue en grand, barres triées
+    (la retenue en bleu foncé), « In effect for every … game this week » (ou « Applies next week… » après le verrou),
+    raison quand le coordinateur décide (moins de 5 votes, égalité, « coordinateur » en tête) ;
+  - carte du prochain match : « Today · 11:00 », pavés aux couleurs des deux franchises, les deux cotes (bulletin),
+    puce « Fans' plan » et « More passes · the odds include it » (ou « Coordinator's call ») ; puis « New fan vote · for
+    week N+1 », la question courte (« How bold on 4th down next week? ») et un bouton « Vote » vers l'écran de vote
+    (« Change » si déjà voté) ; après le verrou : la prochaine question ouvre lundi.
+- **Cas particuliers** : invité (l'invitation à créer un compte parle du vote) ; compte sans franchise ou qui en change
+  (une phrase explique que le changement retire le vote de la semaine) ; franchise changée cette semaine (options
+  désactivées, raison affichée, `team_changed`) ; pas encore de match terminé (les chiffres viendront).
+- **Page Teams** : la ligne « Fans' plan this week » de chaque franchise, en lecture seule (`fans` dans l'état public de
+  la semaine, `Week.public_state`).
 - **Match centre** : en tête des statistiques d'équipe, la ligne du levier de la semaine, mesurée dans le match
-  jusqu'à l'action à l'écran (4es essais tentés, part des courses, blitz, homme à homme, passes intermédiaires et
-  profondes). La puce « Fans' plan » s'affiche sur l'équipe dont les supporters ont décidé (`game.fans_plan`).
-- **Téléphone 390 px** : options l'une sous l'autre, barres sous les libellés, bouton de vote pleine largeur, marge
-  de 84 px en bas pour le bouton « Bet slip ».
-- **Serveur** :
-  - drapeau `front_office` dans la page ;
-  - `fans` dans l'état public de la semaine (choix, source et votes de chaque franchise) ;
-  - `/api/fans` renvoie aussi `stats`, calculé sur les matchs terminés de la semaine
-    (`moteur/supporters.py` : `mesurer_match`, `chiffres`, `MESURE`, mêmes définitions que l'empreinte de jeu ; en
-    cache par nombre de matchs finis) ;
-  - `/api/fans/results?token=` renvoie aussi `my_vote`.
+  jusqu'à l'action à l'écran ; puce « Fans' plan » sur l'équipe dont les supporters ont décidé (`game.fans_plan`).
+- **Téléphone 390 px** : options et barres l'une sous l'autre, tuiles 2 × 2, bouton de vote pleine largeur, marge de
+  84 px en bas pour le bouton « Bet slip » ; sous 1 100 px la colonne de droite passe sous la carte principale.
+- **Moteur** (`moteur/supporters.py`) : `mesurer_match` compte aussi les 4es essais convertis (`conv` : premier essai
+  ou touchdown, sans perte du ballon) ; `chiffres` renvoie les comptes bruts (`counts`) et, pour le 4e essai, la
+  valeur **par match** (unité des mesures de la section 105) ; `projections(levier, valeur, équipe)` applique l'effet
+  moyen mesuré de chaque option (`EFFET`, section 105 : 4e essai × 0,655 / × 1,828 ; courses + 3,8 / − 4,6 points ;
+  blitz − 4,8 / + 5,3 ; appels MAN − 4,3 / + 5,4 ; passes longues − 10,8 / + 10,0), bornée à 0-100 % ; une option
+  que les bornes de la franchise ne déplacent pas garde la valeur d'aujourd'hui.
+- **Serveur** : drapeau `front_office` dans la page ; `fans` dans l'état public de la semaine ; `/api/fans` renvoie
+  `stats` (`value`, `games`, `counts`, `league`, `projections`, sur les matchs terminés de la semaine, en cache par
+  nombre de matchs finis) et `in_force` enrichi (`label`, `share` = part de l'option retenue, `before` / `now` = le
+  chiffre du levier la semaine d'avant et cette semaine) ; `/api/fans/results?token=` renvoie aussi `my_vote`.
 - **Interrupteur** : `GC_FRONT_OFFICE=off` donne My team et Teams comme avant, sans onglets ni ligne.
 - **Cellule 427** : seul l'appel du Match centre y est reporté, protégé, car le replay du notebook n'a pas de vote.
-- **Tests** : `outils/site/test_front_office.js` (30 contrôles), ajouté aux tests navigateur (groupe site) :
-  - avant le verrou : invité, rappel sur Overview, onglets, choix en vigueur (67 % / 33 %, 6 votes), question,
-    trois options, chiffres, compte à rebours, pourcentages cachés, « Cast my vote » puis « Change vote »
-    enregistrés sur le serveur, page Teams (CTX et VEC), ligne du Match centre, franchise changée, téléphone ;
-  - après le verrou : « The fans have spoken », coordinateur, « Your vote », plus de bouton, aucune option marquée
-    « Fans' plan » ;
+- **Tests** : `moteur/tests/test_supporters.py` (comptes avec conversions, valeur par match, projections, bornes) et
+  `test_supporters_serveur.py` (`stats`, `in_force`) ; `outils/site/test_front_office.js`, dans les tests navigateur
+  (groupe site) :
+  - jeudi soir : invité, rappel sur Overview, onglets, écran de vote (titre avec le coordinateur, « AI default »,
+    projections, tuiles, compte à rebours, aucune part du vote), « In effect this week » (67 %, 6 votes, avant →
+    maintenant), carte choisie en bleu foncé, « Cast my vote » puis « Change my vote » enregistrés sur le serveur,
+    révélation (barres triées, prochain match avec cotes et « Fans' plan », nouvelle question) et retour au vote,
+    page Teams (CTX et VEC), ligne du Match centre, franchise changée, téléphone ;
+  - lundi matin : la révélation d'abord ; après le verrou : résultat de la semaine suivante (coordinateur, « Your
+    vote », barre retenue), plus de bouton de vote ;
   - interrupteur coupé ; aucune erreur JS.
 
 ### Annexe — `.github/workflows/semaine.yml`

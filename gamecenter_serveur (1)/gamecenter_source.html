@@ -183,45 +183,95 @@
   .mt-st{background:var(--l1);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
   .mt-st b{font:700 18px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
   .mt-hist{margin-top:12px}
-  /* FO-4: My team › Front office (the fans' vote) */
+  /* FO-4: My team › Front office (the fans' vote) — screens validated on the iPad */
   .mt-tabs{margin:0 0 14px;align-self:flex-start}
-  .fo-wrap{display:flex;flex-direction:column;gap:14px}
-  .fo-card h3{margin:6px 0 4px;font:700 20px/1.2 var(--f-display);letter-spacing:.01em}
-  .fo-eyebrow{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
-  .fo-when{font:600 12px var(--f-mono);color:var(--ink-3)}
-  .fo-q{margin:0 0 8px;color:var(--ink-2);font-size:13.5px}
-  .fo-stat{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}.fo-stat b{color:var(--ink);font-variant-numeric:tabular-nums}.fo-stat span{color:var(--ink-3)}
-  .fo-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  .fo-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:84px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--l1);color:var(--ink);text-align:left;cursor:pointer}
-  .fo-opt b{font:700 15px/1.2 var(--f-display);letter-spacing:.02em}.fo-opt small{font-size:12px;color:var(--ink-3);line-height:1.35}
+  .fo-wrap{--fo-navy:#17324D;--fo-navy-2:#1E3F60;--fo-acc:#4F46A5;--fo-bar2:#93A7BF;display:flex;flex-direction:column;gap:16px}
+  :root[data-theme="dark"] .fo-wrap{--fo-navy:#2A4F78;--fo-navy-2:#33618F;--fo-acc:#A9A3F0;--fo-bar2:#5C708A}
+  .fo-grid{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(260px,1fr);gap:16px;align-items:start}
+  .fo-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+  .fo-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .fo-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+  .fo-eyebrow{margin:0;font:700 12px/1.3 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--fo-acc)}
+  .fo-kick{font:700 11.5px/1.3 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+  .fo-close{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 14px;border-radius:999px;border:1px solid color-mix(in srgb,var(--pink) 45%,transparent);background:color-mix(in srgb,var(--pink) 9%,transparent);color:var(--pink);font:700 13px/1 var(--f-ui);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .fo-close svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .fo-close.off{border-color:var(--line-2);background:var(--l2);color:var(--ink-2)}
+  .fo-main{padding:26px 28px}
+  .fo-title{margin:14px 0 8px;font:800 clamp(28px,3.6vw,46px)/.98 var(--f-display);letter-spacing:.005em;text-transform:uppercase;color:var(--ink);text-wrap:balance}
+  .fo-sub{margin:0 0 18px;max-width:62ch;color:var(--ink-2);font-size:15px;line-height:1.5}
+  .fo-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .fo-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:150px;padding:18px 20px;border-radius:16px;border:1px solid var(--line-2);background:var(--glass-2,var(--l1));color:var(--ink);text-align:left;cursor:pointer;font:inherit;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .fo-opt b{font:800 24px/1 var(--f-display);letter-spacing:.01em;text-transform:uppercase}
+  .fo-opt small{font-size:14px;color:var(--ink-2);line-height:1.4}
+  .fo-opt .fo-proj{margin-top:auto;padding-top:6px;font-weight:600;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .fo-opt .fo-yours{position:absolute;top:14px;right:16px}
   .fo-opt:hover:not(:disabled){border-color:var(--ink-3)}
-  .fo-opt[aria-checked="true"]{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan);background:var(--l2)}
-  .fo-opt:disabled{cursor:not-allowed;opacity:.65}
-  .fo-opt:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-  .fo-opt .fo-chip{position:absolute;top:8px;right:8px}
-  .fo-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:14px}
-  .fo-cast{height:46px;padding:0 22px;width:auto}
-  .fo-hint{font-size:12px;color:var(--ink-3)}
-  .fo-msg{margin:10px 0 0;font-size:13px;color:var(--pink)}.fo-msg.ok{color:var(--cyan)}.fo-msg[role="note"]{color:var(--ink-2)}
-  .fo-chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;background:var(--cyan);color:var(--cyan-ink);font:700 10.5px/1 var(--f-ui);letter-spacing:.04em;white-space:nowrap;vertical-align:middle}
-  .fo-chip.off{background:var(--l3);color:var(--ink-2)}.fo-chip.sm{height:17px;padding:0 6px;font-size:9.5px}
-  .fo-verdict{margin:2px 0 10px;font-size:14px}.fo-verdict b{font:700 17px var(--f-display);color:var(--cyan)}.fo-verdict span{color:var(--ink-2);font-size:12.5px}
-  .fo-bars{display:flex;flex-direction:column;gap:8px}
-  .fo-bar{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr) 44px;gap:10px;align-items:center;font-size:13px}
-  .fo-bt{height:10px;border-radius:5px;background:var(--l2);overflow:hidden}.fo-bt i{display:block;height:100%;background:var(--ink-3);border-radius:5px}
-  .fo-bar.win .fo-bt i{background:var(--cyan)}.fo-bar b{text-align:right;font-variant-numeric:tabular-nums}.fo-bar.win b{color:var(--cyan)}
-  .fo-mine{margin:10px 0 0;font-size:13px;color:var(--ink-2)}.fo-mine b{color:var(--ink)}
-  .fo-next{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
-  .fo-next .link{margin-left:auto}
-  .fo-how summary{cursor:pointer;font-weight:600;font-size:13.5px}.fo-how ul{margin:10px 0 0;padding-left:18px;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .fo-opt[aria-checked="true"]{background:linear-gradient(180deg,var(--fo-navy-2),var(--fo-navy));border-color:var(--fo-navy);color:#fff;box-shadow:0 14px 28px -16px rgba(23,50,77,.75)}
+  .fo-opt[aria-checked="true"] small,.fo-opt[aria-checked="true"] .fo-proj{color:rgba(255,255,255,.88)}
+  .fo-opt[aria-checked="true"] .fo-yours{color:#9FE3B4}
+  .fo-opt:disabled{cursor:not-allowed}.fo-opt:disabled:not([aria-checked="true"]){opacity:.7}
+  .fo-opt:focus-visible{outline:2px solid var(--fo-acc);outline-offset:3px}
+  .fo-chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--fo-navy,#17324D);color:#fff;font:700 10.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;vertical-align:middle}
+  .fo-chip.ai,.fo-chip.off{background:var(--l3);color:var(--ink-2)}
+  .fo-opt[aria-checked="true"] .fo-chip.ai{background:rgba(255,255,255,.18);color:#fff}
+  .fo-chip.sm{height:17px;padding:0 6px;font-size:9px;letter-spacing:.08em}
+  .fo-yours{font-weight:700;font-size:13.5px;color:#2E7D4F;white-space:nowrap}
+  .fo-sec{margin:22px 0 10px;font:700 12px/1.3 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+  .fo-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .fo-tile{display:flex;flex-direction:column;gap:6px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--glass-2,var(--l1))}
+  .fo-tile span{font:700 11px/1.2 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .fo-tile b{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--ink)}
+  .fo-act{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px;margin-top:22px}
+  .fo-cast{height:60px;padding:0 44px;width:auto;border-radius:999px;font-size:20px}
+  .fo-hint{font-size:14px;color:var(--ink-2);line-height:1.5}
+  .fo-foot{margin:12px 0 0;font-size:14px;color:var(--ink-2);line-height:1.5}.fo-foot span{color:var(--ink-3)}
+  .fo-msg{margin:12px 0 0;font-size:14px;color:var(--pink)}.fo-msg.ok{color:#2E7D4F}.fo-msg[role="note"]{color:var(--ink-2)}
+  .fo-how ol{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .fo-how li{display:flex;gap:14px;align-items:flex-start;font-size:15px;line-height:1.45;color:var(--ink)}
+  .fo-how li i{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--l3);font:800 15px/1 var(--f-display);font-style:normal;color:var(--fo-navy)}
+  .fo-how .fo-foot{font-size:12.5px}
+  .fo-inf h3{margin:12px 0 0;font:800 30px/1 var(--f-display);text-transform:uppercase;letter-spacing:.01em}
+  .fo-inf .fo-foot{margin-top:6px;font-size:13px}
+  .fo-rows{margin-top:10px}.fo-rows div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:15px;color:var(--ink-2)}
+  .fo-rows b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .fo-inf .link{margin-top:8px}
+  .fo-hero{margin:4px 0 6px;font:800 clamp(30px,4.2vw,54px)/.95 var(--f-display);text-transform:uppercase;letter-spacing:.005em}
+  .fo-rev .fo-eyebrow{color:var(--ink-2)}
+  .fo-rev .fo-grid2{margin-top:14px}
+  .fo-res,.fo-nextc{padding:24px 28px}
+  .fo-win{margin:12px 0 16px;font:800 clamp(32px,3.8vw,48px)/1 var(--f-display);text-transform:uppercase}
+  .fo-bars{display:flex;flex-direction:column;gap:14px}
+  .fo-bar{display:grid;grid-template-columns:minmax(110px,200px) minmax(0,1fr) 56px;gap:14px;align-items:center;font-size:16px;color:var(--ink-2)}
+  .fo-bt{height:12px;border-radius:6px;background:var(--l3);overflow:hidden}.fo-bt i{display:block;height:100%;background:var(--fo-bar2);border-radius:6px}
+  .fo-bar.win{color:var(--ink);font-weight:700}.fo-bar.win .fo-bt i{background:var(--fo-navy)}
+  .fo-bar b{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .fo-game .fo-top .link{margin-left:auto}
+  .fo-match{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:14px 0 12px}
+  .fo-tm{display:grid;place-items:center;min-width:76px;height:64px;padding:0 12px;border-radius:12px;background:var(--tc);color:#fff;font:800 26px/1 var(--f-display);letter-spacing:.03em}
+  .fo-vs{font:800 26px/1 var(--f-display);text-transform:uppercase}
+  .fo-odds{display:flex;gap:10px;margin-left:auto}
+  .fo-plan{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0;font-size:15px;color:var(--ink-2)}
+  .fo-plan .fo-chip{background:var(--l3);color:var(--ink);height:28px;padding:0 14px;font-size:12px}
+  .fo-newq{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+  .fo-nq{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+  .fo-nq h3{margin:0;font:800 clamp(24px,2.6vw,34px)/1 var(--f-display);text-transform:uppercase}
+  .fo-nq .chip-btn{height:44px;padding:0 22px;border-radius:999px;font-size:15px;flex:none}
+  .fo-newq .fo-foot{margin-top:8px}
   .fo-teaser{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 14px}.fo-teaser .chip-btn{margin-left:auto}
+  .fo-when{font:600 12px var(--f-mono);color:var(--ink-3)}
   .fo-invite{margin:6px 0 12px;font-size:13px;color:var(--ink-2)}
   .fo-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--l1);font-size:13px}
   .fo-line b{font:700 15px var(--f-display);color:var(--cyan)}.fo-line span:last-child{color:var(--ink-3)}
+  @media (max-width:1100px){ .fo-grid{grid-template-columns:1fr} .fo-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px} }
+  @media (max-width:900px){ .fo-grid2{grid-template-columns:1fr} }
   @media (max-width:760px){
-    .fo-opts{grid-template-columns:1fr}.fo-opt{min-height:0}
-    .fo-bar{grid-template-columns:minmax(0,1fr) 44px}.fo-bar .fo-bt{grid-column:1 / -1;grid-row:2}
+    .fo-main,.fo-res,.fo-nextc{padding:20px 18px}
+    .fo-opts{grid-template-columns:1fr;gap:10px}.fo-opt{min-height:0;padding:14px 16px}
+    .fo-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.fo-tile b{font-size:28px}
+    .fo-bar{grid-template-columns:minmax(0,1fr) 52px;gap:6px 10px;font-size:14.5px}.fo-bar .fo-bt{grid-column:1 / -1;grid-row:2}
     .fo-cast{flex:1 1 100%}
+    .fo-odds{margin-left:0;width:100%}.fo-odds .odd{flex:1}
+    .fo-tm{min-width:62px;height:52px;font-size:22px}
     .fo-wrap{padding-bottom:84px}                     /* room for the "Bet slip" button */
   }
   .mt-res{font-size:12px;color:var(--ink-2);white-space:nowrap}
@@ -6771,9 +6821,10 @@ document.addEventListener('click',e=>{
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
   if(t.closest('[data-favchange]')){ MT_PICK=true; renderView(true); return; }
   if(t.closest('[data-favcancel]')){ MT_PICK=false; renderView(true); return; }
-  const mtb=t.closest('[data-mttab]'); if(mtb){ MT_TAB=mtb.dataset.mttab; FO_MSG=''; renderView(true); if(MT_TAB==='fo') loadFans(true); return; }
+  const mtb=t.closest('[data-mttab]'); if(mtb){ MT_TAB=mtb.dataset.mttab; FO_MSG=''; FO_VIEW=null; renderView(true); if(MT_TAB==='fo') loadFans(true); return; }
   const foc=t.closest('[data-fochoice]'); if(foc){ if(!foc.disabled&&FO&&FO.question){ FO_SEL={lever:FO.question.lever,choice:foc.dataset.fochoice}; FO_MSG=''; renderView(true); } return; }
   if(t.closest('[data-fovote]')){ foVote(); return; }
+  const fov=t.closest('[data-foview]'); if(fov){ FO_VIEW=fov.dataset.foview; FO_MSG=''; renderView(true); const w=document.getElementById('viewMyteam'); if(w&&w.scrollIntoView) w.scrollIntoView({block:'start'}); return; }
   const tm=t.closest('[data-team]'); if(tm){ TEAM_SEL=TEAM_SEL===tm.dataset.team?null:tm.dataset.team; renderView(true); return; }
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
   const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled) togglePick(odd.dataset.key); return; }
@@ -7558,7 +7609,7 @@ function renderMyteam(t){
   const el=document.getElementById('viewMyteam'); if(!el) return;
   const P0=curPlayer(), fav=P0&&P0.account?P0.fav_team:null, S=standingsAt(t), agg=seasonAgg(t);
   const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',')
-    +'|'+MT_TAB+'|'+FO_AT+'|'+(FO_SEL?FO_SEL.choice:'')+'|'+FO_MSG+'|'+FO_BUSY;
+    +'|'+MT_TAB+'|'+FO_AT+'|'+(FO_SEL?FO_SEL.choice:'')+'|'+FO_MSG+'|'+FO_BUSY+'|'+FO_VIEW;
   if(el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
@@ -7580,7 +7631,7 @@ function renderMyteam(t){
 async function setFavTeam(team){
   const e=document.getElementById('mtErr');
   try{ const r=await api('/account/team',{method:'POST',body:JSON.stringify({token:PLAYER.token,team})});
-    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_MSG=''; renderView(true); }
+    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_VIEW=null; FO_MSG=''; renderView(true); }
   catch(err){ if(e) e.textContent=err.status===401?'Sign in to your account first.':'Could not save your team. Try again.'; }
 }
 
@@ -7591,23 +7642,40 @@ async function setFavTeam(team){
    week's games (and their odds), inside each coordinator's identity. Server: /api/fans, /api/fans/vote,
    /api/fans/results (serveur.py, FO-2). Percentages stay hidden until the vote closes. */
 const FO_ON=!!(SERVER&&SERVER.front_office&&SEASON);
-let MT_TAB='overview', FO=null, FO_R=null, FO_AT=0, FO_LOAD=false, FO_SEL=null, FO_MSG='', FO_BUSY=false;
+let MT_TAB='overview', FO=null, FO_R=null, FO_AT=0, FO_LOAD=false, FO_SEL=null, FO_MSG='', FO_BUSY=false, FO_VIEW=null;
 const FO_COORD="Coordinator's call";
+/* per lever: option labels (validated 09/11), card text, what the week's numbers show, the headline (with the
+   coordinator's name: offense for 4th downs, run/pass and depth, defense for blitz and coverage) */
 const FO_INFO={
   quatrieme:{stat:'4th downs gone for',lab:{prudent:'Play it safe',coordinateur:FO_COORD,agressif:'Go for it'},
-    desc:{prudent:'Punt and kick more often',coordinateur:"Keep the coordinator's plan",agressif:'Go for it on more 4th downs'}},
+    desc:{prudent:'Punt or kick more often, unless the {T} trail late.',coordinateur:'Keep {C}’s usual plan.',agressif:'Go for it more often from midfield on.'},
+    eff:{prudent:'Playing it safe',agressif:'Going for it'},plan:{prudent:'Safe on 4th down',agressif:'Aggressive on 4th down'},
+    head:'4th down next week: how bold should {C} be?',short:'How bold on 4th down next week?',on:'on 4th down',per:true,noun:'go-for-its',measure:'Go-for-its / game',
+    tiles:[['Faced',c=>c.q4],['Went for it',c=>c.go4],['Converted',c=>`${c.conv} / ${c.go4}`],['League avg / game',(c,L)=>L==null?'—':L.toFixed(1)]]},
   course_passe:{stat:'Run plays',lab:{plus_course:'More runs',coordinateur:FO_COORD,plus_passe:'More passes'},
-    desc:{plus_course:'Lean on the ground game',coordinateur:"Keep the coordinator's plan",plus_passe:'Put the ball in the air more'}},
+    desc:{plus_course:'Lean on the ground game and the clock.',coordinateur:'Keep {C}’s usual plan.',plus_passe:'Put the ball in the air more often.'},
+    eff:{plus_course:'More running',plus_passe:'More passing'},plan:{plus_course:'More runs',plus_passe:'More passes'},
+    head:'Run or pass next week: where should {C} lean?',short:'Run or pass next week?',on:'on offense',noun:'run plays',measure:'Run share',
+    tiles:[['Run plays',c=>c.runs],['Pass plays',c=>c.passes],['Run share',c=>foPc(c.snaps?c.runs/c.snaps:null)],['League avg',(c,L)=>foPc(L)]]},
   blitz:{stat:'Blitz calls',lab:{moins:'Blitz less',coordinateur:FO_COORD,plus:'Blitz more'},
-    desc:{moins:'Rush four, cover more',coordinateur:"Keep the coordinator's plan",plus:'Send extra rushers more often'}},
+    desc:{moins:'Rush four and keep more players in coverage.',coordinateur:'Keep {C}’s usual plan.',plus:'Send extra rushers more often.'},
+    eff:{moins:'Fewer blitzes',plus:'More blitzes'},plan:{moins:'Fewer blitzes',plus:'More blitzes'},
+    head:'Blitz next week: how often should {C} send extra rushers?',short:'Blitz more or less next week?',on:'on defense',noun:'blitz calls',measure:'Blitz rate',
+    tiles:[['Defensive snaps',c=>c.dsnaps],['Blitzes',c=>c.blitz],['Blitz rate',c=>foPc(c.dsnaps?c.blitz/c.dsnaps:null)],['League avg',(c,L)=>foPc(L)]]},
   couverture:{stat:'Man-to-man calls',lab:{zone:'More zone',coordinateur:FO_COORD,homme:'More man-to-man'},
-    desc:{zone:'Sit back in zone more often',coordinateur:"Keep the coordinator's plan",homme:'Play tight man-to-man more often'}},
+    desc:{zone:'Sit back in zone more often.',coordinateur:'Keep {C}’s usual plan.',homme:'Play tight man-to-man more often.'},
+    eff:{zone:'More zone',homme:'More man-to-man'},plan:{zone:'More zone',homme:'More man-to-man'},
+    head:'Coverage next week: zone or man-to-man for {C}?',short:'Zone or man next week?',on:'in coverage',noun:'man-to-man calls',measure:'Man-to-man share',
+    tiles:[['Defensive snaps',c=>c.dsnaps],['Man-to-man calls',c=>c.man],['Man-to-man share',c=>foPc(c.dsnaps?c.man/c.dsnaps:null)],['League avg',(c,L)=>foPc(L)]]},
   profondeur:{stat:'Intermediate & deep throws',lab:{courtes:'Shorter passes',coordinateur:FO_COORD,longues:'Deeper passes'},
-    desc:{courtes:'Quick, short throws',coordinateur:"Keep the coordinator's plan",longues:'Push the ball downfield'}}};
+    desc:{courtes:'Quick, short throws, fewer risks.',coordinateur:'Keep {C}’s usual plan.',longues:'Push the ball downfield more often.'},
+    eff:{courtes:'Shorter passes',longues:'Deeper passes'},plan:{courtes:'Shorter passes',longues:'Deeper passes'},
+    head:'Passing next week: how far downfield should {C} throw?',short:'Short or deep next week?',on:'through the air',noun:'intermediate & deep throws',measure:'Deep-throw share',
+    tiles:[['Passes',c=>c.passes],['Intermediate & deep',c=>c.longs],['Share',c=>foPc(c.passes?c.longs/c.passes:null)],['League avg',(c,L)=>foPc(L)]]}};
 const FO_LONG=new Set(['IN','CROSS','Y_CROSS','LEVELS','DOUBLE_DIG','FLOOD','SAIL','DAGGER','DEEP_CROSS','CHAMP','SALEM','DEEP_POST','CORNER','DOUBLE_POST','FOUR_VERTS','SWITCH_VERTICALS','DIVIDE']);
 const FO_RUN=/^(INSIDE_RUN|TRAP|DRAW|WHAM|QB_DRAW|POWER|COUNTER|PIN_PULL|OUTSIDE_RUN|BUCK_SWEEP|COUNTER_SWEEP|POWER_TOSS|JET_SWEEP|JET_ACTION|END_AROUND|REVERSE|DOUBLE_REVERSE|READ_OPTION|POWER_READ|INVERTED_VEER|MIDLINE_OPTION|SHOVEL_OPTION|SPEED_OPTION|TRIPLE_OPTION|QB_SWEEP|RPO_ALERT|RPO_INSIDE_ZONE|RPO_OUTSIDE_ZONE|RPO_PEEK|RPO_POWER|RPO_READ)$/;
 function foLabel(lever,choice){ const i=FO_INFO[lever]; return (i&&i.lab[choice])||choice; }
-const foPc=v=>v==null?'—':Math.round(100*v)+'%';
+const foPc=v=>v==null?'—':Math.round(100*v)+'\u00a0%';
 function foLeft(ms){ const m=Math.max(0,Math.round(ms/60000)), d=Math.floor(m/1440), h=Math.floor(m%1440/60), mm=m%60;
   return d?`${d} d ${h} h`:h?`${h} h ${mm} min`:`${mm} min`; }
 function foWeek(s){ try{ return new Date(s+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){ return s; } }
@@ -7628,22 +7696,57 @@ function foWhy(r){
   const v=Object.values(r.counts||{}).sort((a,b)=>b-a);
   return v.length>1&&v[0]===v[1]?'A tie at the top: the coordinator kept his plan.':"The fans backed the coordinator's plan.";
 }
-/* the result of the last closed vote: this week's fans' plan (Monday reveal), or next week's once the vote has closed */
+const foTxt=(s,fav,side)=>{ const T=SW.teams[fav]||{}, C=(T.coordinators||{})[side==='defense'?'defense':'offense']||'the coordinator';
+  return String(s||'').replace('{T}',T.name||fav).replace('{C}’s',C==='the coordinator'?'the coordinator’s':C.split(' ').slice(-1)[0]+'’s').replace('{C}',C); };
+const FO_TZ=()=>(SW.week&&SW.week.timezone)||'Europe/Brussels';
+function foClose(ms,long){ try{ return new Intl.DateTimeFormat('en-GB',{weekday:long?'long':'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:FO_TZ()}).format(new Date(ms)).replace(',',''); }catch(e){ return dStr(ms)+' '+tStr(ms); } }
+/* Monday 00:00 of the week on screen (the reveal day), from the lock's UTC offset */
+function foMonday(){ const L=SW.week.standings_locked_at||'', m=/([+-]\d\d:\d\d|Z)$/.exec(L); return Date.parse(SW.week.start+'T00:00:00'+(m?m[1]:'Z')); }
+function foProj(lv,o,v){
+  const I=FO_INFO[lv]; if(!I||v==null) return '';
+  const coord=o==='coordinateur', n=I.per?v.toFixed(1):foPc(v);
+  return I.per?(coord?`≈ ${n} per game, as this week`:`≈ ${n} ${I.noun} per game`):(coord?`≈ ${n} ${I.noun}, as this week`:`≈ ${n} ${I.noun}`);
+}
+const foVal=(lv,v)=>v==null?'—':FO_INFO[lv]&&FO_INFO[lv].per?v.toFixed(1):foPc(v);
+/* the game in focus for the fans' plan: live or next game of the franchise this week */
+function foNextGame(fav,t){ return SCHED.filter(x=>(x.home===fav||x.away===fav)&&gStatus(x,t)!=='final'&&revealed(x,t)).sort((a,b)=>a.ko-b.ko)[0]||null; }
+function foWeekNo(week){ if(week===SW.week.start) return SW.week.index; if(FO&&FO.question&&FO.question.week===week) return FO.question.index; return SW.week.index+1; }
+
+/* ----- the reveal: the result of the last closed vote (Monday: this week's plan; after Friday's lock: next week's) ----- */
 function foResultHTML(R,fav,t){
   const r=R&&R.teams&&R.teams[fav]; if(!r) return '';
-  const inForce=R.week===SW.week.start, lv=R.lever, mine=R.my_vote&&R.my_vote.team===fav?R.my_vote.choice:null;
-  const bars=(R.options||[]).map(o=>{ const p=r.pct[o.id]||0, win=r.source==='fans'&&o.id===r.choice;
-    return `<div class="fo-bar${win?' win':''}"><span class="fo-bl">${esc(o.label)}${win?' <span class="fo-chip">Fans’ plan</span>':''}</span><span class="fo-bt"><i style="width:${p}%"></i></span><b>${p}%</b></div>`; }).join('');
-  let next='';
-  if(inForce){ const g=SCHED.filter(x=>(x.home===fav||x.away===fav)&&gStatus(x,t)!=='final'&&revealed(x,t)).sort((a,b)=>a.ko-b.ko)[0];
-    if(g){ const home=g.home===fav, opp=home?g.away:g.home, st=gStatus(g,t);
-      next=`<div class="fo-next"><span class="label">Next game</span><b>${home?'vs':'@'} ${TEAMS[opp].abbr}</b><span>${st==='live'?'Live now':esc(dStr(g.ko)+' · '+tStr(g.ko))}</span>${r.source==='fans'?`<span class="fo-chip">Fans’ plan · ${esc(foLabel(lv,r.choice))}</span>`:`<span class="fo-chip off">${FO_COORD}</span>`}<button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch':'Open'}</button></div>`; } }
-  return `<div class="card fo-card fo-res" data-fo="result"><div class="fo-eyebrow"><span class="label">${esc(R.label||'')}</span><span class="fo-when">${inForce?'Applied this week':'Applies next week'} · ${r.votes} vote${r.votes===1?'':'s'}</span></div>
-    <h3>${inForce?'This week’s fans’ plan':'The fans have spoken'}</h3>
-    <p class="fo-q">${esc(R.question||'')}</p>
-    <p class="fo-verdict"><b>${esc(r.source==='fans'?foLabel(lv,r.choice):FO_COORD)}</b>${foWhy(r)?` · <span>${esc(foWhy(r))}</span>`:''}</p>
+  const T=SW.teams[fav]||{name:fav}, inForce=R.week===SW.week.start, lv=R.lever, I=FO_INFO[lv]||{};
+  const mine=R.my_vote&&R.my_vote.team===fav?R.my_vote.choice:null, win=r.source==='fans'?r.choice:'coordinateur';
+  const opts=(R.options||[]).map(o=>({id:o.id,label:foLabel(lv,o.id),p:r.pct[o.id]||0})).sort((a,b)=>b.p-a.p||(a.id===win?-1:b.id===win?1:0));
+  const bars=opts.map(o=>`<div class="fo-bar${o.id===win?' win':''}"><span class="fo-bl">${esc(o.label)}</span><span class="fo-bt"><i style="width:${o.p}%"></i></span><b>${o.p}&nbsp;%</b></div>`).join('');
+  const why=foWhy(r);
+  return `<div class="card fo-res" data-fo="result"><div class="fo-top"><span class="fo-kick">${esc(R.label||'')} · ${r.votes} vote${r.votes===1?'':'s'}</span>${mine?`<span class="fo-yours">✓ Your vote</span>`:''}</div>
+    <h3 class="fo-win">${esc(r.source==='fans'?foLabel(lv,r.choice):FO_COORD)}</h3>
     <div class="fo-bars">${bars}</div>
-    ${mine?`<p class="fo-mine">Your vote: <b>${esc(foLabel(lv,mine))}</b></p>`:''}${next}</div>`;
+    <p class="fo-foot">${inForce?`In effect for every ${esc(T.name)} game this week.`:`Applies next week, to every ${esc(T.name)} game of week ${foWeekNo(R.week)}.`}${why?` <span>${esc(why)}</span>`:''}</p></div>`;
+}
+/* the next game with this week's plan, then the new question (or when it opens) */
+function foNextHTML(fav,t){
+  const g=foNextGame(fav,t), F=FO_ON&&SW.fans, a=F&&F.applied&&F.applied[fav], I=F&&FO_INFO[F.lever];
+  let h='';
+  if(g){ const st=gStatus(g,t), when=st==='live'?'Live now':(dStr(g.ko)===dStr(t)?'Today':dStr(g.ko))+' · '+tStr(g.ko), opp=g.home===fav?g.away:g.home;
+    const plan=a?(a.source==='fans'?`<span class="fo-chip">Fans’ plan</span><span>${esc((I&&I.plan[a.choice])||foLabel(F.lever,a.choice))} · the odds include it</span>`:`<span class="fo-chip off">${FO_COORD}</span><span>${esc(F.label||'')} · the coordinator’s plan</span>`):'';
+    h+=`<div class="fo-game"><div class="fo-top"><span class="fo-kick">${esc(when)}</span><button class="link" type="button" data-sched="${g.id}">${st==='live'?'Watch':'Open'}</button></div>
+      <div class="fo-match"><span class="fo-tm" data-tm="${fav}">${esc(fav)}</span><b class="fo-vs">${g.home===fav?'vs':'@'}</b><span class="fo-tm" data-tm="${opp}">${esc(opp)}</span>
+      <span class="fo-odds">${schOdd(g,g.home===fav?'home':'away',t)}${schOdd(g,g.home===fav?'away':'home',t)}</span></div>
+      ${plan?`<p class="fo-plan">${plan}</p>`:''}</div>`; }
+  else h+=`<div class="fo-game"><span class="fo-kick">This week</span><p class="fo-foot">No game left for the ${esc((SW.teams[fav]||{}).name||fav)} this week.</p></div>`;
+  const q=FO&&FO.question;
+  if(q&&FO.open){ const end=Date.parse(FO.closes_at), mine=FO.my_vote;
+    h+=`<div class="fo-newq"><span class="fo-eyebrow">New fan vote · for week ${q.index}</span><div class="fo-nq"><h3>${esc((FO_INFO[q.lever]||{}).short||q.question||'')}</h3><button type="button" class="chip-btn" data-foview="vote">${mine?'Change':'Vote'}</button></div>
+      <p class="fo-foot">${mine?`You voted <b>${esc(foLabel(q.lever,mine))}</b> · `:''}Closes ${esc(foClose(end,true))}</p></div>`; }
+  else h+=`<div class="fo-newq"><span class="fo-eyebrow">Next fan vote</span><p class="fo-foot">The next question opens on Monday, for the week after.</p></div>`;
+  return `<div class="card fo-nextc">${h}</div>`;
+}
+function foRevealHTML(R,fav,t){
+  const T=SW.teams[fav]||{name:fav};
+  return `<div class="fo-rev"><p class="fo-eyebrow">Week ${foWeekNo(R.week)} · results of the fan votes</p><h2 class="fo-hero">The ${esc(T.name)} fans have decided</h2>
+    <div class="fo-grid2">${foResultHTML(R,fav,t)}${foNextHTML(fav,t)}</div></div>`;
 }
 function foReasonText(why,F){
   const fav=F&&F.team, T=fav&&SW.teams[fav]?SW.teams[fav].name:fav;
@@ -7651,36 +7754,66 @@ function foReasonText(why,F){
     unknown_team:`${T||'Your team'} is not in this week's question.`,
     team_changed:`You picked ${T} this week: your vote counts from Monday.`}[why]||'';
 }
+/* ----- the vote (screen validated on the iPad) ----- */
 function foQuestionHTML(F,fav,t){
-  const q=F.question, lv=q.lever, inf=FO_INFO[lv]||{desc:{},stat:''}, mine=F.my_vote||null;
-  const sel=FO_SEL&&FO_SEL.lever===lv?FO_SEL.choice:mine, end=Date.parse(F.closes_at), can=!F.reason&&F.open;
-  const st=F.stats, stat=st&&st.value!=null?`<p class="fo-stat">This week: <b>${foPc(st.value)}</b> ${esc(inf.stat.toLowerCase())}${st.league!=null?` <span>· league ${foPc(st.league)}</span>`:''}${st.games?` <span>· ${st.games} game${st.games===1?'':'s'}</span>`:''}</p>`:'<p class="fo-stat"><span>This week’s numbers appear after the first games.</span></p>';
-  const opts=(q.options||[]).map(o=>`<button type="button" class="fo-opt" role="radio" aria-checked="${sel===o.id}" data-fochoice="${esc(o.id)}"${can?'':' disabled'}><b>${esc(o.label)}</b><small>${esc(inf.desc[o.id]||'')}</small>${mine===o.id?'<span class="fo-chip">Your vote</span>':''}</button>`).join('');
-  const label=!mine?'Cast my vote':sel&&sel!==mine?'Change vote':'Vote cast';
+  const q=F.question, lv=q.lever, I=FO_INFO[lv]||{desc:{},tiles:[]}, mine=F.my_vote||null, T=SW.teams[fav]||{name:fav};
+  const sel=FO_SEL&&FO_SEL.lever===lv?FO_SEL.choice:mine, end=Date.parse(F.closes_at), can=!F.reason&&F.open, st=F.stats||null;
+  const proj=st&&st.projections||{};
+  const opts=(q.options||[]).map(o=>`<button type="button" class="fo-opt" role="radio" aria-checked="${sel===o.id}" data-fochoice="${esc(o.id)}"${can?'':' disabled'}>
+      <b>${esc(foLabel(lv,o.id))}</b>${o.id==='coordinateur'?'<span class="fo-chip ai">AI default</span>':''}<small>${esc(foTxt(I.desc[o.id]||'',fav,q.side))}</small>
+      ${proj[o.id]!=null?`<span class="fo-proj">${esc(foProj(lv,o.id,proj[o.id]))}</span>`:''}${mine===o.id?'<span class="fo-yours">✓ Your vote</span>':''}</button>`).join('');
+  const tiles=st&&st.counts&&st.games?`<p class="fo-sec">${esc(T.name)} ${esc(I.on||'')} this week · ${st.games} game${st.games===1?'':'s'}</p>
+      <div class="fo-tiles">${I.tiles.map(([l,f])=>`<div class="fo-tile"><span>${esc(l)}</span><b>${esc(String(f(st.counts,st.league)))}</b></div>`).join('')}</div>`
+    :`<p class="fo-sec">${esc(T.name)} ${esc(I.on||'')} this week</p><p class="fo-foot">The numbers appear after the first game of the week.</p>`;
+  const label=!mine?'Cast my vote':sel&&sel!==mine?'Change my vote':'Vote cast';
   const msg=FO_MSG==='ok'?'<p class="fo-msg ok" role="status">Vote saved. You can change it until the vote closes.</p>':FO_MSG?`<p class="fo-msg" role="alert">${esc(FO_MSG)}</p>`:'';
-  return `<div class="card fo-card" data-fo="question"><div class="fo-eyebrow"><span class="label">${esc(q.label||'')} · week of ${esc(foWeek(q.week))}</span><span class="fo-when" data-fo="closes">${F.open?`Closes ${esc(dStr(end)+' · '+tStr(end))} · in ${foLeft(end-t)}`:'Voting closed'}</span></div>
-    <h3>${esc(q.question||'')}</h3>${stat}
+  return `<div class="card fo-main" data-fo="question"><div class="fo-top"><span class="fo-eyebrow">Fan vote · for week ${q.index}</span>
+      <span class="fo-close${F.open?'':' off'}" data-fo="closes">${F.open?`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>Closes ${esc(foClose(end))} · ${foLeft(end-t)}`:'Voting closed'}</span></div>
+    <h2 class="fo-title">${esc(foTxt(I.head||q.question,fav,q.side))}</h2>
+    <p class="fo-sub">Applies to every ${esc(T.name)} game of week ${q.index}, within the team’s identity: on the field, the coordinator still reads the score, the clock and the distance.</p>
     <div class="fo-opts" role="radiogroup" aria-label="${esc(q.question||'')}">${opts}</div>
+    ${tiles}
     ${F.reason?`<p class="fo-msg" role="note">${esc(foReasonText(F.reason,F))}</p>`:''}
-    <div class="fo-act"><button type="button" class="cta fo-cast" data-fovote${can&&sel&&sel!==mine&&!FO_BUSY?'':' disabled'}>${label}</button><span class="fo-hint">Percentages stay hidden until the vote closes.</span></div>${msg}</div>`;
+    <div class="fo-act"><button type="button" class="cta fo-cast" data-fovote${can&&sel&&sel!==mine&&!FO_BUSY?'':' disabled'}>${label}</button><span class="fo-hint">One vote per account · free<br>You can change it until ${esc(foClose(end,true))} · shares revealed at close</span></div>${msg}</div>`;
 }
-function foHowHTML(){
-  return `<details class="card fo-how"><summary>How the fans’ vote works</summary><ul>
-    <li>One question a week, the same for every franchise. It changes every week: 4th downs, run or pass, blitz, coverage, passing depth.</li>
-    <li>Your team’s fans vote until Friday 23:30 (Brussels). One vote per account; you can change it until then.</li>
-    <li>The winning answer is applied to next week’s games, inside your coordinator’s identity — and the odds are computed with it.</li>
-    <li>Fewer than 5 votes, or a tie at the top: the coordinator keeps his plan.</li>
-    <li>Switching teams during the week removes your vote; you can vote for your new team from Monday.</li></ul></details>`;
+function foHowHTML(fav,q){
+  const T=SW.teams[fav]||{name:fav}, n=q?q.index:SW.week.index+1;
+  return `<div class="card fo-how"><span class="fo-kick">How it works</span><ol>
+    <li><i>1</i><span>${esc(T.name)} fans vote during the week.</span></li>
+    <li><i>2</i><span>Friday 23:30, the vote closes with the standings.</span></li>
+    <li><i>3</i><span>Monday, week ${n} starts with the fans’ plan. The odds already include it.</span></li></ol>
+    <p class="fo-foot">One question a week, the same for every franchise. Fewer than 5 votes or a tie at the top: the coordinator keeps his plan. Switching teams removes your vote until Monday.</p></div>`;
+}
+function foInForceHTML(F,fav){
+  const a=F&&F.in_force; if(!a) return '';
+  const I=FO_INFO[a.lever]||{}, fans=a.source==='fans', title=fans?((I.eff&&I.eff[a.choice])||foLabel(a.lever,a.choice)):FO_COORD;
+  const rows=[`<div><span>Votes</span><b>${a.votes}</b></div>`];
+  if(a.before!=null||a.now!=null) rows.push(`<div><span>${esc(I.measure||'')}</span><b>${foVal(a.lever,a.before)} → ${foVal(a.lever,a.now)}</b></div>`);
+  const seeRes=FO_R&&FO_R.week===SW.week.start&&FO_R.teams&&FO_R.teams[fav];
+  return `<div class="card fo-inf" data-fo="in-force"><span class="fo-kick">In effect this week</span><h3>${esc(title)}${fans&&a.share!=null?` · ${a.share}&nbsp;%`:''}</h3>
+    <p class="fo-foot">${esc(a.label||'')}${fans?'':' · '+esc(foWhy({source:a.source,votes:a.votes,counts:{}})||'')}</p>
+    <div class="fo-rows">${rows.join('')}</div>${seeRes?'<button type="button" class="link" data-foview="reveal">See the vote</button>':''}</div>`;
+}
+function foVoteViewHTML(F,fav,t){
+  return `<div class="fo-grid"><div class="fo-col">${foQuestionHTML(F,fav,t)}</div><div class="fo-col fo-aside">${foHowHTML(fav,F.question)}${foInForceHTML(F,fav)}</div></div>`;
+}
+/* which screen: the reveal on Monday and once the vote has closed, the vote otherwise (FO_VIEW: the reader's choice) */
+function foAutoView(t){
+  const R=FO_R, q=FO.question;
+  if(q&&FO.closed) return R&&R.week===q.week?'reveal':'vote';
+  if(R&&R.week===SW.week.start&&t<foMonday()+864e5) return 'reveal';
+  return q?'vote':R?'reveal':'none';
 }
 function renderFrontOffice(fav,t){
   if(!FO){ loadFans(); return '<div class="card"><p class="st-none">Loading the fans’ vote…</p></div>'; }
   loadFans();
   if(FO.error) return '<div class="card"><p class="st-empty"><b>The fans’ vote is unavailable right now</b>Try again in a moment.</p></div>';
-  let h=foResultHTML(FO_R,fav,t);
-  if(FO.question&&FO.open) h+=foQuestionHTML(FO,fav,t);
-  else if(FO.question&&FO.closed&&!(FO_R&&FO_R.week===FO.question.week)) h+=foQuestionHTML(FO,fav,t);
-  else if(!FO.question) h+=`<div class="card fo-card"><p class="st-empty"><b>No fans’ vote this week</b>The next question opens on Monday, for the week after.</p></div>`;
-  return `<div class="fo-wrap">${h}${foHowHTML()}</div>`;
+  let v=FO_VIEW||foAutoView(t);
+  if(v==='reveal'&&!(FO_R&&FO_R.teams&&FO_R.teams[fav])) v=FO.question?'vote':'none';
+  if(v==='vote'&&!FO.question) v='none';
+  if(v==='reveal') return `<div class="fo-wrap" data-foscreen="reveal">${foRevealHTML(FO_R,fav,t)}</div>`;
+  if(v==='vote') return `<div class="fo-wrap" data-foscreen="vote">${foVoteViewHTML(FO,fav,t)}</div>`;
+  return `<div class="fo-wrap" data-foscreen="none"><div class="fo-grid"><div class="fo-col"><div class="card fo-main"><p class="st-empty"><b>No fans’ vote this week</b>The next question opens on Monday, for the week after.</p></div></div><div class="fo-col fo-aside">${foHowHTML(fav,null)}${foInForceHTML(FO,fav)}</div></div></div>`;
 }
 /* My team › Overview: a nudge while the vote is open and this account has not voted */
 function foTeaserHTML(){
