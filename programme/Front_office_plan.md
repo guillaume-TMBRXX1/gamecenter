@@ -99,27 +99,28 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 - Tests : `moteur/tests/test_supporters_serveur.py` (règles, verrou, pourcentages cachés, export, changement de
   franchise, minimum de 5 votes, égalité).
 
-### FO-3 — Calcul du samedi : du serveur au moteur *(workflow + generer_semaine)*
+### FO-3 — Calcul du samedi : du serveur au moteur *(workflow + generer_semaine)* — ✅ 11/11 (README section 110)
 
 - `semaine.yml` : une étape « Récupérer les votes des supporters » avant le calcul → `data/fans/fans_<lundi>.json`,
   versé au dépôt avec la semaine (archive et rejouabilité). Secrets GitHub à ajouter par Guillaume :
-  `GC_ADMIN_KEY` et l'adresse du site.
+  `GC_ADMIN_KEY` (la même que sur Railway) et `GC_SITE_URL` (`https://snapline.live`).
 - `generer_semaine.py` : passe `GC_FANS` au notebook quand le fichier existe.
 - `audit_moteur.py` : ce qui est appliqué (`fans.applied`) correspond au fichier, et reste dans les bornes.
 - Échec de la récupération : calcul normal avec les coordinateurs, annotation d'alerte (pas d'échec du workflow).
 
-### FO-4 — Site : Front office et révélation du lundi *(site)*
+### FO-4 — Site : Front office et révélation du lundi *(site)* — ✅ 11/11 (README section 111)
 
 - My team : sélecteur **Overview / Front office** (Draft viendra en FO-6). Front office = l'écran 1 validé : question,
   trois options, chiffres de la semaine de l'équipe, compte à rebours, « Cast my vote » / « Change vote », comment ça
-  marche, le choix en vigueur cette semaine.
+  marche, le choix en vigueur cette semaine. Refait le 11/11 d'après les captures iPad (projection par option, tuiles
+  Faced / Went for it / Converted / League avg, titre avec le nom du coordinateur, « In effect this week »).
 - Le lundi : l'écran 4 (sans la partie draft) — résultat et pourcentages, « Your vote », le prochain match avec
   « Fans' plan », la nouvelle question.
 - Match centre : la ligne du levier de la semaine (« 4th downs », part des courses, blitz…) avec la puce « Fans' plan » ; page Teams : le choix des supporters de chaque
   franchise, en lecture seule.
 - Invités et comptes sans franchise : une invitation à créer un compte / choisir son équipe. Téléphone 390 px.
   Marge en bas pour le bouton « Bet slip ».
-- Tests : `outils/site/test_front_office.js` (avant et après le verrou, invité, compte d'une autre franchise,
+- Tests : `outils/site/test_front_office.js` (jeudi, lundi et après le verrou, invité, compte d'une autre franchise,
   téléphone, interrupteur).
 
 **À la fin de FO-4, le vote fonctionne de bout en bout** : première semaine utilisable par le public.
@@ -157,5 +158,6 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 
 1. La fenêtre de la draft : vendredi 12:00 → 23:30 (proposé), ou ouverte plus tôt dans la semaine.
 2. ~~FO-1 : la même question chaque semaine~~ — tranché le 09/11 : cinq questions en rotation.
-3. FO-3 : ajouter les deux secrets GitHub (`GC_ADMIN_KEY`, adresse du site) — action de Guillaume.
+3. FO-3 : ajouter les deux secrets GitHub `GC_ADMIN_KEY` et `GC_SITE_URL` — action de Guillaume (sans eux, le calcul
+   continue avec les coordinateurs et une alerte).
 4. FO-5 : accepter le décalage d'une semaine des retraites (nécessaire pour annoncer la dernière saison).

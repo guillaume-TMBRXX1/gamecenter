@@ -298,3 +298,93 @@ def controle(equipes, staffs):
             if s in NEUTRE and not b[0] <= NEUTRE[s] <= b[1]:
                 err.append(f"{a} {lv} : {NEUTRE[s]} hors de {b}")
     return err
+
+
+# =====================================================================================================================
+# 4. CHIFFRES DE LA SEMAINE (FO-4 : écran Front office) — sur les GameFeed des matchs terminés
+# =====================================================================================================================
+# ce que chaque levier fait bouger, mesuré sur les matchs d'une franchise : (numérateur, dénominateur) ; dénominateur
+# None = par match (4e essai : tentatives par match, l'unité des mesures de la section 105)
+MESURE = {"quatrieme": ("go4", None), "course_passe": ("runs", "snaps"), "blitz": ("blitz", "dsnaps"),
+          "couverture": ("man", "dsnaps"), "profondeur": ("longs", "passes")}
+# effet mesuré de chaque option (banc_supporters.py, README section 105 : toutes les franchises sur la même option,
+# 2 208 matchs) — (« x », facteur) sur une valeur par match, (« + », points) sur une part ; « coordinateur » = aucun
+EFFET = {"quatrieme": {"prudent": ("x", 0.57 / 0.87), "agressif": ("x", 1.59 / 0.87)},
+         "course_passe": {"plus_course": ("+", 0.038), "plus_passe": ("+", -0.046)},
+         "blitz": {"moins": ("+", -0.048), "plus": ("+", 0.053)},
+         "couverture": {"zone": ("+", -0.043), "homme": ("+", 0.054)},
+         "profondeur": {"courtes": ("+", -0.108), "longues": ("+", 0.100)}}
+COMPTES = ("q4", "go4", "conv", "snaps", "runs", "passes", "longs", "dsnaps", "blitz", "man")
+_COURSES = frozenset(("INSIDE_RUN", "TRAP", "DRAW", "WHAM", "QB_DRAW", "POWER", "COUNTER", "PIN_PULL", "OUTSIDE_RUN",
+                      "BUCK_SWEEP", "COUNTER_SWEEP", "POWER_TOSS", "JET_SWEEP", "JET_ACTION", "END_AROUND", "REVERSE",
+                      "DOUBLE_REVERSE", "READ_OPTION", "POWER_READ", "INVERTED_VEER", "MIDLINE_OPTION", "SHOVEL_OPTION",
+                      "SPEED_OPTION", "TRIPLE_OPTION", "QB_SWEEP", "RPO_ALERT", "RPO_INSIDE_ZONE", "RPO_OUTSIDE_ZONE",
+                      "RPO_PEEK", "RPO_POWER", "RPO_READ"))
+
+
+def mesurer_match(feed, home, away):
+    """Comptes d'un match terminé pour chaque franchise : {abbr: {q4, go4, conv, snaps, runs, passes, longs, dsnaps,
+    blitz, man}} (mêmes définitions que moteur/empreinte.py ; « longs » : concepts intermédiaires et profonds, LONGS ;
+    « conv » : 4es essais tentés convertis — premier essai ou touchdown, sans perte du ballon)."""
+    abbr = {"home": home, "away": away}
+    M = {home: dict.fromkeys(COMPTES, 0), away: dict.fromkeys(COMPTES, 0)}
+    for p in feed.get("plays") or []:
+        att = abbr.get(p.get("offense"))
+        if not att:
+            continue
+        d = M[away if att == home else home]
+        c = p.get("call") or {}
+        typ, k = c.get("type"), c.get("concept")
+        if p.get("down") == 4 and typ in ("run", "pass", "punt", "field_goal"):
+            M[att]["q4"] += 1
+            if typ in ("run", "pass") and k not in ("KNEEL", "SPIKE"):
+                M[att]["go4"] += 1
+                M[att]["conv"] += (p.get("possession_change") not in ("downs", "turnover") and p.get("result") != "penalty"
+                                   and (p.get("result") == "touchdown" or (p.get("gain") or 0) >= (p.get("to_go") or 99)))
+        if typ not in ("run", "pass") or not k or k in ("KNEEL", "SPIKE"):
+            continue
+        o = M[att]
+        course = k in _COURSES
+        o["snaps"] += 1
+        o["runs"] += course
+        if not course:
+            o["passes"] += 1
+            o["longs"] += k in LONGS
+        dd = (c.get("defense") or {}).get("concept")
+        d["dsnaps"] += 1
+        d["blitz"] += dd == "BLITZ"
+        d["man"] += dd == "MAN"
+    return M
+
+
+def chiffres(levier, comptes):
+    """comptes = {abbr: [comptes de ses matchs]} -> {"teams": {abbr: {"value", "games", "counts"}}, "league": moyenne
+    des franchises | None}. value : part (num / den) ou, pour le 4e essai, tentatives par match."""
+    num, den = MESURE[levier]
+    out = {}
+    for a, ms in comptes.items():
+        tot = {k: sum(m.get(k, 0) for m in ms) for k in COMPTES}
+        d = tot[den] if den else len(ms)
+        out[a] = {"value": round(tot[num] / d, 4) if d else None, "games": len(ms), "counts": tot}
+    vals = [v["value"] for v in out.values() if v["value"] is not None]
+    return {"teams": out, "league": round(sum(vals) / len(vals), 4) if vals else None}
+
+
+def projections(levier, valeur, equipe=None):
+    """Ce que chaque option donnerait, à partir de la valeur de cette semaine (effet moyen mesuré, EFFET) : {option:
+    valeur | None}. equipe = fan_vote.teams[abbr] : une option que les bornes de la franchise ne déplacent pas garde la
+    valeur d'aujourd'hui."""
+    out = {}
+    for o in options(levier):
+        if valeur is None:
+            out[o] = None
+            continue
+        e = EFFET.get(levier, {}).get(o)
+        vals = (equipe or {}).get("values") or {}
+        if not e or (o in vals and vals.get(o) == vals.get(COORD)):
+            out[o] = round(valeur, 4)
+        elif e[0] == "x":
+            out[o] = round(valeur * e[1], 4)
+        else:
+            out[o] = round(min(1.0, max(0.0, valeur + e[1])), 4)
+    return out

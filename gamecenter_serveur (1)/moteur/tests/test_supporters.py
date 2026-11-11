@@ -229,6 +229,57 @@ class TestProfondeur(unittest.TestCase):
         self.assertEqual(fo.poids_profondeur(lignes, 1.0), [2.0, 3.0, 1.0, 1.0])
 
 
+class TestChiffres(unittest.TestCase):
+    """FO-4 : les chiffres de la semaine (écran Front office) depuis les GameFeed."""
+
+    def feed(self):
+        def jeu(off, down, typ, k, dk=None, **x):
+            return dict({"offense": off, "down": down, "call": {"type": typ, "concept": k, "defense": {"concept": dk}}}, **x)
+        return {"plays": [jeu("home", 1, "run", "INSIDE_RUN", "BLITZ"), jeu("home", 2, "pass", "DEEP_POST", "MAN"),
+                          jeu("home", 3, "pass", "QUICK_SLANT", "COVER_2"), jeu("home", 4, "punt", None),
+                          jeu("away", 4, "run", "POWER", "MAN", to_go=2, gain=3, result="run"),
+                          jeu("away", 1, "pass", "SCREEN", "BLITZ"),
+                          jeu("away", 4, "pass", "SCREEN", "BLITZ", to_go=6, gain=2, result="complete",
+                              possession_change="downs"),
+                          jeu("away", 4, "field_goal", None), jeu("home", 1, "run", "KNEEL")]}
+
+    def test_mesurer_et_chiffres(self):
+        m = fo.mesurer_match(self.feed(), "CTX", "VEC")
+        self.assertEqual(m["CTX"], {"q4": 1, "go4": 0, "conv": 0, "snaps": 3, "runs": 1, "passes": 2, "longs": 1,
+                                    "dsnaps": 3, "blitz": 2, "man": 1})
+        self.assertEqual(m["VEC"], {"q4": 3, "go4": 2, "conv": 1, "snaps": 3, "runs": 1, "passes": 2, "longs": 0,
+                                    "dsnaps": 3, "blitz": 1, "man": 1})
+        c = fo.chiffres("course_passe", {a: [v] for a, v in m.items()})
+        self.assertEqual(c["teams"]["CTX"]["value"], round(1 / 3, 4))
+        self.assertEqual(c["teams"]["CTX"]["games"], 1)
+        self.assertEqual(c["teams"]["CTX"]["counts"], m["CTX"])
+        self.assertAlmostEqual(c["league"], 1 / 3, places=3)                     # moyenne des valeurs des franchises
+        q = fo.chiffres("quatrieme", {"VEC": [m["VEC"], m["CTX"]]})["teams"]["VEC"]   # 4e essai : par match
+        self.assertEqual((q["value"], q["counts"]["go4"], q["counts"]["conv"], q["counts"]["q4"]), (1.0, 2, 1, 4))
+        self.assertIsNone(fo.chiffres("profondeur", {"X": []})["teams"]["X"]["value"])
+        self.assertEqual(set(fo.MESURE), set(fo.LEVIERS))
+
+    def test_projections(self):
+        self.assertEqual(set(fo.EFFET), set(fo.LEVIERS))
+        for lv in fo.LEVIERS:
+            bas, coord, haut = fo.options(lv)
+            p = fo.projections(lv, 0.4)
+            self.assertEqual(list(p), [bas, coord, haut])
+            self.assertEqual(p[coord], 0.4)
+            self.assertNotEqual(p[bas], 0.4, lv)
+            self.assertNotEqual(p[haut], 0.4, lv)
+        p = fo.projections("quatrieme", 0.87)
+        self.assertAlmostEqual(p["prudent"], 0.57, places=2)
+        self.assertAlmostEqual(p["agressif"], 1.59, places=2)
+        p = fo.projections("course_passe", 0.387)                     # part des courses : plus de passe la baisse
+        self.assertAlmostEqual(p["plus_course"], 0.425, places=3)
+        self.assertAlmostEqual(p["plus_passe"], 0.341, places=3)
+        self.assertEqual(fo.projections("blitz", 0.02)["moins"], 0.0)                     # bornée à 0-100 %
+        self.assertEqual(fo.projections("blitz", None), {"moins": None, fo.COORD: None, "plus": None})
+        bloque = {"values": {"moins": 0.1, fo.COORD: 0.1, "plus": 0.15}}    # bornes du coordinateur : pas de baisse
+        self.assertEqual(fo.projections("blitz", 0.1, bloque)["moins"], 0.1)
+
+
 class TestQuestion(unittest.TestCase):
     def test_fan_vote(self):
         S = staffs_24()

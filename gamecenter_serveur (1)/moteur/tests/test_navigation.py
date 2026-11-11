@@ -1,4 +1,4 @@
-"""Navigation du site (README section 110, 11/11/2026) : barre d'onglets du téléphone, panneau « More », rail à la
+"""Navigation du site (README section 112, 11/11/2026) : barre d'onglets du téléphone, panneau « More », rail à la
 hauteur vraiment visible (iPad paysage). Lit gamecenter_source.html tel quel : pas de serveur ni de navigateur.
 
     python -m unittest discover -s moteur/tests -t .        (depuis « gamecenter_serveur (1) »)

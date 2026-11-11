@@ -4,6 +4,8 @@
     python generer_semaine.py --lundi 2026-10-05 --premiere # semaine 1 (staffs de départ)
 
 Variables : GC_NOTEBOOK (chemin du notebook, défaut ./NFL_Sim_GameCenter.ipynb), GC_DATA (défaut ./data).
+FO-3 : les choix des supporters de la semaine, data/fans/fans_<lundi>.json (récupérés par outils/ci/votes_supporters.py),
+sont passés au notebook (GC_FANS) quand le fichier existe ; sans fichier, les coordinateurs décident.
 Durée : l'exécution complète du notebook, ≈ 15 à 20 minutes (tests et démonstrations compris).
 """
 import argparse, os, sys, tempfile
@@ -16,12 +18,27 @@ DATA = os.environ.get("GC_DATA", os.path.join(HERE, "data"))
 TZ = ZoneInfo("Europe/Brussels")
 
 
+def fans_file(weeks_dir, monday):
+    """FO-3 : le fichier des choix des supporters de la semaine (data/fans/fans_<lundi>.json), ou None s'il manque."""
+    p = os.path.join(os.path.dirname(os.path.abspath(weeks_dir)), "fans", f"fans_{monday}.json")
+    return p if os.path.isfile(p) else None
+
+
+def notebook_env(monday, weeks_dir, prev_week_json=None):
+    """Variables d'environnement passées au notebook (section 15.1)."""
+    fans = fans_file(weeks_dir, monday)
+    return {"GC_WEEK_START": str(monday), "GC_OUT": os.path.abspath(weeks_dir),
+            "GC_PREV_WEEK": os.path.abspath(prev_week_json) if prev_week_json else "",
+            "GC_MOTEUR_DIR": os.environ.get("GC_MOTEUR_DIR") or HERE,      # modules moteur/ (ENGINE INTELLIGENCE, V22)
+            "GC_FANS": fans or ""}                                         # FO-3 : choix des supporters (facultatif)
+
+
 def run_notebook(monday, weeks_dir, prev_week_json=None, notebook=NOTEBOOK, timeout=3600):
     import nbformat
     from nbclient import NotebookClient
     os.makedirs(weeks_dir, exist_ok=True)
-    env = {"GC_WEEK_START": str(monday), "GC_OUT": os.path.abspath(weeks_dir), "GC_PREV_WEEK": os.path.abspath(prev_week_json) if prev_week_json else "",
-           "GC_MOTEUR_DIR": os.environ.get("GC_MOTEUR_DIR") or HERE}      # modules moteur/ (ENGINE INTELLIGENCE, V22)
+    env = notebook_env(monday, weeks_dir, prev_week_json)
+    print("Choix des supporters :", env["GC_FANS"] or "aucun fichier (les coordinateurs décident)")
     old = {k: os.environ.get(k) for k in env}
     os.environ.update(env)                        # le noyau hérite de l'environnement
     try:
@@ -44,8 +61,9 @@ def _weeks(weeks_dir):
     return sorted(n[5:] for n in os.listdir(weeks_dir) if n.startswith("week_") and os.path.exists(os.path.join(weeks_dir, n, "week.json"))) if os.path.isdir(weeks_dir) else []
 
 
-def generate_next(weeks_dir, now_ms, lead_hours=48):
-    """Si la dernière semaine se termine dans moins de `lead_hours` et que la suivante manque, on la produit."""
+def week_to_produce(weeks_dir, now_ms, lead_hours=48):
+    """(lundi de la semaine à produire, lundi de la dernière semaine) si la dernière semaine se termine dans moins de
+    `lead_hours` et que la suivante manque ; sinon None. Partagé avec outils/ci/votes_supporters.py (FO-3)."""
     ws = _weeks(weeks_dir)
     if not ws:
         return None
@@ -58,6 +76,15 @@ def generate_next(weeks_dir, now_ms, lead_hours=48):
     reset = datetime(nxt.year, nxt.month, nxt.day, tzinfo=TZ).timestamp() * 1000
     if reset - now_ms > lead_hours * 3600 * 1000:
         return None
+    return nxt, last
+
+
+def generate_next(weeks_dir, now_ms, lead_hours=48):
+    """Si la dernière semaine se termine dans moins de `lead_hours` et que la suivante manque, on la produit."""
+    w = week_to_produce(weeks_dir, now_ms, lead_hours)
+    if w is None:
+        return None
+    nxt, last = w
     return run_notebook(nxt, weeks_dir, os.path.join(weeks_dir, f"week_{last}", "week.json"))
 
 

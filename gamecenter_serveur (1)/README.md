@@ -3038,7 +3038,138 @@ Le sens vient maintenant de la longueur du botté et du retour (l'arrivée est �
 les retourneurs attendent là où le ballon retombe (ils partaient du point d'arrivée du retour et traversaient le
 terrain avant l'attrapé). Test : `test_retours.js` (le ballon retombe à « kick » yards, du côté de l'équipe qui reçoit).
 
-### 110. Navigation : barre d'onglets sur téléphone, rail entière sur iPad (11/11/2026)
+### 110. Front office FO-3 : le calcul du samedi récupère les votes des supporters (11/11/2026)
+Plan : `programme/Front_office_plan.md`. Relie le serveur (FO-2) au moteur (FO-1) : les choix des supporters arrivent
+dans le calcul du samedi, et les cotes sont calculées avec eux.
+- **Workflow** (`.github/workflows/semaine.yml`, job « produire ») :
+  - nouvelle étape « Récupérer les votes des supporters », avant le calcul. Elle lance
+    `outils/ci/votes_supporters.py --data data` avec les secrets `GC_SITE_URL` et `GC_ADMIN_KEY` ;
+  - l'étape a `continue-on-error`, et le script finit toujours sans erreur : un problème laisse une annotation
+    d'alerte, et le calcul continue avec les coordinateurs ;
+  - `data/fans/` est versé au dépôt avec la semaine (archive et rejouabilité). Si le push échoue, le job « suivi »
+    le repousse avec la semaine.
+  - Le système d'alerte (`outils/ci/alerte_semaine.py`) range cette étape dans sa propre catégorie, « votes ».
+- **`outils/ci/votes_supporters.py`** :
+  - la semaine visée est celle que `generer_semaine.py --suivante` produira (même fonction, `week_to_produce`) : s'il
+    n'y a rien à produire, il n'y a rien à récupérer ;
+  - il appelle `GET <site>/api/admin/fans?week=<lundi>`, avec la clé dans l'en-tête `X-Admin-Key` (jamais dans
+    l'adresse ni dans le journal), trois essais (5 s puis 10 s d'attente, 30 s par requête) ;
+  - il vérifie le fichier (objet JSON, bonne semaine, levier, franchises) puis écrit `data/fans/fans_<lundi>.json`.
+  - Selon la réponse :
+
+    | Cas | Annotation | Fichier |
+    |---|---|---|
+    | votes reçus | (aucune) | écrit |
+    | pas de question pour cette semaine (semaine calculée avant FO-1) | `notice` | aucun |
+    | secrets absents | `warning` | aucun |
+    | vote pas encore fermé | `warning` | aucun |
+    | clé ou adresse refusée | `warning` | aucun |
+    | serveur injoignable | `warning` | aucun |
+    | réponse invalide | `warning` | aucun |
+
+- **`generer_semaine.py`** : `notebook_env` passe `GC_FANS=<fichier>` au notebook quand
+  `data/fans/fans_<lundi>.json` existe, et une valeur vide sinon (les coordinateurs décident). Le journal du calcul
+  dit lequel des deux cas s'applique.
+- **Serveur** : `/api/admin/fans` accepte la clé dans l'en-tête `X-Admin-Key`, en plus de `?key=`.
+- **Audit** (`check_fans_fichier`) : ce que le moteur a appliqué (`fans.applied`) doit correspondre au fichier,
+  franchise par franchise, avec la même règle que le moteur.
+  - Fichier présent mais pas lu par le moteur : anomalie bloquante.
+  - Fichier lu mais absent du dépôt : alerte.
+  - Les bornes restent contrôlées par `check_fans` (FO-1).
+- **Contrôle des PR** (`.github/workflows/controle.yml`, décision de Guillaume du 11/11) : l'installation de
+  Playwright et de Chromium (et de ffmpeg) se fait en trois essais, avec une pause de 30 puis 60 s et une relecture de
+  l'index apt entre deux essais. Le 11/11, les miroirs Ubuntu étaient injoignables depuis les machines GitHub, et les
+  deux jobs navigateur échouaient avant tout test.
+- **Secrets GitHub à ajouter par Guillaume** (dépôt → Settings → Secrets and variables → Actions) :
+  - `GC_ADMIN_KEY` : la même valeur que la variable `GC_ADMIN_KEY` de Railway ;
+  - `GC_SITE_URL` : `https://snapline.live`.
+
+  Sans ces secrets, le calcul fonctionne comme avant, avec une alerte dans le résumé du workflow.
+- **Calendrier** :
+  - le samedi 14/11, le calcul de la semaine du 16/11 trouve « pas de question » (la semaine du 09/11 a été calculée
+    avant FO-1) ;
+  - la première question est posée dans la semaine du 16/11 (course ou passe, pour la semaine du 23/11). Elle sera
+    récupérée le samedi 21/11, une fois le site branché (FO-4).
+- **Essai de bout en bout** (serveur local, question ajoutée à une copie de la semaine du 09/11, horloge réglée sur
+  le vendredi 23:29) :
+  - 8 votes passent par l'API ;
+  - avant 23:30, la récupération répond « pas encore fermé », sans fichier ;
+  - après le verrou, elle écrit le fichier, lu tel quel par le moteur : CTX « agressif » (6 votes, source fans),
+    VEC au coordinateur (2 votes) ;
+  - une mauvaise clé donne une alerte, sans fichier.
+- **Tests** :
+  - `moteur/tests/test_votes_supporters.py`, 9 tests, avec un faux serveur HTTP local et aucun accès au réseau :
+    récupération, clé dans l'en-tête seulement, pannes et refus, secrets absents, semaine à produire, `GC_FANS`
+    passé au notebook, contrôle d'audit ;
+  - `test_supporters_serveur.py` : la clé dans l'en-tête ;
+  - `test_alerte_semaine.py` : l'étape est classée.
+
+### 111. Front office FO-4 : le vote des supporters sur le site (11/11/2026)
+Plan : `programme/Front_office_plan.md`. Avec FO-1 à FO-3, **le vote fonctionne de bout en bout**. Le rendu suit les
+écrans validés sur l'iPad (captures envoyées par Guillaume le 11/11) : l'écran de vote et la révélation du lundi. La
+draft de ces captures viendra en FO-6. Les intitulés restent ceux validés le 09/11 (Play it safe · Coordinator's call ·
+Go for it, etc.). Captures de contrôle : `FO_CAPTURES=<dossier> node outils/site/test_front_office.js`.
+- **My team** : un sélecteur **Overview / Front office**. Overview : la page d'avant, avec un rappel « Vote now » tant
+  que le compte n'a pas voté et que le vote est ouvert.
+- **Front office, écran de vote** (par défaut du mardi au vendredi 23:30) :
+  - carte principale : « Fan vote · for week N », pastille rouge « Closes Fri 23:30 · 2 d 4 h », grand titre avec le
+    nom du coordinateur (offensif pour 4e essai, course / passe et profondeur ; défensif pour blitz et couverture),
+    ex. « 4th down next week: how bold should Rhys Calloway be? », et la phrase « Applies to every … game of week N,
+    within the team's identity… » ;
+  - trois cartes d'option : intitulé, puce « AI default » sur Coordinator's call, une phrase, et la **projection**
+    (« ≈ 0.6 go-for-its per game », « ≈ 0.9 per game, as this week », « ≈ 41 % run plays ») ; la carte choisie passe
+    en bleu foncé, « ✓ Your vote » sur l'option votée ;
+  - « <Franchise> on 4th down this week · N games » et quatre tuiles (4e essai : Faced, Went for it, Converted x / y,
+    League avg / game ; course / passe : Run plays, Pass plays, Run share, League avg ; blitz, couverture et
+    profondeur : l'équivalent) ;
+  - « Cast my vote », puis « Change my vote » quand on choisit une autre option ; « One vote per account · free / You
+    can change it until Friday 23:30 · shares revealed at close » ; les parts du vote restent cachées ;
+  - colonne de droite : « How it works » (1-2-3, plus la règle des 5 votes et du changement de franchise) et « In
+    effect this week » (ex. « More passing · 67 % », votes, part des courses la semaine d'avant → cette semaine,
+    lien « See the vote »).
+- **Front office, révélation** (par défaut le lundi, et après le verrou du vendredi) :
+  - « Week N · results of the fan votes », « The <franchise> fans have decided » ;
+  - carte du résultat : « Run or pass · 6 votes », « ✓ Your vote », la réponse retenue en grand, barres triées
+    (la retenue en bleu foncé), « In effect for every … game this week » (ou « Applies next week… » après le verrou),
+    raison quand le coordinateur décide (moins de 5 votes, égalité, « coordinateur » en tête) ;
+  - carte du prochain match : « Today · 11:00 », pavés aux couleurs des deux franchises, les deux cotes (bulletin),
+    puce « Fans' plan » et « More passes · the odds include it » (ou « Coordinator's call ») ; puis « New fan vote · for
+    week N+1 », la question courte (« How bold on 4th down next week? ») et un bouton « Vote » vers l'écran de vote
+    (« Change » si déjà voté) ; après le verrou : la prochaine question ouvre lundi.
+- **Cas particuliers** : invité (l'invitation à créer un compte parle du vote) ; compte sans franchise ou qui en change
+  (une phrase explique que le changement retire le vote de la semaine) ; franchise changée cette semaine (options
+  désactivées, raison affichée, `team_changed`) ; pas encore de match terminé (les chiffres viendront).
+- **Page Teams** : la ligne « Fans' plan this week » de chaque franchise, en lecture seule (`fans` dans l'état public de
+  la semaine, `Week.public_state`).
+- **Match centre** : en tête des statistiques d'équipe, la ligne du levier de la semaine, mesurée dans le match
+  jusqu'à l'action à l'écran ; puce « Fans' plan » sur l'équipe dont les supporters ont décidé (`game.fans_plan`).
+- **Téléphone 390 px** : options et barres l'une sous l'autre, tuiles 2 × 2, bouton de vote pleine largeur, marge de
+  84 px en bas pour le bouton « Bet slip » ; sous 1 100 px la colonne de droite passe sous la carte principale.
+- **Moteur** (`moteur/supporters.py`) : `mesurer_match` compte aussi les 4es essais convertis (`conv` : premier essai
+  ou touchdown, sans perte du ballon) ; `chiffres` renvoie les comptes bruts (`counts`) et, pour le 4e essai, la
+  valeur **par match** (unité des mesures de la section 105) ; `projections(levier, valeur, équipe)` applique l'effet
+  moyen mesuré de chaque option (`EFFET`, section 105 : 4e essai × 0,655 / × 1,828 ; courses + 3,8 / − 4,6 points ;
+  blitz − 4,8 / + 5,3 ; appels MAN − 4,3 / + 5,4 ; passes longues − 10,8 / + 10,0), bornée à 0-100 % ; une option
+  que les bornes de la franchise ne déplacent pas garde la valeur d'aujourd'hui.
+- **Serveur** : drapeau `front_office` dans la page ; `fans` dans l'état public de la semaine ; `/api/fans` renvoie
+  `stats` (`value`, `games`, `counts`, `league`, `projections`, sur les matchs terminés de la semaine, en cache par
+  nombre de matchs finis) et `in_force` enrichi (`label`, `share` = part de l'option retenue, `before` / `now` = le
+  chiffre du levier la semaine d'avant et cette semaine) ; `/api/fans/results?token=` renvoie aussi `my_vote`.
+- **Interrupteur** : `GC_FRONT_OFFICE=off` donne My team et Teams comme avant, sans onglets ni ligne.
+- **Cellule 427** : seul l'appel du Match centre y est reporté, protégé, car le replay du notebook n'a pas de vote.
+- **Tests** : `moteur/tests/test_supporters.py` (comptes avec conversions, valeur par match, projections, bornes) et
+  `test_supporters_serveur.py` (`stats`, `in_force`) ; `outils/site/test_front_office.js`, dans les tests navigateur
+  (groupe site) :
+  - jeudi soir : invité, rappel sur Overview, onglets, écran de vote (titre avec le coordinateur, « AI default »,
+    projections, tuiles, compte à rebours, aucune part du vote), « In effect this week » (67 %, 6 votes, avant →
+    maintenant), carte choisie en bleu foncé, « Cast my vote » puis « Change my vote » enregistrés sur le serveur,
+    révélation (barres triées, prochain match avec cotes et « Fans' plan », nouvelle question) et retour au vote,
+    page Teams (CTX et VEC), ligne du Match centre, franchise changée, téléphone ;
+  - lundi matin : la révélation d'abord ; après le verrou : résultat de la semaine suivante (coordinateur, « Your
+    vote », barre retenue), plus de bouton de vote ;
+  - interrupteur coupé ; aucune erreur JS.
+
+### 112. Navigation : barre d'onglets sur téléphone, rail entière sur iPad (11/11/2026)
 **Demande de Guillaume (11/11)** : sur téléphone il n'y avait aucune navigation (la rail est masquée sous 760 px), et
 sur iPad en paysage l'onglet Settings était mal placé.
 - **Téléphone (≤ 760 px)** : une barre d'onglets fixe en bas, **Live · Schedule · Standings · My bets · More**
@@ -3215,8 +3346,8 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/games`, `/weeks/<n>`, `/games/<id>` | résultats et comptes rendus écrits des matchs terminés (section 80) |
 | GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 107) |
 | POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
-| GET | `/api/fans/results?team=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) |
-| GET | `/api/admin/fans?key=&week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY`, après le verrou) |
+| GET | `/api/fans/results?team=&token=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) ; `my_vote` avec `token` (section 111) |
+| GET | `/api/admin/fans?week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY` dans l'en-tête `X-Admin-Key` ou `?key=`, après le verrou ; section 110) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
@@ -3240,7 +3371,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 

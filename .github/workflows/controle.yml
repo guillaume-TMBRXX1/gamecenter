@@ -71,7 +71,17 @@ jobs:
         run: |
           pip install -r requirements.txt
           npm install --no-audit --no-fund --prefix "$GITHUB_WORKSPACE/../pw" playwright@1.56.1
-          node "$GITHUB_WORKSPACE/../pw/node_modules/playwright/cli.js" install --with-deps chromium
-          if [ "$GROUPE" = site ] && ! command -v ffmpeg > /dev/null; then sudo apt-get install -y -qq ffmpeg > /dev/null; fi
+          # trois essais (11/11/2026 : miroirs Ubuntu injoignables sur les machines GitHub, « Temporary failure
+          # resolving azure.archive.ubuntu.com » : l'installation échouait avant tout test) ; entre deux essais,
+          # pause de 30 puis 60 s et index apt relu
+          for i in 1 2 3; do
+            if node "$GITHUB_WORKSPACE/../pw/node_modules/playwright/cli.js" install --with-deps chromium; then break; fi
+            if [ "$i" = 3 ]; then echo "::error::Installation de Playwright impossible après 3 essais"; exit 1; fi
+            echo "::warning::Installation de Playwright : essai $i échoué, nouvel essai dans $((30 * i)) s"
+            sleep $((30 * i)); sudo apt-get update -qq || true
+          done
+          if [ "$GROUPE" = site ] && ! command -v ffmpeg > /dev/null; then
+            for i in 1 2 3; do sudo apt-get install -y -qq ffmpeg > /dev/null && break; [ "$i" = 3 ] && exit 1; sleep $((30 * i)); sudo apt-get update -qq || true; done
+          fi
       - name: Tests navigateur
         run: bash outils/site/tests_navigateur.sh --semaines "$SEMAINES" --groupe "$GROUPE"
