@@ -227,6 +227,10 @@ class TestVoteSupporters(unittest.TestCase):
             self.t = self.w.lock + HEURE
             doc = serveur.api_admin_fans(key=ADMIN, week=self.lundi_suivant)
             self.assertEqual(doc, serveur.api_admin_fans(key=ADMIN))          # défaut : la dernière question fermée
+            entete = Req(); entete.headers = {"x-admin-key": ADMIN}            # FO-3 : la clé dans l'en-tête X-Admin-Key
+            self.assertEqual(doc, serveur.api_admin_fans(week=self.lundi_suivant, request=entete))
+            entete.headers = {"x-admin-key": "faux"}
+            self.assertEqual(self.refus(serveur.api_admin_fans, week=self.lundi_suivant, request=entete)[0], 403)
             self.assertEqual(self.refus(serveur.api_admin_fans, key=ADMIN, week="2000-01-03"), (404, "no_question"))
         self.assertEqual((doc["version"], doc["week"], doc["lever"]), (1, self.lundi_suivant, lv))
         self.assertEqual(set(doc["teams"]), {"CTX", "VEC", "AEG"})           # seulement les franchises qui ont voté

@@ -32,6 +32,7 @@ ETAPES = [
     ("Run actions/", "machine"),
     ("Installer le moteur", "machine"),
     ("Tester les modules du moteur", "tests"),
+    ("Récupérer les votes des supporters", "votes"),   # FO-3 : continue-on-error, ne fait jamais échouer le job
     ("Calculer la semaine", "calcul"),
     ("Contrôler le moteur", "audit"),
     ("Ajouter la semaine au dépôt", "push"),
@@ -41,6 +42,7 @@ ETAPES = [
 LIBELLES = {
     "machine": "panne de la machine GitHub",
     "tests": "tests du moteur",
+    "votes": "récupération des votes des supporters",
     "calcul": "calcul de la semaine (notebook)",
     "audit": "audit du moteur",
     "push": "ajout de la semaine au dépôt (push)",

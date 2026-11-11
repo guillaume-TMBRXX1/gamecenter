@@ -85,7 +85,7 @@ class Classement(unittest.TestCase):
         with open(wf, encoding="utf-8") as f:
             noms = [l.split("- name:", 1)[1].strip() for l in f if "- name:" in l]
         produire = noms[:noms.index("Garder la semaine calculée (le push a échoué)")]
-        attendu = ["machine", "tests", "calcul", "audit", "push"]
+        attendu = ["machine", "tests", "votes", "calcul", "audit", "push"]
         self.assertEqual([A.categorie_etape(n) for n in produire], attendu)
 
     def test_fin_du_log(self):

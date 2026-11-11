@@ -1939,11 +1939,13 @@ def fans_export(week):
 
 
 @app.get("/api/admin/fans")
-def api_admin_fans(key: str = "", week: str = ""):
-    """Export pour le calcul du samedi (GC_ADMIN_KEY), seulement après le verrou. week = lundi où les choix s'appliquent
-    (défaut : la dernière question fermée)."""
+def api_admin_fans(key: str = "", week: str = "", request: Request = None):
+    """Export pour le calcul du samedi (GC_ADMIN_KEY : en-tête X-Admin-Key, ou ?key=), seulement après le verrou.
+    week = lundi où les choix s'appliquent (défaut : la dernière question fermée)."""
     _fo_need()
     admin = os.environ.get("GC_ADMIN_KEY", "")
+    if request is not None and not key:
+        key = request.headers.get("x-admin-key", "")
     if len(admin) < 16 or not secrets.compare_digest(str(key), admin):
         raise HTTPException(403, "Non autorisé.")
     t = now_ms()

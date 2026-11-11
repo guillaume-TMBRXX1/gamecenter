@@ -3038,6 +3038,68 @@ Le sens vient maintenant de la longueur du botté et du retour (l'arrivée est �
 les retourneurs attendent là où le ballon retombe (ils partaient du point d'arrivée du retour et traversaient le
 terrain avant l'attrapé). Test : `test_retours.js` (le ballon retombe à « kick » yards, du côté de l'équipe qui reçoit).
 
+### 110. Front office FO-3 : le calcul du samedi récupère les votes des supporters (11/11/2026)
+Plan : `programme/Front_office_plan.md`. Relie le serveur (FO-2) au moteur (FO-1) : les choix des supporters arrivent
+dans le calcul du samedi, et les cotes sont calculées avec eux.
+- **Workflow** (`.github/workflows/semaine.yml`, job « produire ») :
+  - nouvelle étape « Récupérer les votes des supporters », avant le calcul. Elle lance
+    `outils/ci/votes_supporters.py --data data` avec les secrets `GC_SITE_URL` et `GC_ADMIN_KEY` ;
+  - l'étape a `continue-on-error`, et le script finit toujours sans erreur : un problème laisse une annotation
+    d'alerte, et le calcul continue avec les coordinateurs ;
+  - `data/fans/` est versé au dépôt avec la semaine (archive et rejouabilité). Si le push échoue, le job « suivi »
+    le repousse avec la semaine.
+  - Le système d'alerte (`outils/ci/alerte_semaine.py`) range cette étape dans sa propre catégorie, « votes ».
+- **`outils/ci/votes_supporters.py`** :
+  - la semaine visée est celle que `generer_semaine.py --suivante` produira (même fonction, `week_to_produce`) : s'il
+    n'y a rien à produire, il n'y a rien à récupérer ;
+  - il appelle `GET <site>/api/admin/fans?week=<lundi>`, avec la clé dans l'en-tête `X-Admin-Key` (jamais dans
+    l'adresse ni dans le journal), trois essais (5 s puis 10 s d'attente, 30 s par requête) ;
+  - il vérifie le fichier (objet JSON, bonne semaine, levier, franchises) puis écrit `data/fans/fans_<lundi>.json`.
+  - Selon la réponse :
+
+    | Cas | Annotation | Fichier |
+    |---|---|---|
+    | votes reçus | (aucune) | écrit |
+    | pas de question pour cette semaine (semaine calculée avant FO-1) | `notice` | aucun |
+    | secrets absents | `warning` | aucun |
+    | vote pas encore fermé | `warning` | aucun |
+    | clé ou adresse refusée | `warning` | aucun |
+    | serveur injoignable | `warning` | aucun |
+    | réponse invalide | `warning` | aucun |
+
+- **`generer_semaine.py`** : `notebook_env` passe `GC_FANS=<fichier>` au notebook quand
+  `data/fans/fans_<lundi>.json` existe, et une valeur vide sinon (les coordinateurs décident). Le journal du calcul
+  dit lequel des deux cas s'applique.
+- **Serveur** : `/api/admin/fans` accepte la clé dans l'en-tête `X-Admin-Key`, en plus de `?key=`.
+- **Audit** (`check_fans_fichier`) : ce que le moteur a appliqué (`fans.applied`) doit correspondre au fichier,
+  franchise par franchise, avec la même règle que le moteur.
+  - Fichier présent mais pas lu par le moteur : anomalie bloquante.
+  - Fichier lu mais absent du dépôt : alerte.
+  - Les bornes restent contrôlées par `check_fans` (FO-1).
+- **Secrets GitHub à ajouter par Guillaume** (dépôt → Settings → Secrets and variables → Actions) :
+  - `GC_ADMIN_KEY` : la même valeur que la variable `GC_ADMIN_KEY` de Railway ;
+  - `GC_SITE_URL` : `https://snapline.live`.
+
+  Sans ces secrets, le calcul fonctionne comme avant, avec une alerte dans le résumé du workflow.
+- **Calendrier** :
+  - le samedi 14/11, le calcul de la semaine du 16/11 trouve « pas de question » (la semaine du 09/11 a été calculée
+    avant FO-1) ;
+  - la première question est posée dans la semaine du 16/11 (course ou passe, pour la semaine du 23/11). Elle sera
+    récupérée le samedi 21/11, une fois le site branché (FO-4).
+- **Essai de bout en bout** (serveur local, question ajoutée à une copie de la semaine du 09/11, horloge réglée sur
+  le vendredi 23:29) :
+  - 8 votes passent par l'API ;
+  - avant 23:30, la récupération répond « pas encore fermé », sans fichier ;
+  - après le verrou, elle écrit le fichier, lu tel quel par le moteur : CTX « agressif » (6 votes, source fans),
+    VEC au coordinateur (2 votes) ;
+  - une mauvaise clé donne une alerte, sans fichier.
+- **Tests** :
+  - `moteur/tests/test_votes_supporters.py`, 9 tests, avec un faux serveur HTTP local et aucun accès au réseau :
+    récupération, clé dans l'en-tête seulement, pannes et refus, secrets absents, semaine à produire, `GC_FANS`
+    passé au notebook, contrôle d'audit ;
+  - `test_supporters_serveur.py` : la clé dans l'en-tête ;
+  - `test_alerte_semaine.py` : l'étape est classée.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3196,7 +3258,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 107) |
 | POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
 | GET | `/api/fans/results?team=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) |
-| GET | `/api/admin/fans?key=&week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY`, après le verrou) |
+| GET | `/api/admin/fans?week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY` dans l'en-tête `X-Admin-Key` ou `?key=`, après le verrou ; section 110) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables
@@ -3220,7 +3282,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 

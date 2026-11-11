@@ -99,11 +99,11 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 - Tests : `moteur/tests/test_supporters_serveur.py` (règles, verrou, pourcentages cachés, export, changement de
   franchise, minimum de 5 votes, égalité).
 
-### FO-3 — Calcul du samedi : du serveur au moteur *(workflow + generer_semaine)*
+### FO-3 — Calcul du samedi : du serveur au moteur *(workflow + generer_semaine)* — ✅ 11/11 (README section 110)
 
 - `semaine.yml` : une étape « Récupérer les votes des supporters » avant le calcul → `data/fans/fans_<lundi>.json`,
   versé au dépôt avec la semaine (archive et rejouabilité). Secrets GitHub à ajouter par Guillaume :
-  `GC_ADMIN_KEY` et l'adresse du site.
+  `GC_ADMIN_KEY` (la même que sur Railway) et `GC_SITE_URL` (`https://snapline.live`).
 - `generer_semaine.py` : passe `GC_FANS` au notebook quand le fichier existe.
 - `audit_moteur.py` : ce qui est appliqué (`fans.applied`) correspond au fichier, et reste dans les bornes.
 - Échec de la récupération : calcul normal avec les coordinateurs, annotation d'alerte (pas d'échec du workflow).
@@ -157,5 +157,6 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 
 1. La fenêtre de la draft : vendredi 12:00 → 23:30 (proposé), ou ouverte plus tôt dans la semaine.
 2. ~~FO-1 : la même question chaque semaine~~ — tranché le 09/11 : cinq questions en rotation.
-3. FO-3 : ajouter les deux secrets GitHub (`GC_ADMIN_KEY`, adresse du site) — action de Guillaume.
+3. FO-3 : ajouter les deux secrets GitHub `GC_ADMIN_KEY` et `GC_SITE_URL` — action de Guillaume (sans eux, le calcul
+   continue avec les coordinateurs et une alerte).
 4. FO-5 : accepter le décalage d'une semaine des retraites (nécessaire pour annoncer la dernière saison).
