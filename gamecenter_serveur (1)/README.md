@@ -3029,6 +3029,15 @@ w7-r204). Elle y reste maintenant, horloge à 0, et la pause de fin de quart-tem
 touchdown ordinaire. Le site et le serveur affichaient déjà la pause au bon endroit pour les semaines calculées avant
 (section 105, `break_kind(p, nxt)`) ; les semaines suivantes ont des données justes. Test : `test_actions_longues`.
 
+### 109. Coup d'envoi ramené en touchdown : le ballon part du bon côté (11/11/2026)
+Le site déduisait le sens du coup d'envoi du point d'arrivée (« le ballon part de los_x vers spot.x ») : juste tant que
+le retour s'arrête au-delà de la ligne du botté, faux quand il revient plus loin (touchdown sur retour, ou très long
+retour). Le ballon partait alors vers l'en-but où le retourneur devait marquer, il l'y « attrapait » et faisait quelques
+pas : un touchback affiché comme un touchdown (semaine du 09/11, w7-r87 GMB-ZPH, 2e quart-temps à 1:09 ; w7-r117).
+Le sens vient maintenant de la longueur du botté et du retour (l'arrivée est à `kick - return` yards de la ligne), et
+les retourneurs attendent là où le ballon retombe (ils partaient du point d'arrivée du retour et traversaient le
+terrain avant l'attrapé). Test : `test_retours.js` (le ballon retombe à « kick » yards, du côté de l'équipe qui reçoit).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
