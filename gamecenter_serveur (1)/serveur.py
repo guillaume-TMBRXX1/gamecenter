@@ -38,6 +38,7 @@ from moteur import supporters as _fo
 from moteur import draft as _dr
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
+import actualites as _news
 
 PLAY_SEC = 6.5                 # une action toutes les 6,5 s (comme le site)
 # Pauses de retransmission (10/10/2026), en secondes : fin du Q1 / Q3 (et du temps réglementaire avant la
@@ -567,6 +568,11 @@ with db() as _c:
                                          PRIMARY KEY(player, week, lever));
     CREATE INDEX IF NOT EXISTS fan_votes_wt ON fan_votes(week, team);
     """)
+    # Onglet News (section 115) : une réponse par joueur et par question d'article (modifiable).
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS news_votes(player TEXT, article TEXT, choice TEXT, at INTEGER, PRIMARY KEY(player, article));
+    CREATE INDEX IF NOT EXISTS news_votes_a ON news_votes(article);
+    """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -963,6 +969,8 @@ def api_feed(gid: str):
 def page(request: Request = None):
     if request is not None and mesure_on():         # mesure de l'audience (étape 9.1) : rien sans GC_MESURE=1
         compter_visite(request)
+    if request is not None:
+        news_prechauffer()                           # onglet News (section 115)
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
@@ -976,6 +984,8 @@ def page(request: Request = None):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if rivalites_on():                               # rivalités et bilans (section 88)
         srv["rivalries"] = _riv.table()
+    if news_on():                                    # onglet News (section 115) : sans lui, la page ne le dessine pas
+        srv["news"] = True
     if week_review_on():                             # « Week in review », l'émission du week-end (section 92)
         srv["week_review"] = True
     if empreinte_on():                               # empreinte de jeu (section 89)
@@ -4002,6 +4012,141 @@ def api_rivalry(game: str = "", a: str = "", b: str = ""):
         avant = None
     return JSONResponse(_riv.serie(confrontations_finies(w, t, a, b, avant=avant), a, b),
                         headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ onglet News (README section 115)
+# L'édition est écrite par actualites.py d'après les matchs TERMINÉS de la semaine en cours et de la précédente :
+# jamais un match à venir ou en cours, ni une blessure d'un match pas fini. Recalculée quand un match se termine.
+NEWS_VOTE_MAX_JOUEUR, NEWS_VOTE_MAX_IP = 60, 300      # réponses en 15 min
+NEWS_MAX = 80                                          # articles servis au plus (deux semaines)
+_NEWS_CACHE, _NEWS_MEMO, _NEWS_FOND = {}, {}, set()     # éditions, articles par match terminé, calculs en cours
+
+
+def news_on():
+    """Onglet News : GC_NEWS=off, la route répond 404 et le site cache l'onglet."""
+    return os.environ.get("GC_NEWS", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def _news_semaine(w, t):
+    jeux = [g for g in w.sched if w.status(g, t) == "final" and w.teams_known(g, t)]
+    fini = {g["id"] for g in jeux}
+    bl = [x for x in ((w.doc.get("injuries") or {}).get("in_week") or []) if x.get("game") in fini]
+    cle = (w.folder, len(jeux), len(bl), rivalites_on())
+    arts = _NEWS_CACHE.get(cle)
+    if arts is None:
+        def serie(a, b, avant):
+            return _riv.serie(confrontations_finies(w, t, a, b, avant=avant), a, b) if rivalites_on() else {}
+        memo = _NEWS_MEMO.setdefault(w.folder, {})
+        arts = _news.edition(jeux, w.doc["teams"], w.doc["week"]["index"], lambda gid: (w.feed(gid), _feuille(w, gid)),
+                             serie, bl, memo)
+        for k in [k for k in _NEWS_CACHE if k[0] == w.folder]:
+            del _NEWS_CACHE[k]
+        _NEWS_CACHE[cle] = arts
+    return arts
+
+
+def news_edition(t=None):
+    """Les articles de la semaine en cours puis de la précédente, du plus récent au plus ancien."""
+    t = now_ms() if t is None else t
+    w = current_week(t)
+    if w is None:
+        return []
+    ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday) if x.open <= t and x.monday <= w.monday][-2:]
+    garde = {x.folder for x in ws}
+    for k in [k for k in _NEWS_MEMO if k not in garde]:      # semaines sorties de l'édition : libérées
+        del _NEWS_MEMO[k]
+    out = []
+    for x in reversed(ws):
+        if x is w or (x.folder in _NEWS_MEMO and x.folder not in _NEWS_FOND):
+            out += _news_semaine(x, t)
+        elif x.folder not in _NEWS_FOND:      # semaine d'avant, pas encore lue : calculée à côté (≈ 15 s, une fois)
+            _NEWS_FOND.add(x.folder)
+
+            def fond(x=x):
+                try:
+                    _news_semaine(x, t)
+                finally:
+                    _NEWS_FOND.discard(x.folder)
+            threading.Thread(target=fond, daemon=True).start()
+    return out[:NEWS_MAX]
+
+
+_NEWS_CHAUD = {"on": False}
+
+
+def news_prechauffer():
+    """Au premier affichage de la page : l'édition est calculée à côté, puis tenue à jour chaque minute (un match qui se
+    termine), pour qu'aucun visiteur n'attende le calcul (≈ 15 s pour deux semaines lues du disque)."""
+    if _NEWS_CHAUD["on"] or not news_on():
+        return
+    _NEWS_CHAUD["on"] = True
+
+    def boucle():
+        while True:
+            try:
+                news_edition()
+            except Exception as e:                   # pragma: no cover
+                print("news :", e)
+            time.sleep(60)
+    threading.Thread(target=boucle, daemon=True).start()
+
+
+def news_counts(ids):
+    if not ids:
+        return {}
+    out = {}
+    with db() as c:
+        q = ",".join("?" * len(ids))
+        for r in c.execute(f"SELECT article, choice, COUNT(*) n FROM news_votes WHERE article IN ({q}) GROUP BY article, choice",
+                           list(ids)):
+            out.setdefault(r["article"], {})[r["choice"]] = r["n"]
+    for k, v in out.items():
+        v["total"] = sum(v.values())
+    return out
+
+
+@app.get("/api/news")
+def api_news(token: str = ""):
+    """L'édition, mes réponses aux questions, et les résultats des questions auxquelles j'ai répondu (pas avant)."""
+    if not news_on():
+        raise HTTPException(404, "news_off")
+    arts = news_edition()
+    mine = {}
+    p = player_by_token(token) if token else None
+    qids = [a["id"] for a in arts if a.get("question")]
+    if p and qids:
+        with db() as c:
+            q = ",".join("?" * len(qids))
+            mine = {r["article"]: r["choice"] for r in
+                    c.execute(f"SELECT article, choice FROM news_votes WHERE player=? AND article IN ({q})", [p["id"]] + qids)}
+    return JSONResponse({"version": _news.VERSION, "articles": [{k: v for k, v in a.items() if k != "impact"} for a in arts],
+                         "votes": mine, "results": news_counts(list(mine))}, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/news/vote")
+async def api_news_vote(req: Request):
+    """{token, article, choice} : répondre (ou changer sa réponse) à la question d'un article de l'édition."""
+    if not news_on():
+        raise HTTPException(404, "news_off")
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    aid, choice = str(body.get("article") or ""), str(body.get("choice") or "")
+    a = next((x for x in news_edition() if x["id"] == aid), None)
+    if a is None or not a.get("question"):
+        raise HTTPException(404, "unknown_article")
+    if choice not in {o["id"] for o in a["question"]["options"]}:
+        raise HTTPException(400, "unknown_choice")
+    keys = (("newsvote", p["id"]), NEWS_VOTE_MAX_JOUEUR), (("newsvoteip", _ip(req)), NEWS_VOTE_MAX_IP)
+    if _too_many_fails(*keys):
+        raise HTTPException(429, "too_many_attempts")
+    _note_fail(*(k for k, _ in keys))
+    with _db_lock, db() as c:
+        c.execute("INSERT INTO news_votes(player, article, choice, at) VALUES(?,?,?,?) "
+                  "ON CONFLICT(player, article) DO UPDATE SET choice=excluded.choice, at=excluded.at",
+                  (p["id"], aid, choice, now_ms()))
+    return {"ok": True, "article": aid, "my_vote": choice, "results": news_counts([aid]).get(aid, {})}
 
 
 # ------------------------------------------------------------------ empreinte de jeu (README section 89)
