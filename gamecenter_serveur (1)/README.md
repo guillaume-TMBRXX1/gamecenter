@@ -3365,6 +3365,14 @@ discuté, forme et spreads), avec des **questions** pour faire participer les su
 - **Tests** : `moteur/tests/test_actualites.py` (quotas, matchs terminés seulement, textes propres, même édition à
   chaque calcul ; au serveur, rien d'un match pas fini à l'heure donnée, réponses, limite, interrupteur, onglet).
 
+### 110. Mémoire du serveur : la semaine en cours dans un cache borné (12/11/2026)
+Avec les traces des trajectoires, un GameFeed pèse ≈ 3,5 Mo en objets Python (531 Ko sur disque) : le serveur gardait
+en mémoire tous ceux de la semaine en cours dès qu'ils avaient été lus (≈ 1,1 Go pour les 279), et Railway l'a tué le
+08/11 (2 Go ; limite portée à 4 Go). La semaine en cours a maintenant, elle aussi, un cache borné : les `GC_FEEDS_PIN`
+derniers GameFeed lus (60 par défaut ; le direct n'en lit que quelques-uns à la fois), les autres relus à la demande
+(≈ 20 ms). Les calculs de la semaine (Insights, Week in review, empreinte…) sont déjà en cache par nombre de matchs
+finis. Mesure (semaine du 09/11, les 279 lus) : 1 098 Mo → 323 Mo. `GC_FEEDS_CACHE` (autres semaines) inchangé.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
