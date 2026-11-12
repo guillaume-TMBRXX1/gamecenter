@@ -3365,6 +3365,16 @@ discuté, forme et spreads), avec des **questions** pour faire participer les su
 - **Tests** : `moteur/tests/test_actualites.py` (quotas, matchs terminés seulement, textes propres, même édition à
   chaque calcul ; au serveur, rien d'un match pas fini à l'heure donnée, réponses, limite, interrupteur, onglet).
 
+### 110. Un adversaire sur le porteur quand il s'arrête (passes longues, interceptions) (12/11/2026)
+Sur une passe longue ou un retour d'interception, le porteur s'arrêtait souvent sans personne près de lui : le plaqueur
+de la simulation, tenu à `FL_VMAX`, n'arrivait pas à temps, et aucun joueur de l'attaque n'était dessiné sur l'auteur
+de l'interception (27 cas sur 90 à plus de 2,5 yards, jusqu'à 16, sur la semaine du 09/11). `tackleOnStop` (fin de
+`planFromFeed`, hors touchdown et sortie en touche) : si aucun adversaire n'est à 1,6 yard du porteur quand il
+s'arrête, celui qui peut y arriver le plus facilement (depuis la réception, l'interception ou la remise) quitte son
+chemin à temps, à `TK_VMAX` = 2 × `FL_VMAX` au plus, et reste sur lui ; l'attraction de la poursuite ne l'en écarte
+plus. Résultat : 1 cas sur 90 (2,7 yards). `test_actions` : passes de 15 yards et plus et interceptions, 95 % à
+2,5 yards au plus.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
