@@ -35,6 +35,7 @@ from moteur import rivalites as _riv
 from moteur import empreinte as _emp
 from moteur import recap_semaine as _rev
 from moteur import supporters as _fo
+from moteur import draft as _dr
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 
@@ -1779,8 +1780,8 @@ def fans_counts(week, team=None):
     """{équipe: {option: votes}} pour la semaine (lundi où le choix s'applique)."""
     out = defaultdict(dict)
     with db() as c:
-        sql = "SELECT team, choice, COUNT(*) n FROM fan_votes WHERE week=?" + (" AND team=?" if team else "") + \
-              " GROUP BY team, choice"
+        sql = "SELECT team, choice, COUNT(*) n FROM fan_votes WHERE week=? AND lever NOT LIKE 'draft:%'" + \
+              (" AND team=?" if team else "") + " GROUP BY team, choice"
         for r in c.execute(sql, (week, team) if team else (week,)):
             out[r["team"]][r["choice"]] = r["n"]
     return out
@@ -2002,7 +2003,16 @@ def fans_export(week):
         r = fans_result(counts.get(a, {}), opts)
         if r["votes"]:
             teams[a] = {"choice": r["choice"], "votes": r["votes"], "counts": r["counts"]}
-    return w, {"version": 1, "week": week, "lever": fv["lever"], "closed_at": _iso(w.lock), "teams": teams}
+    doc = {"version": 1, "week": week, "lever": fv["lever"], "closed_at": _iso(w.lock), "teams": teams}
+    d = w.doc.get("draft") or {}                      # FO-6 : les choix de la draft (moteur/draft.py, lire_choix)
+    if d.get("for_week") == week and d.get("announcements"):
+        doc["draft"] = {}
+        for a in d["announcements"]:
+            r = draft_result(a, draft_counts(week, a["id"]))
+            if r["votes"]:
+                top = max(DRAFT_PROFILS, key=lambda p: r["counts"][p])
+                doc["draft"][a["id"]] = {"team": a["team"], "choice": top, "votes": r["votes"], "counts": r["counts"]}
+    return w, doc
 
 
 @app.get("/api/admin/fans")
@@ -2028,6 +2038,203 @@ def api_admin_fans(key: str = "", week: str = "", request: Request = None):
         raise HTTPException(409, "not_closed")
     return doc
 
+
+# ------------------------------------------------------------------ Front office FO-6 : la draft des supporters
+# Quand un titulaire part à la retraite, le moteur l'annonce au calcul de la semaine (week.json → draft, FO-5) avec trois
+# prospects. Décisions de Guillaume (12/11) : la draft s'ouvre le jour du verrou (vendredi) à DRAFT_OUVERTURE, heure de
+# Bruxelles, et ferme au verrou (23:30) ; avant l'ouverture, seuls le retraité et les profils des prospects sont
+# publics (pas les noms ni les notes) ; votent les supporters de la franchise (mêmes règles que le vote de la semaine) ;
+# une ligne fan_votes par départ (levier « draft:<id> », semaine = lundi où le prospect arrive). Après le verrou :
+# parts du vote ; l'export /api/admin/fans ajoute le bloc « draft » lu par le moteur (moteur/draft.py, lire_choix).
+# « Remind me when it opens » : une cloche (push_bells, jeu « draft ») -> Web Push à l'ouverture.
+DRAFT_OUVERTURE = (12, 0)
+DRAFT_RAPPEL_FENETRE = 60 * 60 * 1000                 # un rappel envoyé dans l'heure qui suit l'ouverture
+DRAFT_PROFILS = _dr.PROFILS
+
+
+def draft_fenetre(w):
+    """(ouverture, fermeture) en ms : le jour du verrou à DRAFT_OUVERTURE, puis le verrou."""
+    j = datetime.fromtimestamp(w.lock / 1000, TZ)
+    o = j.replace(hour=DRAFT_OUVERTURE[0], minute=DRAFT_OUVERTURE[1], second=0, microsecond=0)
+    return int(o.timestamp() * 1000), w.lock
+
+
+def draft_phase(w, t):
+    o, f = draft_fenetre(w)
+    return "announced" if t < o else "open" if t < f else "closed"
+
+
+def draft_semaine(t=None):
+    """(semaine en cours, annonces, lundi où les prospects arrivent)."""
+    w = current_week(t)
+    d = (w.doc.get("draft") or {}) if w else {}
+    return w, list(d.get("announcements") or []), d.get("for_week")
+
+
+def draft_counts(week, pid):
+    with db() as c:
+        return {r["choice"]: r["n"] for r in c.execute(
+            "SELECT choice, COUNT(*) n FROM fan_votes WHERE week=? AND lever=? GROUP BY choice", (week, "draft:" + pid))}
+
+
+def draft_result(a, counts):
+    """Votes, parts, prospect retenu et source : la règle du moteur (moteur/draft.py, choix_supporters)."""
+    counts = {p: int(counts.get(p, 0)) for p in DRAFT_PROFILS}
+    n = sum(counts.values())
+    top = max(DRAFT_PROFILS, key=lambda p: counts[p]) if n else None
+    choice, source, _ = _dr.choix_supporters(a, {"choice": top, "votes": n, "counts": counts} if n else None)
+    return {"votes": n, "counts": counts, "pct": {p: (round(100 * v / n) if n else 0) for p, v in counts.items()},
+            "choice": choice, "source": source, "coordinator": a.get("coordinator")}
+
+
+def _draft_public(a, phase, counts=None):
+    """Une annonce telle que le site la voit : avant l'ouverture, les profils seulement (ni noms ni notes)."""
+    out = {k: a.get(k) for k in ("id", "team", "pos", "retired", "age", "ovr", "seasons", "ratings", "iq", "week")}
+    if phase == "announced":
+        out["prospects"] = [{"profile": p["profile"], "label": p["label"]} for p in a.get("prospects") or []]
+    else:
+        out["prospects"] = [{k: p.get(k) for k in ("profile", "label", "name", "age", "ovr", "potential", "dev",
+                                                    "ratings", "iq")} for p in a.get("prospects") or []]
+    if phase == "closed" and counts is not None:
+        out["result"] = draft_result(a, counts)
+    return out
+
+
+def _draft_eligible(p, w, a):
+    if not p or not p.get("login"):
+        return "account_required"
+    if not p.get("fav_team"):
+        return "no_team"
+    if p["fav_team"] != a["team"]:
+        return "not_your_team"
+    if p.get("fav_team_at") and p["fav_team_at"] >= w.monday:
+        return "team_changed"
+    return None
+
+
+def _draft_precedente(cur, team):
+    """La draft de la semaine d'avant (révélation du lundi) pour `team` : annonces, parts, prospect arrivé."""
+    prev = [w for w in load_weeks().values() if w.monday < cur.monday
+            and (w.doc.get("draft") or {}).get("for_week") == cur.start]
+    if not prev:
+        return None
+    pw = max(prev, key=lambda x: x.monday)
+    arrives = {d.get("id"): d for d in cur.doc.get("drafted") or []}
+    out = []
+    for a in (pw.doc["draft"].get("announcements") or []):
+        if a.get("team") != team:
+            continue
+        x = _draft_public(a, "closed", draft_counts(cur.start, a["id"]))
+        x["drafted"] = arrives.get(a["id"])
+        out.append(x)
+    return {"week": cur.start, "index": cur.doc["week"].get("index"), "drafts": out} if out else None
+
+
+@app.get("/api/draft")
+def api_draft(token: str = ""):
+    """La draft de ma franchise cette semaine (annonce, prospects à l'ouverture, parts après le verrou), mon choix, ma
+    cloche, et la draft de la semaine d'avant (révélation du lundi)."""
+    _fo_need()
+    t = now_ms()
+    p = player_by_token(token) if token else None
+    team = p.get("fav_team") if p else None
+    w, anns, for_week = draft_semaine(t)
+    out = {"enabled": True, "now": t, "team": team, "account": bool(p and p.get("login")), "drafts": [],
+           "phase": None, "previous": _draft_precedente(w, team) if (w and team) else None, "reminder": False}
+    if out["previous"] and p and p.get("login"):
+        with db() as c:
+            out["previous"]["my_picks"] = {r["lever"][6:]: r["choice"] for r in c.execute(
+                "SELECT lever, choice FROM fan_votes WHERE player=? AND week=? AND lever LIKE 'draft:%'", (p["id"], w.start))}
+    if not w or not anns:
+        return out
+    o, f = draft_fenetre(w)
+    phase = draft_phase(w, t)
+    mine = [a for a in anns if a.get("team") == team]
+    out.update(week=for_week, opens_at=_iso(o), closes_at=_iso(f), phase=phase, league=len(anns),
+               drafts=[_draft_public(a, phase, draft_counts(for_week, a["id"]) if phase == "closed" else None)
+                       for a in mine])
+    if mine:
+        out["reason"] = _draft_eligible(p, w, mine[0])
+    if p:
+        with db() as c:
+            out["my_picks"] = {r["lever"][6:]: r["choice"] for r in c.execute(
+                "SELECT lever, choice FROM fan_votes WHERE player=? AND week=? AND lever LIKE 'draft:%'",
+                (p["id"], for_week))} if p.get("login") else {}
+            out["reminder"] = bool(c.execute("SELECT 1 FROM push_bells WHERE player=? AND week=? AND game='draft'",
+                                             (p["id"], w.start)).fetchone())
+    return out
+
+
+@app.post("/api/draft/vote")
+async def api_draft_vote(req: Request):
+    """{token, id, choice} : choisit (ou change) le prospect d'un départ de sa franchise, pendant la fenêtre."""
+    _fo_need()
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    t = now_ms()
+    w, anns, for_week = draft_semaine(t)
+    a = next((x for x in anns if x.get("id") == str(body.get("id") or "")), None)
+    if not w or not a:
+        raise HTTPException(404, "unknown_draft")
+    phase = draft_phase(w, t)
+    if phase != "open":
+        raise HTTPException(409, "draft_not_open" if phase == "announced" else "draft_closed")
+    why = _draft_eligible(p, w, a)
+    if why:
+        raise HTTPException(403 if why == "account_required" else 409, why)
+    choice = str(body.get("choice") or "")
+    if choice not in DRAFT_PROFILS:
+        raise HTTPException(400, "unknown_choice")
+    keys = (("fanvote", p["id"]), FAN_VOTE_MAX_JOUEUR), (("fanvoteip", _ip(req)), FAN_VOTE_MAX_IP)
+    if _too_many_fails(*keys):
+        raise HTTPException(429, "too_many_attempts")
+    _note_fail(*(k for k, _ in keys))
+    with _db_lock, db() as c:
+        c.execute("INSERT INTO fan_votes(player, week, team, lever, choice, at) VALUES(?,?,?,?,?,?) "
+                  "ON CONFLICT(player, week, lever) DO UPDATE SET team=excluded.team, choice=excluded.choice, at=excluded.at",
+                  (p["id"], for_week, a["team"], "draft:" + a["id"], choice, t))
+    return {"ok": True, "id": a["id"], "my_pick": choice, "closes_at": _iso(w.lock)}
+
+
+@app.post("/api/draft/remind")
+async def api_draft_remind(req: Request):
+    """{token, on} : « Remind me when it opens » (Web Push à l'ouverture de la draft de cette semaine)."""
+    _fo_need()
+    body = await _json(req)
+    p = _push_player(body)
+    t = now_ms()
+    w, anns, _ = draft_semaine(t)
+    if not w or not anns or draft_phase(w, t) != "announced":
+        raise HTTPException(409, "no_upcoming_draft")
+    with _db_lock, db() as c:
+        if body.get("on"):
+            c.execute("INSERT OR IGNORE INTO push_bells(player, week, game) VALUES(?,?,?)", (p["id"], w.start, "draft"))
+        else:
+            c.execute("DELETE FROM push_bells WHERE player=? AND week=? AND game='draft'", (p["id"], w.start))
+    return {"ok": True, "on": bool(body.get("on")), "push": push_ok()}
+
+
+def draft_rappels_dus(t, subs, bells, sent):
+    """Rappels de draft à envoyer à l'instant t (fonction pure) : dans l'heure qui suit l'ouverture, aux appareils des
+    joueurs qui ont demandé « Remind me ». Renvoie [(sub, semaine, annonces de sa franchise)]."""
+    w, anns, _ = draft_semaine(t)
+    if not w or not anns:
+        return []
+    o, _f = draft_fenetre(w)
+    if not o <= t < min(o + DRAFT_RAPPEL_FENETRE, w.lock):
+        return []
+    return [(s, w, [a for a in anns if a.get("team") == s.get("fav_team")]) for s in subs
+            if (s["player"], w.start, "draft") in bells and (s["endpoint"], w.start, "draft") not in sent]
+
+
+def draft_rappel_texte(w, mine):
+    noms = [a["retired"] for a in mine]
+    qui = f"{noms[0]}'s successor" if len(noms) == 1 else "the successors of " + " and ".join(noms) if noms else \
+        "the new rookies"
+    return {"title": "Draft day is open", "body": f"Pick {qui} until 23:30. One vote per account, free.",
+            "url": "/?myteam=draft", "tag": f"draft-{w.start}"}
 
 # ------------------------------------------------------------------ rappels avant le coup d'envoi (bloc 2, étape 6)
 # Web Push (standard des navigateurs) : le serveur prévient chaque appareil abonné RAPPEL_MIN minutes avant le coup
@@ -2129,6 +2336,20 @@ def push_tour(t=None):
         with _db_lock, db() as c:
             c.execute("INSERT OR IGNORE INTO push_sent(endpoint, week, game, at) VALUES(?,?,?,?)",
                       (s["endpoint"], w.start, g["id"], t))
+    if front_office_on():                            # FO-6 : « Remind me when it opens » (draft)
+        for s, w, mine in draft_rappels_dus(t, subs, bells, sent):
+            try:
+                ok = _push_envoyer(s, draft_rappel_texte(w, mine))
+            except Exception as e:
+                print("rappel de draft non envoyé :", str(e)[:200])
+                continue
+            if not ok:
+                _push_oublier(s["endpoint"])
+                continue
+            n += 1
+            with _db_lock, db() as c:
+                c.execute("INSERT OR IGNORE INTO push_sent(endpoint, week, game, at) VALUES(?,?,?,?)",
+                          (s["endpoint"], w.start, "draft", t))
     return n
 
 

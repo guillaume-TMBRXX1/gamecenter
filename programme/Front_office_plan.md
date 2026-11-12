@@ -145,13 +145,16 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
   prospect du coordinateur dans `players_next_week`, échangée la semaine suivante si les supporters en choisissent un
   autre. Fichier `GC_FANS` : bloc `draft` (`{id: {choice, votes, counts}}`), à produire par le serveur en FO-6.
 
-### FO-6 — Serveur et site : la draft *(serveur + site)*
+### FO-6 — Serveur et site : la draft *(serveur + site)* — ✅ 12/11 (README section 114)
 
 - Fenêtre lue dans `week.json` (proposition : **vendredi 12:00 → 23:30**) ; votes dans `fan_votes` (levier `draft`).
 - Onglet **Draft** dans My team, seulement quand une retraite de la franchise est annoncée : décompte (écran 2),
   puis les trois prospects (écran 3) ; « Remind me when it opens » (Web Push existant).
 - Lundi : fiche du rookie dans la révélation, badge « Drafted by the fans · W… » sur la fiche joueur et le roster.
 - Tests serveur et navigateur.
+
+- **Décisions du 12/11** : fenêtre vendredi 12:00 → 23:30 (profils seulement avant) ; Football IQ calculé pour tous
+  les postes (décision du QB, sinon OVR + 3 × bonus d'expérience) ; plusieurs départs : drafts l'une sous l'autre.
 
 ### FO-7 — Plus tard
 

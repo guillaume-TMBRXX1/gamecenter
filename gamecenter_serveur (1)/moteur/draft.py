@@ -92,12 +92,35 @@ def prospect(j, pid, semaines, cle, profil, noms, pris=()):
                 recrue={"semaine": cle, "remplace": j["name"], "profile": profil, "drafted_by_fans": False})
 
 
-def resume(r, semaines):
-    """Ce que le site montre d'un prospect : nom, âge, OVR, potentiel (OVR de base + potentiel), rythme."""
+IQ_POINTS = 3.0                    # FO-6 (décision du 12/11) : Football IQ = OVR + 3 points par point de bonus d'expérience
+
+
+def bonus_iq_estime(j, etat):
+    """Bonus d'expérience qu'aurait `j` dans la ligue de `etat` (developpement.stabiliser : IQ_K × (apprentissage −
+    moyenne du groupe), borné) ; la moyenne des titulaires de son groupe d'intelligence, ou de tous les titulaires."""
+    g = D.IQ_GROUPE.get(j["pos"])
+    xs = [x.get("apprentissage", 0.0) for x in (etat or {}).get("joueurs", {}).values()
+          if not x.get("banc") and (g is None or D.IQ_GROUPE.get(x["pos"]) == g)]
+    m = sum(xs) / len(xs) if xs else 0.0
+    return max(-D.IQ_MAX, min(D.IQ_MAX, D.IQ_K * (j.get("apprentissage", 0.0) - m)))
+
+
+def football_iq(j, bonus=None):
+    """La note « Football IQ » du site (40-99) : la décision d'un QB, sinon OVR + IQ_POINTS × bonus d'expérience."""
+    n = D.notes_effectives(j)
+    if "decision_making" in n:
+        return int(n["decision_making"])
+    b = j.get("bonus_iq", 0.0) if bonus is None else bonus
+    return int(max(D.NOTE_MIN, min(D.NOTE_MAX, round(D.ovr(n) + IQ_POINTS * b))))
+
+
+def resume(r, semaines, etat=None):
+    """Ce que le site montre d'un prospect : nom, âge, OVR, potentiel (OVR de base + potentiel), rythme, notes,
+    Football IQ (avec le bonus d'expérience qu'il aurait dans la ligue de `etat`)."""
     o = D.ovr(D.notes_effectives(r))
     return {"name": r["name"], "age": int(D.age(r, semaines)), "ovr": o, "dev": r["dev"],
             "potential": min(D.NOTE_MAX, int(D.ovr(r["base"]) + r["potentiel"] + 0.5)),
-            "ratings": D.notes_effectives(r)}
+            "ratings": D.notes_effectives(r), "iq": football_iq(r, bonus_iq_estime(r, etat) if etat else 0.0)}
 
 
 def choix_coordinateur(pid, team, pos, cle):
@@ -126,7 +149,8 @@ def annonceur(noms_ligue=False):
         coord = choix_coordinateur(pid, j["team"], j["pos"], cle)
         annonce = {"id": pid, "team": j["team"], "pos": j["pos"], "retired": j["name"],
                    "age": int(D.age(j, s)), "ovr": D.ovr(D.notes_effectives(j)), "week": cle, "coordinator": coord,
-                   "prospects": [{"profile": p, "label": LABELS[p], **resume(r, s), "player": r}
+                   "ratings": D.notes_effectives(j), "iq": football_iq(j), "seasons": len(j.get("historique") or []),
+                   "prospects": [{"profile": p, "label": LABELS[p], **resume(r, s, etat), "player": r}
                                  for p, r in zip(PROFILS, pr)]}
         return copy.deepcopy(pr[PROFILS.index(coord)]), annonce
     return draft

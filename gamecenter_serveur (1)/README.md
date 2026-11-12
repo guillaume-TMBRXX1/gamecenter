@@ -3260,6 +3260,64 @@ Draft) viennent en FO-6. Décisions de Guillaume (11/11) :
   - draft coupée (`GC_DRAFT=0`) : mêmes départs, recrues d'aujourd'hui, ni `draft` ni `drafted` ;
   - ≈ 620 s par semaine dans les trois cas (pas de coût) ; audit : 0 anomalie bloquante sur les trois semaines.
 
+### 114. Front office FO-6 : la draft des supporters sur le serveur et le site (12/11/2026)
+Plan : `programme/Front_office_plan.md`. Avec FO-5, **la draft fonctionne de bout en bout**. Le rendu suit les écrans
+validés sur l'iPad : le décompte, la draft ouverte et, dans la révélation du lundi, la carte du résultat et celle du
+rookie. Décisions de Guillaume (12/11) :
+- **Fenêtre** : le vendredi de la semaine, de 12:00 à 23:30 (heure de Bruxelles). Jusqu'à 12:00, on voit le décompte, le
+  retraité et les profils des prospects, sans noms ni notes. Les noms et les notes s'affichent à l'ouverture.
+- **Football IQ** : une ligne pour tous les postes, sur l'échelle 40-99. Pour un QB, c'est la note de décision. Pour les
+  autres, c'est l'OVR plus 3 points par point de bonus d'expérience : le bonus qu'aurait le prospect dans la ligue
+  (`moteur/draft.py` : `football_iq`, `bonus_iq_estime`). Le profil Football IQ ressort au-dessus des deux autres.
+- **Plusieurs départs** dans une franchise la même semaine : les drafts s'affichent l'une sous l'autre, chacune avec son
+  vote.
+
+Ce qui change :
+- **Serveur** (section « Front office FO-6 » de `serveur.py`) :
+  - `GET /api/draft?token=` renvoie :
+    - les annonces de ma franchise, filtrées selon la phase (`announced`, `open`, `closed`) ;
+    - mes choix (`my_picks`) et ma cloche (`reminder`) ;
+    - après le verrou, les parts (`result`, même règle que le moteur, `choix_supporters`) ;
+    - la draft de la semaine d'avant (`previous` : annonces, parts, `drafted`, mes choix), pour la révélation du lundi.
+  - `POST /api/draft/vote {token, id, choice}` enregistre un vote par départ dans `fan_votes`, avec le levier
+    `draft:<id>` et pour semaine le lundi où le prospect arrive. Le vote se change jusqu'au verrou. Votent les comptes
+    dont c'est la franchise favorite, tenue depuis le lundi.
+  - `POST /api/draft/remind {token, on}` sert à « Remind me when it opens » : une cloche dans `push_bells` (jeu
+    `draft`), puis un Web Push dans l'heure qui suit l'ouverture, une fois par appareil. Ouvrir la notification mène à
+    `/?myteam=draft`.
+  - L'export `/api/admin/fans` ajoute le bloc `draft` (`{id: {team, choice, votes, counts}}`), lu tel quel par le
+    moteur (`moteur/draft.py`, `lire_choix`).
+  - Les votes de draft ne comptent plus dans le vote de la semaine : `fans_counts` exclut les leviers `draft:`.
+- **Site** :
+  - My team a un onglet **Draft**, seulement quand un titulaire de la franchise part. Sa pastille montre le décompte
+    (« 1 d 16 h »), puis « Open », puis « Closed ».
+  - **Annoncée** : le bandeau violet (« Draft day · Friday 13 Nov · 12:00 → 23:30 », « Who replaces … ? », décompte
+    jours / heures / minutes, « Remind me when it opens »), la fiche du retraité (« Final season », OVR, saisons avec
+    la franchise, notes) et trois cartes verrouillées.
+  - **Ouverte** : « Pick …'s successor » et « Closes tonight 23:30 · 2 h 20 min ». Chaque prospect a son profil, son
+    nom, son âge, Now / Ceiling / Growth, ses notes avec Football IQ et sa phrase de profil. Le bouton « Draft
+    <nom> » devient « Draft <nom> instead » pour changer de choix ; « ✓ Your pick » marque le prospect voté.
+  - **Fermée** : les parts triées et « ✓ Your pick ». La raison s'affiche quand les coordinateurs choisissent (moins de
+    5 votes, égalité).
+  - **Lundi** (révélation du Front office) : la carte de la draft (« Draft · N votes », barres, « Joins the roster
+    today in …'s spot ») et la fiche du rookie (« Drafted by the fans · W… » ou « Coordinators' pick », et une courbe
+    de développement : maintenant, environ 6 semaines plus tard d'après les gains mesurés de chaque profil, plafond).
+  - L'écran du vote montre la carte « Draft day » dans la colonne de droite (décompte, ou « Pick now »).
+  - Le roster affiche le badge « Fans' pick », et la fiche joueur « Drafted by the fans · W… »
+    (`progression.rookie.drafted_by_fans`, ajouté par `developpement.resume_joueur`).
+  - Téléphone : une colonne ; sous 290 px de large, chaque libellé passe au-dessus de sa barre.
+- **Moteur** : les annonces gagnent `ratings`, `iq` et `seasons` pour le retraité, et `iq` pour chaque prospect. La
+  fiche joueur gagne `rookie.profile` et `rookie.drafted_by_fans`. Le service worker relaie `myteam` comme `watch`.
+- **Interrupteur** : `GC_FRONT_OFFICE=off` coupe les routes (404) et retire l'onglet.
+- **Tests** :
+  - `moteur/tests/test_draft_serveur.py` (8 tests) : la fenêtre ; rien de secret avant l'ouverture ; le vote (franchise,
+    compte, franchise changée, profil inconnu) ; les parts et l'export lu par le moteur ; moins de 5 votes ; le rappel
+    Web Push à l'ouverture, une seule fois ; la révélation du lundi ; l'interrupteur.
+  - `moteur/tests/test_draft.py` : Football IQ.
+  - `outils/site/test_draft.js` (27 contrôles), ajouté aux tests navigateur (groupe site) : jeudi, vendredi 13:00 (vote
+    enregistré puis changé), téléphone, samedi, lundi (révélation, rookie, badge), interrupteur, aucune erreur JS.
+  - `test_front_office.js` passe toujours.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3418,7 +3476,10 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | GET | `/api/fans?token=` | vote des supporters de ma franchise : question, mon vote, fermeture, résultat après le verrou, choix en vigueur (section 107) |
 | POST | `/api/fans/vote` | `{token, choice}` → vote ou change son vote jusqu'au verrou du vendredi (comptes, franchise favorite) |
 | GET | `/api/fans/results?team=&token=` | résultat de la dernière question fermée, une franchise ou toutes (après le verrou) ; `my_vote` avec `token` (section 111) |
-| GET | `/api/admin/fans?week=` | export `GC_FANS` pour le calcul du samedi (`GC_ADMIN_KEY` dans l'en-tête `X-Admin-Key` ou `?key=`, après le verrou ; section 110) |
+| GET | `/api/admin/fans?week=` | export `GC_FANS` pour le calcul du samedi, avec le bloc `draft` (`GC_ADMIN_KEY` dans l'en-tête `X-Admin-Key` ou `?key=`, après le verrou ; sections 110 et 114) |
+| GET | `/api/draft?token=` | draft de ma franchise : annonce, prospects à l'ouverture (vendredi 12:00), parts après le verrou, mes choix, la draft de la semaine d'avant (section 114) |
+| POST | `/api/draft/vote` | `{token, id, choice}` → choisit (ou change) le prospect d'un départ, vendredi 12:00 → 23:30 |
+| POST | `/api/draft/remind` | `{token, on}` → « Remind me when it opens » (Web Push à l'ouverture) |
 | GET | `/api/health`, `/api/time`, `/api/docs` | état, heure du serveur, documentation |
 
 ## Variables

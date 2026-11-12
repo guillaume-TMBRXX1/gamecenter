@@ -260,7 +260,10 @@ def resume_joueur(etat, pid):
             "iq_bonus": round(j.get("bonus_iq", 0.0), 1),
             "base": dict(b), "delta": {k: n[k] - b[k] for k in n},
             "history": [{"week": p["week"], "ovr": p["ovr"], "form": p["form"]} for p in j.get("historique", [])],
-            **({"rookie": {"week": j["recrue"]["semaine"], "replaces": j["recrue"]["remplace"]}} if j.get("recrue") else {})}
+            **({"rookie": dict({"week": j["recrue"]["semaine"], "replaces": j["recrue"]["remplace"]},
+                               **{k2: j["recrue"][k1] for k1, k2 in (("profile", "profile"),
+                                                                       ("drafted_by_fans", "drafted_by_fans"))
+                                  if k1 in j["recrue"]})} if j.get("recrue") else {})}
 
 
 # ------------------------------------------------------------------------------------------------------------------
