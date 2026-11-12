@@ -3346,7 +3346,10 @@ discuté, forme et spreads), avec des **questions** pour faire participer les su
     `news_votes`), invités compris ; 60 réponses en 15 min par joueur, 300 par adresse IP (`429 too_many_attempts`).
   - L'analyse d'un match terminé est gardée (elle ne change plus). L'édition est recalculée quand un match se
     termine ; la semaine d'avant, lue du disque (≈ 15 s), est calculée à côté. Au premier affichage de la page, un
-    fil la tient à jour chaque minute : aucun visiteur n'attend le calcul.
+    fil la tient à jour chaque minute : aucun visiteur n'attend le calcul. Sous le crochet des tests automatiques
+    (`GC_TEST_HOOK=1`), ni ce fil ni le badge (que la page demande 4 s après son chargement) ne calculent l'édition :
+    chacun des ≈ 50 serveurs des tests navigateur payait ce premier calcul pendant son test, et la suite dépassait ses
+    60 minutes. L'onglet se calcule toujours quand on l'ouvre ; `GC_NEWS_WARM=1` ou `0` force le choix.
   - Interrupteur `GC_NEWS=off` : les routes répondent 404 et le site n'affiche pas l'onglet.
 - **Site** : onglet « News » sous Live, avec un badge des articles des deux derniers jours pas encore vus (sur cet
   appareil). Sur téléphone, News prend la place de Standings dans la barre du bas (Standings passe dans More,

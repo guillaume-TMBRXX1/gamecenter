@@ -7657,7 +7657,7 @@ function newsInit(){
     if(t.closest('a,button:not([data-nw-open])')) return;
     const o=t.closest('[data-nw-open]'); if(o){ NEWS.open=o.dataset.nwOpen; renderNews(nowMs(),true); window.scrollTo({top:0}); } });
   document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('#viewNews article[data-nw-open]')){ e.preventDefault(); e.target.click(); } });
-  setTimeout(()=>newsFetch(),4000); setInterval(()=>{ if(!document.hidden) newsFetch(); },180000);
+  if(SERVER.news_badge!==false){ setTimeout(()=>newsFetch(),4000); setInterval(()=>{ if(!document.hidden) newsFetch(); },180000); }   /* badge (pas sous les tests automatiques) */
 }
 async function newsFetch(force){
   if(!NEWS_ON||NEWS.busy) return; if(!force&&NEWS.d&&Date.now()-NEWS.at<30000) return;

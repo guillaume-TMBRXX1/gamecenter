@@ -222,6 +222,24 @@ class TestServeurNews(unittest.TestCase):
             self.assertEqual(self.refus(self.vote, self.joueur(), "x", "yes")[0], 404)
 
 
+@unittest.skipIf(serveur is None, "serveur.py non importable")
+class TestPrechauffage(unittest.TestCase):
+    def essai(self, env):
+        with mock.patch.dict(os.environ, env), mock.patch.object(serveur, "_NEWS_CHAUD", {"on": False}), \
+                mock.patch.object(serveur.threading, "Thread") as T:
+            serveur.news_prechauffer()
+            return T.called
+
+    def test_pas_sous_le_crochet_des_tests(self):
+        sans = {k: v for k, v in os.environ.items() if k not in ("GC_TEST_HOOK", "GC_NEWS_WARM", "GC_NEWS")}
+        with mock.patch.dict(os.environ, sans, clear=True):
+            self.assertTrue(self.essai({}))                               # production : calcul à côté
+            self.assertFalse(self.essai({"GC_TEST_HOOK": "1"}))           # tests navigateur : rien en fond
+            self.assertTrue(self.essai({"GC_TEST_HOOK": "1", "GC_NEWS_WARM": "1"}))
+            self.assertFalse(self.essai({"GC_NEWS_WARM": "0"}))
+            self.assertFalse(self.essai({"GC_NEWS": "off"}))
+
+
 class TestPage(unittest.TestCase):
     def test_onglet_sur_le_site(self):
         html = open(os.path.join(RACINE, "gamecenter_source.html"), encoding="utf-8").read()

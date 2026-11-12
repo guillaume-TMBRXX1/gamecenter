@@ -986,6 +986,8 @@ def page(request: Request = None):
         srv["rivalries"] = _riv.table()
     if news_on():                                    # onglet News (section 115) : sans lui, la page ne le dessine pas
         srv["news"] = True
+        if not news_prechauffage_on():               # tests automatiques : pas de badge calculé à chaque page
+            srv["news_badge"] = False
     if week_review_on():                             # « Week in review », l'émission du week-end (section 92)
         srv["week_review"] = True
     if empreinte_on():                               # empreinte de jeu (section 89)
@@ -4074,10 +4076,21 @@ def news_edition(t=None):
 _NEWS_CHAUD = {"on": False}
 
 
+def news_prechauffage_on():
+    """Calcul de l'édition sans qu'on la demande : le fil à côté, et le badge que la page demande 4 s après son
+    chargement. GC_NEWS_WARM=1 / 0 force le choix ; sinon allumé, sauf sous le crochet des tests automatiques
+    (GC_TEST_HOOK=1) : chacun des ≈ 50 serveurs des tests navigateur payait le premier calcul (3 à 15 s de processeur)
+    pendant son test, et la suite dépassait ses 60 minutes. L'onglet, lui, se calcule toujours quand on l'ouvre."""
+    v = os.environ.get("GC_NEWS_WARM")
+    if v is not None:
+        return v.strip().lower() not in ("off", "0", "non", "no")
+    return os.environ.get("GC_TEST_HOOK") != "1"
+
+
 def news_prechauffer():
     """Au premier affichage de la page : l'édition est calculée à côté, puis tenue à jour chaque minute (un match qui se
     termine), pour qu'aucun visiteur n'attende le calcul (≈ 15 s pour deux semaines lues du disque)."""
-    if _NEWS_CHAUD["on"] or not news_on():
+    if _NEWS_CHAUD["on"] or not news_on() or not news_prechauffage_on():
         return
     _NEWS_CHAUD["on"] = True
 
