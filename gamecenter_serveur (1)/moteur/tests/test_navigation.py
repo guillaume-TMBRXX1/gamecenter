@@ -23,11 +23,13 @@ class TestNavigation(unittest.TestCase):
             self.assertIn(bout, self.html)
 
     def test_onglets_principaux_existent_dans_la_rail(self):
-        onglets = re.search(r"const NAV_TABS=\[([^\]]*)\]", self.html).group(1)
-        vues = re.findall(r"'(\w+)'", onglets)
-        self.assertEqual(len(vues), 4, "4 onglets + More : 5 cases sur un téléphone")
-        for v in vues:
-            self.assertIn(f'class="rail-btn" type="button" data-view="{v}"', self.html)
+        # avec News (section 115, bouton ajouté par newsInit) et sans (GC_NEWS=off)
+        avec, sans = re.search(r"const NAV_TABS=NEWS_ON\?\[([^\]]*)\]:\[([^\]]*)\]", self.html).groups()
+        for liste in (avec, sans):
+            vues = re.findall(r"'(\w+)'", liste)
+            self.assertEqual(len(vues), 4, "4 onglets + More : 5 cases sur un téléphone")
+            for v in vues:
+                self.assertTrue(f'class="rail-btn" type="button" data-view="{v}"' in self.html, v)
 
     def test_rail_hauteur_visible_et_sans_coupure(self):
         regle = re.search(r"\n  \.rail\{[^}]*\}", self.html).group(0)
@@ -43,7 +45,7 @@ class TestNavigation(unittest.TestCase):
         self.assertLess(bloc, self.html.index('<div class="ticker"'))
 
     def test_vues_synchronisees(self):
-        self.assertIn("navSync();\n  renderView(true);", self.html)
+        self.assertIn("  navSync();\n", self.html[self.html.index("function setView("):self.html.index("function setView(") + 2000])
         self.assertIn("navInit();", self.html)
 
 

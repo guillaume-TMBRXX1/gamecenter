@@ -3318,6 +3318,50 @@ Ce qui change :
     enregistré puis changé), téléphone, samedi, lundi (révélation, rookie, badge), interrupteur, aucune erreur JS.
   - `test_front_office.js` passe toujours.
 
+### 115. Onglet News : l'édition du jour, écrite d'après les matchs terminés (12/11/2026)
+**Demande de Guillaume (11/11)** : un onglet « News » façon newsletter sportive (blessures, rivalités, arbitrage
+discuté, forme et spreads), avec des **questions** pour faire participer les supporters, et un volume tenu.
+- **L'édition** (`actualites.py`, `edition()`) : une par jour de match (Bruxelles), d'après les matchs **terminés** de
+  la semaine en cours et de la précédente (jamais un match à venir ou en cours, ni une blessure d'un match pas fini).
+  Rubriques et quotas par jour :
+  - `upset` : la plus grosse surprise (vainqueur coté +150 ou plus), avec son joueur du match (1 au plus) ;
+  - `ref` : la pénalité du 4e quart-temps ou de la prolongation qui a le plus fait bouger la probabilité de victoire
+    dans un match fini à 7 points ou moins (écart de 8 au plus au moment du drapeau), avec la question
+    « Right call / Bad call » (1 au plus) ;
+  - `rivalry` : match à trophée quand le trophée change de mains ou se gagne pour la première fois ; garder le
+    trophée donne une brève (2 au plus) ;
+  - `injury` : blessure du jour de 3 semaines ou plus, ou d'un QB de 2 semaines ou plus (2 au plus) ;
+  - `playoff` : chaque demi-finale et la Grand Final (toujours) ;
+  - `ats`, `hot`, `cold` : spreads battus (6 matchs au moins) et séries de 4 au moins, un article chacune, réécrit
+    après chaque journée à partir du 2e jour ;
+  - `brief` : les autres blessures de 2 semaines ou plus, prolongations, blanchissages, victoires de 30 points ou
+    plus, trophées gardés (4 au plus).
+  Soit 5 à 12 éléments par jour. Textes en anglais, tournures fixées par l'identifiant du match (la même édition pour
+  tout le monde). L'analyse d'un match vient de `comptes_rendus.analyser` (joueur du match, plus bas, remontée),
+  les séries de `moteur/rivalites.py`.
+- **Serveur** :
+  - `GET /api/news?token=` renvoie l'édition (80 articles au plus), mes réponses, et les résultats des seules
+    questions auxquelles j'ai répondu ;
+  - `POST /api/news/vote {token, article, choice}` : une réponse par joueur et par question, modifiable (table
+    `news_votes`), invités compris ; 60 réponses en 15 min par joueur, 300 par adresse IP (`429 too_many_attempts`).
+  - L'analyse d'un match terminé est gardée (elle ne change plus). L'édition est recalculée quand un match se
+    termine ; la semaine d'avant, lue du disque (≈ 15 s), est calculée à côté. Au premier affichage de la page, un
+    fil la tient à jour chaque minute : aucun visiteur n'attend le calcul. Sous le crochet des tests automatiques
+    (`GC_TEST_HOOK=1`), ni ce fil ni le badge (que la page demande 4 s après son chargement) ne calculent l'édition :
+    chacun des ≈ 50 serveurs des tests navigateur payait ce premier calcul pendant son test, et la suite dépassait ses
+    60 minutes. L'onglet se calcule toujours quand on l'ouvre ; `GC_NEWS_WARM=1` ou `0` force le choix.
+  - Interrupteur `GC_NEWS=off` : les routes répondent 404 et le site n'affiche pas l'onglet.
+- **Site** : onglet « News » sous Live, avec un badge des articles des deux derniers jours pas encore vus (sur cet
+  appareil). Sur téléphone, News prend la place de Standings dans la barre du bas (Standings passe dans More,
+  section 112).
+  - Le fil : filtres (Injuries, Rivalries, Officiating, Spreads & form, My team), article principal du jour, cartes
+    avec un visuel tiré des données (courbe de probabilité de victoire et drapeau, fiche blessure, trophée et série,
+    barres des spreads, série de victoires), brèves par jour.
+  - La page d'un article : le texte, la question (les pourcentages s'affichent après la réponse), le prochain match
+    de chaque équipe avec ses cotes (ajout au ticket comme dans Schedule), le lien vers le compte rendu.
+- **Tests** : `moteur/tests/test_actualites.py` (quotas, matchs terminés seulement, textes propres, même édition à
+  chaque calcul ; au serveur, rien d'un match pas fini à l'heure donnée, réponses, limite, interrupteur, onglet).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
