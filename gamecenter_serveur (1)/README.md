@@ -3169,6 +3169,77 @@ Go for it, etc.). Captures de contrôle : `FO_CAPTURES=<dossier> node outils/sit
     vote », barre retenue), plus de bouton de vote ;
   - interrupteur coupé ; aucune erreur JS.
 
+### 112. Front office FO-5 : la draft des supporters dans le moteur (11/11/2026)
+Plan : `programme/Front_office_plan.md`. Moteur seulement : le serveur (votes, fenêtre du vendredi) et le site (onglet
+Draft) viennent en FO-6. Décisions de Guillaume (11/11) :
+- **Qui** : seulement les **titulaires** qui partent à la retraite. Un remplaçant du banc reçoit la recrue d'aujourd'hui.
+  D'après les âges de la semaine du 09/11, il y aura un titulaire vers la semaine du 23/11 (CTD_RB1), puis 8 à 13
+  titulaires par semaine à partir de janvier : la draft reste un événement, mais devient hebdomadaire.
+- **Prospects** : trois par départ. Chacun est tiré dans son propre flux (`prospect|<semaine>|<id>|<k>`), avec la base
+  du poste gardée (la référence de l'anti-inflation et du garde-fou d'équipe).
+
+  | Profil | Site | Âge | Sous la base (physique · technique · mental) | Potentiel | Rythme | Expérience |
+  |---|---|---|---|---|---|---|
+  | `pret` | Ready now | 23,5-25 | 0,5-2 · 1,5-3 · 2-4 | 3-5 | 20 % slow, 60 % normal, 20 % fast | 1 an |
+  | `potentiel` | High ceiling | 21-22 | 4-7 · 6-9 · 8-11 | 13-16 | 20 % normal, 50 % fast, 30 % star | aucune |
+  | `intelligence` | Football IQ | 22,5-24 | 4-6 · 2-4 · 0 à 2 **au-dessus** | 7-9 | comme `pret` | 1,5 an, apprentissage 3,5 (bonus d'intelligence) |
+
+  Mesure (titulaire qui joue tout, sans anti-inflation, OVR moins la base, semaines 0 → 6 → 12) : Ready now − 1,9 →
+  + 1,3 → + 2,4 ; High ceiling − 6,7 → + 0,8 → + 5,4 (il **rattrape Ready now en 7 semaines**) ; Football IQ − 4,0 →
+  + 0,3 → + 2,6 ; la recrue d'aujourd'hui − 5,0 → + 0,3 → + 3,4.
+- **Le coordinateur**, sans choix valable des supporters (moins de 5 votes, égalité en tête, profil inconnu) : selon
+  l'identité. SPK (effectif jeune) prend le gros potentiel, CTD (vétérans) le prêt, un QB le prêt. Les autres : un
+  tirage fixe par départ (`draft-coordinateur|<semaine>|<id>` : 50 % prêt, 30 % potentiel, 20 % IQ).
+- **Déroulé** :
+  - **Semaine N** (calcul du samedi, 14.1 `progression_fin_semaine`) : le titulaire qui part à la fin de N est annoncé
+    (`week.json → draft`) : sa « dernière saison », pendant laquelle on vote. Dans `players_next_week`, sa place est
+    déjà tenue par le **prospect du coordinateur**, garde-fou d'équipe appliqué avec lui. Sans vote, rien ne change
+    donc à la semaine suivante. Les départs ont lieu au même moment qu'aujourd'hui : la conséquence envisagée dans le
+    plan (« une retraite arrive une semaine plus tard ») n'a pas lieu d'être, car le calcul de N simule déjà toute la
+    semaine N.
+  - **Semaine N+1** (15.1 `draft_appliquer`, après la reprise des notes et **avant les cotes**) : exactement les
+    annoncés sont remplacés. Si les supporters ont choisi un autre prospect (fichier `GC_FANS`, bloc `draft`), il prend
+    la place, puis anti-inflation et garde-fou (`developpement.stabiliser`). `recrue.drafted_by_fans = true` quand les
+    supporters ont décidé, même s'ils ont pris le prospect du coordinateur. Le résultat va dans `week.json → drafted`.
+- **Formats** :
+  - `week.json → draft = {version, for_week, announcements: [{id, team, pos, retired, age, ovr, week, coordinator,
+    prospects: [{profile, label, name, age, ovr, dev, potential, ratings, player}]}]}` (`player` : l'état complet du
+    prospect, pour la semaine suivante) ;
+  - `week.json → drafted = [{id, team, pos, retired, profile, name, source ("fans" | "coordinators"), votes, coordinator}]` ;
+  - fichier `GC_FANS` (produit par le serveur en FO-6) : `"draft": {"CTD_RB1": {"choice": "potentiel", "votes": 14,
+    "counts": {"pret": 4, "potentiel": 8, "intelligence": 2}}}`, pour la semaine du fichier (`week`) ;
+  - joueur : `recrue = {semaine, remplace, profile, drafted_by_fans}`.
+- **Code** :
+  - `moteur/draft.py` : `PROFIL`, `prospect`, `resume`, `choix_coordinateur`, `annonceur`, `choix_supporters`,
+    `lire_choix`, `appliquer`, `controle` ;
+  - `moteur/developpement.py` : `retraites(…, draft=, annonces=)` et `semaine_suivante(…, draft=)`. La fin de
+    `semaine_suivante` (anti-inflation, intelligence, garde-fou) devient `stabiliser`, sans changement de résultat ;
+  - notebook : cellule **12.2 sextricies** (`progression_suivante`, `progression_fin_semaine`, `draft_appliquer`,
+    contrôles sur une copie de l'état), 15.1 (appel de `draft_appliquer`), 14.2 (export de `draft` et `drafted`).
+- **Interrupteur** : `GC_DRAFT=0` remet les retraites et recrues d'aujourd'hui, sans `draft` ni `drafted`.
+- **Audit** (`audit_moteur.py`, `check_draft`) :
+  - les annonces : trois profils dans l'ordre, la base gardée, des noms distincts, des titulaires seulement, la place
+    tenue par le prospect du coordinateur ;
+  - `drafted` : la source, au moins 5 votes pour un choix des supporters, le prospect au roster de la franchise.
+- **Tests** : `moteur/tests/test_draft.py` (15 tests) :
+  - les profils, le déterminisme et les flux ;
+  - le choix du coordinateur (répartition 50 / 30 / 20) et celui des supporters (minimum, égalité, profil en tête) ;
+  - l'annonce (titulaires seulement, banc avec la recrue d'aujourd'hui), sans draft à l'identique ;
+  - l'application (autre profil : garde-fou tenu ; même profil : rien d'autre ne bouge ; sans fichier ; place
+    inattendue) ;
+  - 40 semaines enchaînées : autant de départs que sans draft, à quelques départs par déclin près ;
+  - le rattrapage du gros potentiel en 6 à 8 semaines ; l'audit.
+- **Essai avec le notebook** (copie des données, semaine du 09/11 avec trois titulaires et un remplaçant vieillis pour
+  partir à la fin de la semaine du 16/11, cotes à 20 simulations, `GC_LEGER=1` comme le calcul du samedi) :
+  - semaine du 16/11 : CTX_WR1, SPK_CB1 et VEC_QB1 annoncés avec leurs trois prospects ; GLT_LB4 (banc) reçoit la
+    recrue d'aujourd'hui ; dans `players_next_week`, chaque place est tenue par le prospect du coordinateur (SPK : le
+    gros potentiel, QB : le prêt) ;
+  - semaine du 23/11, avec un fichier de choix : CTX (11 votes) prend « High ceiling » à la place du prospect du
+    coordinateur, au roster et `drafted_by_fans` ; SPK (3 votes) et VEC (égalité 4-4) gardent celui du coordinateur ;
+    CTD_RB1 est annoncé tout seul, comme prévu par les âges ;
+  - draft coupée (`GC_DRAFT=0`) : mêmes départs, recrues d'aujourd'hui, ni `draft` ni `drafted` ;
+  - ≈ 620 s par semaine dans les trois cas (pas de coût) ; audit : 0 anomalie bloquante sur les trois semaines.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3351,7 +3422,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 112) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 
