@@ -125,7 +125,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 
 **À la fin de FO-4, le vote fonctionne de bout en bout** : première semaine utilisable par le public.
 
-### FO-5 — Moteur : la draft *(notebook + module)*
+### FO-5 — Moteur : la draft *(notebook + module)* — ✅ 12/11 (README section 113)
 
 - **Annonce** : au calcul de la semaine N, les joueurs qui partiront à la fin de N sont annoncés
   (`week.json → draft`). Au calcul de N+1, **exactement les annoncés partent** (une promesse faite aux supporters ne
@@ -139,6 +139,11 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 - Mesures : force des franchises et garde-fou inchangés sur plusieurs semaines enchaînées ; nombre de retraites par
   semaine inchangé en moyenne ; progression des trois profils (le « gros potentiel » doit rattraper en 6 à 8 semaines).
 - Tests : `moteur/tests/test_draft.py`.
+- **Décisions du 11/11** : titulaires seulement (le banc garde la recrue d'aujourd'hui) ; réglages des trois profils
+  validés ; coordinateur selon l'identité (SPK gros potentiel, CTD et QB prêt, sinon 50 / 30 / 20). Annonce : le
+  départ a lieu au même moment qu'aujourd'hui (le calcul de N simule toute la semaine N) ; la place est tenue par le
+  prospect du coordinateur dans `players_next_week`, échangée la semaine suivante si les supporters en choisissent un
+  autre. Fichier `GC_FANS` : bloc `draft` (`{id: {choice, votes, counts}}`), à produire par le serveur en FO-6.
 
 ### FO-6 — Serveur et site : la draft *(serveur + site)*
 

@@ -613,52 +613,36 @@ def recrue(j, pid, semaines, cle, noms, pris=()):
                 **({"banc": RECRUE_BANC} if j.get("banc") else {}))
 
 
-def retraites(etat, cle, noms, ligue=False):
+def retraites(etat, cle, noms, ligue=False, draft=None, annonces=None):
     """Remplace (en place) les joueurs qui partent par une recrue ; renvoie les mouvements (week.json).
-    ligue (étape 7.3, avec le banc) : le nom de la recrue n'est porté par personne dans la ligue (sinon : dans l'équipe)."""
+    ligue (étape 7.3, avec le banc) : le nom de la recrue n'est porté par personne dans la ligue (sinon : dans l'équipe).
+    draft (FO-5, moteur/draft.py) : draft(etat, pid, j, cle, noms, pris) -> (remplaçant, annonce) pour un TITULAIRE qui
+    part — le remplaçant est le prospect choisi par le coordinateur, l'annonce (week.json → draft) est ajoutée à
+    `annonces` ; les remplaçants du banc gardent la recrue d'aujourd'hui."""
     mouv = []
     for pid in sorted(etat["joueurs"]):
         j = etat["joueurs"][pid]
         if not doit_partir(j, etat["semaines"]):
             continue
         pris = {x["name"] for x in etat["joueurs"].values() if ligue or x["team"] == j["team"]}
-        r = recrue(j, pid, etat["semaines"], cle, noms, pris)
-        mouv.append({"id": pid, "team": j["team"], "pos": j["pos"], "retired": j["name"],
-                     "age": int(age(j, etat["semaines"])), "ovr": ovr(notes_effectives(j)), "rookie": r["name"],
-                     "rookie_age": int(age(r, etat["semaines"])), "rookie_ovr": ovr(notes_effectives(r))})
+        a = None
+        if draft is not None and not j.get("banc"):
+            r, a = draft(etat, pid, j, cle, noms, pris)
+            if annonces is not None:
+                annonces.append(a)
+        else:
+            r = recrue(j, pid, etat["semaines"], cle, noms, pris)
+        mouv.append(dict({"id": pid, "team": j["team"], "pos": j["pos"], "retired": j["name"],
+                          "age": int(age(j, etat["semaines"])), "ovr": ovr(notes_effectives(j)), "rookie": r["name"],
+                          "rookie_age": int(age(r, etat["semaines"])), "rookie_ovr": ovr(notes_effectives(r))},
+                         **({"draft": True} if a else {})))
         etat["joueurs"][pid] = r
     return mouv
 
 
-def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, index=None, bilans=None,
-                     lundi_suivant=None, recrues=None, noms_ligue=False):
-    """État au début de la semaine suivante, d'après la semaine jouée. Ne modifie pas `etat`.
-
-    stats_joueurs : {pid: ligne de season_stats} · stats_equipes : {équipe: ligne d'équipe} · bilans : {équipe: % de
-    victoires} · unites(équipe, {pid: notes}) -> notes d'unité (garde-fou d'équipe ; None : pas de garde) ·
-    index : n° de la semaine jouée (clé du flux aléatoire) · recrues : (prénoms, noms) pour nommer les recrues
-    (étape 6 ; None : pas de retraites, comportement du bloc E) · noms_ligue : recrues nommées sans doublon dans la ligue
-    (étape 7.3). Renvoie (nouvel_etat, rapport)."""
-    import copy
-    E = copy.deepcopy(etat)
-    cle = index if index is not None else E["semaines"] + 1
-    perf = performances(E, stats_joueurs, stats_equipes, bilans)
-    avant = {pid: ovr(notes_effectives(j)) for pid, j in E["joueurs"].items()}
-    for pid in sorted(E["joueurs"]):
-        j = E["joueurs"][pid]
-        rng = _rng("progression", cle, pid)
-        participation, z = perf[pid]
-        a = age(j, E["semaines"]) + 0.5 / SEMAINES_PAR_AN       # milieu de la semaine écoulée
-        for k in sorted(j["actuelle"]):
-            j["actuelle"][k] += delta_note(j, k, a, participation, rng)
-        j["forme"] = max(-FORME_MAX, min(FORME_MAX, FORME_INERTIE * j["forme"] + FORME_PERF * z
-                                         + rng.gauss(0.0, FORME_BRUIT)))
-        j["apprentissage"] = j.get("apprentissage", 0.0) + participation / (1.0 + j["carriere"] / 3.0)
-        j["carriere"] = round(j["carriere"] + participation / SEMAINES_PAR_AN, 3)
-        _borner_actuelle(j)
-    E["semaines"] += 1
-    E["derniere"] = cle
-    mouvements = retraites(E, cle, recrues, noms_ligue) if recrues else []
+def stabiliser(E, unites=None):
+    """Après la progression et les retraites (ou une draft, FO-5) : anti-inflation de la ligue, forme recentrée,
+    expérience -> intelligence (relative au groupe), arrondis, garde-fou d'équipe. Modifie E ; renvoie (dérive, garde)."""
     derive = _renormaliser(E)
     _recentrer_forme(E)
     # expérience -> intelligence : relative au groupe (somme nulle)
@@ -686,10 +670,46 @@ def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, 
                 j["actuelle"] = {k: round(v, 3) for k, v in j["actuelle"].items()}
                 j["forme"] = round(j["forme"], 2)
         garde = _garde_equipe(E, unites) or garde
+    return derive, garde
+
+
+def semaine_suivante(etat, stats_joueurs=None, stats_equipes=None, unites=None, index=None, bilans=None,
+                     lundi_suivant=None, recrues=None, noms_ligue=False, draft=None):
+    """État au début de la semaine suivante, d'après la semaine jouée. Ne modifie pas `etat`.
+
+    stats_joueurs : {pid: ligne de season_stats} · stats_equipes : {équipe: ligne d'équipe} · bilans : {équipe: % de
+    victoires} · unites(équipe, {pid: notes}) -> notes d'unité (garde-fou d'équipe ; None : pas de garde) ·
+    index : n° de la semaine jouée (clé du flux aléatoire) · recrues : (prénoms, noms) pour nommer les recrues
+    (étape 6 ; None : pas de retraites, comportement du bloc E) · noms_ligue : recrues nommées sans doublon dans la ligue
+    (étape 7.3) · draft (FO-5) : voir retraites ; les annonces vont dans rapport["draft"]. Renvoie (nouvel_etat, rapport)."""
+    import copy
+    E = copy.deepcopy(etat)
+    cle = index if index is not None else E["semaines"] + 1
+    perf = performances(E, stats_joueurs, stats_equipes, bilans)
+    avant = {pid: ovr(notes_effectives(j)) for pid, j in E["joueurs"].items()}
+    for pid in sorted(E["joueurs"]):
+        j = E["joueurs"][pid]
+        rng = _rng("progression", cle, pid)
+        participation, z = perf[pid]
+        a = age(j, E["semaines"]) + 0.5 / SEMAINES_PAR_AN       # milieu de la semaine écoulée
+        for k in sorted(j["actuelle"]):
+            j["actuelle"][k] += delta_note(j, k, a, participation, rng)
+        j["forme"] = max(-FORME_MAX, min(FORME_MAX, FORME_INERTIE * j["forme"] + FORME_PERF * z
+                                         + rng.gauss(0.0, FORME_BRUIT)))
+        j["apprentissage"] = j.get("apprentissage", 0.0) + participation / (1.0 + j["carriere"] / 3.0)
+        j["carriere"] = round(j["carriere"] + participation / SEMAINES_PAR_AN, 3)
+        _borner_actuelle(j)
+    E["semaines"] += 1
+    E["derniere"] = cle
+    annonces = []
+    mouvements = retraites(E, cle, recrues, noms_ligue, draft, annonces) if recrues else []
+    derive, garde = stabiliser(E, unites)
     rapport = rapport_semaine(E, avant, unites, garde, derive)
     rapport["semaine_jouee"] = cle
     if recrues:
         rapport["retirements"] = mouvements
+    if draft is not None:
+        rapport["draft"] = annonces
     if lundi_suivant:
         rapport["pour_la_semaine"] = lundi_suivant
     return E, rapport

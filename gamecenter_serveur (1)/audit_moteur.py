@@ -36,6 +36,10 @@ try:                                    # Front office FO-1 : les leviers des su
     from moteur import supporters as _fo
 except Exception:
     _fo = None
+try:                                    # Front office FO-5 : la draft
+    from moteur import draft as _dr
+except Exception:
+    _dr = None
 
 BLOQUANT, ALERTE = "BLOQUANT", "ALERTE"
 
@@ -447,6 +451,7 @@ def check_week(A, folder):
     check_infirmerie(A, name, w)
     check_fans(A, name, w)
     check_fans_fichier(A, name, w, folder)
+    check_draft(A, name, w)
     porteurs = Counter(nom for nom, _ in tous_noms)
     doublons = sorted(nom for nom, _ in banc_noms if porteurs[nom] > 1)
     if doublons:
@@ -542,6 +547,34 @@ def check_fans(A, name, w):
         avant = ((adj.get(t) or {}).get("before") or {}).get(r.get("setting"))
         if avant is not None and avant != r.get("coordinator"):
             bad(f"{t} : choix reporté dans l'ajustement hebdomadaire ({r.get('setting')} {avant} ≠ {r.get('coordinator')})")
+
+
+def check_draft(A, name, w):
+    """FO-5 : week.json → draft (titulaires annoncés : trois prospects, base gardée, place tenue par le prospect du
+    coordinateur dans players_next_week) et → drafted (la draft de la semaine d'avant appliquée : un prospect par
+    annonce, au roster de la franchise ; choix des supporters avec au moins MIN_VOTES votes). Semaine sans draft : rien."""
+    bad = lambda m: A.add(BLOQUANT, name, None, None, f"draft : {m}")
+    if _dr is None:
+        return
+    if w.get("draft") is not None:
+        for m in _dr.controle((w["draft"] or {}).get("announcements"), w.get("players_next_week")):
+            bad(m)
+    roster = {}
+    for t, T in (w.get("teams") or {}).items() if isinstance(w.get("teams"), dict) else []:
+        for r in T.get("roster") or []:
+            roster[r.get("id")] = r.get("name")
+    for d in w.get("drafted") or []:
+        if d.get("source") not in ("fans", "coordinators"):
+            bad(f"{d.get('id')} : source {d.get('source')}")
+            continue
+        if d.get("profile") not in _dr.PROFILS:
+            bad(f"{d.get('id')} : profil {d.get('profile')}")
+        if d.get("source") == "fans" and (d.get("votes") or 0) < _dr.MIN_VOTES:
+            bad(f"{d.get('id')} : choix des supporters avec {d.get('votes')} votes")
+        if d.get("source") == "coordinators" and d.get("profile") != d.get("coordinator"):
+            bad(f"{d.get('id')} : coordinateur mais {d.get('profile')} ≠ {d.get('coordinator')}")
+        if roster and roster.get(d.get("id")) not in (None, d.get("name")):
+            bad(f"{d.get('id')} : {roster.get(d.get('id'))} au roster au lieu de {d.get('name')}")
 
 
 def check_fans_fichier(A, name, w, folder):
