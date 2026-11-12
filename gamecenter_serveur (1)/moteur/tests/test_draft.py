@@ -67,9 +67,31 @@ class TestProspect(unittest.TestCase):
         j = joueur_isole(age=35.0)
         r = dr.prospect(j, "AAA_WR1", 0, 1, "potentiel", NOMS)
         s = dr.resume(r, 0)
-        self.assertEqual(set(s), {"name", "age", "ovr", "dev", "potential", "ratings"})
+        self.assertEqual(set(s), {"name", "age", "ovr", "dev", "potential", "ratings", "iq"})
         self.assertLess(s["ovr"], dv.ovr(j["base"]))
         self.assertGreater(s["potential"], dv.ovr(j["base"]))
+
+
+class TestFootballIQ(unittest.TestCase):
+    """FO-6 (décision du 12/11) : la décision d'un QB, sinon OVR + 3 points par point de bonus d'expérience."""
+
+    def test_note(self):
+        qb = joueur_isole(pos="QB", notes=QB)
+        qb["actuelle"]["decision_making"] = 86.4
+        self.assertEqual(dr.football_iq(qb), 86)
+        wr = joueur_isole()
+        self.assertEqual(dr.football_iq(wr, 0.0), dv.ovr(dv.notes_effectives(wr)))
+        self.assertEqual(dr.football_iq(wr, 2.0), dv.ovr(dv.notes_effectives(wr)) + 6)
+        self.assertEqual(dr.football_iq(wr, 99.0), 99)
+
+    def test_profil_iq_au_dessus(self):
+        E = dv.etat_initial(ligue())
+        for j in E["joueurs"].values():
+            j["apprentissage"] = 1.8                                  # ligue d'expérience moyenne
+        j = E["joueurs"]["AAA_CB1"] if "AAA_CB1" in E["joueurs"] else next(x for x in E["joueurs"].values() if x["pos"] == "CB")
+        iq = {p: dr.resume(dr.prospect(j, "X_CB1", 0, 1, p, NOMS), 0, E)["iq"] for p in dr.PROFILS}
+        self.assertGreater(iq["intelligence"], iq["pret"])
+        self.assertGreater(iq["intelligence"], iq["potentiel"])
 
 
 class TestChoix(unittest.TestCase):
@@ -119,6 +141,9 @@ class TestAnnonce(unittest.TestCase):
             self.assertNotIn("profile", N["joueurs"][pid]["recrue"])
         for pid, a in annonces.items():
             self.assertTrue(partis[pid]["draft"])
+            self.assertEqual(set(a["ratings"]), set(E["joueurs"][pid]["base"]))       # notes de sa dernière semaine
+            self.assertEqual(a["seasons"], 0)
+            self.assertEqual(a["iq"], dv.ovr(a["ratings"]) + round(dr.IQ_POINTS * E["joueurs"][pid]["bonus_iq"]))
             self.assertEqual([p["profile"] for p in a["prospects"]], list(dr.PROFILS))
             self.assertEqual(N["joueurs"][pid]["recrue"]["profile"], a["coordinator"])
             self.assertEqual(partis[pid]["rookie"], N["joueurs"][pid]["name"])

@@ -322,6 +322,69 @@
     .fo-tm{min-width:62px;height:52px;font-size:22px}
     .fo-wrap{padding-bottom:84px}                     /* room for the "Bet slip" button */
   }
+  /* FO-6: My team › Draft — screens validated on the iPad */
+  .dr-tchip{display:inline-flex;align-items:center;height:20px;margin-left:8px;padding:0 8px;border-radius:999px;background:var(--l3);color:var(--ink-2);font:800 12px/1 var(--f-display);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+  .dr-tchip.open{background:#B8342B;color:#fff;text-transform:uppercase}.dr-tchip.off{background:var(--l3)}
+  .dr-wrap{--dr-acc:#5B3F9E;--dr-acc2:#7C5CC4}
+  :root[data-theme="dark"] .dr-wrap,:root[data-theme="dark"] .dr-aside{--dr-acc:#8F78D8;--dr-acc2:#A893E6}
+  .dr-hero{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:22px;align-items:center;padding:30px 34px;border-radius:24px;color:#fff;background:linear-gradient(120deg,#3B2A72 0%,#4D3590 55%,#6D4FB8 100%);box-shadow:0 18px 40px -22px rgba(59,42,114,.8)}
+  .dr-hero h2{margin:8px 0 10px;font:800 clamp(30px,4vw,52px)/.95 var(--f-display);text-transform:uppercase}
+  .dr-hero p{margin:0;font-size:15.5px;line-height:1.5;color:rgba(255,255,255,.88)}
+  .dr-eye{margin:0;font:700 12px/1.3 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+  .dr-hside{display:flex;flex-direction:column;gap:12px}
+  .dr-count{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .dr-count div{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
+  .dr-count b{font:800 44px/1 var(--f-display);font-variant-numeric:tabular-nums}.dr-count span{font:700 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8)}
+  .dr-remind{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;height:44px;padding:0 20px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.18);color:#fff;font:700 14.5px var(--f-ui);cursor:pointer}
+  .dr-remind svg{width:16px;height:16px}.dr-remind[aria-pressed="true"]{background:rgba(255,255,255,.3)}.dr-remind:disabled{opacity:.6;cursor:default}
+  .dr-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px}.dr-head .fo-hero{margin-bottom:0}
+  .dr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:stretch}
+  .dr-grid2{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+  .dr-card{display:flex;flex-direction:column;gap:8px;padding:22px 24px;text-align:left;font:inherit;color:var(--ink)}
+  .dr-card h3{margin:2px 0 0;font:800 clamp(26px,2.4vw,34px)/1 var(--f-display);text-transform:uppercase}
+  .dr-card h4{margin:auto 0 0;font:800 26px/1 var(--f-display);text-transform:uppercase}
+  .dr-final{align-self:flex-start;height:28px;display:inline-flex;align-items:center;padding:0 14px;border-radius:999px;background:#17181A;color:#fff;font:800 12px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase}
+  .dr-sub{margin:0;color:var(--ink-2);font-size:15px}
+  .dr-nums{display:flex;gap:10px 22px;margin:8px 0 4px;flex-wrap:wrap}.dr-old .dr-nums div:nth-child(2) b{white-space:nowrap;font-size:30px}.dr-nums>span,.dr-nums>div{display:flex;flex-direction:column;gap:2px}
+  .dr-nums span span,.dr-nums div span{font:700 11px/1.2 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .dr-nums b{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums}.dr-nums .dr-ceil{color:var(--dr-acc)}.dr-nums .dr-grow{font-size:24px;line-height:34px}
+  .dr-bars{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .dr-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(36px,38%) 28px;gap:4px 10px;align-items:center;font-size:14.5px;color:var(--ink-2)}
+  .dr-bar>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dr-card{container-type:inline-size}
+  @container (max-width:290px){ .dr-bar{grid-template-columns:minmax(0,1fr) 28px} .dr-bar i{grid-column:1 / -1;grid-row:2} .dr-bars{gap:7px} }
+  .dr-bar i{height:8px;border-radius:4px;background:var(--l3);overflow:hidden}.dr-bar i b{display:block;height:100%;border-radius:4px;background:var(--dr-acc2,#7C5CC4)}
+  .dr-old .dr-bar i b{background:var(--dr-acc,#5B3F9E)}.dr-bars.pro .dr-bar i b{background:color-mix(in srgb,var(--dr-acc2,#7C5CC4) 70%,#fff)}
+  .dr-bar em{font-style:normal;font-weight:700;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+  .dr-note{margin:auto 0 0;padding-top:10px;color:var(--ink-2);font-size:14.5px;line-height:1.45}
+  .dr-pro .dr-txt{border-top:1px dashed var(--line-2);padding-top:12px;margin-top:auto}
+  .dr-top{display:flex;align-items:center;justify-content:space-between}
+  .dr-chip{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:color-mix(in srgb,var(--dr-acc,#5B3F9E) 13%,transparent);color:var(--dr-acc,#5B3F9E);font:800 12px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase}
+  .dr-radio{width:28px;height:28px;border-radius:50%;border:2px solid var(--line-2);display:grid;place-items:center}
+  .dr-pro{cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .dr-pro:hover:not(:disabled){border-color:var(--ink-3)}
+  .dr-pro[aria-checked="true"]{border:2px solid #17324D;box-shadow:0 14px 30px -18px rgba(23,50,77,.7)}
+  .dr-pro[aria-checked="true"] .dr-radio{border-color:#17324D}.dr-pro[aria-checked="true"] .dr-radio::after{content:"";width:14px;height:14px;border-radius:50%;background:#17324D}
+  :root[data-theme="dark"] .dr-pro[aria-checked="true"]{border-color:#7FA6CF}:root[data-theme="dark"] .dr-pro[aria-checked="true"] .dr-radio::after{background:#7FA6CF}
+  .dr-pro:disabled{cursor:default}.dr-pro:focus-visible{outline:2px solid var(--dr-acc,#5B3F9E);outline-offset:3px}
+  .dr-veil{display:grid;place-items:center;min-height:200px;margin:8px 0 10px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--dr-acc,#5B3F9E) 35%,transparent);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--dr-acc,#5B3F9E) 6%,transparent) 0 12px,transparent 12px 24px)}
+  .dr-veil svg{width:46px;height:46px;fill:none;stroke:var(--dr-acc2,#7C5CC4);stroke-width:1.8}
+  .dr-lock .dr-note{margin-top:4px;padding-top:0}
+  .dr-foot{margin:2px 0 0;font-size:13px;color:var(--ink-3)}
+  .dr-res .fo-bar.dr.win .fo-bt i{background:var(--dr-acc,#5B3F9E)}.dr-res .fo-bar.dr .fo-bt i{background:#D9D5E6}
+  .dr-aside{color:#fff;background:linear-gradient(140deg,#3B2A72,#6D4FB8);border:0;padding:24px 26px;display:flex;flex-direction:column;gap:12px}
+  .dr-aside h3{margin:0;font:800 30px/1 var(--f-display);text-transform:uppercase}.dr-aside p{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.45}
+  .dr-aside .dr-count b{font-size:38px}
+  .dr-rookie{padding:24px 28px;display:flex;flex-direction:column;gap:10px}
+  .dr-rh{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}.dr-rh h3{margin:0;font:800 30px/1 var(--f-display);text-transform:uppercase}
+  .dr-ini{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:color-mix(in srgb,var(--dr-acc,#5B3F9E) 14%,transparent);color:var(--dr-acc,#5B3F9E);font:800 24px/1 var(--f-display)}
+  .dr-badge{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:#5B3F9E;color:#fff;font:800 12px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;margin-left:auto}
+  .dr-badge.off{background:var(--l3);color:var(--ink-2)}.pc-line .dr-badge{margin:0;height:22px;font-size:10.5px}
+  .dr-dev{width:100%;max-width:420px;height:auto}.dr-dev .cap{stroke:var(--line-2);stroke-dasharray:4 4}.dr-dev .path{stroke:var(--dr-acc2,#7C5CC4);stroke-width:2.5;stroke-dasharray:6 6}
+  .dr-dev circle{fill:var(--dr-acc,#5B3F9E)}.dr-dev text{font:600 13px var(--f-ui);fill:var(--ink-2)}.dr-dev text.b{font-weight:800;fill:var(--ink)}
+  .rk.fans{color:#5B3F9E}
+  @media (max-width:1100px){ .dr-grid{grid-template-columns:repeat(2,minmax(0,1fr))} .dr-hero{grid-template-columns:1fr} }
+  @media (max-width:760px){ .dr-grid,.dr-grid2{grid-template-columns:1fr} .dr-hero{padding:22px 20px} .dr-count b{font-size:34px} .dr-card{padding:18px} .dr-veil{min-height:110px} }
   .mt-res{font-size:12px;color:var(--ink-2);white-space:nowrap}
   .mt-pick{margin:10px 0 12px}
   .tr-row span.lv{color:var(--pink);font-weight:700}
@@ -5860,6 +5923,7 @@ function dvpHTML(p,tone){
   return `<div class="pc-sec"><span class="label">Development</span>
     <div class="pc-line"><span>Age · experience</span><b>${p.age} · ${p.experience} yrs</b></div>
     ${p.rookie?`<div class="pc-line"><span>Rookie</span><b>Replaced ${esc(p.rookie.replaces)} · week ${p.rookie.week}</b></div>`:''}
+    ${p.rookie&&p.rookie.drafted_by_fans?`<div class="pc-line"><span>Draft</span><b class="dr-badge">Drafted by the fans · W${p.rookie.week}</b></div>`:''}
     <div class="pc-line"><span>Form this week</span><b>${form}</b></div>
     <div class="pc-line"><span>Rating · base · potential</span><b>${p.ovr} · ${p.ovr_base} · ${p.potential}</b></div>
     <div class="pc-line"><span>Development pace</span><b>${DVP_PACE[p.dev]||esc(p.dev||'—')}</b></div>
@@ -6883,9 +6947,12 @@ document.addEventListener('click',e=>{
   const fv=t.closest('[data-favteam]'); if(fv){ setFavTeam(fv.dataset.favteam); return; }
   if(t.closest('[data-favchange]')){ MT_PICK=true; renderView(true); return; }
   if(t.closest('[data-favcancel]')){ MT_PICK=false; renderView(true); return; }
-  const mtb=t.closest('[data-mttab]'); if(mtb){ MT_TAB=mtb.dataset.mttab; FO_MSG=''; FO_VIEW=null; renderView(true); if(MT_TAB==='fo') loadFans(true); return; }
+  const mtb=t.closest('[data-mttab]'); if(mtb){ MT_TAB=mtb.dataset.mttab; FO_MSG=''; FO_VIEW=null; renderView(true); if(MT_TAB==='fo') loadFans(true); if(MT_TAB==='draft') loadDraft(true); return; }
   const foc=t.closest('[data-fochoice]'); if(foc){ if(!foc.disabled&&FO&&FO.question){ FO_SEL={lever:FO.question.lever,choice:foc.dataset.fochoice}; FO_MSG=''; renderView(true); } return; }
   if(t.closest('[data-fovote]')){ foVote(); return; }
+  const drp=t.closest('[data-drpick]'); if(drp){ if(!drp.disabled){ DR_SEL[drp.dataset.drpick]=drp.dataset.drprof; DR_MSG[drp.dataset.drpick]=''; renderView(true); } return; }
+  const drv=t.closest('[data-drvote]'); if(drv){ drVote(drv.dataset.drvote); return; }
+  if(t.closest('[data-drremind]')){ drRemind(); return; }
   const fov=t.closest('[data-foview]'); if(fov){ FO_VIEW=fov.dataset.foview; FO_MSG=''; renderView(true); const w=document.getElementById('viewMyteam'); if(w&&w.scrollIntoView) w.scrollIntoView({block:'start'}); return; }
   const tm=t.closest('[data-team]'); if(tm){ TEAM_SEL=TEAM_SEL===tm.dataset.team?null:tm.dataset.team; renderView(true); return; }
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
@@ -7662,7 +7729,7 @@ function teamDetailHTML(abbr,t,mine){
     if(s.rec.t) b.push(`${s.rec.r||0} rec · ${s.rec.y||0} yds · ${s.rec.td||0} TD`);
     if(s.def.tk||s.def.sk||s.def.i||s.def.pd) b.push(`${s.def.tk||0} tkl · ${s.def.sk||0} sck · ${s.def.i||0} INT · ${s.def.pd||0} PD`);
     return b.join(' | ')||'—'; };
-  const roster=T.roster.map(p=>`<tr id="pl-${esc(p.id)}" class="pl-row${PL_FOCUS===p.id?' pl-hit':''}" data-pl="${esc(p.id)}" data-pt="${T.abbr}" tabindex="0" title="Open ${esc(p.name)}'s card"><th scope="row"><span class="pos">${esc(p.pos)}</span>${esc(p.name)}${p.progression&&p.progression.rookie?' <small class="rk">R</small>':''}</th><td>${p.number}</td><td>${p.progression?p.progression.age:''}</td><td>${ratingOverall(p.ratings)}</td><td class="tl">${line(p)}</td></tr>`).join('');
+  const roster=T.roster.map(p=>`<tr id="pl-${esc(p.id)}" class="pl-row${PL_FOCUS===p.id?' pl-hit':''}" data-pl="${esc(p.id)}" data-pt="${T.abbr}" tabindex="0" title="Open ${esc(p.name)}'s card"><th scope="row"><span class="pos">${esc(p.pos)}</span>${esc(p.name)}${p.progression&&p.progression.rookie?` <small class="rk">R</small>${p.progression.rookie.drafted_by_fans?' <small class="rk fans" title="Drafted by the fans">Fans’ pick</small>':''}`:''}</th><td>${p.number}</td><td>${p.progression?p.progression.age:''}</td><td>${ratingOverall(p.ratings)}</td><td class="tl">${line(p)}</td></tr>`).join('');
   let stats='';
   if(mine){ const tot={py:0,ry:0,sk:0,int:0,td:0};
     for(const s of Object.values(P)) if(s.team===abbr){ tot.py+=s.pass.y||0; tot.ry+=s.rush.y||0; tot.sk+=s.def.sk||0; tot.int+=s.def.i||0; tot.td+=(s.pass.td||0)+(s.rush.td||0); }
@@ -7720,7 +7787,7 @@ function renderMyteam(t){
   const el=document.getElementById('viewMyteam'); if(!el) return;
   const P0=curPlayer(), fav=P0&&P0.account?P0.fav_team:null, S=standingsAt(t), agg=seasonAgg(t);
   const key='mt|'+(P0&&P0.account)+'|'+fav+'|'+MT_PICK+'|'+agg.key+'|'+S.slot+'|'+Math.floor(t/60000)+'|'+(TEAM_HIST?TEAM_HIST.length:'-')+'|'+slip.picks.map(p=>p.key).join(',')
-    +'|'+MT_TAB+'|'+FO_AT+'|'+(FO_SEL?FO_SEL.choice:'')+'|'+FO_MSG+'|'+FO_BUSY+'|'+FO_VIEW;
+    +'|'+MT_TAB+'|'+FO_AT+'|'+(FO_SEL?FO_SEL.choice:'')+'|'+FO_MSG+'|'+FO_BUSY+'|'+FO_VIEW+'|'+DR_AT+'|'+JSON.stringify(DR_SEL)+JSON.stringify(DR_MSG)+DR_BUSY+'|'+PUSH.busy+(DR&&DR.reminder);
   if(el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
@@ -7734,7 +7801,11 @@ function renderMyteam(t){
   const bar=`<div class="mt-bar"><span class="badge">${fav}</span><b>${esc(SW.teams[fav].name)}</b><button type="button" class="chip-btn" data-favchange>Change team</button></div>`;
   if(!FO_ON){ el.innerHTML=head+bar+teamDetailHTML(fav,t,true); return; }
   if(FO&&FO.team!==fav) FO=null;                 /* team changed since the last load */
-  const tabs=`<div class="seg mt-tabs" role="tablist" aria-label="My team">${[['overview','Overview'],['fo','Front office']].map(([k,l])=>`<button type="button" role="tab" data-mttab="${k}" aria-selected="${MT_TAB===k}">${l}</button>`).join('')}</div>`;
+  if(DR&&DR.team!==fav) DR=null;
+  loadDraft();
+  const hasDr=drMine(fav); if(MT_TAB==='draft'&&!hasDr&&DR) MT_TAB='overview';
+  const tabs=`<div class="seg mt-tabs" role="tablist" aria-label="My team">${[['overview','Overview'],['fo','Front office'],...(hasDr?[['draft','Draft']]:[])].map(([k,l])=>`<button type="button" role="tab" data-mttab="${k}" aria-selected="${MT_TAB===k}">${l}${k==='draft'?drTabChip(t):''}</button>`).join('')}</div>`;
+  if(MT_TAB==='draft'){ el.innerHTML=head+bar+tabs+renderDraft(fav,t); return; }
   if(MT_TAB==='fo'){ el.innerHTML=head+bar+tabs+renderFrontOffice(fav,t); return; }
   loadFans();
   el.innerHTML=head+bar+tabs+foTeaserHTML()+teamDetailHTML(fav,t,true);
@@ -7742,7 +7813,7 @@ function renderMyteam(t){
 async function setFavTeam(team){
   const e=document.getElementById('mtErr');
   try{ const r=await api('/account/team',{method:'POST',body:JSON.stringify({token:PLAYER.token,team})});
-    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_VIEW=null; FO_MSG=''; renderView(true); }
+    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_VIEW=null; DR=null; DR_SEL={}; DR_MSG={}; FO_MSG=''; renderView(true); }
   catch(err){ if(e) e.textContent=err.status===401?'Sign in to your account first.':'Could not save your team. Try again.'; }
 }
 
@@ -7857,7 +7928,9 @@ function foNextHTML(fav,t){
 function foRevealHTML(R,fav,t){
   const T=SW.teams[fav]||{name:fav};
   return `<div class="fo-rev"><p class="fo-eyebrow">Week ${foWeekNo(R.week)} · results of the fan votes</p><h2 class="fo-hero">The ${esc(T.name)} fans have decided</h2>
-    <div class="fo-grid2">${foResultHTML(R,fav,t)}${foNextHTML(fav,t)}</div></div>`;
+    ${(()=>{ const D=R.week===SW.week.start?drRevealCards(fav):{res:'',rookie:''};
+      return D.res?`<div class="fo-grid2">${foResultHTML(R,fav,t)}${D.res}</div><div class="fo-grid2">${D.rookie}${foNextHTML(fav,t)}</div>`
+        :`<div class="fo-grid2">${foResultHTML(R,fav,t)}${foNextHTML(fav,t)}</div>`; })()}</div>`;
 }
 function foReasonText(why,F){
   const fav=F&&F.team, T=fav&&SW.teams[fav]?SW.teams[fav].name:fav;
@@ -7906,7 +7979,7 @@ function foInForceHTML(F,fav){
     <div class="fo-rows">${rows.join('')}</div>${seeRes?'<button type="button" class="link" data-foview="reveal">See the vote</button>':''}</div>`;
 }
 function foVoteViewHTML(F,fav,t){
-  return `<div class="fo-grid"><div class="fo-col">${foQuestionHTML(F,fav,t)}</div><div class="fo-col fo-aside">${foHowHTML(fav,F.question)}${foInForceHTML(F,fav)}</div></div>`;
+  return `<div class="fo-grid"><div class="fo-col">${foQuestionHTML(F,fav,t)}</div><div class="fo-col fo-aside">${drAsideHTML(fav,t)}${foHowHTML(fav,F.question)}${foInForceHTML(F,fav)}</div></div>`;
 }
 /* which screen: the reveal on Monday and once the vote has closed, the vote otherwise (FO_VIEW: the reader's choice) */
 function foAutoView(t){
@@ -7966,6 +8039,172 @@ function foGameRow(g,n){
   return [`${esc(FO_INFO[FP.lever].stat)} <span class="fo-chip sm">Fans’ plan</span>`,cell('away'),cell('home'),0];
 }
 
+/* ---------- My team › Draft (FO-6): the fans pick a retiring starter's successor ----------
+   The engine announces a starter's final season (week.json → draft, FO-5) with three prospects (Ready now, High ceiling,
+   Football IQ). Draft day is the Friday of the lock week, 12:00 → 23:30 (Brussels, decision of 12/11): before it, the
+   countdown and the profiles only (no names, no ratings); then the three prospects and one vote per departure; after the
+   lock, the shares. Monday: the rookie in the reveal, "Drafted by the fans · W…" on his card. Server: /api/draft,
+   /api/draft/vote, /api/draft/remind. */
+let DR=null, DR_AT=0, DR_LOAD=false, DR_SEL={}, DR_MSG={}, DR_BUSY=false;
+const DR_POS={QB:'quarterback',RB:'running back',WR:'wide receiver',TE:'tight end',LT:'left tackle',LG:'left guard',C:'center',
+  RG:'right guard',RT:'right tackle',DT:'defensive tackle',EDGE:'edge rusher',LB:'linebacker',CB:'cornerback',S:'safety',K:'kicker',P:'punter'};
+const DR_GROW={slow:'Steady',normal:'Normal',fast:'Fast',star:'Star'};
+const DR_TXT={pret:'Close to a starter from Monday. Little room to grow.',potentiel:'Raw at first. Could be a star within 6 to 8 weeks.',
+  intelligence:'Reads the play before the snap. Less athletic.'};
+const DR_SHORT={pret:'Close to his level from day one',potentiel:'Raw at first, could become a star',intelligence:'Reads the play before the snap'};
+const DR_GAIN={pret:3.2,potentiel:7.5,intelligence:4.3};       /* measured OVR gain over 6 weeks (README section 113) */
+const drLast=n=>String(n||'').split(' ').slice(-1)[0];
+async function loadDraft(force){
+  if(!FO_ON||DR_LOAD) return;
+  if(!force&&DR&&Date.now()-DR_AT<90e3) return;
+  DR_LOAD=true;
+  const tok=PLAYER&&PLAYER.token?encodeURIComponent(PLAYER.token):'';
+  try{ DR=await api('/draft?token='+tok); }catch(e){ DR=DR&&!DR.error?DR:{error:true,drafts:[]}; }
+  DR_AT=Date.now(); DR_LOAD=false;
+  if(VIEW==='myteam') renderView(true);
+}
+function drMine(fav){ return !!(DR&&!DR.error&&DR.team===fav&&(DR.drafts||[]).length); }
+/* the tab's chip: the countdown, OPEN, or Closed */
+function drTabChip(t){
+  if(!DR||!DR.phase) return '';
+  if(DR.phase==='announced') return `<span class="dr-tchip">${esc(foLeft(Date.parse(DR.opens_at)-t).replace(/ \d+ min$/,''))}</span>`;
+  return DR.phase==='open'?'<span class="dr-tchip open">Open</span>':'<span class="dr-tchip off">Closed</span>';
+}
+function drBars(r,iq,cls){
+  const rows=Object.keys(r||{}).map(k=>[ATTR_NAME[k]||k,r[k]]);
+  if(iq!=null&&!('decision_making' in (r||{}))) rows.push(['Football IQ',iq]);
+  return `<div class="dr-bars${cls?' '+cls:''}">${rows.map(([l,v])=>`<div class="dr-bar"><span>${esc(l)}</span><i><b style="width:${Math.max(4,Math.min(100,(v-40)/59*100)).toFixed(0)}%"></b></i><em>${v}</em></div>`).join('')}</div>`;
+}
+function drRetiredHTML(a,fav,done){
+  const T=SW.teams[fav]||{name:fav};
+  return `<div class="card dr-card dr-old"><span class="dr-final">Final season</span><h3>${esc(a.retired)}</h3>
+    <p class="dr-sub">${esc(a.pos)} · ${a.age} years</p>
+    <div class="dr-nums"><div><span>OVR</span><b>${a.ovr}</b></div>${a.seasons?`<div><span>With the ${esc(T.name)}</span><b>${a.seasons} season${a.seasons===1?'':'s'}</b></div>`:''}</div>
+    ${drBars(a.ratings,a.iq)}
+    ${done?'':`<p class="dr-note">Retires at the end of this week. His successor takes his spot on the roster on Monday.</p>`}</div>`;
+}
+function drLockedHTML(p,i){
+  return `<div class="card dr-card dr-lock" data-profile="${esc(p.profile)}"><span class="fo-kick">Prospect ${i+1}</span>
+    <div class="dr-veil" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+    <h4>${esc(p.label)}</h4><p class="dr-note">${esc(DR_SHORT[p.profile]||'')}</p></div>`;
+}
+function drProspectHTML(a,p,sel,mine,can){
+  return `<button type="button" class="card dr-card dr-pro" role="radio" aria-checked="${sel===p.profile}" data-drpick="${esc(a.id)}" data-drprof="${esc(p.profile)}"${can?'':' disabled'}>
+    <span class="dr-top"><span class="dr-chip">${esc(p.label)}</span><span class="dr-radio" aria-hidden="true"></span></span>
+    <h3>${esc(p.name)}</h3><p class="dr-sub">${esc(a.pos)} · ${p.age} years${mine===p.profile?' · <b class="fo-yours">✓ Your pick</b>':''}</p>
+    <span class="dr-nums"><span><span>Now</span><b>${p.ovr}</b></span><span><span>Ceiling</span><b class="dr-ceil">${p.potential}</b></span><span><span>Growth</span><b class="dr-grow">${esc(DR_GROW[p.dev]||p.dev)}</b></span></span>
+    ${drBars(p.ratings,p.iq,'pro')}<span class="dr-note dr-txt">${esc(DR_TXT[p.profile]||'')}</span></button>`;
+}
+function drResultHTML(a,mine,inForce){
+  const r=a.result; if(!r) return '';
+  const names=Object.fromEntries((a.prospects||[]).map(p=>[p.profile,p]));
+  const win=r.choice, rows=[...(a.prospects||[])].map(p=>({p,v:r.pct[p.profile]||0})).sort((x,y)=>y.v-x.v||(x.p.profile===win?-1:y.p.profile===win?1:0));
+  const why=r.source==='fans'?'':r.votes<5?`Fewer than 5 votes (${r.votes}): the coordinators picked.`:'A tie at the top: the coordinators picked.';
+  return `<div class="card fo-res dr-res" data-dr="result"><div class="fo-top"><span class="fo-kick">Draft · ${r.votes} vote${r.votes===1?'':'s'}</span>${mine?'<span class="fo-yours">✓ Your pick</span>':''}</div>
+    <h3 class="fo-win">${esc((names[win]||{}).name||'')}</h3>
+    <div class="fo-bars">${rows.map(({p,v})=>`<div class="fo-bar dr${p.profile===win?' win':''}"><span class="fo-bl">${esc(drLast(p.name))}</span><span class="fo-bt"><i style="width:${v}%"></i></span><b>${v}&nbsp;%</b></div>`).join('')}</div>
+    <p class="fo-foot">${inForce?`Joins the roster today in ${esc(a.retired)}’s spot.`:`Joins the roster on Monday in ${esc(a.retired)}’s spot.`}${why?` <span>${esc(why)}</span>`:''}</p></div>`;
+}
+function drBlockHTML(a,fav,t){
+  const ph=DR.phase, mine=(DR.my_picks||{})[a.id]||null, can=ph==='open'&&!DR.reason;
+  if(ph==='announced') return `<div class="dr-grid" data-dr="block">${drRetiredHTML(a,fav)}${a.prospects.map(drLockedHTML).join('')}</div>`;
+  if(ph==='closed') return `<div class="dr-grid dr-grid2" data-dr="block">${drRetiredHTML(a,fav,true)}${drResultHTML(a,mine,false)}</div>`;
+  const sel=DR_SEL[a.id]||mine, pick=(a.prospects||[]).find(p=>p.profile===sel);
+  const label=!mine?(pick?`Draft ${drLast(pick.name)}`:'Pick a prospect'):sel&&sel!==mine?`Draft ${drLast(pick.name)} instead`:'Pick saved';
+  const msg=DR_MSG[a.id]==='ok'?'<p class="fo-msg ok" role="status">Pick saved. You can change it until 23:30.</p>':DR_MSG[a.id]?`<p class="fo-msg" role="alert">${esc(DR_MSG[a.id])}</p>`:'';
+  return `<div data-dr="block"><div class="dr-grid" role="radiogroup" aria-label="${esc(a.retired)}’s successor">${drRetiredHTML(a,fav)}${a.prospects.map(p=>drProspectHTML(a,p,sel,mine,can)).join('')}</div>
+    <div class="fo-act"><button type="button" class="cta fo-cast" data-drvote="${esc(a.id)}"${can&&sel&&sel!==mine&&!DR_BUSY?'':' disabled'}>${esc(label)}</button>
+    <span class="fo-hint">One vote per account · free · you can change your pick until 23:30<br>Vote shares revealed when the draft closes</span></div>${msg}</div>`;
+}
+function drCountHTML(ms){
+  const m=Math.max(0,Math.floor(ms/60000)), d=Math.floor(m/1440), h=Math.floor(m%1440/60), mm=m%60, z=n=>String(n).padStart(2,'0');
+  return `<div class="dr-count" role="timer" aria-label="Opens in ${d} days ${h} hours ${mm} minutes"><div><b>${z(d)}</b><span>Day${d===1?'':'s'}</span></div><div><b>${z(h)}</b><span>Hours</span></div><div><b>${z(mm)}</b><span>Min</span></div></div>`;
+}
+function drRemindBtn(){
+  return `<button type="button" class="dr-remind" data-drremind aria-pressed="${!!DR.reminder}"${PUSH.busy?' disabled':''}>${ICON.bell} ${DR.reminder?'Reminder set · Friday 12:00':'Remind me when it opens'}</button>`;
+}
+function drNames(ds){ const n=ds.map(a=>a.retired); return n.length===1?n[0]:n.slice(0,-1).join(', ')+' and '+n[n.length-1]; }
+function renderDraft(fav,t){
+  if(!DR){ loadDraft(); return '<div class="card"><p class="st-none">Loading the draft…</p></div>'; }
+  loadDraft();
+  const ds=DR.drafts||[], T=SW.teams[fav]||{name:fav};
+  if(DR.error||!ds.length) return '<div class="card"><p class="st-empty"><b>No draft this week</b>A draft only happens when one of your starters retires.</p></div>';
+  const o=Date.parse(DR.opens_at), c=Date.parse(DR.closes_at), one=ds.length===1, a0=ds[0];
+  let head;
+  if(DR.phase==='announced'){
+    const day=foClose(o,true).replace(/ \d\d:\d\d$/,''), dm=new Date(o).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:FO_TZ()});
+    head=`<div class="dr-hero"><div><p class="dr-eye">Draft day · ${esc(day)} ${esc(dm)} · ${esc(tStr(o))} → ${esc(tStr(c))}</p>
+      <h2>${one?`Who replaces ${esc(a0.retired)}?`:`Who replaces ${esc(drNames(ds))}?`}</h2>
+      <p>${one?`After ${a0.seasons?`${a0.seasons} season${a0.seasons===1?'':'s'} with the ${esc(T.name)}`:`his career`}, the ${esc(DR_POS[a0.pos]||a0.pos)} retires at the end of the week. On draft day, ${esc(T.name)} fans pick his successor among three prospects.`:`${ds.length} ${esc(T.name)} starters retire at the end of the week. On draft day, the fans pick each successor among three prospects.`} A draft only happens when a player retires.</p></div>
+      <div class="dr-hside"><span class="dr-eye">Opens in</span>${drCountHTML(o-t)}${drRemindBtn()}</div></div>`;
+  } else if(DR.phase==='open'){
+    head=`<div class="fo-top dr-head"><div><p class="fo-eyebrow">Draft day · open now</p><h2 class="fo-hero">${one?`Pick ${esc(a0.retired)}’s successor`:`Pick the successors of ${esc(drNames(ds))}`}</h2></div>
+      <span class="fo-close"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>Closes tonight ${esc(tStr(c))} · ${foLeft(c-t)}</span></div>`;
+  } else {
+    head=`<div class="dr-head"><p class="fo-eyebrow">Draft · closed</p><h2 class="fo-hero">The ${esc(T.name)} fans have picked</h2></div>`;
+  }
+  const why=DR.reason&&DR.phase!=='closed'?`<p class="fo-msg" role="note">${esc({account_required:'Create an account (Settings) to vote in the draft.',team_changed:`You picked the ${T.name} this week: you can vote in their next draft.`,not_your_team:'Only the fans of this franchise vote.'}[DR.reason]||'')}</p>`:'';
+  const foot=DR.phase==='announced'?`<p class="dr-foot">Names and ratings revealed ${esc(foClose(o,true))} · one vote per account, free · ${esc(T.name)} fans only · fewer than 5 votes: the coordinators pick.</p>`:'';
+  return `<div class="fo-wrap dr-wrap" data-drscreen="${DR.phase}">${head}${why}${ds.map(a=>drBlockHTML(a,fav,t)).join('')}${foot}</div>`;
+}
+async function drVote(pid){
+  const a=DR&&(DR.drafts||[]).find(x=>x.id===pid), c=DR_SEL[pid]; if(!a||!c||DR_BUSY) return;
+  DR_BUSY=true; DR_MSG[pid]='';
+  try{ const r=await api('/draft/vote',{method:'POST',body:JSON.stringify({token:PLAYER.token,id:pid,choice:c})}); DR.my_picks=Object.assign({},DR.my_picks,{[pid]:r.my_pick}); delete DR_SEL[pid]; DR_MSG[pid]='ok'; }
+  catch(e){ DR_MSG[pid]={draft_closed:'The draft has closed.',draft_not_open:'The draft is not open yet.',team_changed:'You picked this team this week: you can vote in its next draft.',
+      too_many_attempts:'Too many changes in a short time. Try again in a few minutes.',account_required:'Create an account (Settings) to vote in the draft.'}[e.message]||'Could not save your pick. Try again.';
+    if(e.message==='draft_closed') loadDraft(true); }
+  DR_BUSY=false; renderView(true);
+}
+async function drRemind(){
+  if(PUSH.busy||!DR) return;
+  const on=!DR.reminder, why=on?pushBlocked():null; if(why){ toastErr(why); return; }
+  PUSH.busy=true; renderView(true);
+  try{
+    if(on&&!PUSH.sub) await pushSubscribe(PUSH.fav);
+    await api('/draft/remind',{method:'POST',body:JSON.stringify({token:PLAYER.token,on})});
+    DR.reminder=on; toast(on?'Reminder set · a notification when the draft opens':'Reminder removed');
+  }catch(e){ toastErr(e.code==='denied'?'Notifications were not allowed. You can allow them in your browser settings.':'Could not set the reminder. Try again.'); }
+  finally{ PUSH.busy=false; renderView(true); }
+}
+/* Front office › vote screen, right column: the draft day card while a draft is announced or open (screen 4) */
+function drAsideHTML(fav,t){
+  if(!drMine(fav)||DR.phase==='closed') return '';
+  const a=DR.drafts[0], o=Date.parse(DR.opens_at), T=SW.teams[fav]||{name:fav};
+  const day=foClose(o).replace(/ \d\d:\d\d$/,''), dm=new Date(o).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:FO_TZ()});
+  return `<div class="card dr-aside" data-dr="aside"><p class="dr-eye">Draft day · ${esc(day)} ${esc(dm)} · ${esc(tStr(o))}</p>
+    <h3>${DR.drafts.length===1?`${esc(a.retired)}’s final season`:`${DR.drafts.length} starters retire`}</h3>
+    <p>${esc(T.name)} fans will pick ${DR.drafts.length===1?'his successor':'their successors'} among three prospects${DR.phase==='announced'?', revealed when the draft opens':''}.</p>
+    ${DR.phase==='announced'?drCountHTML(o-t)+drRemindBtn():'<button type="button" class="dr-remind" data-mttab="draft">Pick now</button>'}</div>`;
+}
+/* Monday: last week's draft in the reveal — the result and the rookie (screen 1) */
+function drRookieHTML(d,fav){
+  const T=SW.teams[fav]||{roster:[]}, r=(T.roster||[]).find(x=>x.id===d.id), pg=r&&r.progression;
+  const x=d.drafted||{}, name=(r&&r.name)||x.name||'', ini=name.split(' ').map(s=>s[0]||'').join('').slice(0,2).toUpperCase(), w=(DR.previous||{}).index||SW.week.index;
+  const fans=x.source==='fans';
+  let dev='';
+  if(pg){ const now=pg.ovr, cap=pg.potential, proj=Math.min(cap,Math.round(now+(DR_GAIN[x.profile]||4))), y=v=>(96-(v-Math.min(now,cap)+4)/(cap-Math.min(now,cap)+8)*84).toFixed(1);
+    dev=`<span class="fo-kick">Development</span><svg class="dr-dev" viewBox="0 0 300 110" role="img" aria-label="OVR ${now} now, about ${proj} in six weeks, ceiling ${cap}">
+      <line x1="10" x2="290" y1="${y(cap)}" y2="${y(cap)}" class="cap"/><text x="12" y="${(+y(cap)-6).toFixed(1)}">Ceiling ${cap}</text>
+      <line x1="30" x2="270" y1="${y(now)}" y2="${y(proj)}" class="path"/><circle cx="30" cy="${y(now)}" r="6"/>
+      <text x="30" y="${(+y(now)+20).toFixed(1)}" class="b">${now} · W${w}</text><text x="270" y="${(+y(proj)+20).toFixed(1)}" text-anchor="end">≈ ${proj} · W${w+6}</text></svg>`; }
+  return `<div class="card dr-rookie" data-dr="rookie"><div class="dr-rh"><span class="dr-ini">${esc(ini)}</span><div><h3>${esc(name)}</h3>
+    <p class="dr-sub">${esc(d.pos)} · ${pg?pg.age+' years · ':''}Rookie · replaced ${esc(d.retired)}</p></div>
+    <span class="dr-badge${fans?'':' off'}">${fans?`Drafted by the fans · W${d.week||w-1}`:`Coordinators’ pick · W${d.week||w-1}`}</span></div>
+    ${dev}<p class="fo-foot">Fans follow their rookie week after week on his player card.</p></div>`;
+}
+function drRevealCards(fav){
+  const P=DR&&DR.previous; if(!P||!P.drafts||!P.drafts.length) return {res:'',rookie:''};
+  const fix=d=>d.drafted&&d.result?Object.assign({},d,{result:Object.assign({},d.result,{choice:d.drafted.profile||d.result.choice,source:d.drafted.source||d.result.source})}):d;
+  return {res:P.drafts.map(d=>drResultHTML(fix(d),(P.my_picks||{})[d.id]||null,true)).join(''),rookie:P.drafts.map(d=>drRookieHTML(d,fav)).join('')};
+}
+function drFromUrl(){
+  let v=null; try{ v=new URLSearchParams(location.search).get('myteam'); }catch(e){}
+  if(!v) return;
+  try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+  drOpen(v);
+}
+function drOpen(tab){ MT_TAB=tab==='draft'?'draft':tab==='fo'?'fo':'overview'; FO_VIEW=null; if(VIEW!=='myteam') setView('myteam'); else renderView(true); loadDraft(true); }
 /* ---------- History (bloc 2, étape 5): seasons, franchises, records, careers ----------
    Built by the server (moteur/histoire.py) from every week: finished games only, nothing from a game still to come.
    Hide scores on (Settings): only the weeks whose Grand Final is played. */
@@ -8082,7 +8321,7 @@ async function pushInit(){
   try{ const k=await api('/push/key'); PUSH.key=k.public_key; PUSH.enabled=!!k.enabled; PUSH.min=k.minutes||10; }catch(e){}
   if(pushSupported()){
     try{ PUSH.reg=await navigator.serviceWorker.register('/sw.js'); PUSH.sub=await PUSH.reg.pushManager.getSubscription(); }catch(e){}
-    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); });
+    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); if(e.data&&e.data.myteam&&typeof drOpen==='function') drOpen(String(e.data.myteam)); });
   }
   PUSH.ready=true; await pushRebind(); renderView(true);
 }
@@ -8498,7 +8737,7 @@ function seasonBoot(){
   document.documentElement.classList.remove('gc-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); }
+  if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
 }
 /* Première visite (étape 9.3) : un match tout de suite — en direct s'il y en a un, sinon le dernier match terminé en replay,
