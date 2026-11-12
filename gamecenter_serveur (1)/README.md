@@ -3169,6 +3169,26 @@ Go for it, etc.). Captures de contrôle : `FO_CAPTURES=<dossier> node outils/sit
     vote », barre retenue), plus de bouton de vote ;
   - interrupteur coupé ; aucune erreur JS.
 
+### 112. Navigation : barre d'onglets sur téléphone, rail entière sur iPad (11/11/2026)
+**Demande de Guillaume (11/11)** : sur téléphone il n'y avait aucune navigation (la rail est masquée sous 760 px), et
+sur iPad en paysage l'onglet Settings était mal placé.
+- **Téléphone (≤ 760 px)** : une barre d'onglets fixe en bas, **Live · Schedule · Standings · My bets · More**
+  (`NAV_TABS`). « More » ouvre un panneau du bas (dialogue, Échap ou le fond le ferment, le focus revient sur More) avec
+  tous les autres onglets de la rail, y compris ceux qu'elle reçoit plus tard (Insights et son cadenas). La rail reste la
+  seule source : la barre et le panneau reprennent ses icônes et ses noms et **cliquent sur ses boutons**, donc chaque
+  onglet garde son comportement (My bets hors saison, badge des actions de la Live recopié sur l'onglet Live). Le chat
+  n'y est pas : il a déjà son bouton dans la barre du haut sur téléphone. Le bouton Bet slip, les messages et la pastille
+  du serveur passent au-dessus de la barre (règles en fin de feuille, après celles d'origine).
+- **iPad / ordinateur** : la rail prenait `100vh - 70px` (et 500 px au moins) ; sur Safari iPad, `100vh` compte la
+  hauteur cachée sous la barre d'outils, et les 11 boutons remplissaient déjà la hauteur : Settings passait dessous.
+  Elle prend maintenant `100dvh - 70px` (hauteur vraiment visible ; `100vh` reste en secours), les boutons ne sont plus
+  écrasés, une version compacte s'applique sous 860 px de haut (et sans le logo sous 700 px), et en dernier recours la
+  rail défile discrètement : rien n'est coupé, même avec des onglets en plus (News). Même `dvh` pour la colonne du pari.
+- **Tests** : `moteur/tests/test_navigation.py` (barre et panneau présents, onglets principaux = boutons de la rail,
+  hauteur `dvh` sans coupure, flottants au-dessus de la barre, synchronisation avec `setView`). Vérifié aussi dans un
+  navigateur : iPhone 14, iPad Pro 11 / iPad / iPad mini en paysage, 1440 × 700 et × 900, et 1024 × 600 avec deux
+  onglets de plus (Settings atteint en faisant défiler la rail).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
