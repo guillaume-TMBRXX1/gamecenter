@@ -129,19 +129,10 @@ def iso_ms(s):
 # 279 GameFeed en objets Python, ≈ 700 Mo dès la 4e semaine) : ceux de la semaine en cours restent en mémoire (le direct
 # les lit toutes les 3 s) ; ceux des autres semaines sont relus à la demande (replay, feuilles de match de l'histoire,
 # mises en cache à part) et gardés dans un petit cache des FEEDS_CACHE derniers.
-# 12/11/2026 : avec les traces des trajectoires, un GameFeed pèse ≈ 3,5 Mo en objets Python ; les 279 de la semaine en
-# cours ne tiennent plus en mémoire (Railway : 1,8 Go sur 2 Go, le serveur tué le 08/11). La semaine en cours garde
-# aussi un cache borné, des FEEDS_PIN derniers lus (le direct n'en lit que quelques-uns à la fois) ; les autres sont
-# relus à la demande (≈ 20 ms), et les calculs de la semaine (Insights, Week in review…) sont déjà mis en cache.
-def _env_int(nom, defaut):
-    try:
-        return max(1, int(os.environ.get(nom, str(defaut))))
-    except ValueError:
-        return defaut
-
-
-FEEDS_CACHE = _env_int("GC_FEEDS_CACHE", 40)
-FEEDS_PIN = _env_int("GC_FEEDS_PIN", 60)
+try:
+    FEEDS_CACHE = max(1, int(os.environ.get("GC_FEEDS_CACHE", "40")))
+except ValueError:
+    FEEDS_CACHE = 40
 _FEEDS_LRU, _FEEDS_LOCK = {}, threading.Lock()      # (dossier, id) -> GameFeed ; ordre d'insertion = ancienneté
 _PINNED = {"week": None}                            # la semaine en cours (current_week)
 
@@ -205,16 +196,11 @@ class Week:
         return _FeedsView(self)
 
     def feed(self, gid):
-        """Le GameFeed d'un match : semaine en cours, un cache des FEEDS_PIN derniers lus ; sinon relu (petit cache
-        commun aux autres semaines)."""
+        """Le GameFeed d'un match : en mémoire pour la semaine en cours, sinon relu (petit cache commun)."""
         if _PINNED["week"] is self:
-            with _FEEDS_LOCK:
-                f = self._feeds.pop(gid, None)
-                if f is None:
-                    f = _read_feed(self._files[gid])
-                self._feeds[gid] = f                     # ordre d'insertion = ancienneté
-                while len(self._feeds) > FEEDS_PIN:
-                    self._feeds.pop(next(iter(self._feeds)))
+            f = self._feeds.get(gid)
+            if f is None:
+                f = self._feeds[gid] = _read_feed(self._files[gid])
             return f
         if self._feeds:
             self._feeds = {}                         # n'est plus la semaine en cours : libérée
