@@ -3169,7 +3169,27 @@ Go for it, etc.). Captures de contrôle : `FO_CAPTURES=<dossier> node outils/sit
     vote », barre retenue), plus de bouton de vote ;
   - interrupteur coupé ; aucune erreur JS.
 
-### 112. Front office FO-5 : la draft des supporters dans le moteur (11/11/2026)
+### 112. Navigation : barre d'onglets sur téléphone, rail entière sur iPad (11/11/2026)
+**Demande de Guillaume (11/11)** : sur téléphone il n'y avait aucune navigation (la rail est masquée sous 760 px), et
+sur iPad en paysage l'onglet Settings était mal placé.
+- **Téléphone (≤ 760 px)** : une barre d'onglets fixe en bas, **Live · Schedule · Standings · My bets · More**
+  (`NAV_TABS`). « More » ouvre un panneau du bas (dialogue, Échap ou le fond le ferment, le focus revient sur More) avec
+  tous les autres onglets de la rail, y compris ceux qu'elle reçoit plus tard (Insights et son cadenas). La rail reste la
+  seule source : la barre et le panneau reprennent ses icônes et ses noms et **cliquent sur ses boutons**, donc chaque
+  onglet garde son comportement (My bets hors saison, badge des actions de la Live recopié sur l'onglet Live). Le chat
+  n'y est pas : il a déjà son bouton dans la barre du haut sur téléphone. Le bouton Bet slip, les messages et la pastille
+  du serveur passent au-dessus de la barre (règles en fin de feuille, après celles d'origine).
+- **iPad / ordinateur** : la rail prenait `100vh - 70px` (et 500 px au moins) ; sur Safari iPad, `100vh` compte la
+  hauteur cachée sous la barre d'outils, et les 11 boutons remplissaient déjà la hauteur : Settings passait dessous.
+  Elle prend maintenant `100dvh - 70px` (hauteur vraiment visible ; `100vh` reste en secours), les boutons ne sont plus
+  écrasés, une version compacte s'applique sous 860 px de haut (et sans le logo sous 700 px), et en dernier recours la
+  rail défile discrètement : rien n'est coupé, même avec des onglets en plus (News). Même `dvh` pour la colonne du pari.
+- **Tests** : `moteur/tests/test_navigation.py` (barre et panneau présents, onglets principaux = boutons de la rail,
+  hauteur `dvh` sans coupure, flottants au-dessus de la barre, synchronisation avec `setView`). Vérifié aussi dans un
+  navigateur : iPhone 14, iPad Pro 11 / iPad / iPad mini en paysage, 1440 × 700 et × 900, et 1024 × 600 avec deux
+  onglets de plus (Settings atteint en faisant défiler la rail).
+
+### 113. Front office FO-5 : la draft des supporters dans le moteur (11/11/2026)
 Plan : `programme/Front_office_plan.md`. Moteur seulement : le serveur (votes, fenêtre du vendredi) et le site (onglet
 Draft) viennent en FO-6. Décisions de Guillaume (11/11) :
 - **Qui** : seulement les **titulaires** qui partent à la retraite. Un remplaçant du banc reçoit la recrue d'aujourd'hui.
@@ -3422,7 +3442,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 112) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 113) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 

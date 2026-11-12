@@ -8,7 +8,7 @@ Décisions de Guillaume (plan du 09/11/2026 et réponses du 11/11) :
                   exactement ces joueurs-là sont remplacés (la promesse faite aux supporters ne change pas) ;
     prospects     trois par départ, tirés chacun dans son flux « prospect|<semaine>|<id>|<k> », la base du poste gardée
                   (référence de l'anti-inflation et du garde-fou d'équipe), trois profils (PROFILS, mesurés : README du
-                  serveur, section 112) :
+                  serveur, section 113) :
                     pret          « Ready now » — notes proches de la base, potentiel modeste ;
                     potentiel     « High ceiling » — plus jeune, plus bas, potentiel haut, croissance rapide (rattrape
                                   « Ready now » en 6 à 8 semaines) ;

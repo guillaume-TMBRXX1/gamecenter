@@ -125,7 +125,7 @@ une PR. Interrupteur par étape (coupé = le site et le moteur d'avant, à l'ide
 
 **À la fin de FO-4, le vote fonctionne de bout en bout** : première semaine utilisable par le public.
 
-### FO-5 — Moteur : la draft *(notebook + module)* — ✅ 12/11 (README section 112)
+### FO-5 — Moteur : la draft *(notebook + module)* — ✅ 12/11 (README section 113)
 
 - **Annonce** : au calcul de la semaine N, les joueurs qui partiront à la fin de N sont annoncés
   (`week.json → draft`). Au calcul de N+1, **exactement les annoncés partent** (une promesse faite aux supporters ne
