@@ -3359,6 +3359,9 @@ discuté, forme et spreads), avec des **questions** pour faire participer les su
     barres des spreads, série de victoires), brèves par jour.
   - La page d'un article : le texte, la question (les pourcentages s'affichent après la réponse), le prochain match
     de chaque équipe avec ses cotes (ajout au ticket comme dans Schedule), le lien vers le compte rendu.
+- **Image** (12/11) : `actualites.py` manquait à la ligne `COPY` du `Dockerfile` ; le site ne démarrait plus sur Railway
+  (`ModuleNotFoundError: No module named 'actualites'`) alors que les tests, lancés depuis le dépôt, passaient.
+  `moteur/tests/test_dockerfile.py` reconstruit le dossier `/app` de l'image et y importe le serveur.
 - **Tests** : `moteur/tests/test_actualites.py` (quotas, matchs terminés seulement, textes propres, même édition à
   chaque calcul ; au serveur, rien d'un match pas fini à l'heure donnée, réponses, limite, interrupteur, onglet).
 
