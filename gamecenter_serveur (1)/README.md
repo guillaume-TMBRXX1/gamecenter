@@ -3415,6 +3415,56 @@ style actuel reste celui de tout le monde, et chacun peut activer les nouveaux v
   rend le terrain d'origine, identique). Vérifié aussi à l'œil : thème sombre et clair, grand écran, tuiles du tableau,
   téléphone (390 px).
 
+### 119. Effets visuels au choix du spectateur : ralenti, tracés, terrain du club, animations de l'interface (13/11/2026)
+**Demande de Guillaume (13/11)** : onze effets, à la suite des joueurs en relief et du ballon en cloche (section 118).
+Même règle : **le site ne change pas par défaut**, chacun active ce qu'il veut dans **Settings**. Tous les réglages
+sont coupés tant qu'un `true` n'est pas enregistré dans `gc-settings-v1`.
+
+**Settings › Match visuals** (nouvelle carte, qui reprend aussi « 3D players » et « Ball flight ») :
+- **« Slow motion on big plays »** (`SET.slow`, `FX_SLOW`) : touchdown, interception, passe ou course de 20 yards et
+  plus (les actions qui secouent déjà le terrain). Le moment clé — la réception ou l'interception (fin du vol du
+  ballon), sinon la ligne d'en-but, sinon le premier plaquage cassé — est montré à 40 % de la vitesse, sur 12 % de
+  l'action ; le reste va un peu plus vite (≈ × 1,26). **L'action dure donc exactement le temps prévu** : l'horloge du
+  direct, le son et les paris gardent leur rythme (`slowSpan`, `slowWarp`, dans `stepReplay`). Une pastille « Slow-mo »
+  s'affiche sur le terrain. Pas de ralenti sur les coups de pied, les actions de moins de 2,5 s, les aperçus, ni avec
+  « réduire les animations ».
+- **« Routes before the snap »** (`SET.routes`, `FX_ROUTES`) : pendant que les équipes se placent, les tracés prévus
+  de l'attaque en pointillé, flèche au bout (cinq receveurs sur une passe, le porteur sur une course). C'est le plan
+  que le snap construira (même graine), calculé sur une copie du match (`prePlan`) : rien du match n'est touché.
+  **Cachés quand le pari « Next play » est ouvert** : ils révéleraient course ou passe avant le snap.
+- **« Club colours on the field »** (`SET.club`, `FX_CLUB`) : chaque en-but à la couleur de son équipe, le nom peint
+  (plus en simple contour), et le sigle de l'équipe à domicile dans un rond au centre du terrain, sous les lignes.
+
+**Settings › Display** — **« Interface motion »** (`SET.motion`, `UI_MO`, classe `body.mo-on`), un seul réglage pour :
+- **onglets** : le contenu d'un onglet ouvert arrive en fondu-glissé, bloc après bloc (`moView`) ;
+- **listes en cascade** : les 16 premières lignes (Schedule, tableaux, News, ligues) suivent à 32 ms d'écart, y compris
+  quand la liste arrive du serveur après l'ouverture (`moWatch`) ;
+- **ouverture d'un match** : le grand écran grandit depuis la tuile cliquée (`moOpen`) ; sinon il monte simplement ;
+- **chiffres qui roulent** : solde, gain potentiel du bulletin, probabilité de victoire (`moRoll`) ;
+- **moment du pari** : la cote cliquée vole vers le bulletin (le bouton Bet slip sur téléphone), le bouton réagit et
+  le téléphone vibre quand le pari est placé, un pari gagné lance une courte gerbe depuis le solde, qui passe au vert
+  (`moFly`, `moPlaced`, `moWin`) ;
+- **courbe de probabilité** du grand écran : elle se dessine de gauche à droite à l'ouverture, puis son dernier point
+  bat à chaque action (`moChart`) ;
+- **attentes** : les « Loading… » deviennent des silhouettes (le texte reste lu par les lecteurs d'écran), et la grille
+  des matchs a sa silhouette pendant le premier chargement — l'amorce de la page pose `data-mo` sur `<html>` avant
+  tout dessin ;
+- **retour au toucher** : cotes, boutons et onglets s'enfoncent légèrement à l'appui (`scale`, sans toucher aux
+  `transform` existants).
+Rien de tout cela avec « réduire les animations » (`moOn`, `@media (prefers-reduced-motion:no-preference)`).
+
+- **Ce qui ne change pas** : sans les réglages, le dessin et l'interface d'origine. Le ralenti ne modifie ni la durée
+  d'une action ni le ballon ; à la fin d'une action ralentie, un joueur peut se trouver à quelques centimètres de sa
+  place d'origine (0,08 yard au plus sur le match testé) parce que le lissage des déplacements (section 83) dépend du
+  rythme des images. `serveur.py` et le notebook (cellule 427) ne sont pas modifiés.
+- **Tests** : `moteur/tests/test_effets_visuels.py` (coupés par défaut, interrupteurs à leur place, animations de
+  l'interface toutes sous `body.mo-on` / `html[data-mo]`, tracés cachés quand « Next play » est ouvert, terrain
+  d'origine gardé) ; `test_terrain_relief.py` suit le déplacement des deux réglages dans « Match visuals » ;
+  `outils/site/test_effets.js` (navigateur, match réel rejoué deux fois : 26 vérifications, dont 11 actions ralenties
+  sur 170 qui durent toutes le temps prévu à un pas de 0,02 s près, tracés dessinés puis cachés, cote qui vole, gain
+  potentiel qui roule, réglages gardés au rechargement). **Pas vérifié dans un navigateur** : la gerbe d'un pari gagné
+  et les silhouettes d'attente (il faut un pari réglé, une connexion lente).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
