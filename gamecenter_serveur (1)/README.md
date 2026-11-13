@@ -3384,6 +3384,36 @@ moitié : dessin des actions jusqu'aux rivalités) et `site-2` (2e moitié : emp
 pages, audio) ; `tous` (défaut, en local) lance tout. Le workflow a trois groupes navigateur (`site`, `site-2`,
 `parite`), chacun dans sa limite de 60 minutes, ≈ 22 min de tests par moitié (plus l'installation). Le job
 « Navigateur (site) » garde son nom ; si le contrôle est rendu obligatoire, cocher aussi « Navigateur (site-2) ».
+### 118. Terrain : joueurs en relief et ballon en cloche, au choix du spectateur (12/11/2026)
+**Demande de Guillaume (12/11)** : deux améliorations du visuel des matchs, **sans changer le site par défaut** — le
+style actuel reste celui de tout le monde, et chacun peut activer les nouveaux visuels dans **Settings › Display**.
+- **« 3D players »** (`SET.pawn`, `FX_PAWN`) : les joueurs sont debout sur la pelouse (un corps, une tête, une ombre) et
+  portent **leur numéro**, celui de la composition du moteur (`slotMap`), dès que le corps est assez grand pour le lire
+  (grand écran, match à la une). Les deux repères des O et des X sont gardés : attaque = corps arrondi, défense = corps
+  qui s'affine vers les pieds ; équipe à domicile = pleine, visiteurs = creux. La tête penche du côté où le joueur
+  regarde. Les plus lointains sont dessinés d'abord. Près de la ligne de touche du fond, le corps raccourcit plutôt
+  que d'être coupé par le bord du canevas. Les étiquettes (noms pendant l'action, bulle CHECK / KEY, nom au survol)
+  montent au-dessus de la tête ; les anneaux (porteur, plaqueur, joueur choisi) restent au sol, aux pieds. Un clic vise
+  le corps du joueur (`pickPlayer`), plus ses pieds.
+- **« Ball flight »** (`SET.arc`, `FX_ARC`) : une passe ou un coup de pied monte en **cloche visible**. Le dessin
+  d'origine ne levait une passe que d'un demi-yard à l'écran (sommet du moteur ≤ 1,2) ; ici la hauteur DESSINÉE grandit
+  avec la longueur de la passe (`0,9 + 0,13 × distance`, entre 1,4 et 6,5 yards ; un coup de pied garde 80 % de la
+  hauteur du moteur). Au sol : l'ombre du ballon, qui rétrécit quand il monte, et un **anneau au point de chute** ; en
+  l'air : le chemin déjà parcouru, en pointillé, et le ballon orienté le long de sa trajectoire. Avec « réduire les
+  animations », l'anneau ne bat pas.
+- **Ce qui ne change pas** : les deux réglages sont **coupés par défaut** (seul un `true` enregistré dans
+  `gc-settings-v1` les active) et ne sont lus que par le dessin (`FieldView.pawns`, `FieldView.ballArc`, `pickPlayer`).
+  Le vol du moteur (départ, arrivée, instants), les positions, la caméra, le son et les paris ne sont pas touchés ; sans
+  les réglages, le code d'origine s'exécute tel quel (les O, les X, les chevrons, le ballon levé de `h × 0,55`). Un
+  changement de réglage redessine le terrain aussitôt (signature de l'image). Le Game Center du notebook (cellule 427)
+  n'est pas modifié : il garde le dessin d'origine, et n'a pas de page Settings pour activer ces visuels
+  (`outils/regen427.py` liste les blocs du dessin « à reporter à la main » si on les y veut un jour).
+- **Tests** : `moteur/tests/test_terrain_relief.py` (coupés par défaut, interrupteurs dans la carte Display, dessin
+  d'origine gardé, réglages lus par le dessin seulement) et `outils/site/test_relief.js` (navigateur, match réel
+  rejoué : interrupteurs éteints et terrain d'origine sans clic ; après deux clics, 22 joueurs debout avec leurs
+  numéros, cloche ≈ 6 fois plus haute, pointillé, anneau, action identique ; réglages gardés au rechargement ; un clic
+  rend le terrain d'origine, identique). Vérifié aussi à l'œil : thème sombre et clair, grand écran, tuiles du tableau,
+  téléphone (390 px).
 
 ### Annexe — `.github/workflows/semaine.yml`
 
