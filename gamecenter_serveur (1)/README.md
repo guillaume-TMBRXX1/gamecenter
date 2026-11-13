@@ -3482,6 +3482,58 @@ on the field** (section 119). La carte « Match visuals » de Settings disparaî
   testaient ; `moteur/tests/test_effets_visuels.py` et `outils/site/test_effets.js` ne portent plus que sur
   « Interface motion » et vérifient qu'il ne reste rien des cinq réglages (ni dans le code, ni dans Settings).
 
+### 121. « Interface motion » repris et complété : huit effets d'interface (13/11/2026)
+**Demande de Guillaume (13/11)** : reprendre la première version des animations d'interface (section 119), la compléter
+et la soigner, sans repartir de zéro. **Le réglage reste coupé par défaut** (Settings › Display › « Interface motion »,
+`SET.motion`, `body.mo-on`) : rien ne change pour un visiteur qui ne l'a pas allumé. Rien non plus avec « réduire les
+animations » (`prefers-reduced-motion`), même réglage allumé. Les animations ne touchent que l'affichage : aucune
+valeur, aucun instant du jeu, du son ou des paris n'est décalé. Le terrain et le moteur ne sont pas touchés ; les cinq
+visuels retirés en section 120 ne reviennent pas.
+- **Onglets** : fondu-glissé de 180 ms (au lieu de 260 ms), 8 px de course, les blocs suivants à 20 ms d'écart (60 ms
+  au plus).
+- **Ouverture d'un match** (`moOpen`) : la vignette du terrain devient le grand terrain. Le panneau part exactement de la
+  position et de la taille du terrain de la tuile cliquée, découpé sur son terrain (`clip-path`), puis grandit
+  (380 ms) en dévoilant le reste autour. Sans tuile visible (lien, recherche), le panneau monte simplement (240 ms).
+- **Chiffres qui roulent** (`moRoll`) : solde, gain potentiel, probabilité de victoire, comme avant. Le rouleau lit
+  désormais sa propre horloge et reste borné entre 0 et 1 : il ne peut plus afficher de valeur hors de l'intervalle
+  (vu en démonstration : un horodatage d'image en retard donnait « $-7,646,310,391,940 » le temps d'une image).
+  **Nouveau, le score qui bascule** (`setScore`, `.sc.mo-flip`) : quand un score prend 6 à 8 points d'un coup
+  (touchdown), le chiffre se rabat comme un volet de tableau d'affichage (500 ms) au lieu du petit saut habituel. La
+  nouvelle valeur est écrite tout de suite ; un field goal ou un extra point garde l'effet d'origine.
+- **Le moment du pari** : la cote vole vers le bulletin (inchangé). **À la pose, « ✓ Bet placed » remplace le bouton**
+  pendant 1,3 s (`moPlaced`, classe `.cta.mo-ok` sur `#place` et sur le bouton du pari rapide). Le pied du bulletin et le
+  pari rapide restent affichés le temps de la validation (`moHeld`), puis le bulletin passe aux paris ouverts comme
+  avant ; le pari est déjà posé et enregistré. Vibration courte (15 ms) sur téléphone. Le combiné posé hors serveur
+  déclenche maintenant le même retour. **Un pari gagné** : éclat lumineux et gerbe **aux couleurs de l'équipe jouée**
+  (`moTeams` : le vainqueur choisi, l'équipe d'un future ; un total ou une prop prend les deux équipes du match ; un
+  combiné, jusqu'à trois équipes), depuis le solde visible, qui passe au vert pendant qu'il monte. Sur téléphone, quand
+  le solde n'est pas à l'écran, la gerbe part du bouton Bet slip (le solde du tiroir fermé n'est plus pris).
+- **Courbe de probabilité** : inchangée (dessin de gauche à droite à l'ouverture, dernier point qui bat à chaque action).
+- **Squelettes de chargement** : l'amorce de la page pose `html.mo-boot` (réglage allumé, pas de mouvement réduit)
+  avant tout dessin ; pendant que la page se télécharge (jusqu'à 85 Mo), la grille montre des **silhouettes de cartes
+  de match** (titre, terrain, cotes ; 4 sur ordinateur, 2 sur tablette, 1 sur téléphone), le tableau des rankings, la
+  liste des agents et le solde des silhouettes grises. Les silhouettes sont dans le HTML (`.mo-skt`, `aria-hidden`,
+  cachées sans le réglage) et disparaissent au premier dessin de la grille, au plus tard 1,5 s après
+  `DOMContentLoaded`. Elles ne dépendent plus de `GC_ACCUEIL` (l'ancienne silhouette tenait à `gc-boot`, retiré au bout
+  de 10 s). Les « Loading… » des onglets restent des silhouettes, comme avant.
+- **Cascade des listes** : seulement les **articles de News et les lignes du Schedule** (16 premières), à **30 ms**
+  d'écart, **une seule fois par visite** (onglet du navigateur : `sessionStorage` `gc-mo-seen`). Rouvrir l'onglet rejoue
+  le fondu-glissé de l'onglet, plus la cascade. Les tableaux et les ligues n'ont plus de cascade.
+- **Retour au toucher** : inchangé (cotes, boutons, onglets s'enfoncent à 96 % à l'appui).
+- **Ce qui ne change pas** : sans le réglage, la page d'origine. `serveur.py`, le moteur, le dessin du terrain et le
+  notebook (cellule 427) ne sont pas modifiés.
+- **Tests** : `moteur/tests/test_effets_visuels.py` (13 tests : onglets en 180 ms, cascade une fois par visite à 30 ms,
+  bascule sur 6 à 8 points avec la valeur écrite d'abord, « Bet placed » et vibration, couleurs d'équipe, ouverture
+  depuis la vignette, silhouettes, aucune fonction d'animation n'écrit dans un match, un pari ou l'horloge) ;
+  `outils/site/test_effets.js` (27 vérifications dans le navigateur, dont la cascade qui ne rejoue pas, « Bet placed »
+  puis retour du bulletin, la vibration, la bascule d'un touchdown mais pas d'un field goal, le point de la courbe qui
+  bat à l'action suivante, les silhouettes pendant un chargement bridé à 1 Mo/s, rien avec « réduire les animations »).
+- **Vu dans un navigateur** (captures au ralenti et vidéos, ordinateur 1440 px et téléphone 390 px, thèmes sombre et
+  clair) : chaque effet ; la célébration d'un **vrai pari réglé** (horloge de démo calée deux minutes avant la fin d'un
+  match : Aegis Sentinels sur ordinateur, Monolith Rhinos sur téléphone) ; les silhouettes avec une connexion bridée à
+  200 Ko/s. **Pas vu** : la vibration sur un vrai téléphone (seul l'appel à `navigator.vibrate` est vérifié), Safari et
+  Firefox, la cascade des News sur une semaine où les articles arrivent après l'ouverture de l'onglet.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

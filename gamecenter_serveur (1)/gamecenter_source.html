@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
-<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(s&&s.motion===true)document.documentElement.setAttribute("data-mo","1")}catch(e){}})();</script>
+<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(s&&s.motion===true&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -2673,20 +2673,26 @@
   }
 </style>
 <style id="mo-fx">
-  /* Section 119 (13/11/2026) — « Interface motion » (Settings › Display, coupé par défaut : body.mo-on). Rien ne
-     s'applique sans le réglage, ni avec « réduire les animations ». (Les visuels de match des sections 118 et 119
-     ont été retirés : section 120.) */
-  @keyframes moIn{from{opacity:0;translate:0 10px}}
+  /* Sections 119 et 121 (13/11/2026) — « Interface motion » (Settings › Display : body.mo-on, et html[data-mo] posé par
+     l'amorce avant tout dessin). Rien ne s'applique sans le réglage, ni avec « réduire les animations ». Les animations
+     ne touchent que l'affichage : aucune valeur ni aucun instant du jeu. (Visuels de match retirés : section 120.) */
+  @keyframes moIn{from{opacity:0;translate:0 8px}}
   @keyframes moShim{to{background-position:-220% 0,0 0,0 34px,0 68px}}
-  @keyframes moShim1{to{background-position:-220% 0}}
+  @keyframes moSkt{to{background-position:-200% 0}}
+  @keyframes moFlip{0%{transform:perspective(160px) rotateX(-92deg);color:var(--cyan)}55%{transform:perspective(160px) rotateX(12deg);color:var(--cyan)}
+    75%{transform:perspective(160px) rotateX(-4deg)}100%{transform:none}}
+  @keyframes moOk{from{opacity:0;scale:.6}}
+  .mo-skt{display:none}
   @media (prefers-reduced-motion:no-preference){
-    /* onglets : le contenu arrive en fondu-glissé, bloc après bloc, puis les lignes des listes en cascade */
-    body.mo-on .mo-in>*{animation:moIn .26s cubic-bezier(.2,.8,.2,1) backwards}
-    body.mo-on .mo-in>*:nth-child(2){animation-delay:.04s}
-    body.mo-on .mo-in>*:nth-child(3){animation-delay:.08s}
-    body.mo-on .mo-in>*:nth-child(4){animation-delay:.12s}
-    body.mo-on .mo-in>*:nth-child(n+5){animation-delay:.16s}
-    body.mo-on .mo-in .mo-it{animation:moIn .26s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--mo-i,0)*32ms + 80ms)}
+    /* onglets : le contenu arrive en fondu-glissé court (180 ms), bloc après bloc */
+    body.mo-on .mo-in>*{animation:moIn .18s cubic-bezier(.2,.8,.2,1) backwards}
+    body.mo-on .mo-in>*:nth-child(2){animation-delay:.02s}
+    body.mo-on .mo-in>*:nth-child(3){animation-delay:.04s}
+    body.mo-on .mo-in>*:nth-child(n+4){animation-delay:.06s}
+    /* listes (News, Schedule) : une seule fois par visite, 30 ms d'écart entre deux lignes */
+    body.mo-on .mo-in .mo-it{animation:moIn .18s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--mo-i,0)*30ms + 40ms)}
+    /* score : sur un touchdown, le chiffre bascule comme un volet de tableau d'affichage */
+    body.mo-on .sc.mo-flip{display:inline-block;transform-origin:50% 50%;animation:moFlip .5s cubic-bezier(.3,.7,.3,1);backface-visibility:hidden}
     /* retour au toucher : « scale » seul, les transform existants ne sont pas touchés */
     body.mo-on .odd:active:not(:disabled),body.mo-on .cta:active:not(:disabled),body.mo-on .chip-btn:active:not(:disabled),
     body.mo-on .rail-btn:active,body.mo-on .tab-btn:active,body.mo-on .seg button:active,body.mo-on .set-opt:active,body.mo-on .qc:active{scale:.96}
@@ -2695,13 +2701,24 @@
       background:linear-gradient(100deg,transparent 30%,var(--line-2) 50%,transparent 70%) 0 0/220% 100% no-repeat,
         linear-gradient(var(--l2),var(--l2)) 0 0/100% 26px no-repeat,linear-gradient(var(--l2),var(--l2)) 0 34px/82% 26px no-repeat,linear-gradient(var(--l2),var(--l2)) 0 68px/64% 26px no-repeat;
       animation:moShim 1.2s linear infinite}
-    /* premier chargement : la grille des matchs a sa silhouette pendant que la semaine se télécharge */
-    html[data-mo].gc-boot #liveGrid:empty::before,html[data-mo].gc-boot #liveGrid:empty::after{content:"";border-radius:var(--r-lg);
-      background:linear-gradient(100deg,var(--l1) 30%,var(--l2) 50%,var(--l1) 70%) 0 0/220% 100%;animation:moShim1 1.2s linear infinite}
-    html[data-mo].gc-boot #liveGrid:empty::before{grid-column:span 2;min-height:420px}
-    html[data-mo].gc-boot #liveGrid:empty::after{min-height:420px}
+    /* premier chargement (jusqu'à 85 Mo) : silhouettes des cartes de match tant que la semaine se télécharge
+       (html.mo-boot, posé par l'amorce, retiré dès que la grille est dessinée) */
+    html.mo-boot #liveGrid>.mo-skt{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:250px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--card)}
+    html.mo-boot #liveGrid>.mo-skt.f{grid-column:span 2;min-height:420px}
+    html.mo-boot .mo-skt i{display:block;border-radius:8px;background:linear-gradient(100deg,var(--line-2) 30%,var(--line) 50%,var(--line-2) 70%) 0 0/200% 100%;animation:moSkt 1.3s linear infinite}
+    html.mo-boot .mo-skt i:nth-child(1){height:22px;width:62%}
+    html.mo-boot .mo-skt i:nth-child(2){flex:1;min-height:120px}
+    html.mo-boot .mo-skt i:nth-child(3){height:38px}
+    html.mo-boot #rankTable:empty,html.mo-boot #agentList:empty{min-height:150px;border-radius:10px;
+      background:linear-gradient(100deg,var(--line-2) 30%,var(--line) 50%,var(--line-2) 70%) 0 0/200% 100%;animation:moSkt 1.3s linear infinite}
+    html.mo-boot .wallet [data-balance]{color:transparent;border-radius:8px;width:62%;
+      background:linear-gradient(100deg,var(--line-2) 30%,var(--line) 50%,var(--line-2) 70%) 0 0/200% 100%;animation:moSkt 1.3s linear infinite}
+    /* le pari est posé : le bouton laisse la place à un état de validation (1,3 s) */
+    body.mo-on .cta.mo-ok,body.mo-on .cta.mo-ok:disabled{position:relative;color:transparent;background:var(--cyan);opacity:1;filter:none;pointer-events:none}
+    body.mo-on .cta.mo-ok::after{content:"\2713\00a0 Bet placed";position:absolute;inset:0;display:grid;place-items:center;color:var(--cyan-ink);animation:moOk .22s cubic-bezier(.2,.9,.3,1.3) both}
   }
-  @media (max-width:1100px){ html[data-mo].gc-boot #liveGrid:empty::before{grid-column:1/-1;min-height:300px} html[data-mo].gc-boot #liveGrid:empty::after{display:none} }
+  @media (max-width:1100px){ html.mo-boot #liveGrid>.mo-skt.f{grid-column:1/-1;min-height:300px} html.mo-boot #liveGrid>.mo-skt:nth-child(n+3){display:none} }
+  @media (max-width:600px){ html.mo-boot #liveGrid>.mo-skt:nth-child(n+2){display:none} }
 </style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
@@ -2796,7 +2813,7 @@
       <div class="mo-list" id="moments"></div>
     </div>
 
-    <section class="live-grid" id="liveGrid" aria-label="Live games"></section>
+    <section class="live-grid" id="liveGrid" aria-label="Live games"><div class="mo-skt f" aria-hidden="true"><i></i><i></i><i></i></div><div class="mo-skt" aria-hidden="true"><i></i><i></i><i></i></div><div class="mo-skt" aria-hidden="true"><i></i><i></i><i></i></div><div class="mo-skt" aria-hidden="true"><i></i><i></i><i></i></div></section>
 
     <section class="lower">
       <div class="card rank">
@@ -5457,7 +5474,7 @@ function renderSlip(){
   document.getElementById('kpiOpen').textContent=slip.open.length;
   const onSlip=slip.tab==='slip';
   document.getElementById('quick').hidden=!onSlip||!slip.picks.length;
-  document.getElementById('slipFoot').hidden=!onSlip;
+  document.getElementById('slipFoot').hidden=!onSlip&&!moHeld();
   if(onSlip){
     const banner = slip.restored && slip.picks.length ? `<div class="restored"><span>Slip restored from your last visit</span><button class="link" type="button" data-discard>Discard</button></div>` : '';
     slipList.innerHTML = banner + (slip.picks.length ? slip.picks.map(p=>{ const sid='stake-'+p.key.replace(/:/g,'-');
@@ -5537,7 +5554,8 @@ function timeoutNow(g){
    write (even of the same text) costs a style pass and wakes the team-colour observer */
 function setTxt(el,v){ if(el.textContent!==v) el.textContent=v; }
 function setHTML(el,v){ if(el._h!==v){ el._h=v; el.innerHTML=v; } }
-function setScore(el,v){ const s=String(v); if(el.textContent!==s){ el.textContent=s; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
+function setScore(el,v){ const s=String(v); if(el.textContent!==s){ const d=(+s)-(+el.textContent), flip=moOn()&&d>=6&&d<=8&&!document.hidden;   /* section 121: a touchdown flips like a scoreboard */
+  el.textContent=s; el.classList.remove('bump','mo-flip'); void el.offsetWidth; el.classList.add(flip?'mo-flip':'bump'); } }
 function updateGameUI(g){
   document.querySelectorAll(`[data-g="${g.id}"]`).forEach(el=>{
     switch(el.dataset.f){
@@ -6502,20 +6520,24 @@ function moRoll(el,to,render,ms){
   if(!moOn()||el._mv==null||!isFinite(to)||document.hidden){ el._mk=(el._mk||0)+1; el._ma=false; el._mv=el._mt=to; render(to); return; }
   if(el._mt===to){ if(!el._ma) render(to); return; }
   const from=el._mv, t0=performance.now(), d=ms||650, k=el._mk=(el._mk||0)+1; el._mt=to; el._ma=true;
-  const step=now=>{ if(el._mk!==k) return; const u=Math.min(1,(now-t0)/d), e=1-Math.pow(1-u,3); el._mv=from+(to-from)*e;
+  const step=()=>{ if(el._mk!==k) return; const u=clamp((performance.now()-t0)/d,0,1), e=1-Math.pow(1-u,3);   /* section 121: own clock, never outside [0, 1] */ el._mv=from+(to-from)*e;
     if(u<1){ render(el._mv); requestAnimationFrame(step); } else { el._mv=to; el._ma=false; render(to); } };
   requestAnimationFrame(step);
 }
 function moMoney(el,v){ moRoll(el,v,x=>{ const s=money(Math.round(x*100)/100); if(el.textContent!==s) el.textContent=s; }); }
-/* a view that has just been opened: its blocks come in one after the other, then the rows of its lists */
-const MO_ITEMS='.sch-game,.lg-item,.tst tbody tr,.nw-grid>*';
-function moItems(el){ let i=el.querySelectorAll('.mo-it').length; if(i>=16) return;
-  el.querySelectorAll(MO_ITEMS).forEach(it=>{ if(i<16&&!it.classList.contains('mo-it')){ it.classList.add('mo-it'); it.style.setProperty('--mo-i',i++); } }); }
+/* a view that has just been opened: its blocks fade-slide in (every time, 180 ms); the rows of the News and Schedule
+   lists cascade in at 30 ms intervals, once per visit (tab session) for each list — section 121 */
+const MO_ITEMS={viewSchedule:'.sch-game',viewNews:'.nw-grid>*'}, MO_SEEN=(()=>{ try{ return new Set(JSON.parse(sessionStorage.getItem('gc-mo-seen')||'[]')); }catch(e){ return new Set(); } })();
+function moItems(el){ const sel=MO_ITEMS[el.id]; if(!sel||(MO_SEEN.has(el.id)&&!(performance.now()<(el._moCas||0)))) return;   /* a list redrawn during its own cascade is tagged again */
+  let i=0; el.querySelectorAll(sel).forEach(it=>{ if(i<16){ it.classList.add('mo-it'); it.style.setProperty('--mo-i',i++); } });
+  if(i&&!MO_SEEN.has(el.id)){ el._moCas=performance.now()+700; MO_SEEN.add(el.id); try{ sessionStorage.setItem('gc-mo-seen',JSON.stringify([...MO_SEEN])); }catch(e){} } }
 function moSkel(el){ el.querySelectorAll('p.st-none:not(.mo-sk),p.pc-note:not(.mo-sk)').forEach(p=>{ if(/^Loading/.test(p.textContent)) p.classList.add('mo-sk'); }); }
 function moView(el){
-  if(!el) return; el.classList.remove('mo-in'); if(!moOn()) return;
+  if(!el) return; const off=()=>{ el.classList.remove('mo-in'); el.querySelectorAll('.mo-it').forEach(x=>x.classList.remove('mo-it')); };   /* section 121: a row cascades once */
+  if(!(performance.now()<(el._moCas||0))) off(); else el.classList.remove('mo-in');
+  if(!moOn()) return;
   void el.offsetWidth; el.classList.add('mo-in'); moItems(el); moSkel(el);
-  clearTimeout(el._moT); el._moT=setTimeout(()=>el.classList.remove('mo-in'),900);
+  clearTimeout(el._moT); el._moT=setTimeout(off,900);
 }
 /* content that arrives after the view opened (a list fetched from the server): placeholders while it loads, the cascade when it lands */
 function moWatch(){
@@ -6523,14 +6545,21 @@ function moWatch(){
   document.querySelectorAll('main [id^="view"]').forEach(el=>{ if(el.id==='viewLive') return; let q=false;
     new MutationObserver(()=>{ if(!UI_MO||q) return; q=true; requestAnimationFrame(()=>{ q=false; if(!moOn()) return; moSkel(el); if(el.classList.contains('mo-in')) moItems(el); }); }).observe(el,{childList:true,subtree:true}); });
 }
-/* the big screen grows out of the tile it was opened from (else it simply rises) */
+/* the big screen grows out of the tile it was opened from: the tile's field becomes the big field (the rest of the
+   panel is uncovered around it as it grows); without a visible tile, the panel simply rises — section 121 */
 function moOpen(id){
   if(!moOn()||typeof modal==='undefined'||modal.classList.contains('theater')) return;
   const p=modal.querySelector('.m-panel'); if(!p||!p.animate) return;
   let a=null; try{ const src=document.querySelector('.tile[data-gid="'+String(id).replace(/"/g,'')+'"] .field'); a=src&&src.getBoundingClientRect(); }catch(e){}
-  const b=p.getBoundingClientRect(), ok=a&&a.width>40&&a.bottom>0&&a.top<window.innerHeight&&b.width>0, k=ok?a.width/b.width:1;
-  p.animate(ok?[{transformOrigin:'0 0',transform:`translate(${(a.left-b.left).toFixed(1)}px,${(a.top-b.top).toFixed(1)}px) scale(${k.toFixed(4)})`,opacity:.4},{transformOrigin:'0 0',transform:'none',opacity:1}]
-              :[{transform:'translateY(18px) scale(.97)',opacity:0},{transform:'none',opacity:1}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)'});
+  const f=p.querySelector('.field'), ez='cubic-bezier(.2,.8,.2,1)';
+  if(!(a&&f&&a.width>40&&a.bottom>0&&a.top<window.innerHeight)){ p.animate([{transform:'translateY(14px) scale(.98)',opacity:0},{transform:'none',opacity:1}],{duration:240,easing:ez}); return; }
+  p.style.animation='none';   /* measure the panel where it lands, without the default rise (the panel is rebuilt at each opening) */
+  const b=p.getBoundingClientRect(), c=f.getBoundingClientRect(); if(!b.width||!c.width) return;
+  const fx=c.left-b.left, fy=c.top-b.top, k=a.width/c.width, tx=a.left-b.left-k*fx, ty=a.top-b.top-k*fy;
+  const ins=`inset(${fy.toFixed(1)}px ${(b.width-fx-c.width).toFixed(1)}px ${(b.height-fy-c.height).toFixed(1)}px ${fx.toFixed(1)}px round 12px)`;
+  const an=p.animate([{transformOrigin:'0 0',transform:`translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${k.toFixed(4)})`,clipPath:ins},
+                      {transformOrigin:'0 0',transform:`translate(${(tx*0.25).toFixed(1)}px,${(ty*0.25).toFixed(1)}px) scale(${(1-(1-k)*0.25).toFixed(4)})`,clipPath:ins,offset:.55},
+                      {transformOrigin:'0 0',transform:'none',clipPath:'inset(0px 0px 0px 0px round 0px)'}],{duration:380,easing:ez});
 }
 /* a pick leaves the board for the slip (the Bet slip button on a phone) */
 /* `a`: where the button was when it was pressed (the list it sits in may be redrawn by the pick itself) */
@@ -6546,23 +6575,48 @@ function moFly(btn,a){
   an.onfinish=an.oncancel=done; setTimeout(done,1000);
   tgt.animate([{scale:1},{scale:1.03},{scale:1}],{duration:260,delay:380,easing:'ease-out'});
 }
+/* a bet has just been placed: a short vibration on a phone, and « ✓ Bet placed » takes the place of the button for 1.3 s
+   (the slip foot and the quick bet stay up meanwhile; the bet itself is already placed and saved) — section 121 */
+let MO_OK=0;
+const moHeld=()=>MO_OK>0;
 function moPlaced(){
   if(!UI_MO) return;
-  try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){}
   if(REDUCED) return;
-  const b=document.getElementById(isDrawerMode()?'fab':'place'); if(b&&b.animate) b.animate([{scale:1},{scale:.95},{scale:1.05},{scale:1}],{duration:340,easing:'ease-out'});
+  const bs=[document.getElementById('place'),...document.querySelectorAll('#qb [data-qbplace]')].filter(Boolean);
+  bs.forEach(b=>b.classList.add('mo-ok')); const k=++MO_OK;
+  renderSlip(); if(typeof QB_ON!=='undefined'&&QB_ON) qbRender();
+  setTimeout(()=>{ if(k!==MO_OK) return; MO_OK=0; document.querySelectorAll('.cta.mo-ok').forEach(b=>b.classList.remove('mo-ok'));
+    renderSlip(); if(typeof QB_ON!=='undefined'&&QB_ON) qbRender(); },1300);
 }
-/* a bet has just been won: a short burst from the balance, which turns green while it rolls up */
-function moWin(){
+/* a bet has just been won: a short glow and burst in the colours of the team(s) backed, from the balance, which turns
+   green while it rolls up (section 121: team colours; a total or a prop takes the colours of both teams of its game) */
+function moTeams(rows){
+  const out=[], add=a=>{ if(a&&DA_TEAM[a]&&!out.includes(a)) out.push(a); };
+  for(const r of rows) for(const l of (r.legs||[r])){ const [g,m,x]=normKey(l.key||'').split(':');
+    if(g==='fut'){ add(x); continue; }
+    const s=typeof SCHED_BY!=='undefined'&&SCHED_BY[g]; if(!s) continue;
+    if(x==='home'||x==='away') add(s[x]); else { add(s.home); add(s.away); } }
+  return out.slice(0,3);
+}
+function moWin(rows){
   if(!moOn()) return;
-  const el=[...document.querySelectorAll('[data-balance]')].find(e=>e.getClientRects().length); if(!el||!el.animate) return;
-  const r=el.getBoundingClientRect(), cx=r.left+Math.min(r.width/2,90), cy=r.top+r.height/2, cols=['#3DDC97',FIELD.cyan,FIELD.pink,FIELD.ink];
-  for(let i=0;i<24;i++){ const d=document.createElement('span'), an=Math.random()*Math.PI*2, R=60+Math.random()*120;
-    d.setAttribute('aria-hidden','true'); d.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;width:7px;height:12px;border-radius:2px;z-index:400;pointer-events:none;background:${cols[i%4]}`;
+  const seen=e=>{ const q=e.getBoundingClientRect(); return q.width>0&&q.bottom>0&&q.top<innerHeight&&q.right>0&&q.left<innerWidth; };   /* on screen (not in the closed drawer) */
+  const el=[...document.querySelectorAll('[data-balance]')].find(seen)||[document.getElementById('fab')].find(e=>e&&seen(e));
+  if(!el||!el.animate) return;
+  const tm=moTeams(rows||[]), cols=tm.length?tm.map(a=>DA_TEAM[a]):[FIELD.cyan];
+  const r=el.getBoundingClientRect(), cx=r.left+Math.min(r.width/2,90), cy=r.top+r.height/2;
+  const glow=document.createElement('span'); glow.setAttribute('aria-hidden','true');
+  glow.style.cssText=`position:fixed;left:${cx-120}px;top:${cy-120}px;width:240px;height:240px;border-radius:50%;z-index:399;pointer-events:none;background:radial-gradient(closest-side,${hexA(cols[0],.7)},${hexA(cols[cols.length-1],.3)} 50%,transparent)`;
+  document.body.appendChild(glow);
+  const ga=glow.animate([{opacity:0,transform:'scale(.4)'},{opacity:1,transform:'scale(1)',offset:.25},{opacity:0,transform:'scale(1.25)'}],{duration:900,easing:'ease-out'});
+  ga.onfinish=ga.oncancel=()=>glow.remove(); setTimeout(()=>glow.remove(),1500);
+  for(let i=0;i<18;i++){ const d=document.createElement('span'), an=Math.random()*Math.PI*2, R=50+Math.random()*90;
+    d.setAttribute('aria-hidden','true'); d.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;width:6px;height:10px;border-radius:2px;z-index:400;pointer-events:none;background:${cols[i%cols.length]}`;
     document.body.appendChild(d);
-    const a=d.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${(Math.cos(an)*R).toFixed(0)}px),calc(-50% + ${(Math.sin(an)*R+50).toFixed(0)}px)) rotate(${Math.round(Math.random()*720-360)}deg)`,opacity:0}],{duration:900+Math.random()*500,easing:'cubic-bezier(.1,.7,.3,1)'});
-    a.onfinish=a.oncancel=()=>d.remove(); }
-  el.animate([{color:'#3DDC97'},{color:'#3DDC97',offset:.6},{}],{duration:1400});
+    const a=d.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${(Math.cos(an)*R).toFixed(0)}px),calc(-50% + ${(Math.sin(an)*R+40).toFixed(0)}px)) rotate(${Math.round(Math.random()*540-270)}deg)`,opacity:0}],{duration:800+Math.random()*400,easing:'cubic-bezier(.1,.7,.3,1)'});
+    a.onfinish=a.oncancel=()=>d.remove(); setTimeout(()=>d.remove(),1800); }
+  if(el.matches('[data-balance]')) el.animate([{color:'#3DDC97'},{color:'#3DDC97',offset:.6},{}],{duration:1400});
 }
 /* the win-probability curve of the big screen draws itself once, then its last point pulses at each play */
 function moChart(el){
@@ -9144,7 +9198,7 @@ function seasonBoot(){
   headlines.length=0;
   loadWallet(); applySettings(); lastStake=SET.stake; slip.open=[];
   seasonRefresh(true);
-  document.documentElement.classList.remove('gc-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître */
+  document.documentElement.classList.remove('gc-boot','mo-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître (section 121 : et ses silhouettes partent) */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
@@ -9533,7 +9587,7 @@ function seasonRenderSlip(){
   nO.textContent=L.open; nO.classList.toggle('muted',!L.open);
   const onSlip=slip.tab==='slip', combo=comboOn();
   document.getElementById('quick').hidden=!onSlip||!slip.picks.length;
-  document.getElementById('slipFoot').hidden=!onSlip;
+  document.getElementById('slipFoot').hidden=!onSlip&&!moHeld();
   withFocus(()=>{
     if(onSlip){
       const banner = slip.restored && slip.picks.length ? `<div class="restored"><span>Slip restored from your last visit</span><button class="link" type="button" data-discard>Discard</button></div>` : '';
@@ -9602,7 +9656,7 @@ function seasonPlace(){
     WAL.bets.push({id:'c'+t.toString(36)+Math.random().toString(36).slice(2,6),key:sg?'sgp':'combo',legs,price:amOf(d),dec:sg?d:undefined,line:null,stake:st,pt:t,title:`${legs.length}-leg ${sg?'Same Game Combo':'combo'}`,sub:legs.map(l=>l.title).join(' · ')});
     saveWallet(); slip.picks=[]; slip.tab='open'; slip.restored=false;
     renderSlip(); syncPressed(); saveSlip(); walletRender(t); renderView(true);
-    sfxUi('placed'); toast(`${sg?'Same Game Combo':'Combo'} placed · ${legs.length} legs at ${fmtO(amOf(d))} · ${money(st)}`); return;
+    sfxUi('placed'); moPlaced(); toast(`${sg?'Same Game Combo':'Combo'} placed · ${legs.length} legs at ${fmtO(amOf(d))} · ${money(st)}`); return;
   }
   const picks=slip.picks.filter(p=>!p.closed);
   let st=0; picks.forEach(p=>st+=p.stake);
@@ -9622,7 +9676,7 @@ function seasonPlace(){
 let QB_SIG='', QB_N=0;
 function qbRender(){
   const el=modal.hidden?null:document.getElementById('qb'); if(!el) return;
-  const ps=slip.picks; if(!ps.length){ el.hidden=true; QB_SIG=''; QB_N=0; return; }
+  const ps=slip.picks; if(!ps.length){ if(!moHeld()||el.hidden){ el.hidden=true; QB_SIG=''; QB_N=0; } return; }   /* section 121: stays up while « Bet placed » shows */
   const combo=comboOn(), sg=sgpSlip(), sig=ps.map(p=>p.key+p.price+(p.pending?p.pending.price:'')+(p.closed||'')).join(',')+'|'+combo+'|'+(sg?sg.why:'');
   if(sig!==QB_SIG){ QB_SIG=sig;
     const chips=ps.map(p=>{ const pr=p.pending?p.pending.price:p.price;
@@ -9699,7 +9753,7 @@ function betTick(t){
   const fresh=L.rows.filter(r=>r.st!=='open'&&!SEEN.has(r.id));
   if(fresh.length){ fresh.forEach(r=>SEEN.add(r.id));
     const pl=r2(fresh.reduce((s,r)=>s+r.ret-r.stake,0));
-    sfxUi(pl>0?'won':pl<0?'lost':'push'); if(pl>0) moWin();   /* section 119 */
+    sfxUi(pl>0?'won':pl<0?'lost':'push'); if(pl>0) moWin(fresh.filter(r=>r.st==='won'));   /* sections 119, 121 */
     toast(fresh.length===1 ? `${ST_LAB[fresh[0].st]} · ${fresh[0].title} · ${fresh[0].st==='won'?'+'+money(fresh[0].ret):fresh[0].st==='push'?'stake returned':MINUS+money(fresh[0].stake)}`
       : `${fresh.length} bets settled · ${pl<0?MINUS:'+'}${money(Math.abs(pl))}`); }
   const moved=slipTick(t), sig=L.rows.map(r=>r.id+r.st).join(',')+'#'+slipSig()+'#'+Math.floor(t/1e4)+'#'+(slip.tab==='open'?cashSig(L.rows,t):'')+'#'+slip.mode+(slip.comboStake||0);
