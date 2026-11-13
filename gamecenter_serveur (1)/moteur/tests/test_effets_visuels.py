@@ -1,7 +1,8 @@
-"""Effets visuels au choix du spectateur (README section 119, 13/11/2026) : ralenti des grosses actions, tracés avant le
-snap, terrain aux couleurs du club (Settings › Match visuals) et « Interface motion » (Settings › Display). Tous coupés
-par défaut. Lit gamecenter_source.html tel quel : pas de serveur ni de navigateur (le rendu est vérifié par
-outils/site/test_effets.js).
+"""« Interface motion » (README sections 119 et 120) : animations de l'interface au choix du spectateur, coupées par
+défaut (Settings › Display). Les visuels de match des sections 118 et 119 (3D players, Ball flight, Slow motion on big
+plays, Routes before the snap, Club colours on the field) ont été retirés le 13/11/2026 (section 120) : ce test vérifie
+aussi qu'il n'en reste rien. Lit gamecenter_source.html tel quel : pas de serveur ni de navigateur (le rendu est
+vérifié par outils/site/test_effets.js).
 
     python -m unittest discover -s moteur/tests -t .        (depuis « gamecenter_serveur (1) »)
 """
@@ -11,37 +12,31 @@ import unittest
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 PAGE = os.path.normpath(os.path.join(ICI, "..", "..", "gamecenter_source.html"))
-REGLAGES = (("slow", "Slow motion on big plays"), ("routes", "Routes before the snap"), ("club", "Club colours on the field"),
-            ("motion", "Interface motion"))
 
 
-class TestEffetsVisuels(unittest.TestCase):
+class TestInterfaceMotion(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open(PAGE, encoding="utf-8") as f:
             cls.html = f.read()
 
-    def test_coupes_par_defaut(self):
-        self.assertIn("let FX_SLOW=false, FX_ROUTES=false, FX_CLUB=false, UI_MO=false;", self.html)
-        self.assertIn("slow:d.slow===true, routes:d.routes===true, club:d.club===true, motion:d.motion===true,", self.html)
+    def test_coupe_par_defaut(self):
+        self.assertIn("let UI_MO=false;", self.html)
+        self.assertIn("motion:d.motion===true,", self.html)
         # l'amorce de la page ne pose data-mo (silhouette du premier chargement) que pour un « true » enregistré
         amorce = self.html[self.html.index('<script id="da-theme-boot">'):self.html.index("</script>")]
         self.assertIn('if(s&&s.motion===true)document.documentElement.setAttribute("data-mo","1")', amorce)
 
-    def test_reglages_dans_settings(self):
-        for nom, titre in REGLAGES:
-            self.assertTrue(re.search(r'<span class="set-l" id="set\w+L">' + titre + r"<small>[^<]+</small></span>\s*"
-                                      r'<button type="button" class="switch" role="switch" data-set="' + nom + '"', self.html), titre)
-        visuels = self.html[self.html.index("<h2>Match visuals</h2>"):self.html.index("${soundCard()}")]
-        for nom in ("pawn", "arc", "slow", "routes", "club"):
-            self.assertIn(f'data-set="{nom}"', visuels)
-        affichage = self.html[self.html.index("<h2>Display</h2>"):self.html.index("<h2>Match visuals</h2>")]
-        self.assertIn('data-set="motion"', affichage)
+    def test_reglage_dans_display(self):
+        self.assertTrue(re.search(r'<span class="set-l" id="setMotionL">Interface motion<small>[^<]+</small></span>\s*'
+                                  r'<button type="button" class="switch" role="switch" data-set="motion"', self.html))
+        affichage = self.html[self.html.index("<h2>Display</h2>"):self.html.index("${soundCard()}")]
+        self.assertLess(affichage.index('data-set="fx"'), affichage.index('data-set="motion"'))
 
-    def test_reglages_appliques(self):
+    def test_reglage_applique(self):
         appliquer = self.html[self.html.index("function applySettings(){"):]
         appliquer = appliquer[:appliquer.index("\n}")]
-        self.assertIn("FX_SLOW=!!SET.slow; FX_ROUTES=!!SET.routes; FX_CLUB=!!SET.club; UI_MO=!!SET.motion;", appliquer)
+        self.assertIn("UI_MO=!!SET.motion;", appliquer)
         self.assertIn("document.body.classList.toggle('mo-on',UI_MO);", appliquer)
 
     def test_interface_seulement_avec_le_reglage(self):
@@ -60,22 +55,18 @@ class TestEffetsVisuels(unittest.TestCase):
             self.assertIn("if(!moOn()", corps[:260], f)
         self.assertIn("if(!moOn()||el._mv==null", self.html)      # moRoll : sans le réglage, la valeur est posée d'un coup
 
-    def test_ralenti_ne_change_pas_la_duree(self):
-        # la déformation du temps va de 0 à 1 : l'action finit à l'heure
-        self.assertIn("if(tau>=1) return 1; if(tau<=0) return 0;", self.html)
-        self.assertIn("g.slow=FX_SLOW&&!REDUCED?slowSpan(g,P,g.plan):null;", self.html)
-        # sans ralenti, le pas de temps d'origine
-        self.assertIn("else { g.t+=dt; if(g.slowOn) g.slowOn=false; }", self.html)
-
-    def test_traces_caches_quand_le_pari_action_suivante_est_ouvert(self):
-        pre = self.html[self.html.index("function prePlan(g){"):]
-        pre = pre[:pre.index("\n}")]
-        self.assertIn("(g.odds&&g.odds.np)) return null;", pre)
-        self.assertIn("planFromFeed(Object.assign({},g),P)", pre)      # sur une copie : le match n'est pas touché
-
-    def test_terrain_d_origine_garde(self):
-        self.assertIn("c.fillStyle=club?hexA(club,.5):hexA(FIELD.violet,.16);", self.html)
-        self.assertIn("else { c.lineWidth=Math.max(1,s*0.08); c.strokeStyle=hexA(FIELD.ink,.4); c.strokeText(T.name.toUpperCase(),0,0); }", self.html)
+    def test_visuels_de_match_retires(self):
+        # section 120 : plus aucun des cinq réglages, ni leur code de dessin
+        for bout in ("FX_PAWN", "FX_ARC", "FX_SLOW", "FX_ROUTES", "FX_CLUB", "Match visuals", "3D players", "Ball flight",
+                     "Slow motion on big plays", "Routes before the snap", "Club colours on the field", "slowSpan",
+                     "prePlan", "ballArc", "slow-tag", 'data-set="pawn"', 'data-set="arc"', 'data-set="slow"',
+                     'data-set="routes"', 'data-set="club"'):
+            self.assertNotIn(bout, self.html, bout)
+        # le dessin d'origine du terrain
+        self.assertIn("    if(g.t>=g.dur){ rpSnap(g); onSnap(g); }", self.html)
+        self.assertIn("c.fillStyle=hexA(FIELD.violet,.16); c.fillRect(X(xs),0,10*s,H);", self.html)
+        self.assertIn("c.translate(bx,by-b.h*s*0.55);", self.html)
+        self.assertIn("xPath(g.def); c.stroke();", self.html)
 
 
 if __name__ == "__main__":

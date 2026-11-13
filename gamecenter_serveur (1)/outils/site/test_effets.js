@@ -1,19 +1,16 @@
-// Effets visuels au choix du spectateur (README section 119, 13/11/2026) — test navigateur (Playwright + serveur réel).
+// « Interface motion » (README sections 119 et 120) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_effets.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
-// Quatre réglages coupés par défaut : « Slow motion on big plays », « Routes before the snap », « Club colours on the
-// field » (Settings › Match visuals) et « Interface motion » (Settings › Display). Sur un match réel rejoué en temps simulé :
-//   · sans rien toucher : interrupteurs éteints, aucune action ralentie, aucun tracé, en-but d'origine, pas d'animation ;
-//   · après quatre vrais clics : réglages enregistrés ; une grosse action est ralentie à son moment clé (pastille
-//     « Slow-mo ») et dure EXACTEMENT le temps prévu, pour finir au même endroit que sans ralenti (ballon identique, joueurs à quelques centimètres près) ; les tracés de
-//     l'attaque sont dessinés avant le snap, et cachés quand le pari « Next play » est ouvert ; le nom du club est
-//     peint dans l'en-but, son sigle au centre ; un onglet ouvert arrive en cascade ; une cote cliquée vole vers le
-//     bulletin et le gain potentiel roule jusqu'à sa valeur ;
-//   · après rechargement : réglages gardés ; aucune erreur JS.
+// Un réglage de Settings › Display, coupé par défaut. Les visuels de match des sections 118 et 119 ont été retirés
+// (section 120) : le test vérifie aussi que leurs interrupteurs n'existent plus.
+//   · sans rien toucher : interrupteur éteint, pas de classe d'animation, aucun des cinq réglages retirés ;
+//   · après un vrai clic : réglage enregistré ; un onglet ouvert arrive en cascade ; une cote cliquée vole vers le
+//     bulletin et le gain potentiel roule jusqu'à sa valeur ; le grand écran d'un match s'ouvre sans erreur ;
+//   · après rechargement : réglage gardé ; un clic le recoupe ; aucune erreur JS.
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), os=require('os'), {spawn}=require('child_process');
 const ROOT=path.resolve(__dirname,'..','..'), WEEKS=path.resolve(process.argv[2]||path.join(ROOT,'data','weeks')), PORT=8187;
 const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined);
-const NOMS=['slow','routes','club','motion'];
+const NOMS=['motion'], RETIRES=['pawn','arc','slow','routes','club'];
 let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c) fail++; };
 
 function feed(){
@@ -29,32 +26,6 @@ async function server(){
   for(let i=0;i<120;i++){ try{ const r=await fetch(`http://localhost:${PORT}/api/time`); if(r.ok) return p; }catch(e){} await new Promise(r=>setTimeout(r,250)); }
   p.kill(); throw new Error('le serveur ne démarre pas');
 }
-/* Dans la page : rejoue le match au pas de 0,02 s. Pour chaque action : durée réelle (pas × 0,02), durée prévue, tronçon
-   ralenti, pastille vue, positions à la fin. Avant un snap de passe : ce que le terrain dessine (tracés, en-but). */
-const rejouer=F=>{
-  const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
-  const v=G.getModalView(), P=CanvasRenderingContext2D.prototype, plays={}, dessin={};
-  const peindre=()=>{ const o={dash:0,fill:[],stroke:[]}, d0=P.setLineDash, f0=P.fillText, s0=P.strokeText;
-    P.setLineDash=function(a){ if(this===v.ctx&&a.length) o.dash++; return d0.call(this,a); };
-    P.fillText=function(...a){ if(this===v.ctx) o.fill.push(String(a[0])); return f0.apply(this,a); };
-    P.strokeText=function(...a){ if(this===v.ctx) o.stroke.push(String(a[0])); return s0.apply(this,a); };
-    try{ v._sig=null; v.draw(5,performance.now()); } finally { P.setLineDash=d0; P.fillText=f0; P.strokeText=s0; }
-    return o; };
-  let n=0, tag=false, slowSeen=false;
-  for(let i=0;i<400000&&!(g.status==='final');i++){
-    const ph=g.phase, P0=g.cur, sl=g.slow, dur=g.dur;
-    if(ph==='presnap'&&!dessin.pre&&P0&&P0.seq>4&&!g.special&&P0.call&&P0.call.type==='pass'&&g.t>0.5&&g.status==='live'&&g.pause<=0){
-      dessin.pre=peindre(); dessin.pre.plan=!!(g._pre&&g._pre.plan);
-      const od=g.odds; g.odds=Object.assign({},od,{np:{run:-110,pass:-110}}); g._pre=null; dessin.np=peindre(); dessin.np.plan=!!(g._pre&&g._pre.plan); g.odds=od; g._pre=null;
-      dessin.home=g.home; dessin.away=g.away; }
-    G.stepGame(g,0.02);
-    if(ph==='play'){ n++; if(g.slowOn){ slowSeen=true; if(!tag){ v.draw(0.02,performance.now()); tag=!!(v.slowEl&&!v.slowEl.hidden); } }
-      if(g.phase!=='play'){ plays[P0.seq]={n,dur,slow:sl||null,slowSeen,tag,res:P0.result,gain:P0.gain,off:g.off.map(p=>[+p.x.toFixed(3),+p.y.toFixed(3)]),ball:[+g.ball.x.toFixed(3),+g.ball.y.toFixed(3)]}; n=0; tag=false; slowSeen=false; } }
-    else n=0;
-  }
-  g.paused=true;
-  return {plays,dessin,status:g.status,name:{home:G.byId[g.id]?g.home:g.home}};
-};
 const etat=p=>p.evaluate(N=>{ const o={}; let d={}; try{ d=JSON.parse(localStorage.getItem('gc-settings-v1')||'{}'); }catch(e){}
   for(const n of N){ const b=document.querySelector(`#viewSettings .switch[data-set="${n}"]`); o[n]=b?b.getAttribute('aria-checked'):null; o['ls_'+n]=d[n]; }
   o.body=document.body.classList.contains('mo-on'); o.html=document.documentElement.hasAttribute('data-mo'); return o; },NOMS);
@@ -71,20 +42,15 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
     const p=await b.newPage({viewport:{width:1440,height:1000}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
     await ouvrir(p);
     let R=await etat(p);
-    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]!==true),'les quatre réglages sont présents et éteints par défaut');
+    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]!==true),'« Interface motion » est présent et éteint par défaut');
     check(!R.body&&!R.html,'pas de classe d\'animation sur la page');
-    const A=await p.evaluate(rejouer,F), PA=Object.values(A.plays);
-    check(A.status==='final'&&PA.length>40,`match rejoué jusqu'au bout (${PA.length} actions dessinées)`);
-    check(PA.every(o=>!o.slow&&!o.slowSeen),'par défaut : aucune action ralentie');
-    check(A.dessin.pre&&!A.dessin.pre.plan&&A.dessin.pre.dash===0,'par défaut : aucun tracé avant le snap');
-    const nomH=String(F.game.home.name).toUpperCase(), nomA=String(F.game.away.name).toUpperCase();
-    check(A.dessin.pre&&![nomH,nomA,String(F.game.home.abbr)].some(x=>A.dessin.pre.fill.includes(x)),'par défaut : terrain d\'origine (ni nom de club peint, ni sigle au centre)');
-    await versSettings(p);
+    const reste=await p.evaluate(N=>N.filter(n=>document.querySelector(`#viewSettings [data-set="${n}"]`)).concat(/Match visuals/.test(document.getElementById('viewSettings').textContent)?['Match visuals']:[]),RETIRES);
+    check(!reste.length,'les cinq visuels de match retirés ne sont plus dans Settings'+(reste.length?' : '+reste:''));
     const ret0=await p.evaluate(()=>document.getElementById('tRet').textContent);
 
     for(const n of NOMS) await p.click(`#viewSettings .switch[data-set="${n}"]`);
     R=await etat(p);
-    check(NOMS.every(n=>R[n]==='true'&&R['ls_'+n]===true),'quatre clics : interrupteurs allumés, réglages enregistrés');
+    check(NOMS.every(n=>R[n]==='true'&&R['ls_'+n]===true),'un clic : interrupteur allumé, réglage enregistré');
     check(R.body&&R.html,'la page porte la classe d\'animation');
 
     /* interface : un onglet ouvert arrive en cascade */
@@ -107,31 +73,20 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
       check(mid!==fin.ret,`en passant par des valeurs intermédiaires (${mid})`);
     } else check(false,'une cote ouverte dans Schedule');
 
-    const B=await p.evaluate(rejouer,F), PB=Object.values(B.plays);
-    const lents=PB.filter(o=>o.slow);
-    console.log(`   ${lents.length} actions ralenties sur ${PB.length}`);
-    check(lents.length>=3,'des grosses actions sont ralenties');
-    const gros=o=>o.res==='touchdown'||o.res==='interception'||((o.res==='complete'||o.res==='run')&&o.gain>=20);
-    check(lents.every(gros),'seulement des touchdowns, interceptions ou gains de 20 yards et plus');
-    check(lents.every(o=>o.slowSeen&&o.tag),'chacune passe par son ralenti, pastille « Slow-mo » affichée');
-    const ecart=lents.map(o=>Math.abs(o.n*0.02-o.dur));
-    check(ecart.every(e=>e<=0.021),`une action ralentie dure le temps prévu (écart maximal ${Math.max(...ecart).toFixed(3)} s)`);
-    /* même nombre de pas, même ballon ; les joueurs à moins de 0,25 yard : le lissage des déplacements (section 83)
-       dépend du rythme des images, donc un ralenti laisse un joueur à quelques centimètres près */
-    let pire=0; const diff=Object.keys(A.plays).filter(k=>{ const x=A.plays[k], y=B.plays[k]; if(!y||y.n!==x.n||JSON.stringify(x.ball)!==JSON.stringify(y.ball)) return true;
-      let m=0; x.off.forEach((q,i)=>{ m=Math.max(m,Math.abs(q[0]-y.off[i][0]),Math.abs(q[1]-y.off[i][1])); }); pire=Math.max(pire,m); return m>0.25; });
-    check(Object.keys(B.plays).length===PA.length&&!diff.length,`toutes les actions durent autant et finissent au même endroit qu'avant (ballon identique, joueurs à ${pire.toFixed(2)} yard près)`+(diff.length?` — écarts : ${diff.slice(0,5)}`:''));
-    check(B.dessin.pre&&B.dessin.pre.plan&&B.dessin.pre.dash>=2,`avant le snap : les tracés de l'attaque sont dessinés (${B.dessin.pre&&B.dessin.pre.dash} pointillés)`);
-    check(B.dessin.np&&!B.dessin.np.plan&&B.dessin.np.dash===0,'pari « Next play » ouvert : aucun tracé (il révélerait course ou passe)');
-    check(B.dessin.pre.fill.includes(nomH)||B.dessin.pre.fill.includes(nomA)||B.dessin.pre.fill.includes(String(F.game.home.abbr)),'terrain du club : nom peint dans l\'en-but ou sigle au centre');
-    check(!B.dessin.pre.stroke.includes(nomH)&&!B.dessin.pre.stroke.includes(nomA),'et plus de nom en simple contour');
+    /* le grand écran d'un match s'ouvre (il grandit depuis sa tuile ou monte), sa courbe se dessine */
+    const M=await p.evaluate(F=>{ const G=window.__gc; G.season.setView('live'); G.openReplayFeed(F); const g=G.replayGame(); g.paused=true;
+      const pn=document.querySelector('#modal .m-panel'), ch=document.querySelector('#modal [data-f="wpchart"] svg');
+      return {open:!!G.getModalView(),panel:pn?pn.getAnimations().length:0,curve:ch?ch.getAnimations().length:0}; },F);
+    check(M.open&&M.panel>=1,'grand écran : ouverture animée');
+    check(M.curve>=1,'grand écran : la courbe de probabilité se dessine');
+    await p.keyboard.press('Escape'); await p.waitForFunction(()=>!window.__gc.getModalView(),null,{timeout:10000});
 
     await ouvrir(p);
     R=await etat(p);
-    check(NOMS.every(n=>R[n]==='true')&&R.body&&R.html,'après rechargement : les quatre réglages sont gardés');
+    check(NOMS.every(n=>R[n]==='true')&&R.body&&R.html,'après rechargement : le réglage est gardé');
     for(const n of NOMS) await p.click(`#viewSettings .switch[data-set="${n}"]`);
     R=await etat(p);
-    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]===false)&&!R.body&&!R.html,'un clic les recoupe, la classe d\'animation est retirée');
+    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]===false)&&!R.body&&!R.html,'un clic le recoupe, la classe d\'animation est retirée');
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs[0]:''));
   }finally{ await b.close(); srv.kill(); }
   console.log(fail?`${fail} échec(s)`:'OK'); process.exit(fail?1:0);

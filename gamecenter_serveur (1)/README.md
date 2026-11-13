@@ -3465,6 +3465,23 @@ Rien de tout cela avec « réduire les animations » (`moOn`, `@media (prefers-r
   potentiel qui roule, réglages gardés au rechargement). **Pas vérifié dans un navigateur** : la gerbe d'un pari gagné
   et les silhouettes d'attente (il faut un pari réglé, une connexion lente).
 
+### 120. Retrait des visuels de match des sections 118 et 119 (13/11/2026)
+**Décision de Guillaume (13/11)** : les rendus ne lui plaisent pas. Cinq réglages sont retirés, avec tout leur code :
+**3D players**, **Ball flight** (section 118), **Slow motion on big plays**, **Routes before the snap** et **Club colours
+on the field** (section 119). La carte « Match visuals » de Settings disparaît.
+- **Le terrain redevient exactement celui d'avant la section 118** : le dessin (`FieldView`), le pas de temps du replay
+  (`stepReplay`, `rpSnap`), le clic sur un joueur et les étiquettes sont repris tels quels de la version précédente ;
+  `FX_PAWN`, `FX_ARC`, `FX_SLOW`, `FX_ROUTES`, `FX_CLUB`, `pawns`, `ballArc`, `slowSpan`, `slowWarp`, `prePlan` et la
+  pastille « Slow-mo » n'existent plus. Les sections 118 et 119 restent dans ce fichier comme historique.
+- **Ce qui reste de la section 119** : « Interface motion » (Settings › Display, coupé par défaut) et ses huit
+  effets d'interface, inchangés. Un `pawn`, `arc`, `slow`, `routes` ou `club` déjà enregistré dans `gc-settings-v1`
+  par un navigateur est simplement ignoré.
+- **Reste aussi** : les 90 s accordées au premier chargement de la page dans les tests navigateur à l'heure réelle
+  (la page pèse ≈ 85 Mo en fin de semaine).
+- **Tests** : `moteur/tests/test_terrain_relief.py` et `outils/site/test_relief.js` sont supprimés avec ce qu'ils
+  testaient ; `moteur/tests/test_effets_visuels.py` et `outils/site/test_effets.js` ne portent plus que sur
+  « Interface motion » et vérifient qu'il ne reste rien des cinq réglages (ni dans le code, ni dans Settings).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

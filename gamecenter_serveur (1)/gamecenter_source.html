@@ -2673,10 +2673,9 @@
   }
 </style>
 <style id="mo-fx">
-  /* Section 119 (13/11/2026) — « Interface motion » (Settings › Display, coupé par défaut : body.mo-on) et pastille du
-     ralenti (Settings › Match visuals). Rien ne s'applique sans le réglage, ni avec « réduire les animations ». */
-  .slow-tag{position:absolute;left:50%;top:10px;translate:-50% 0;z-index:4;pointer-events:none;padding:5px 10px;border-radius:999px;
-    font:700 10px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;background:var(--cyan);color:var(--cyan-ink)}
+  /* Section 119 (13/11/2026) — « Interface motion » (Settings › Display, coupé par défaut : body.mo-on). Rien ne
+     s'applique sans le réglage, ni avec « réduire les animations ». (Les visuels de match des sections 118 et 119
+     ont été retirés : section 120.) */
   @keyframes moIn{from{opacity:0;translate:0 10px}}
   @keyframes moShim{to{background-position:-220% 0,0 0,0 34px,0 68px}}
   @keyframes moShim1{to{background-position:-220% 0}}
@@ -4936,7 +4935,6 @@ function rpSnap(g){
   g.plan.flag=penFlag(g,P,g.plan);   /* step 7.2 */
   g.plan.elapsed=Math.max(0,num(P.clock_start,0)-num(P.clock_end,0));
   g.phase='play'; g.t=0; g.dur=P.show?num(P.show.act,g.plan.dur):g.plan.dur; g.trail=[]; g.tracks=null; g.tt=0; g.snapped=true;
-  g.tr=0; g.slowOn=false; g.slow=FX_SLOW&&!REDUCED?slowSpan(g,P,g.plan):null;   /* section 119 */
 }
 function rpResolve(g){
   const P=g.cur, A=P.after;
@@ -4997,8 +4995,7 @@ function stepReplay(g,dt){
     return;
   }
   if(g.phase==='done') return;
-  if(g.phase==='play'&&g.slow){ g.tr+=dt; const tau=g.tr/g.dur; g.t=g.dur*slowWarp(g.slow,tau); g.slowOn=tau<1&&slowNow(g.slow,tau); }   /* section 119: the key moment slowed down, the play still ends on time */
-  else { g.t+=dt; if(g.slowOn) g.slowOn=false; }
+  g.t+=dt;
   if(g.phase==='presnap'){
     presnapUpdate(g);
     if(g.t>=g.dur){ rpSnap(g); onSnap(g); }
@@ -6193,8 +6190,7 @@ function drawInjury(c,p,X,Y,r,s){ if(!p) return;
   c.fillStyle='#FFFFFF'; c.beginPath(); c.roundRect(px-h/2-2,py-h/2-2,h+4,h+4,3); c.fill();
   c.fillStyle=STOP_RED; c.fillRect(px-w/2,py-h/2,w,h); c.fillRect(px-h/2,py-w/2,h,w);
   c.restore(); }
-function drawNameTags(c,T,X,Y,r,s,g,ru){
-  if(ru==null) ru=r;   /* section 118: the play's names sit above a standing player */
+function drawNameTags(c,T,X,Y,r,s,g){
   const tf=Math.max(10,Math.round(s*0.82)), sf=Math.max(8,Math.round(tf*0.82)), th=Math.round(tf*1.65), gap=Math.max(4,s*0.4), boxes=[];
   c.save(); c.textBaseline='middle';
   for(const t of T){
@@ -6204,7 +6200,7 @@ function drawNameTags(c,T,X,Y,r,s,g,ru){
     c.font=`800 ${sf}px Manrope, system-ui, sans-serif`; const sw=t.sub?c.measureText(t.sub).width+sf*0.9:0;
     const w=nw+sw+tf*1.1;
     /* roster names under the dot (the QB's CHECK bubble sits above), the play's names above it; never on top of another tag */
-    let y=t.kind==='roster'?py+r+gap+th/2:py-ru-gap-th/2;
+    let y=t.kind==='roster'?py+r+gap+th/2:py-r-gap-th/2;
     for(let k=0;k<6;k++){ const hit=boxes.find(b=>Math.abs(b.x-px)<(b.w+w)/2+2&&Math.abs(b.y-y)<th+2); if(!hit) break; y+=t.kind==='roster'?th+2:-(th+2); }
     boxes.push({x:px,y,w});
     c.globalAlpha=t.a;
@@ -6471,7 +6467,7 @@ function fsTurned(view){ return !!(view&&view.wrap&&view.wrap.closest('.modal.th
 function pickPlayer(view,cx,cy){
   if(fsTurned(view)){ const x=cx; cx=cy; cy=window.innerWidth-x; }
   const g=view.g; let best=null, bd=34;
-  for(const side of ['off','def']) (side==='off'?g.off:g.def).forEach((p,i)=>{ if(!p) return; const q=view.project(p.x,p.y-(FX_PAWN?PAWN_R*PAWN_K*0.41:0));   /* section 118: a standing player is picked by his body (0.41 = half a glyph radius, in yards) */ const d=Math.hypot(q.x-cx,q.y-cy); if(d<bd){ bd=d; best={side,idx:i}; } });
+  for(const side of ['off','def']) (side==='off'?g.off:g.def).forEach((p,i)=>{ if(!p) return; const q=view.project(p.x,p.y); const d=Math.hypot(q.x-cx,q.y-cy); if(d<bd){ bd=d; best={side,idx:i}; } });
   return best;
 }
 function bindPlayerPick(view){
@@ -6494,52 +6490,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 /* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
    the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
 let FX_DPR=2, FX_GLOW=true;
-/* Section 118 (12/11/2026) — two optional looks of the field, both off unless the viewer turns them on in
-   Settings › Display (applySettings sets them; nothing else in the game reads them: the drawing only).
-   FX_PAWN: the players stand on the turf (a body, a head, the jersey number) instead of the flat O / X glyphs.
-   FX_ARC: a thrown or kicked ball rises in a visible arc, with its shadow on the turf, the path already flown
-   and a ring where it comes down. PAWN_R: a standing player is drawn a little bigger than his flat glyph; PAWN_K: his
-   height, in radii. */
-let FX_PAWN=false, FX_ARC=false;
-/* Section 119 (13/11/2026) — more optional looks, all off unless turned on in Settings (applySettings sets them).
-   Match visuals: FX_SLOW (the key moment of a big play is shown slowed down — see slowSpan), FX_ROUTES (the offence's
-   planned routes while the teams line up — see prePlan), FX_CLUB (end zones in the teams' colours, the home team's
-   mark at midfield). UI_MO: « Interface motion » — tab changes, the match opening from its tile, rolling amounts,
-   the pick flying to the slip, the win, the probability curve drawing itself, loading placeholders, press feedback. */
-let FX_SLOW=false, FX_ROUTES=false, FX_CLUB=false, UI_MO=false;
+/* Section 119 (13/11/2026) — UI_MO: « Interface motion », off unless turned on in Settings › Display (applySettings sets
+   it): tab changes, the match opening from its tile, rolling amounts, the pick flying to the slip, the win, the
+   probability curve drawing itself, loading placeholders, press feedback. Nothing of the match reads it. */
+let UI_MO=false;
 const moOn=()=>UI_MO&&!REDUCED;
-/* Slow motion WITHOUT changing how long the play lasts (the live clock, the sound and the bets keep their timing):
-   the stretch [a,b] of the play is shown at 40 % speed and the rest a little faster, so the play ends on time.
-   Returned: the stretch, as fractions of the play — or null when the play is not a big one. Big = what already shakes
-   the field: touchdown, interception, or a completed pass / run of 20 yards or more. The moment: the catch or the
-   pick (end of the ball's flight), else the goal line of a touchdown run, else the first broken tackle. */
-const SLOW_V=0.4, SLOW_W=0.12;
-function slowSpan(g,P,plan){
-  if(!plan||plan.kick||num(g.dur,0)<2.5||g.spoiler||g.preview||(g.teaser&&g.teaser.running)) return null;
-  const PB=typeof penPlay==='function'?penPlay(P):P, r=PB.result, gain=num(PB.gain,0);
-  if(!(r==='touchdown'||r==='interception'||((r==='complete'||r==='run')&&gain>=20))) return null;
-  const k=plan.flight?plan.flight.t1:r==='touchdown'?0.93:plan.miss&&plan.miss.length?plan.miss[0].at:null;
-  if(k==null||!isFinite(k)) return null;
-  const a=clamp(k-0.07,0.05,0.99-SLOW_W); return {a,b:a+SLOW_W};
-}
-/* real share of the play elapsed -> share of the play shown (0 -> 0, 1 -> 1) */
-function slowWarp(S,tau){
-  if(tau>=1) return 1; if(tau<=0) return 0;
-  const w=S.b-S.a, vf=(1-w)/(1-w/SLOW_V), ta=S.a/vf, tb=ta+w/SLOW_V;
-  return tau<ta?tau*vf:tau<tb?S.a+(tau-ta)*SLOW_V:S.b+(tau-tb)*vf;
-}
-function slowNow(S,tau){ const w=S.b-S.a, vf=(1-w)/(1-w/SLOW_V), ta=S.a/vf; return tau>=ta&&tau<ta+w/SLOW_V; }
-/* The play about to be run, for the routes drawn before the snap: the same plan the snap will build (same seed), made
-   on a copy of the game so nothing of the match is touched. Not shown when it would give the play away to a bettor:
-   the next-play market (run / pass) is open until the snap. */
-function prePlan(g){
-  const P=g.cur; if(!P||!P.call||P.conversion||g.special||!g.replay||g.seed==null||(g.odds&&g.odds.np)) return null;
-  if(P.call.play_id==='KNEEL'||P.call.play_id==='SPIKE') return null;
-  if(g._pre&&g._pre.P===P) return g._pre.plan;
-  let plan=null; try{ plan=withSeed(g.seed+':p:'+P.seq,()=>planFromFeed(Object.assign({},g),P)); }catch(e){}
-  g._pre={P,plan:plan&&(plan.type==='pass'||plan.type==='run')&&Array.isArray(plan.off)?plan:null};
-  return g._pre.plan;
-}
 /* ---- Interface motion ---- */
 /* a number that rolls to its new value (balance, potential return, win probability); first value: set at once */
 function moRoll(el,to,render,ms){
@@ -6617,7 +6572,6 @@ function moChart(el){
     if(dot) dot.animate([{opacity:0},{opacity:0,offset:.9},{opacity:1}],{duration:950}); }
   else if(dot) dot.animate([{boxShadow:`0 0 0 0 ${hexA(FIELD.cyan,.6)}`},{boxShadow:`0 0 0 12px ${hexA(FIELD.cyan,0)}`}],{duration:700,easing:'ease-out'});
 }
-const PAWN_R=1.3, PAWN_K=2.7, PAWN_HEAD=0.52;
 const FD_PULSE=1300;   /* 05/11/2026: first-down pulse (ms) */
 class FieldView{
   constructor(wrap,g,viewW,maxZoom){
@@ -6684,19 +6638,16 @@ class FieldView{
       g.trail.length,tl&&Math.round(tl.x*40),tl&&Math.round(tl.y*40),g.tracks,g.plan,g.phase,g.status,g.los,g.toGo,g.special,g.poss,g.home,g.away,
       c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g),
       g.stopT0!=null&&performance.now()-g.stopT0<1700?Math.floor((performance.now()-g.stopT0)/200):-1,
-      g.fdT0!=null&&performance.now()-g.fdT0<FD_PULSE?Math.floor((performance.now()-g.fdT0)/33):-1, g.down, FX_PAWN, FX_ARC, FX_CLUB, FX_ROUTES&&g.phase==='presnap'?Math.min(8,Math.floor(g.t*20)):-1];   /* the first-down pulse */   /* clignotement du cercle rouge */
+      g.fdT0!=null&&performance.now()-g.fdT0<FD_PULSE?Math.floor((performance.now()-g.fdT0)/33):-1, g.down];   /* the first-down pulse */   /* clignotement du cercle rouge */
   }
   endZone(xs,team,X,x0,x1){
     if(xs+10<x0||xs>x1) return;
     const c=this.ctx, s=this.s, H=this.ch, T=TEAMS[team];
     c.fillStyle=FIELD.endzone; c.fillRect(X(xs),0,10*s,H);
-    const club=FX_CLUB?daTeamCol(team):null;   /* section 119: the end zone in its team's colour, the name filled in */
-    c.fillStyle=club?hexA(club,.5):hexA(FIELD.violet,.16); c.fillRect(X(xs),0,10*s,H);
+    c.fillStyle=hexA(FIELD.violet,.16); c.fillRect(X(xs),0,10*s,H);
     c.save(); c.translate(X(xs+5),this.Y(MIDY)); c.rotate(xs===0?-Math.PI/2:Math.PI/2);
-    c.font=`700 italic ${Math.max(10,(club?4.6:3.6)*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-    if(club){ c.fillStyle=hexA(FIELD.ink,.85); c.fillText(T.name.toUpperCase(),0,0); }
-    else { c.lineWidth=Math.max(1,s*0.08); c.strokeStyle=hexA(FIELD.ink,.4); c.strokeText(T.name.toUpperCase(),0,0); }
-    c.restore();
+    c.font=`700 italic ${Math.max(10,3.6*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+    c.lineWidth=Math.max(1,s*0.08); c.strokeStyle=hexA(FIELD.ink,.4); c.strokeText(T.name.toUpperCase(),0,0); c.restore();
   }
   /* What the viewer must see right now: the whole formation before the snap; during the play the ball,
      where a thrown or kicked ball will land, the ball carrier and the targeted receiver */
@@ -6760,70 +6711,10 @@ class FieldView{
         sig=(sig*31+Math.round(hd[i]*20))|0; } }
     return [sig];
   }
-  /* Section 118 — the players standing on the turf (FX_PAWN). The canvas is the field seen from above, tilted by the
-     page: a body drawn toward the far sideline reads as a man standing up. Far players first, so a nearer one covers
-     them. The two cues of the flat glyphs are kept: offence = rounded body (the O), defence = body tapering to the
-     feet (the X); home = solid colour, away = hollow. The head leans the way the player faces. Jersey numbers from
-     the engine's line-up (slotMap), once the body is big enough to read them. */
-  pawns(g,X,Y,r,dCol){
-    r*=PAWN_R;
-    const c=this.ctx, oCol=daOff(g), offHome=g.poss==='home', hw=r*0.8, hr=r*PAWN_HEAD, hd=this.hd;
-    let sm=null; if(r>=7&&g.plays&&typeof slotMap==='function'){ try{ sm=slotMap(g); }catch(e){} }
-    const L=[]; for(const sd of ['off','def']){ const A=g[sd]; for(let i=0;i<A.length;i++){ if(A[i]) L.push({p:A[i],sd,i}); } }
-    L.sort((a,b)=>a.p.y-b.p.y);
-    const inkOn=col=>{ const rgb=daRgb(col); return rgb&&daLum(rgb)>0.3?'#141414':'#FFFFFF'; };
-    c.save(); c.lineJoin='round'; c.textAlign='center'; c.textBaseline='middle';
-    c.font=`800 ${Math.round(r*1.2)}px "Big Shoulders Display", sans-serif`;
-    c.fillStyle='rgba(0,0,0,.3)';
-    for(const e of L){ const px=X(e.p.x), py=Y(e.p.y); c.beginPath(); c.ellipse(px+r*0.45,py+r*0.05,r*1.2,r*0.55,0,0,Math.PI*2); c.fill(); }
-    for(const e of L){
-      const px=X(e.p.x), py=Y(e.p.y), off=e.sd==='off', col=off?oCol:dCol, solid=off===offHome;
-      const h=Math.min(r*PAWN_K,Math.max(r*1.3,py-hr*2-1));   /* by the far sideline the canvas ends: a shorter body, never a cut head */
-      const a=hd&&hd[e.sd][e.i], lean=a!=null?Math.cos(a)*r*0.22:0;
-      c.beginPath();
-      if(off) c.roundRect(px-hw,py-h,hw*2,h,hw);
-      else { c.moveTo(px-hw*1.15,py-h); c.lineTo(px+hw*1.15,py-h); c.lineTo(px+hw*0.5,py); c.lineTo(px-hw*0.5,py); c.closePath(); }
-      c.moveTo(px+lean+hr,py-h-hr*0.7); c.arc(px+lean,py-h-hr*0.7,hr,0,Math.PI*2);
-      if(solid){ c.fillStyle=col; c.fill(); c.lineWidth=Math.max(1,r*0.12); c.strokeStyle=hexA(FIELD.bg,.55); c.stroke(); }
-      else { c.fillStyle=FIELD.bg; c.fill(); c.lineWidth=Math.max(1.3,r*0.26); c.strokeStyle=col; c.stroke(); }
-      const pl=sm&&sm[e.sd][e.i];
-      if(pl&&pl.number!=null){ c.fillStyle=solid?inkOn(col):FIELD.ink; c.fillText(String(pl.number),px,py-h*(off?0.5:0.6)); }
-    }
-    c.restore();
-  }
-  /* Section 118 — the ball in the air (FX_ARC). The engine's own flight (from, to, when) is not touched: only how
-     high the ball is DRAWN. A pass used to rise by half a yard on screen; here its arc grows with its length, and a
-     kick keeps the engine's height. On the turf: the shadow under the ball and a ring where it comes down; in the
-     air: the path already flown, dotted. */
-  ballArc(g,f,X,Y,s,r){
-    const c=this.ctx, b=g.ball, dx=f.to.x-f.from.x, dy=f.to.y-f.from.y, D=Math.hypot(dx,dy)||1;
-    const v=clamp(((b.x-f.from.x)*dx+(b.y-f.from.y)*dy)/(D*D),0,1);
-    const pk=(f.peak>=5?f.peak*0.8:clamp(0.9+0.13*D,1.4,6.5))*s;                  /* top of the arc, in pixels */
-    const at=u=>{ const px=X(f.from.x+dx*u), py=Y(f.from.y+dy*u); return {x:px,y:py-Math.min(Math.sin(Math.PI*u)*pk,Math.max(0,py-6))}; };
-    const bx=X(b.x), by=Y(b.y), p=at(v), up=Math.sin(Math.PI*v);
-    c.save();
-    const tx=X(f.to.x), ty=Y(f.to.y), k=REDUCED?0.4:(performance.now()%800)/800;   /* where it comes down */
-    c.lineWidth=Math.max(1.4,s*0.14); c.strokeStyle=hexA(FIELD.ink,REDUCED?.5:.75*(1-k));
-    c.beginPath(); c.arc(tx,ty,r*(1.3+k*1.5),0,Math.PI*2); c.stroke();
-    c.fillStyle='rgba(0,0,0,.45)'; c.beginPath();                                   /* shadow: smaller as the ball climbs */
-    c.ellipse(bx,by,Math.max(1.8,0.55*s)*(1-up*0.3),Math.max(1,0.3*s)*(1-up*0.3),0,0,Math.PI*2); c.fill();
-    c.strokeStyle=hexA(FIELD.ink,.6); c.lineWidth=Math.max(1.5,s*0.16); c.lineCap='round'; c.setLineDash([0.01,Math.max(5,s*0.6)]);
-    c.beginPath(); for(let u=0;u<v;u+=0.03){ const q=at(u); u?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y); } c.lineTo(p.x,p.y); c.stroke();
-    c.setLineDash([]);
-    const q=at(Math.min(1,v+0.02)), q0=at(Math.max(0,v-0.02)), sc=1+up*0.35;         /* the ball points along its path */
-    c.translate(p.x,p.y); c.rotate(Math.atan2(q.y-q0.y,q.x-q0.x));
-    c.shadowColor=FIELD.ink; c.shadowBlur=FX_GLOW?8:0;
-    c.beginPath(); c.ellipse(0,0,Math.max(2.2,0.6*s)*sc,Math.max(1.4,0.36*s)*sc,0,0,Math.PI*2); c.fillStyle=FIELD.ink; c.fill();
-    c.restore();
-  }
   draw(dt,now){
     const g=this.g, c=this.ctx, W=this.cw, H=this.ch;
     const dCol=daDef(g);   /* 05/11/2026: the defence in its franchise colour */
     if(!W) return false;
-    const slowOn=!!(g.slowOn&&g.phase==='play');   /* section 119: the « slow-mo » tag over the field */
-    if(slowOn!==!!this._slow){ this._slow=slowOn;
-      if(slowOn&&!this.slowEl){ const e=this.slowEl=document.createElement('span'); e.className='slow-tag'; e.textContent='Slow-mo'; e.setAttribute('aria-hidden','true'); this.wrap.appendChild(e); }
-      if(this.slowEl) this.slowEl.hidden=!slowOn; }
     if(this._resnap){ this._resnap=false; this._sig=null; dt=5; }   /* back on screen: the camera jumps to the action instead of panning from where it was left */
     /* "Lazy" camera: it stays still while the action is inside the visible window and only moves when
        the ball, the carrier or the target would leave it; a slow drift re-centres it. Zoom has hysteresis
@@ -6856,12 +6747,6 @@ class FieldView{
     c.fillStyle=FIELD.turf2;
     for(let yd=10; yd<110; yd+=10){ if(yd+5<x0||yd>x1) continue; c.fillRect(X(yd),0,5*s,H); }
     this.endZone(0,g.home,X,x0,x1); this.endZone(110,g.away,X,x0,x1);
-    if(FX_CLUB&&x0<70&&x1>50&&TEAMS[g.home]){   /* section 119: the home team's mark at midfield, under the lines */
-      const hc=daTeamCol(g.home); c.save(); c.translate(X(60),Y(MIDY));
-      c.fillStyle=hexA(hc,.08); c.beginPath(); c.arc(0,0,6*s,0,Math.PI*2); c.fill();
-      c.lineWidth=Math.max(1,s*0.14); c.strokeStyle=hexA(hc,.35); c.stroke();
-      c.font=`800 ${Math.max(10,5*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-      c.fillStyle=hexA(hc,.38); c.fillText(String(TEAMS[g.home].abbr||''),0,s*0.3); c.restore(); }
     // sidelines
     const sl=Math.max(1,s*0.15);
     c.fillStyle=hexA(FIELD.cyan,.35); c.fillRect(0,Y(0),W,sl); c.fillRect(0,Y(53.3)-sl,W,sl);
@@ -6906,17 +6791,6 @@ class FieldView{
       c.restore();
       if(!g.special) this.firstDownPulse(g,X,s,H,d);
     }
-    // section 119: the planned routes while the teams line up (FX_ROUTES) — dashed, an arrow at the end
-    if(FX_ROUTES&&g.phase==='presnap'&&g.status==='live'){ const pp=prePlan(g);
-      if(pp){ const al=REDUCED?1:clamp(g.t/0.35,0,1), col=daOff(g), L=Math.max(5,s*0.9);
-        c.save(); c.lineCap='round'; c.lineJoin='round'; c.lineWidth=Math.max(1.3,s*0.14); c.strokeStyle=hexA(col,.7*al); c.fillStyle=hexA(col,.85*al);
-        for(const i of (pp.type==='run'?[7]:[5,7,8,9,10])){ const k=pp.off[i]; if(!Array.isArray(k)||k.length<2) continue;
-          const a=k[0], e=k[k.length-1]; if(Math.hypot(e[1]-a[1],e[2]-a[2])<2.5) continue;
-          c.setLineDash([Math.max(3,s*0.6),Math.max(3,s*0.5)]); c.beginPath(); k.forEach((q,j)=>j?c.lineTo(X(q[1]),Y(q[2])):c.moveTo(X(q[1]),Y(q[2]))); c.stroke(); c.setLineDash([]);
-          let f=k[k.length-2]; for(let j=k.length-2;j>=0;j--){ f=k[j]; if(Math.hypot(e[1]-f[1],e[2]-f[2])>0.8) break; }
-          const ang=Math.atan2(Y(e[2])-Y(f[2]),X(e[1])-X(f[1]));
-          c.beginPath(); c.moveTo(X(e[1]),Y(e[2])); c.lineTo(X(e[1])-L*Math.cos(ang-0.45),Y(e[2])-L*Math.sin(ang-0.45)); c.lineTo(X(e[1])-L*Math.cos(ang+0.45),Y(e[2])-L*Math.sin(ang+0.45)); c.closePath(); c.fill(); }
-        c.restore(); } }
     // player traces, like a playbook diagram: offence routes in cyan (the target brighter), coverage in pink
     const TP=g.plan, TR=g.tracks;
     if(TR && TP && TP.call && (g.phase==='play'||g.phase==='post')){
@@ -6952,8 +6826,6 @@ class FieldView{
     // players: offence = O cyan, defence = X pink, each with a soft halo.
     // Team = shape fill: HOME solid neon, AWAY hollow glyph in the lighter tint (--cyan-2 / --pink-2).
     const r=Math.max(2.6,0.82*s), k=r*0.72, offHome=g.poss==='home';
-    const ru=FX_PAWN?r*PAWN_R*(PAWN_K+PAWN_HEAD*1.7):r;   /* section 118: how far above his spot a label must sit to clear the player */
-    if(!FX_PAWN){
     c.fillStyle=hexA(dCol,.13);
     for(const p of g.def){ c.beginPath(); c.arc(X(p.x),Y(p.y),r*1.8,0,Math.PI*2); c.fill(); }
     c.fillStyle=hexA(daOff(g),.15);
@@ -6977,7 +6849,6 @@ class FieldView{
           c.moveTo(px+cs*R1,py+sn*R1); c.lineTo(px+cs*R0-sn*w,py+sn*R0+cs*w); c.lineTo(px+cs*R0+sn*w,py+sn*R0-cs*w); c.closePath(); }
         c.fill(); };
       cv(g.def,this.hd.def,hexA(dCol,.85)); cv(g.off,this.hd.off,hexA(daOff(g),.9));
-    }
     }
     if(g.carrier){
       const p=g.carrier.side==='off'?g.off[g.carrier.idx]:g.def[g.carrier.idx];
@@ -7013,8 +6884,7 @@ class FieldView{
     if(g.phase==='post'&&g.cur&&g.cur.injury&&!g.special){ const sp=injSpot(g); if(sp) drawInjury(c,(sp.side==='off'?g.off:g.def)[sp.idx],X,Y,r,s); }
     // who is who (19/10/2026, big screen only): the skill players' names before the snap, the ball carrier during
     // the play, then the defender who made the play (tackle, sack, interception, pass defended) — see nameTags
-    if(FX_PAWN) this.pawns(g,X,Y,r,dCol);   /* section 118: over the rings on the turf, under the names */
-    if(g.plays&&typeof modalView!=='undefined'&&this===modalView&&!g.special){ const T=nameTags(g); if(T.length) drawNameTags(c,T,X,Y,r,s,g,ru); }
+    if(g.plays&&typeof modalView!=='undefined'&&this===modalView&&!g.special){ const T=nameTags(g); if(T.length) drawNameTags(c,T,X,Y,r,s,g); }
     // the player whose card is open
     if(g.sel){
       const p=(g.sel.side==='off'?g.off:g.def)[g.sel.idx];
@@ -7032,7 +6902,7 @@ class FieldView{
         const pl=sm2&&sm2[h.side][h.idx];
         if(pl){ const tag=pl.name, tf=Math.max(10,Math.round(s*0.95));
           c.save(); c.font=`700 ${tf}px Manrope, system-ui, sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-          const tw=c.measureText(tag).width+tf, th=tf*1.7, ty=py-ru-th*0.5-Math.max(5,s*0.5);
+          const tw=c.measureText(tag).width+tf, th=tf*1.7, ty=py-r-th*0.5-Math.max(5,s*0.5);
           c.fillStyle=DA_FX.tag; c.strokeStyle=col; c.lineWidth=1;
           c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,th/2); c.fill(); c.stroke();
           c.fillStyle=FIELD.ink; c.fillText(tag,px,ty+0.5); c.restore(); }
@@ -7056,7 +6926,7 @@ class FieldView{
       const ts=Math.max(8,Math.round(tf*0.7));                       /* 12.2 vicies bis: second line (film) */
       c.font=`700 ${ts}px Manrope, system-ui, sans-serif`; const sw=bub.sub?c.measureText(bub.sub).width:0;
       c.font=`800 ${tf}px Manrope, system-ui, sans-serif`;
-      const t1=tf*1.75, th=bub.sub?t1+ts*1.15:t1, tw=Math.max(c.measureText(bub.text).width,sw)+tf*1.2, ty=py-ru-th*0.5-Math.max(6,s*0.6);
+      const t1=tf*1.75, th=bub.sub?t1+ts*1.15:t1, tw=Math.max(c.measureText(bub.text).width,sw)+tf*1.2, ty=py-r-th*0.5-Math.max(6,s*0.6);
       c.fillStyle=col; c.beginPath(); c.roundRect(px-tw/2,ty-th/2,tw,th,Math.min(th,t1)/2); c.fill();
       c.beginPath(); c.moveTo(px-t1*0.22,ty+th/2-1); c.lineTo(px,ty+th/2+t1*0.3); c.lineTo(px+t1*0.22,ty+th/2-1); c.fill();
       c.fillStyle=FIELD.bg;
@@ -7067,16 +6937,12 @@ class FieldView{
     }
     // ball: ice-white capsule, lifted when in the air
     const b=g.ball, bx=X(b.x), by=Y(b.y);
-    const arc=FX_ARC&&g.phase==='play'&&g.plan&&g.plan.flight&&b.h>0.02?g.plan.flight:null;
-    if(arc) this.ballArc(g,arc,X,Y,s,r);   /* section 118 */
-    else {
     if(b.h>0.05){ c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(bx,by,Math.max(1.8,0.45*s),Math.max(1,0.25*s),0,0,Math.PI*2); c.fill(); }
     const sc=1+b.h*0.05;
     c.save(); c.translate(bx,by-b.h*s*0.55); c.rotate(dirOf(g)>0?-0.35:0.35);
     c.shadowColor=FIELD.ink; c.shadowBlur=FX_GLOW?8:0;
     c.beginPath(); c.ellipse(0,0,Math.max(2.2,0.55*s)*sc,Math.max(1.4,0.34*s)*sc,0,0,Math.PI*2);
     c.fillStyle=FIELD.ink; c.fill(); c.restore();
-    }
     // night vignette
     if(!this._vg||this._vgK!==DA_FX.vig){   /* perf: same gradient every frame — built once per size and theme */
       const vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.25,W/2,H/2,Math.max(W,H)*0.72);
@@ -9331,8 +9197,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }cat
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
-    /* section 118 : two optional looks of the field, off unless asked for */ pawn:d.pawn===true, arc:d.arc===true,
-    /* section 119 : more optional looks, off unless asked for */ slow:d.slow===true, routes:d.routes===true, club:d.club===true, motion:d.motion===true,
+    /* section 119 : « Interface motion », off unless asked for */ motion:d.motion===true,
     /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
     /* bloc 3 : the General chat folds score-like messages about games not watched to the end (on unless turned off) */ chatShield:d.chatShield!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
@@ -9344,10 +9209,8 @@ const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
 function saveSettings(){ return lsSet(SET_KEY,SET); }
 function applySettings(){
   document.body.classList.toggle('fx-off',!SET.fx);
-  FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;
-  FX_SLOW=!!SET.slow; FX_ROUTES=!!SET.routes; FX_CLUB=!!SET.club; UI_MO=!!SET.motion;   /* section 119 */
+  UI_MO=!!SET.motion;   /* section 119 */
   document.body.classList.toggle('mo-on',UI_MO); document.documentElement.toggleAttribute('data-mo',UI_MO); if(UI_MO) moWatch();
-   /* section 118: read by the field drawing only */
   const q=document.getElementById('quick');
   if(q) q.innerHTML='<span class="label">Stake all</span>'+QUICK_SETS[SET.quick].map(v=>`<button class="qc" type="button" data-q="${v}">$${v}</button>`).join('');
 }
@@ -9920,18 +9783,6 @@ function renderSettings(force){
         <button type="button" class="switch" role="switch" data-set="chatShield" aria-checked="${SET.chatShield}" aria-labelledby="setChatShieldL"><i></i></button></div>`:''}
       <div class="set-row"><span class="set-l">Clock<small>${CLOCK.demo?'Preview time: the week plays from a moment you pick':'Real time, Europe/Brussels'}</small></span>
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
-    </div>
-    <div class="card set-card"><div class="card-h"><h2>Match visuals</h2><span class="label">Off by default</span></div>
-      <div class="set-row"><span class="set-l" id="setPawnL">3D players<small>Players stand on the field and wear their jersey number, instead of the flat O and X markers</small></span>
-        <button type="button" class="switch" role="switch" data-set="pawn" aria-checked="${SET.pawn}" aria-labelledby="setPawnL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setArcL">Ball flight<small>Passes and kicks rise in an arc, with a shadow on the field and a ring where the ball comes down</small></span>
-        <button type="button" class="switch" role="switch" data-set="arc" aria-checked="${SET.arc}" aria-labelledby="setArcL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setSlowL">Slow motion on big plays<small>Touchdowns, interceptions and gains of 20 yards or more slow down at the key moment · the play still ends on time</small></span>
-        <button type="button" class="switch" role="switch" data-set="slow" aria-checked="${SET.slow}" aria-labelledby="setSlowL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setRoutesL">Routes before the snap<small>The planned routes of the offence are drawn while the teams line up · hidden while the next-play market is open</small></span>
-        <button type="button" class="switch" role="switch" data-set="routes" aria-checked="${SET.routes}" aria-labelledby="setRoutesL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setClubL">Club colours on the field<small>Each end zone in its team’s colour, and the home team’s mark at midfield</small></span>
-        <button type="button" class="switch" role="switch" data-set="club" aria-checked="${SET.club}" aria-labelledby="setClubL"><i></i></button></div>
     </div>
     ${soundCard()}
     ${SERVER?pushCard():''}
