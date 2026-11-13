@@ -58,7 +58,7 @@ class TestInterfaceMotion(unittest.TestCase):
         self.assertIn("const moOn=()=>UI_MO&&!REDUCED;", self.html)
         for f in ("moView", "moOpen", "moFly", "moWin", "moChart"):
             corps = self.html[self.html.index(f"function {f}("):]
-            self.assertIn("if(!moOn()", corps[:260], f)
+            self.assertIn("if(!moOn()", corps[:520], f)   # moView retire d'abord les classes d'une cascade finie (section 121)
         self.assertIn("if(!moOn()||el._mv==null", self.html)      # moRoll : sans le réglage, la valeur est posée d'un coup
 
     def style(self):
