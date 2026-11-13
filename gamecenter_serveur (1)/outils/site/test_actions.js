@@ -5,7 +5,7 @@
 //   - passes : le ballon quitte le QB avant l'attrapé et reste en l'air FL_MIN s d'écran au moins ;
 //   - après la réception (hors sortie en touche) : le receveur file droit (écart latéral / yards vers l'avant ≤ 0,35) ;
 //   - interception : le retour ne part pas vers le centre du terrain sans raison ;
-//   - réception de 20 yards et plus : un défenseur est sur le receveur quand il s'arrête ;
+//   - réception de 15 yards et plus, interception : un adversaire est sur le porteur quand il s'arrête ;
 //   - aucun saut : vitesse d'un joueur d'une image à l'autre ;
 //   - interrupteur (GC_JEU_FLUIDE=0, ici par le crochet de test) : le dessin d'avant revient ;
 //   - aucune erreur JS.
@@ -83,8 +83,10 @@ function measure([F,on]){
     check(C.length>5&&r90<=0.35,`après la réception, le receveur file droit : écart latéral / yards vers l'avant ${r90.toFixed(2)} (90e centile, ≤ 0,35) sur ${C.length} réceptions`);
     const I=on.filter(o=>o.kind==='int'&&o.fwd!=null), Im=I.filter(o=>o.mid>3&&Math.abs(o.lat)>o.fwd*0.6);
     check(I.length>0&&Im.length<=Math.ceil(I.length*0.25),`interception : retour vers l'en-but adverse, pas vers le centre (${I.length-Im.length} / ${I.length})`);
-    const Lg=on.filter(o=>o.kind==='comp'&&o.res==='complete'&&!o.oob&&o.gain>=15&&o.opp!=null), Lk=Lg.filter(o=>o.opp>3);
-    check(!Lg.length||Lk.length<=Math.ceil(Lg.length*0.25),`réception de 15 yards et plus : un défenseur sur le receveur à l'arrêt (${Lg.length-Lk.length} / ${Lg.length})`);
+    /* 12/11/2026 : plus strict, interceptions comprises (un adversaire loin du porteur arrêté se voyait sur les passes
+       longues et les retours d'interception) : à 2,5 yards au plus, 95 % des cas */
+    const Lg=on.filter(o=>(o.kind==='comp'&&o.res==='complete'&&o.gain>=15||o.kind==='int')&&!o.oob&&o.res!=='touchdown'&&o.opp!=null), Lk=Lg.filter(o=>o.opp>2.5);
+    check(!Lg.length||Lk.length<=Math.floor(Lg.length*0.05),`réception de 15 yards et plus, interception : un adversaire sur le porteur à l'arrêt (${Lg.length-Lk.length} / ${Lg.length})`);
     const V=on.map(o=>o.vmax).sort((a,b)=>a-b), v99=V[Math.floor(V.length*0.99)], vmx=V[V.length-1];
     check(v99<=40&&vmx<=120,`aucun saut : vitesse d'un joueur ${v99.toFixed(1)} yd/s au 99e centile (≤ 40), ${vmx.toFixed(1)} au plus (≤ 120)`);
     const flOff=off.filter(o=>o.flight!=null&&['comp','inc','int'].includes(o.kind)), bad=flOff.filter(o=>o.flight<=0).length;

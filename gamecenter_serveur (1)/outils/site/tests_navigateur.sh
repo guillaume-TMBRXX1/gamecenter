@@ -2,11 +2,14 @@
 # Tests navigateur du site (Playwright, serveurs réels avec le crochet de test) — en local comme sur GitHub
 # (workflow « Contrôle des PR », README section 38). Depuis « gamecenter_serveur (1) » :
 #
-#   bash outils/site/tests_navigateur.sh [--semaines N] [--groupe site|parite]
+#   bash outils/site/tests_navigateur.sh [--semaines N] [--groupe site|site-2|parite]
 #
 # Il faut Python avec fastapi / uvicorn (requirements.txt), Node avec Playwright (Chromium) et ffmpeg (sons de test).
 # --semaines N : commentaire et parité audio ne rejouent que les N dernières semaines (défaut : toutes ; la parité
-#                prend ≈ 6 min par semaine). --groupe : « site » (tout sauf la parité) ou « parite » (défaut : les deux).
+#                prend ≈ 6 min par semaine). --groupe : « site » (1re moitié des tests du site : dessin des actions,
+#                jusqu'aux rivalités), « site-2 » (2e moitié : empreinte, mobile, émission, dimanche, chat, audio…),
+#                « parite », ou « tous » (défaut). 12/11/2026 : le site en deux jobs parallèles sur GitHub (un seul
+#                dépassait ses 60 minutes, ≈ 59 min sur main) ; chacun ≈ 22 min de tests.
 # Le dépôt n'est pas modifié : chaque serveur tourne sur une copie de data/ (paris, comptes) dans un dossier temporaire.
 #   8103 : sans sons enregistrés (parité avec l'ancien code) · 8104 : sons de test (--placeholder) · 8108 : sons du dépôt
 # Tous les tests tournent, même après un échec ; le script échoue si l'un d'eux échoue.
@@ -20,8 +23,8 @@ while [ $# -gt 0 ]; do
     *) echo "option inconnue : $1"; exit 2;;
   esac
 done
-SITE=0; PAR=0
-case "$GROUPE" in tous) SITE=1; PAR=1;; site) SITE=1;; parite) PAR=1;; *) echo "groupe inconnu : $GROUPE"; exit 2;; esac
+SITE=0; PAR=0; S1=0; S2=0
+case "$GROUPE" in tous) SITE=1; PAR=1; S1=1; S2=1;; site) SITE=1; S1=1;; site-2) SITE=1; S2=1;; parite) PAR=1;; *) echo "groupe inconnu : $GROUPE"; exit 2;; esac
 TMP=$(mktemp -d)
 PIDS=()
 arreter() { for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done; wait 2>/dev/null; rm -rf "$TMP"; }
@@ -63,7 +66,7 @@ lancer() {   # nom, commande…
   RESUME+="| $nom | $r | $((SECONDS - t0)) s |\n"
 }
 SEM=(); [ "$SEMAINES" != 0 ] && SEM=(--semaines "$SEMAINES")
-if [ $SITE = 1 ]; then
+if [ $S1 = 1 ]; then
   lancer "Audio : AudioEventMapper" node outils/audio/test_mapper_v01.js data/weeks
   lancer "Site : pauses de retransmission" node outils/site/test_pauses.js
   lancer "Site : fin de match dans le grand écran" node outils/site/test_fin_de_match.js
@@ -102,6 +105,8 @@ if [ $SITE = 1 ]; then
   lancer "Site : Same Game Combo (Schedule, bulletin) et pari rapide sur le grand écran" node outils/site/test_pari_rapide.js
   lancer "Site : fin d.un match en direct sur le tableau (dernières actions, écran final)" node outils/site/test_fin_live.js
   lancer "Site : rivalités, bilans des confrontations et mémoire" node outils/site/test_rivalites.js
+fi
+if [ $S2 = 1 ]; then
   lancer "Site : empreinte de jeu (forme publique, chiffres Insights)" node outils/site/test_empreinte.js
   lancer "Site : netteté du terrain, page allégée, redémarrage signalé (iPhone / iPad)" node outils/site/test_mobile.js
   lancer "Site : « Week in review », l.émission du week-end" node outils/site/test_review.js

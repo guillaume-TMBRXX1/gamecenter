@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        groupe: [site, parite]
+        groupe: [site, site-2, parite]   # 12/11/2026 : le site en deux moitiés parallèles (un job dépassait ses 60 min)
     defaults:
       run:
         working-directory: "gamecenter_serveur (1)"
@@ -80,7 +80,7 @@ jobs:
             echo "::warning::Installation de Playwright : essai $i échoué, nouvel essai dans $((30 * i)) s"
             sleep $((30 * i)); sudo apt-get update -qq || true
           done
-          if [ "$GROUPE" = site ] && ! command -v ffmpeg > /dev/null; then
+          if [ "$GROUPE" != parite ] && ! command -v ffmpeg > /dev/null; then
             for i in 1 2 3; do sudo apt-get install -y -qq ffmpeg > /dev/null && break; [ "$i" = 3 ] && exit 1; sleep $((30 * i)); sudo apt-get update -qq || true; done
           fi
       - name: Tests navigateur

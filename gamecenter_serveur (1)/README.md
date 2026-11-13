@@ -784,17 +784,19 @@ créés = débranchés), la page reste lourde.
 ### 38. Contrôle des PR (11/10/2026)
 
 - **Workflow « Contrôle des PR »** (`.github/workflows/controle.yml`) : sur chaque PR vers `main` (sauf celles qui ne
-  touchent que des `.md` ou `programme/`), trois jobs en parallèle, en lecture seule :
+  touchent que des `.md` ou `programme/`), quatre jobs en parallèle, en lecture seule (section 117 : le site en deux) :
   - **Python** (≈ 2 min) : tests du moteur et du serveur (`unittest`, fastapi installé : les tests serveur des pauses
     et `test_serveur.py` tournent aussi), audit de toutes les semaines (`audit_moteur.py`) ;
   - **Navigateur (site)** (≈ 6 min) : AudioEventMapper, pauses de retransmission, recherche, scores des matchs terminés, transformations, coups d'envoi et retours, Game Center du notebook
     (cellule 427), musique, commentaire enregistré (dernière
     semaine), foule et effets ;
+  - **Navigateur (site-2)** : la seconde moitié des tests du site (empreinte, mobile, émission, dimanche, chat,
+    visibilité, publicités, mesure, première visite, cellule 427, audio) ;
   - **Navigateur (parité)** (≈ 8 min) : parité Audio System / ancien code sur la dernière semaine.
   Un nouveau push annule le contrôle en cours de la même PR. À la main (*Actions → Contrôle des PR → Run workflow*) :
   champ `semaines` (0 = toutes, ≈ 6 min de parité par semaine). Il remplace le workflow « Tests moteur ».
 - **En local, la même commande** (depuis `gamecenter_serveur (1)`, Python avec `requirements.txt`, Node + Playwright, ffmpeg) :
-  `bash outils/site/tests_navigateur.sh [--semaines N] [--groupe site|parite]`. Le script fabrique les sons de test,
+  `bash outils/site/tests_navigateur.sh [--semaines N] [--groupe site|site-2|parite]`. Le script fabrique les sons de test,
   lance les serveurs (crochet de test) sur des copies de `data/` (le dépôt n'est pas modifié), lance tous les tests même
   après un échec et résume les résultats.
 - **Tests réparés** (ils plantaient : tout `data/weeks`, ≈ 130 Mo, envoyé d'un coup à la page) : `test_parite_v01.js`,
@@ -815,8 +817,8 @@ créés = débranchés), la page reste lourde.
   bannière TD allégée pour Safari) ; **pas d'écran de pause dans le notebook** (choix du 11/10 : le replay du notebook
   n'a pas la mécanique du site) — `BRK_SEC={q:0,half:RP_HALF}` y garde les pauses d'avant (mi-temps 4 s).
 - **Rendre le contrôle obligatoire** (facultatif) : GitHub → *Settings → Branches → Add branch ruleset* (ou *Add rule*)
-  sur `main` → *Require status checks to pass* → cocher « Python (tests, audit) », « Navigateur (site) » et
-  « Navigateur (parite) ». **Attention** : « Semaine suivante » pousse directement sur `main` ; cette règle refuserait
+  sur `main` → *Require status checks to pass* → cocher « Python (tests, audit) », « Navigateur (site) »,
+  « Navigateur (site-2) » et « Navigateur (parite) ». **Attention** : « Semaine suivante » pousse directement sur `main` ; cette règle refuserait
   son push (à exempter dans la *Bypass list*), et une PR ne touchant que des `.md` / `programme/` (aucun contrôle lancé)
   resterait bloquée. Recommandation du 11/10 : les laisser facultatifs.
 
@@ -3364,6 +3366,24 @@ discuté, forme et spreads), avec des **questions** pour faire participer les su
   `moteur/tests/test_dockerfile.py` reconstruit le dossier `/app` de l'image et y importe le serveur.
 - **Tests** : `moteur/tests/test_actualites.py` (quotas, matchs terminés seulement, textes propres, même édition à
   chaque calcul ; au serveur, rien d'un match pas fini à l'heure donnée, réponses, limite, interrupteur, onglet).
+
+### 116. Un adversaire sur le porteur quand il s'arrête (passes longues, interceptions) (12/11/2026)
+Sur une passe longue ou un retour d'interception, le porteur s'arrêtait souvent sans personne près de lui : le plaqueur
+de la simulation, tenu à `FL_VMAX`, n'arrivait pas à temps, et aucun joueur de l'attaque n'était dessiné sur l'auteur
+de l'interception (27 cas sur 90 à plus de 2,5 yards, jusqu'à 16, sur la semaine du 09/11). `tackleOnStop` (fin de
+`planFromFeed`, hors touchdown et sortie en touche) : si aucun adversaire n'est à 1,6 yard du porteur quand il
+s'arrête, celui qui peut y arriver le plus facilement (depuis la réception, l'interception ou la remise) quitte son
+chemin à temps, à `TK_VMAX` = 2 × `FL_VMAX` au plus, et reste sur lui ; l'attraction de la poursuite ne l'en écarte
+plus. Résultat : 1 cas sur 90 (2,7 yards). `test_actions` : passes de 15 yards et plus et interceptions, 95 % à
+2,5 yards au plus.
+
+### 117. Contrôle des PR : les tests du site en deux jobs parallèles (12/11/2026)
+Le job « Navigateur (site) » approchait ses 60 minutes (≈ 59 min sur main, coupé plusieurs fois les 12/11) : la suite
+s'est allongée (Front office, draft, News, navigation). `tests_navigateur.sh --groupe` accepte maintenant `site` (1re
+moitié : dessin des actions jusqu'aux rivalités) et `site-2` (2e moitié : empreinte, mobile, émission, dimanche, chat,
+pages, audio) ; `tous` (défaut, en local) lance tout. Le workflow a trois groupes navigateur (`site`, `site-2`,
+`parite`), chacun dans sa limite de 60 minutes, ≈ 22 min de tests par moitié (plus l'installation). Le job
+« Navigateur (site) » garde son nom ; si le contrôle est rendu obligatoire, cocher aussi « Navigateur (site-2) ».
 
 ### Annexe — `.github/workflows/semaine.yml`
 
