@@ -4645,7 +4645,34 @@ function planFromFeed(g,P){
     const sx=P.spot&&num(P.spot.x,null);
     addFumbleKept(plan,{x:sx!==null?sx:endX, y:clamp((P.spot&&num(P.spot.y,null))||MIDY,4,49)},P.fumble.recovered_by==='self');
   }
+  if(JEU_FLUIDE&&(t==='run'||t==='pass')&&r!=='touchdown'&&!oob) tackleOnStop(plan);
   return plan;
+}
+/* 12/11/2026: when the ball carrier stops (not a touchdown, not out of bounds), an opponent is on him. A long
+   completion or an interception return could end with every opponent several yards away (the simulated tackler
+   held to FL_VMAX, a return with nobody drawn on the returner): if no one is within TK_NEAR yards when he stops,
+   the opponent who can get there the easiest (from the catch, the interception or the handoff) leaves his path in time
+   to be on him a little before he stops, at most TK_VMAX, and stays on him. */
+const TK_NEAR=1.6, TK_VMAX=2*FL_VMAX;
+function tackleOnStop(plan){
+  const c=plan.carrier&&plan.carrier.length?plan.carrier[plan.carrier.length-1]:null; if(!c) return;
+  const K=(c[2]==='off'?plan.off:plan.def)[c[3]], opp=c[2]==='off'?plan.def:plan.off, W=c[2]==='off'?plan.wDef:plan.wOff;
+  if(!Array.isArray(K)||!Array.isArray(opp)) return;
+  const E=kfAt(K,1); let us=1; for(const q of K) if(q[0]>=c[0]&&Math.hypot(q[1]-E.x,q[2]-E.y)<0.3){ us=q[0]; break; }
+  if(us<=c[0]+0.06) return;
+  const act=num(plan.act,0)>0?plan.act:num(plan.dur,3.6), near=i=>{ const p=kfAt(opp[i],us); return Math.hypot(p.x-E.x,p.y-E.y); };
+  let ni=null, nv=1e9; for(let i=0;i<opp.length;i++) if(opp[i]){ const v=near(i); if(v<nv){ nv=v; ni=i; } }
+  if(ni!=null&&nv<=TK_NEAR){ if(Array.isArray(W)) W[ni]=0; plan.tackleFix={i:ni,at:us}; return; }   /* he is there: not pulled off by the chase */
+  /* he gets to him a little before he stops (on screen he is there when he stops), then stays on him */
+  const ua=Math.max(c[0]+0.04,us-0.05), lo=c[0], A=kfAt(K,ua); let best=null, bv=1e9;
+  for(let i=0;i<opp.length;i++){ if(!opp[i]) continue; const p=kfAt(opp[i],lo), v=Math.max(0,Math.hypot(p.x-A.x,p.y-A.y)-0.8)/Math.max(0.01,(ua-lo)*act);
+    if(v<bv){ bv=v; best=i; } }
+  if(best==null) return;
+  const p=kfAt(opp[best],ua), dx=p.x-A.x, dy=p.y-A.y, n=Math.hypot(dx,dy)||1, ox=dx/n*0.8, oy=dy/n*0.8, T={x:A.x+ox,y:clamp(A.y+oy,0.5,52.8)};
+  const s=leadAt(opp[best],ua,T,ua-0.02,act*TK_VMAX/FL_VMAX,lo), q=kfAt(opp[best],s), m=TK_VMAX*(ua-s)*act, dd=Math.hypot(T.x-q.x,T.y-q.y);
+  const R=dd<=m?T:{x:q.x+(T.x-q.x)*m/dd,y:q.y+(T.y-q.y)*m/dd};
+  opp[best]=kfCut(opp[best],s,[[ua,R.x,R.y],[us,E.x+ox,clamp(E.y+oy,0.5,52.8)],[1,E.x+ox,clamp(E.y+oy,0.5,52.8)]]); if(Array.isArray(W)) W[best]=0;
+  plan.tackleFix={i:best,at:us};
 }
 function rpKind(P){
   const r=P.result;
@@ -6132,7 +6159,7 @@ function drawInjury(c,p,X,Y,r,s){ if(!p) return;
   c.fillStyle=STOP_RED; c.fillRect(px-w/2,py-h/2,w,h); c.fillRect(px-h/2,py-w/2,h,w);
   c.restore(); }
 function drawNameTags(c,T,X,Y,r,s,g,ru){
-  if(ru==null) ru=r;   /* section 116: the play's names sit above a standing player */
+  if(ru==null) ru=r;   /* section 118: the play's names sit above a standing player */
   const tf=Math.max(10,Math.round(s*0.82)), sf=Math.max(8,Math.round(tf*0.82)), th=Math.round(tf*1.65), gap=Math.max(4,s*0.4), boxes=[];
   c.save(); c.textBaseline='middle';
   for(const t of T){
@@ -6409,7 +6436,7 @@ function fsTurned(view){ return !!(view&&view.wrap&&view.wrap.closest('.modal.th
 function pickPlayer(view,cx,cy){
   if(fsTurned(view)){ const x=cx; cx=cy; cy=window.innerWidth-x; }
   const g=view.g; let best=null, bd=34;
-  for(const side of ['off','def']) (side==='off'?g.off:g.def).forEach((p,i)=>{ if(!p) return; const q=view.project(p.x,p.y-(FX_PAWN?PAWN_R*PAWN_K*0.41:0));   /* section 116: a standing player is picked by his body (0.41 = half a glyph radius, in yards) */ const d=Math.hypot(q.x-cx,q.y-cy); if(d<bd){ bd=d; best={side,idx:i}; } });
+  for(const side of ['off','def']) (side==='off'?g.off:g.def).forEach((p,i)=>{ if(!p) return; const q=view.project(p.x,p.y-(FX_PAWN?PAWN_R*PAWN_K*0.41:0));   /* section 118: a standing player is picked by his body (0.41 = half a glyph radius, in yards) */ const d=Math.hypot(q.x-cx,q.y-cy); if(d<bd){ bd=d; best={side,idx:i}; } });
   return best;
 }
 function bindPlayerPick(view){
@@ -6432,7 +6459,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 /* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
    the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
 let FX_DPR=2, FX_GLOW=true;
-/* Section 116 (12/11/2026) — two optional looks of the field, both off unless the viewer turns them on in
+/* Section 118 (12/11/2026) — two optional looks of the field, both off unless the viewer turns them on in
    Settings › Display (applySettings sets them; nothing else in the game reads them: the drawing only).
    FX_PAWN: the players stand on the turf (a body, a head, the jersey number) instead of the flat O / X glyphs.
    FX_ARC: a thrown or kicked ball rises in a visible arc, with its shadow on the turf, the path already flown
@@ -6579,7 +6606,7 @@ class FieldView{
         sig=(sig*31+Math.round(hd[i]*20))|0; } }
     return [sig];
   }
-  /* Section 116 — the players standing on the turf (FX_PAWN). The canvas is the field seen from above, tilted by the
+  /* Section 118 — the players standing on the turf (FX_PAWN). The canvas is the field seen from above, tilted by the
      page: a body drawn toward the far sideline reads as a man standing up. Far players first, so a nearer one covers
      them. The two cues of the flat glyphs are kept: offence = rounded body (the O), defence = body tapering to the
      feet (the X); home = solid colour, away = hollow. The head leans the way the player faces. Jersey numbers from
@@ -6610,7 +6637,7 @@ class FieldView{
     }
     c.restore();
   }
-  /* Section 116 — the ball in the air (FX_ARC). The engine's own flight (from, to, when) is not touched: only how
+  /* Section 118 — the ball in the air (FX_ARC). The engine's own flight (from, to, when) is not touched: only how
      high the ball is DRAWN. A pass used to rise by half a yard on screen; here its arc grows with its length, and a
      kick keeps the engine's height. On the turf: the shadow under the ball and a ring where it comes down; in the
      air: the path already flown, dotted. */
@@ -6750,7 +6777,7 @@ class FieldView{
     // players: offence = O cyan, defence = X pink, each with a soft halo.
     // Team = shape fill: HOME solid neon, AWAY hollow glyph in the lighter tint (--cyan-2 / --pink-2).
     const r=Math.max(2.6,0.82*s), k=r*0.72, offHome=g.poss==='home';
-    const ru=FX_PAWN?r*PAWN_R*(PAWN_K+PAWN_HEAD*1.7):r;   /* section 116: how far above his spot a label must sit to clear the player */
+    const ru=FX_PAWN?r*PAWN_R*(PAWN_K+PAWN_HEAD*1.7):r;   /* section 118: how far above his spot a label must sit to clear the player */
     if(!FX_PAWN){
     c.fillStyle=hexA(dCol,.13);
     for(const p of g.def){ c.beginPath(); c.arc(X(p.x),Y(p.y),r*1.8,0,Math.PI*2); c.fill(); }
@@ -6811,7 +6838,7 @@ class FieldView{
     if(g.phase==='post'&&g.cur&&g.cur.injury&&!g.special){ const sp=injSpot(g); if(sp) drawInjury(c,(sp.side==='off'?g.off:g.def)[sp.idx],X,Y,r,s); }
     // who is who (19/10/2026, big screen only): the skill players' names before the snap, the ball carrier during
     // the play, then the defender who made the play (tackle, sack, interception, pass defended) — see nameTags
-    if(FX_PAWN) this.pawns(g,X,Y,r,dCol);   /* section 116: over the rings on the turf, under the names */
+    if(FX_PAWN) this.pawns(g,X,Y,r,dCol);   /* section 118: over the rings on the turf, under the names */
     if(g.plays&&typeof modalView!=='undefined'&&this===modalView&&!g.special){ const T=nameTags(g); if(T.length) drawNameTags(c,T,X,Y,r,s,g,ru); }
     // the player whose card is open
     if(g.sel){
@@ -6866,7 +6893,7 @@ class FieldView{
     // ball: ice-white capsule, lifted when in the air
     const b=g.ball, bx=X(b.x), by=Y(b.y);
     const arc=FX_ARC&&g.phase==='play'&&g.plan&&g.plan.flight&&b.h>0.02?g.plan.flight:null;
-    if(arc) this.ballArc(g,arc,X,Y,s,r);   /* section 116 */
+    if(arc) this.ballArc(g,arc,X,Y,s,r);   /* section 118 */
     else {
     if(b.h>0.05){ c.fillStyle='rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(bx,by,Math.max(1.8,0.45*s),Math.max(1,0.25*s),0,0,Math.PI*2); c.fill(); }
     const sc=1+b.h*0.05;
@@ -9127,7 +9154,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }cat
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
-    /* section 116 : two optional looks of the field, off unless asked for */ pawn:d.pawn===true, arc:d.arc===true,
+    /* section 118 : two optional looks of the field, off unless asked for */ pawn:d.pawn===true, arc:d.arc===true,
     /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
     /* bloc 3 : the General chat folds score-like messages about games not watched to the end (on unless turned off) */ chatShield:d.chatShield!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
@@ -9139,7 +9166,7 @@ const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
 function saveSettings(){ return lsSet(SET_KEY,SET); }
 function applySettings(){
   document.body.classList.toggle('fx-off',!SET.fx);
-  FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;   /* section 116: read by the field drawing only */
+  FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;   /* section 118: read by the field drawing only */
   const q=document.getElementById('quick');
   if(q) q.innerHTML='<span class="label">Stake all</span>'+QUICK_SETS[SET.quick].map(v=>`<button class="qc" type="button" data-q="${v}">$${v}</button>`).join('');
 }

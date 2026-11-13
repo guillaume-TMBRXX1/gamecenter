@@ -1,4 +1,4 @@
-// Joueurs en relief et ballon en cloche (README section 116, 12/11/2026) — test navigateur (Playwright + serveur réel).
+// Joueurs en relief et ballon en cloche (README section 118, 12/11/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_relief.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
 // Deux réglages de Settings › Display, coupés par défaut. Sur un match réel rejoué en temps simulé (grand écran), le test
 // compte ce que le terrain dessine (ellipses = ombres des joueurs debout et du ballon, pointillés du vol, numéros) :

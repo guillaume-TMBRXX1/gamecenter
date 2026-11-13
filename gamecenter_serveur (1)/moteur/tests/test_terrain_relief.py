@@ -1,4 +1,4 @@
-"""Joueurs en relief et ballon en cloche (README section 116, 12/11/2026) : deux réglages de Settings › Display, coupés
+"""Joueurs en relief et ballon en cloche (README section 118, 12/11/2026) : deux réglages de Settings › Display, coupés
 par défaut ; le dessin d'origine du terrain reste celui du site tant qu'on ne les active pas. Lit gamecenter_source.html
 tel quel : pas de serveur ni de navigateur (le rendu lui-même est vérifié par outils/site/test_relief.js).
 
