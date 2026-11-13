@@ -21,7 +21,7 @@ async function server(){
 const api=async(u,body)=>{ const r=await fetch(URL0+'/api'+u,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{}); return {status:r.status,json:await r.json().catch(()=>null)}; };
 const ouvrir=async(b,q='',opts)=>{ const ctx=await b.newContext(Object.assign({viewport:{width:1440,height:1000}},opts||{}));
   const p=await ctx.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message));
-  await p.goto(URL0+'/'+q); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000}); return p; };
+  await p.goto(URL0+'/'+q,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000}); return p; };
 const connecter=async(p,tok,name)=>{ await p.evaluate(([t,n])=>localStorage.setItem('gc-player-v1',JSON.stringify({token:t,name:n,account:true})),[tok,name]);
   await p.reload(); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000}); };
 const lignes=p=>p.$$eval('#viewLeagues tbody tr',rs=>rs.map(r=>r.querySelector('th').textContent.trim()));

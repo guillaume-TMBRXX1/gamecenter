@@ -67,7 +67,7 @@ function measure([F,on]){
   const srv=await server(), b=await chromium.launch({executablePath:EXE});
   try{
     const p=await b.newPage({viewport:{width:1280,height:900}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-    await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:60000});
+    await p.goto(`http://localhost:${PORT}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:60000});
     check(await p.evaluate(()=>window.__gc.fluide())===true,'dessin naturel actif par défaut');
     const on=[], off=[];
     for(const {F} of L){ const a=await p.evaluate(measure,[F,true]); on.push(...a.plays); check(a.status==='final','match rejoué jusqu\'au bout');

@@ -30,9 +30,9 @@ class TestTerrainRelief(unittest.TestCase):
                           + r'\}" aria-labelledby="set(\w+)L">', self.html)
             self.assertTrue(m, titre)
             self.assertEqual(m.group(1), m.group(2), "l'interrupteur porte le nom de sa ligne")
-        # même carte que les autres réglages d'affichage, après « Big-play effects »
-        carte = self.html[self.html.index("<h2>Display</h2>"):self.html.index("${soundCard()}")]
-        self.assertLess(carte.index('data-set="fx"'), carte.index('data-set="pawn"'))
+        # dans la carte « Match visuals » (section 119), après la carte Display
+        carte = self.html[self.html.index("<h2>Match visuals</h2>"):self.html.index("${soundCard()}")]
+        self.assertLess(self.html.index("<h2>Display</h2>"), self.html.index("<h2>Match visuals</h2>"))
         self.assertLess(carte.index('data-set="pawn"'), carte.index('data-set="arc"'))
 
     def test_reglages_appliques_au_rendu(self):
@@ -41,7 +41,7 @@ class TestTerrainRelief(unittest.TestCase):
         self.assertIn("FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;", appliquer)
         # l'image est redessinée dès qu'un réglage change (signature de l'image)
         sig = self.html[self.html.index("  sigOf(g,x0,y0,s,W,H){"):self.html.index("  endZone(xs,team,X,x0,x1){")]
-        self.assertIn("g.down, FX_PAWN, FX_ARC];", sig)
+        self.assertIn("g.down, FX_PAWN, FX_ARC,", sig)
 
     def test_dessin_d_origine_garde(self):
         dessin = self.html[self.html.index("  draw(dt,now){"):self.html.index("/*@core-end*/", self.html.index("  draw(dt,now){"))]

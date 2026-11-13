@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
-<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};})();</script>
+<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(s&&s.motion===true)document.documentElement.setAttribute("data-mo","1")}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -2672,6 +2672,38 @@
     .toast,.srv-pill{bottom:calc(144px + env(safe-area-inset-bottom,0px))}
   }
 </style>
+<style id="mo-fx">
+  /* Section 119 (13/11/2026) — « Interface motion » (Settings › Display, coupé par défaut : body.mo-on) et pastille du
+     ralenti (Settings › Match visuals). Rien ne s'applique sans le réglage, ni avec « réduire les animations ». */
+  .slow-tag{position:absolute;left:50%;top:10px;translate:-50% 0;z-index:4;pointer-events:none;padding:5px 10px;border-radius:999px;
+    font:700 10px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;background:var(--cyan);color:var(--cyan-ink)}
+  @keyframes moIn{from{opacity:0;translate:0 10px}}
+  @keyframes moShim{to{background-position:-220% 0,0 0,0 34px,0 68px}}
+  @keyframes moShim1{to{background-position:-220% 0}}
+  @media (prefers-reduced-motion:no-preference){
+    /* onglets : le contenu arrive en fondu-glissé, bloc après bloc, puis les lignes des listes en cascade */
+    body.mo-on .mo-in>*{animation:moIn .26s cubic-bezier(.2,.8,.2,1) backwards}
+    body.mo-on .mo-in>*:nth-child(2){animation-delay:.04s}
+    body.mo-on .mo-in>*:nth-child(3){animation-delay:.08s}
+    body.mo-on .mo-in>*:nth-child(4){animation-delay:.12s}
+    body.mo-on .mo-in>*:nth-child(n+5){animation-delay:.16s}
+    body.mo-on .mo-in .mo-it{animation:moIn .26s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--mo-i,0)*32ms + 80ms)}
+    /* retour au toucher : « scale » seul, les transform existants ne sont pas touchés */
+    body.mo-on .odd:active:not(:disabled),body.mo-on .cta:active:not(:disabled),body.mo-on .chip-btn:active:not(:disabled),
+    body.mo-on .rail-btn:active,body.mo-on .tab-btn:active,body.mo-on .seg button:active,body.mo-on .set-opt:active,body.mo-on .qc:active{scale:.96}
+    /* attentes : des silhouettes à la place de « Loading… » (le texte reste lu par les lecteurs d'écran) */
+    body.mo-on p.mo-sk{color:transparent;min-height:94px;border-radius:10px;user-select:none;
+      background:linear-gradient(100deg,transparent 30%,var(--line-2) 50%,transparent 70%) 0 0/220% 100% no-repeat,
+        linear-gradient(var(--l2),var(--l2)) 0 0/100% 26px no-repeat,linear-gradient(var(--l2),var(--l2)) 0 34px/82% 26px no-repeat,linear-gradient(var(--l2),var(--l2)) 0 68px/64% 26px no-repeat;
+      animation:moShim 1.2s linear infinite}
+    /* premier chargement : la grille des matchs a sa silhouette pendant que la semaine se télécharge */
+    html[data-mo].gc-boot #liveGrid:empty::before,html[data-mo].gc-boot #liveGrid:empty::after{content:"";border-radius:var(--r-lg);
+      background:linear-gradient(100deg,var(--l1) 30%,var(--l2) 50%,var(--l1) 70%) 0 0/220% 100%;animation:moShim1 1.2s linear infinite}
+    html[data-mo].gc-boot #liveGrid:empty::before{grid-column:span 2;min-height:420px}
+    html[data-mo].gc-boot #liveGrid:empty::after{min-height:420px}
+  }
+  @media (max-width:1100px){ html[data-mo].gc-boot #liveGrid:empty::before{grid-column:1/-1;min-height:300px} html[data-mo].gc-boot #liveGrid:empty::after{display:none} }
+</style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
   <div class="tk-label"><i class="dot pulse"></i>Live</div>
@@ -4904,6 +4936,7 @@ function rpSnap(g){
   g.plan.flag=penFlag(g,P,g.plan);   /* step 7.2 */
   g.plan.elapsed=Math.max(0,num(P.clock_start,0)-num(P.clock_end,0));
   g.phase='play'; g.t=0; g.dur=P.show?num(P.show.act,g.plan.dur):g.plan.dur; g.trail=[]; g.tracks=null; g.tt=0; g.snapped=true;
+  g.tr=0; g.slowOn=false; g.slow=FX_SLOW&&!REDUCED?slowSpan(g,P,g.plan):null;   /* section 119 */
 }
 function rpResolve(g){
   const P=g.cur, A=P.after;
@@ -4964,7 +4997,8 @@ function stepReplay(g,dt){
     return;
   }
   if(g.phase==='done') return;
-  g.t+=dt;
+  if(g.phase==='play'&&g.slow){ g.tr+=dt; const tau=g.tr/g.dur; g.t=g.dur*slowWarp(g.slow,tau); g.slowOn=tau<1&&slowNow(g.slow,tau); }   /* section 119: the key moment slowed down, the play still ends on time */
+  else { g.t+=dt; if(g.slowOn) g.slowOn=false; }
   if(g.phase==='presnap'){
     presnapUpdate(g);
     if(g.t>=g.dur){ rpSnap(g); onSnap(g); }
@@ -5444,13 +5478,13 @@ function updateTotals(){
   if(SEASON){ seasonTotals(); return; }
   let st=0, rt=0; slip.picks.forEach(p=>{ st+=p.stake; rt+=p.stake*decOf(p.price); });
   document.getElementById('tStake').textContent=money(st);
-  document.getElementById('tRet').textContent=money(rt);
+  moMoney(document.getElementById('tRet'),rt);
   const btn=document.getElementById('place');
   btn.disabled = !slip.picks.length || st<=0 || st>balance;
   btn.textContent = slip.picks.length ? (st>balance ? 'Stake exceeds balance' : `Place bet · ${money(st)}`) : 'Place bet';
   document.getElementById('fabN').textContent=slip.picks.length;
   document.getElementById('fabR').textContent=money(rt);
-  document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(balance));
+  document.querySelectorAll('[data-balance]').forEach(el=>moMoney(el,balance));
 }
 slipList.addEventListener('input',e=>{
   const inp=e.target.closest('[data-stake]'); if(!inp) return;
@@ -5526,7 +5560,7 @@ function updateGameUI(g){
       case 'possA': el.classList.toggle('on', g.poss==='away'&&g.status==='live'); break;
       case 'possH': el.classList.toggle('on', g.poss==='home'&&g.status==='live'); break;
       case 'status': { const rv=g.mode==='replay', up=g.mode==='upcoming'; const t=up?'UPCOMING':g.status==='final'?'FINAL':g.status==='half'?'HALFTIME':rv?'REPLAY':'LIVE', cn='pill '+(up?'upcoming':rv&&g.status==='live'?'replay':g.status); if(el.className!==cn) el.className=cn; setTxt(el.querySelector('span'),t); break; }
-      case 'wpval': setHTML(el,`<small>${TEAMS[g.home].abbr}</small>${Math.round(g.p*100)}%`); break;
+      case 'wpval': moRoll(el,Math.round(g.p*100),v=>setHTML(el,`<small>${TEAMS[g.home].abbr}</small>${Math.round(v)}%`),500); break;   /* section 119: rolls when « Interface motion » is on */
       case 'last': setHTML(el,`<b>Last play</b> · ${esc(g.lastText)}`); break;
     }
   });
@@ -5622,6 +5656,7 @@ function buildChart(el,g){
     ${el.dataset.hover?'<span class="wp-x" hidden></span><span class="wp-tip" hidden></span>':''}`;
   el.setAttribute('role','img');
   el.setAttribute('aria-label',`${H.name} win probability, ${Math.round(g.p*100)} percent`);
+  moChart(el);   /* section 119 */
 }
 function renderFeed(g){
   const ol=document.querySelector(`[data-g="${g.id}"][data-f="feed"]`); if(!ol) return;
@@ -6466,6 +6501,122 @@ let FX_DPR=2, FX_GLOW=true;
    and a ring where it comes down. PAWN_R: a standing player is drawn a little bigger than his flat glyph; PAWN_K: his
    height, in radii. */
 let FX_PAWN=false, FX_ARC=false;
+/* Section 119 (13/11/2026) — more optional looks, all off unless turned on in Settings (applySettings sets them).
+   Match visuals: FX_SLOW (the key moment of a big play is shown slowed down — see slowSpan), FX_ROUTES (the offence's
+   planned routes while the teams line up — see prePlan), FX_CLUB (end zones in the teams' colours, the home team's
+   mark at midfield). UI_MO: « Interface motion » — tab changes, the match opening from its tile, rolling amounts,
+   the pick flying to the slip, the win, the probability curve drawing itself, loading placeholders, press feedback. */
+let FX_SLOW=false, FX_ROUTES=false, FX_CLUB=false, UI_MO=false;
+const moOn=()=>UI_MO&&!REDUCED;
+/* Slow motion WITHOUT changing how long the play lasts (the live clock, the sound and the bets keep their timing):
+   the stretch [a,b] of the play is shown at 40 % speed and the rest a little faster, so the play ends on time.
+   Returned: the stretch, as fractions of the play — or null when the play is not a big one. Big = what already shakes
+   the field: touchdown, interception, or a completed pass / run of 20 yards or more. The moment: the catch or the
+   pick (end of the ball's flight), else the goal line of a touchdown run, else the first broken tackle. */
+const SLOW_V=0.4, SLOW_W=0.12;
+function slowSpan(g,P,plan){
+  if(!plan||plan.kick||num(g.dur,0)<2.5||g.spoiler||g.preview||(g.teaser&&g.teaser.running)) return null;
+  const PB=typeof penPlay==='function'?penPlay(P):P, r=PB.result, gain=num(PB.gain,0);
+  if(!(r==='touchdown'||r==='interception'||((r==='complete'||r==='run')&&gain>=20))) return null;
+  const k=plan.flight?plan.flight.t1:r==='touchdown'?0.93:plan.miss&&plan.miss.length?plan.miss[0].at:null;
+  if(k==null||!isFinite(k)) return null;
+  const a=clamp(k-0.07,0.05,0.99-SLOW_W); return {a,b:a+SLOW_W};
+}
+/* real share of the play elapsed -> share of the play shown (0 -> 0, 1 -> 1) */
+function slowWarp(S,tau){
+  if(tau>=1) return 1; if(tau<=0) return 0;
+  const w=S.b-S.a, vf=(1-w)/(1-w/SLOW_V), ta=S.a/vf, tb=ta+w/SLOW_V;
+  return tau<ta?tau*vf:tau<tb?S.a+(tau-ta)*SLOW_V:S.b+(tau-tb)*vf;
+}
+function slowNow(S,tau){ const w=S.b-S.a, vf=(1-w)/(1-w/SLOW_V), ta=S.a/vf; return tau>=ta&&tau<ta+w/SLOW_V; }
+/* The play about to be run, for the routes drawn before the snap: the same plan the snap will build (same seed), made
+   on a copy of the game so nothing of the match is touched. Not shown when it would give the play away to a bettor:
+   the next-play market (run / pass) is open until the snap. */
+function prePlan(g){
+  const P=g.cur; if(!P||!P.call||P.conversion||g.special||!g.replay||g.seed==null||(g.odds&&g.odds.np)) return null;
+  if(P.call.play_id==='KNEEL'||P.call.play_id==='SPIKE') return null;
+  if(g._pre&&g._pre.P===P) return g._pre.plan;
+  let plan=null; try{ plan=withSeed(g.seed+':p:'+P.seq,()=>planFromFeed(Object.assign({},g),P)); }catch(e){}
+  g._pre={P,plan:plan&&(plan.type==='pass'||plan.type==='run')&&Array.isArray(plan.off)?plan:null};
+  return g._pre.plan;
+}
+/* ---- Interface motion ---- */
+/* a number that rolls to its new value (balance, potential return, win probability); first value: set at once */
+function moRoll(el,to,render,ms){
+  if(!el) return;
+  if(!moOn()||el._mv==null||!isFinite(to)||document.hidden){ el._mk=(el._mk||0)+1; el._ma=false; el._mv=el._mt=to; render(to); return; }
+  if(el._mt===to){ if(!el._ma) render(to); return; }
+  const from=el._mv, t0=performance.now(), d=ms||650, k=el._mk=(el._mk||0)+1; el._mt=to; el._ma=true;
+  const step=now=>{ if(el._mk!==k) return; const u=Math.min(1,(now-t0)/d), e=1-Math.pow(1-u,3); el._mv=from+(to-from)*e;
+    if(u<1){ render(el._mv); requestAnimationFrame(step); } else { el._mv=to; el._ma=false; render(to); } };
+  requestAnimationFrame(step);
+}
+function moMoney(el,v){ moRoll(el,v,x=>{ const s=money(Math.round(x*100)/100); if(el.textContent!==s) el.textContent=s; }); }
+/* a view that has just been opened: its blocks come in one after the other, then the rows of its lists */
+const MO_ITEMS='.sch-game,.lg-item,.tst tbody tr,.nw-grid>*';
+function moItems(el){ let i=el.querySelectorAll('.mo-it').length; if(i>=16) return;
+  el.querySelectorAll(MO_ITEMS).forEach(it=>{ if(i<16&&!it.classList.contains('mo-it')){ it.classList.add('mo-it'); it.style.setProperty('--mo-i',i++); } }); }
+function moSkel(el){ el.querySelectorAll('p.st-none:not(.mo-sk),p.pc-note:not(.mo-sk)').forEach(p=>{ if(/^Loading/.test(p.textContent)) p.classList.add('mo-sk'); }); }
+function moView(el){
+  if(!el) return; el.classList.remove('mo-in'); if(!moOn()) return;
+  void el.offsetWidth; el.classList.add('mo-in'); moItems(el); moSkel(el);
+  clearTimeout(el._moT); el._moT=setTimeout(()=>el.classList.remove('mo-in'),900);
+}
+/* content that arrives after the view opened (a list fetched from the server): placeholders while it loads, the cascade when it lands */
+function moWatch(){
+  if(moWatch.on||!window.MutationObserver) return; moWatch.on=true;
+  document.querySelectorAll('main [id^="view"]').forEach(el=>{ if(el.id==='viewLive') return; let q=false;
+    new MutationObserver(()=>{ if(!UI_MO||q) return; q=true; requestAnimationFrame(()=>{ q=false; if(!moOn()) return; moSkel(el); if(el.classList.contains('mo-in')) moItems(el); }); }).observe(el,{childList:true,subtree:true}); });
+}
+/* the big screen grows out of the tile it was opened from (else it simply rises) */
+function moOpen(id){
+  if(!moOn()||typeof modal==='undefined'||modal.classList.contains('theater')) return;
+  const p=modal.querySelector('.m-panel'); if(!p||!p.animate) return;
+  let a=null; try{ const src=document.querySelector('.tile[data-gid="'+String(id).replace(/"/g,'')+'"] .field'); a=src&&src.getBoundingClientRect(); }catch(e){}
+  const b=p.getBoundingClientRect(), ok=a&&a.width>40&&a.bottom>0&&a.top<window.innerHeight&&b.width>0, k=ok?a.width/b.width:1;
+  p.animate(ok?[{transformOrigin:'0 0',transform:`translate(${(a.left-b.left).toFixed(1)}px,${(a.top-b.top).toFixed(1)}px) scale(${k.toFixed(4)})`,opacity:.4},{transformOrigin:'0 0',transform:'none',opacity:1}]
+              :[{transform:'translateY(18px) scale(.97)',opacity:0},{transform:'none',opacity:1}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)'});
+}
+/* a pick leaves the board for the slip (the Bet slip button on a phone) */
+/* `a`: where the button was when it was pressed (the list it sits in may be redrawn by the pick itself) */
+function moFly(btn,a){
+  if(!moOn()||!btn||!btn.animate||!a) return;
+  const tgt=document.getElementById(isDrawerMode()?'fab':'slipList'); if(!tgt) return;
+  const z=tgt.getBoundingClientRect(); if(!a.width||!z.width) return;
+  const f=btn.cloneNode(true); ['data-key','data-g','data-f','id'].forEach(n=>f.removeAttribute(n)); f.setAttribute('aria-hidden','true'); f.tabIndex=-1;
+  f.style.cssText=`position:fixed;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;margin:0;z-index:400;pointer-events:none`;
+  document.body.appendChild(f);
+  const dx=z.left+z.width/2-(a.left+a.width/2), dy=z.top+Math.min(z.height/2,48)-(a.top+a.height/2), done=()=>f.remove();
+  const an=f.animate([{transform:'none',opacity:1},{transform:`translate(${dx*0.6}px,${dy*0.6-36}px) scale(.8)`,opacity:1,offset:.6},{transform:`translate(${dx}px,${dy}px) scale(.4)`,opacity:0}],{duration:460,easing:'cubic-bezier(.3,.6,.3,1)'});
+  an.onfinish=an.oncancel=done; setTimeout(done,1000);
+  tgt.animate([{scale:1},{scale:1.03},{scale:1}],{duration:260,delay:380,easing:'ease-out'});
+}
+function moPlaced(){
+  if(!UI_MO) return;
+  try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
+  if(REDUCED) return;
+  const b=document.getElementById(isDrawerMode()?'fab':'place'); if(b&&b.animate) b.animate([{scale:1},{scale:.95},{scale:1.05},{scale:1}],{duration:340,easing:'ease-out'});
+}
+/* a bet has just been won: a short burst from the balance, which turns green while it rolls up */
+function moWin(){
+  if(!moOn()) return;
+  const el=[...document.querySelectorAll('[data-balance]')].find(e=>e.getClientRects().length); if(!el||!el.animate) return;
+  const r=el.getBoundingClientRect(), cx=r.left+Math.min(r.width/2,90), cy=r.top+r.height/2, cols=['#3DDC97',FIELD.cyan,FIELD.pink,FIELD.ink];
+  for(let i=0;i<24;i++){ const d=document.createElement('span'), an=Math.random()*Math.PI*2, R=60+Math.random()*120;
+    d.setAttribute('aria-hidden','true'); d.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;width:7px;height:12px;border-radius:2px;z-index:400;pointer-events:none;background:${cols[i%4]}`;
+    document.body.appendChild(d);
+    const a=d.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${(Math.cos(an)*R).toFixed(0)}px),calc(-50% + ${(Math.sin(an)*R+50).toFixed(0)}px)) rotate(${Math.round(Math.random()*720-360)}deg)`,opacity:0}],{duration:900+Math.random()*500,easing:'cubic-bezier(.1,.7,.3,1)'});
+    a.onfinish=a.oncancel=()=>d.remove(); }
+  el.animate([{color:'#3DDC97'},{color:'#3DDC97',offset:.6},{}],{duration:1400});
+}
+/* the win-probability curve of the big screen draws itself once, then its last point pulses at each play */
+function moChart(el){
+  if(!moOn()||!el.dataset.hover) return;
+  const svg=el.querySelector('svg'), dot=el.querySelector('.wp-dot'); if(!svg||!svg.animate) return;
+  if(!el._moC){ el._moC=true; svg.animate([{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:900,easing:'cubic-bezier(.4,0,.2,1)'});
+    if(dot) dot.animate([{opacity:0},{opacity:0,offset:.9},{opacity:1}],{duration:950}); }
+  else if(dot) dot.animate([{boxShadow:`0 0 0 0 ${hexA(FIELD.cyan,.6)}`},{boxShadow:`0 0 0 12px ${hexA(FIELD.cyan,0)}`}],{duration:700,easing:'ease-out'});
+}
 const PAWN_R=1.3, PAWN_K=2.7, PAWN_HEAD=0.52;
 const FD_PULSE=1300;   /* 05/11/2026: first-down pulse (ms) */
 class FieldView{
@@ -6533,16 +6684,19 @@ class FieldView{
       g.trail.length,tl&&Math.round(tl.x*40),tl&&Math.round(tl.y*40),g.tracks,g.plan,g.phase,g.status,g.los,g.toGo,g.special,g.poss,g.home,g.away,
       c&&c.side,c&&c.idx,se&&se.side,se&&se.idx,hv&&hv.side,hv&&hv.idx,g.cur&&g.cur.seq,FIELD.turf,FIELD.ink,FIELD.cyan,DA_FX.vig,DA_FX.tag,daOff(g),
       g.stopT0!=null&&performance.now()-g.stopT0<1700?Math.floor((performance.now()-g.stopT0)/200):-1,
-      g.fdT0!=null&&performance.now()-g.fdT0<FD_PULSE?Math.floor((performance.now()-g.fdT0)/33):-1, g.down, FX_PAWN, FX_ARC];   /* the first-down pulse */   /* clignotement du cercle rouge */
+      g.fdT0!=null&&performance.now()-g.fdT0<FD_PULSE?Math.floor((performance.now()-g.fdT0)/33):-1, g.down, FX_PAWN, FX_ARC, FX_CLUB, FX_ROUTES&&g.phase==='presnap'?Math.min(8,Math.floor(g.t*20)):-1];   /* the first-down pulse */   /* clignotement du cercle rouge */
   }
   endZone(xs,team,X,x0,x1){
     if(xs+10<x0||xs>x1) return;
     const c=this.ctx, s=this.s, H=this.ch, T=TEAMS[team];
     c.fillStyle=FIELD.endzone; c.fillRect(X(xs),0,10*s,H);
-    c.fillStyle=hexA(FIELD.violet,.16); c.fillRect(X(xs),0,10*s,H);
+    const club=FX_CLUB?daTeamCol(team):null;   /* section 119: the end zone in its team's colour, the name filled in */
+    c.fillStyle=club?hexA(club,.5):hexA(FIELD.violet,.16); c.fillRect(X(xs),0,10*s,H);
     c.save(); c.translate(X(xs+5),this.Y(MIDY)); c.rotate(xs===0?-Math.PI/2:Math.PI/2);
-    c.font=`700 italic ${Math.max(10,3.6*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
-    c.lineWidth=Math.max(1,s*0.08); c.strokeStyle=hexA(FIELD.ink,.4); c.strokeText(T.name.toUpperCase(),0,0); c.restore();
+    c.font=`700 italic ${Math.max(10,(club?4.6:3.6)*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+    if(club){ c.fillStyle=hexA(FIELD.ink,.85); c.fillText(T.name.toUpperCase(),0,0); }
+    else { c.lineWidth=Math.max(1,s*0.08); c.strokeStyle=hexA(FIELD.ink,.4); c.strokeText(T.name.toUpperCase(),0,0); }
+    c.restore();
   }
   /* What the viewer must see right now: the whole formation before the snap; during the play the ball,
      where a thrown or kicked ball will land, the ball carrier and the targeted receiver */
@@ -6666,6 +6820,10 @@ class FieldView{
     const g=this.g, c=this.ctx, W=this.cw, H=this.ch;
     const dCol=daDef(g);   /* 05/11/2026: the defence in its franchise colour */
     if(!W) return false;
+    const slowOn=!!(g.slowOn&&g.phase==='play');   /* section 119: the « slow-mo » tag over the field */
+    if(slowOn!==!!this._slow){ this._slow=slowOn;
+      if(slowOn&&!this.slowEl){ const e=this.slowEl=document.createElement('span'); e.className='slow-tag'; e.textContent='Slow-mo'; e.setAttribute('aria-hidden','true'); this.wrap.appendChild(e); }
+      if(this.slowEl) this.slowEl.hidden=!slowOn; }
     if(this._resnap){ this._resnap=false; this._sig=null; dt=5; }   /* back on screen: the camera jumps to the action instead of panning from where it was left */
     /* "Lazy" camera: it stays still while the action is inside the visible window and only moves when
        the ball, the carrier or the target would leave it; a slow drift re-centres it. Zoom has hysteresis
@@ -6698,6 +6856,12 @@ class FieldView{
     c.fillStyle=FIELD.turf2;
     for(let yd=10; yd<110; yd+=10){ if(yd+5<x0||yd>x1) continue; c.fillRect(X(yd),0,5*s,H); }
     this.endZone(0,g.home,X,x0,x1); this.endZone(110,g.away,X,x0,x1);
+    if(FX_CLUB&&x0<70&&x1>50&&TEAMS[g.home]){   /* section 119: the home team's mark at midfield, under the lines */
+      const hc=daTeamCol(g.home); c.save(); c.translate(X(60),Y(MIDY));
+      c.fillStyle=hexA(hc,.08); c.beginPath(); c.arc(0,0,6*s,0,Math.PI*2); c.fill();
+      c.lineWidth=Math.max(1,s*0.14); c.strokeStyle=hexA(hc,.35); c.stroke();
+      c.font=`800 ${Math.max(10,5*s)}px "Big Shoulders Display", sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle=hexA(hc,.38); c.fillText(String(TEAMS[g.home].abbr||''),0,s*0.3); c.restore(); }
     // sidelines
     const sl=Math.max(1,s*0.15);
     c.fillStyle=hexA(FIELD.cyan,.35); c.fillRect(0,Y(0),W,sl); c.fillRect(0,Y(53.3)-sl,W,sl);
@@ -6742,6 +6906,17 @@ class FieldView{
       c.restore();
       if(!g.special) this.firstDownPulse(g,X,s,H,d);
     }
+    // section 119: the planned routes while the teams line up (FX_ROUTES) — dashed, an arrow at the end
+    if(FX_ROUTES&&g.phase==='presnap'&&g.status==='live'){ const pp=prePlan(g);
+      if(pp){ const al=REDUCED?1:clamp(g.t/0.35,0,1), col=daOff(g), L=Math.max(5,s*0.9);
+        c.save(); c.lineCap='round'; c.lineJoin='round'; c.lineWidth=Math.max(1.3,s*0.14); c.strokeStyle=hexA(col,.7*al); c.fillStyle=hexA(col,.85*al);
+        for(const i of (pp.type==='run'?[7]:[5,7,8,9,10])){ const k=pp.off[i]; if(!Array.isArray(k)||k.length<2) continue;
+          const a=k[0], e=k[k.length-1]; if(Math.hypot(e[1]-a[1],e[2]-a[2])<2.5) continue;
+          c.setLineDash([Math.max(3,s*0.6),Math.max(3,s*0.5)]); c.beginPath(); k.forEach((q,j)=>j?c.lineTo(X(q[1]),Y(q[2])):c.moveTo(X(q[1]),Y(q[2]))); c.stroke(); c.setLineDash([]);
+          let f=k[k.length-2]; for(let j=k.length-2;j>=0;j--){ f=k[j]; if(Math.hypot(e[1]-f[1],e[2]-f[2])>0.8) break; }
+          const ang=Math.atan2(Y(e[2])-Y(f[2]),X(e[1])-X(f[1]));
+          c.beginPath(); c.moveTo(X(e[1]),Y(e[2])); c.lineTo(X(e[1])-L*Math.cos(ang-0.45),Y(e[2])-L*Math.sin(ang-0.45)); c.lineTo(X(e[1])-L*Math.cos(ang+0.45),Y(e[2])-L*Math.sin(ang+0.45)); c.closePath(); c.fill(); }
+        c.restore(); } }
     // player traces, like a playbook diagram: offence routes in cyan (the target brighter), coverage in pink
     const TP=g.plan, TR=g.tracks;
     if(TR && TP && TP.call && (g.phase==='play'||g.phase==='post')){
@@ -6968,6 +7143,7 @@ function openModal(id){
   if(QB_ON) qbRender();
   if(g.chip && g.phase!=='play') showChip(g);
   modal.querySelector('[data-close]').focus();
+  moOpen(id);   /* section 119 */
   if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
 }
 /* Big screen, "Bigger field" (theater): the match full screen (19/10/2026, see the CSS). Remembered on this device. */
@@ -7184,7 +7360,7 @@ document.addEventListener('click',e=>{
   const fov=t.closest('[data-foview]'); if(fov){ FO_VIEW=fov.dataset.foview; FO_MSG=''; renderView(true); const w=document.getElementById('viewMyteam'); if(w&&w.scrollIntoView) w.scrollIntoView({block:'start'}); return; }
   const tm=t.closest('[data-team]'); if(tm){ TEAM_SEL=TEAM_SEL===tm.dataset.team?null:tm.dataset.team; renderView(true); return; }
   const sg=t.closest('[data-seg]'); if(sg){ if(sg.dataset.seg==='live') setView('live'); else { SCH_FILTER=sg.dataset.seg; setView('schedule'); } return; }
-  const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled) togglePick(odd.dataset.key); return; }
+  const odd=t.closest('.odd[data-key]'); if(odd){ if(!odd.disabled){ const k=odd.dataset.key, nk=normKey(k), had=slip.picks.some(p=>p.key===nk||p.key===k), box=moOn()?odd.getBoundingClientRect():null; togglePick(k); if(box&&!had&&slip.picks.some(p=>p.key===nk||p.key===k)) moFly(odd,box); } return; }   /* section 119: a new pick flies to the slip */
   if(t.closest('[data-theater]')){ toggleTheater(); return; }
   const sh=t.closest('[data-share]'); if(sh){ shareGame(sh.dataset.share); return; }
   if(t.closest('[data-close]') || (t===modal && MODAL_DOWN_BG)){ closeModal(); return; }   /* une sélection glissée jusqu'au fond ne ferme plus le match */
@@ -7202,7 +7378,7 @@ document.addEventListener('click',e=>{
     if(!slip.picks.length||st<=0||st>balance) return;
     balance-=st; const n=slip.picks.length;
     slip.open=slip.picks.map(p=>Object.assign({},p)).concat(slip.open); slip.picks=[]; slip.tab='open'; slip.restored=false;
-    renderSlip(); syncPressed(); saveSlip(); toast(`Bet placed · ${n} pick${n>1?'s':''} · ${money(st)}`); return;
+    renderSlip(); syncPressed(); saveSlip(); moPlaced(); toast(`Bet placed · ${n} pick${n>1?'s':''} · ${money(st)}`); return;
   }
   const seg=t.closest('.seg button'); if(seg){ seg.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',b===seg?'true':'false')); return; }
   const rem=t.closest('#remind'); if(rem){ const on=rem.getAttribute('aria-pressed')!=='true'; rem.setAttribute('aria-pressed',on?'true':'false'); rem.innerHTML=(on?ICON.check:ICON.bell)+`<span>${on?'Reminder set':'Remind me at kickoff'}</span>`; return; }
@@ -7730,6 +7906,7 @@ function setView(v){
   navSync();
   if(v==='news'&&NEWS_ON){ NEWS.open=null; NEWS.fresh=new Set(); newsMarkSeen(); newsFetch(); }
   renderView(true);
+  moView(document.getElementById('view'+v[0].toUpperCase()+v.slice(1)));   /* section 119 */
   window.scrollTo({top:0});
 }
 /* ---------- Onglet News (section 115) ----------
@@ -9155,6 +9332,7 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
     /* section 118 : two optional looks of the field, off unless asked for */ pawn:d.pawn===true, arc:d.arc===true,
+    /* section 119 : more optional looks, off unless asked for */ slow:d.slow===true, routes:d.routes===true, club:d.club===true, motion:d.motion===true,
     /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
     /* bloc 3 : the General chat folds score-like messages about games not watched to the end (on unless turned off) */ chatShield:d.chatShield!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,
@@ -9166,7 +9344,10 @@ const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
 function saveSettings(){ return lsSet(SET_KEY,SET); }
 function applySettings(){
   document.body.classList.toggle('fx-off',!SET.fx);
-  FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;   /* section 118: read by the field drawing only */
+  FX_PAWN=!!SET.pawn; FX_ARC=!!SET.arc;
+  FX_SLOW=!!SET.slow; FX_ROUTES=!!SET.routes; FX_CLUB=!!SET.club; UI_MO=!!SET.motion;   /* section 119 */
+  document.body.classList.toggle('mo-on',UI_MO); document.documentElement.toggleAttribute('data-mo',UI_MO); if(UI_MO) moWatch();
+   /* section 118: read by the field drawing only */
   const q=document.getElementById('quick');
   if(q) q.innerHTML='<span class="label">Stake all</span>'+QUICK_SETS[SET.quick].map(v=>`<button class="qc" type="button" data-q="${v}">$${v}</button>`).join('');
 }
@@ -9523,7 +9704,7 @@ function seasonTotals(){
   if(combo){ st=slip.comboStake||0; rt=comboCheck()?0:st*comboDec(); }
   else live.forEach(p=>{ st+=p.stake||0; rt+=(p.stake||0)*decOf(p.pending?p.pending.price:p.price); });
   setTxt(document.getElementById('tStake'),money(r2(st)));
-  setTxt(document.getElementById('tRet'),money(r2(rt)));
+  moMoney(document.getElementById('tRet'),r2(rt));
   const btn=document.getElementById('place'); let act='place', lab, dis=false;
   const nClosed=slip.picks.filter(dead).length, nPend=live.filter(p=>p.pending).length, low=combo?!(st>=MIN_STAKE):live.some(p=>!(p.stake>=MIN_STAKE));
   if(!slip.picks.length){ lab='Place bet'; dis=true; }
@@ -9538,7 +9719,7 @@ function seasonTotals(){
   btn.dataset.act=act; btn.disabled=dis; btn.textContent=lab;
   document.getElementById('fabN').textContent=slip.picks.length;
   document.getElementById('fabR').textContent=money(r2(rt));
-  document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(L.balance));
+  document.querySelectorAll('[data-balance]').forEach(el=>moMoney(el,L.balance));
   if(QB_ON) qbSync(btn,rt);
   const fine=document.querySelector('#slipFoot .fine');
   if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · ${SERVER&&WALLET_CARRY?'play money, carried week to week':`$${BANKROLL.toLocaleString('en-US')} play money a week`}${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
@@ -9569,7 +9750,7 @@ function seasonPlace(){
   slip.picks=slip.picks.filter(paused); slip.tab=slip.picks.length?'slip':'open'; slip.restored=false;
   renderSlip(); syncPressed(); saveSlip(); walletRender(t); renderView(true);
   sfxUi('placed');
-  toast(`Bet placed · ${picks.length} bet${picks.length>1?'s':''} · ${money(r2(st))}`);
+  moPlaced(); toast(`Bet placed · ${picks.length} bet${picks.length>1?'s':''} · ${money(r2(st))}`);
 }
 
 /* ---------- quick bet on the big screen (section 86, 30/10/2026): the slip's picks, one stake, returns and the
@@ -9610,7 +9791,7 @@ document.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closes
 /* ---------- wallet card, settlement, clock moved back ---------- */
 function walletRender(t){
   const L=ledger(t);
-  document.querySelectorAll('[data-balance]').forEach(el=>el.textContent=money(L.balance));
+  document.querySelectorAll('[data-balance]').forEach(el=>moMoney(el,L.balance));
   const d=document.getElementById('balDelta');
   if(d){ d.textContent=(L.net<0?MINUS:'+')+money(Math.abs(L.net)); d.classList.toggle('neg',L.net<0); }
   const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -9655,7 +9836,7 @@ function betTick(t){
   const fresh=L.rows.filter(r=>r.st!=='open'&&!SEEN.has(r.id));
   if(fresh.length){ fresh.forEach(r=>SEEN.add(r.id));
     const pl=r2(fresh.reduce((s,r)=>s+r.ret-r.stake,0));
-    sfxUi(pl>0?'won':pl<0?'lost':'push');
+    sfxUi(pl>0?'won':pl<0?'lost':'push'); if(pl>0) moWin();   /* section 119 */
     toast(fresh.length===1 ? `${ST_LAB[fresh[0].st]} · ${fresh[0].title} · ${fresh[0].st==='won'?'+'+money(fresh[0].ret):fresh[0].st==='push'?'stake returned':MINUS+money(fresh[0].stake)}`
       : `${fresh.length} bets settled · ${pl<0?MINUS:'+'}${money(Math.abs(pl))}`); }
   const moved=slipTick(t), sig=L.rows.map(r=>r.id+r.st).join(',')+'#'+slipSig()+'#'+Math.floor(t/1e4)+'#'+(slip.tab==='open'?cashSig(L.rows,t):'')+'#'+slip.mode+(slip.comboStake||0);
@@ -9731,16 +9912,26 @@ function renderSettings(force){
         <div class="seg" role="radiogroup" aria-labelledby="setThemeL">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([v,l])=>`<button type="button" role="radio" data-theme-set="${v}" aria-checked="${(window.__gcThemePref?window.__gcThemePref():'auto')===v}">${l}</button>`).join('')}</div></div>
       <div class="set-row"><span class="set-l" id="setFxL">Big-play effects<small>Field shake and the touchdown / turnover wipe</small></span>
         <button type="button" class="switch" role="switch" data-set="fx" aria-checked="${SET.fx}" aria-labelledby="setFxL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setPawnL">3D players<small>Players stand on the field and wear their jersey number, instead of the flat O and X markers</small></span>
-        <button type="button" class="switch" role="switch" data-set="pawn" aria-checked="${SET.pawn}" aria-labelledby="setPawnL"><i></i></button></div>
-      <div class="set-row"><span class="set-l" id="setArcL">Ball flight<small>Passes and kicks rise in an arc, with a shadow on the field and a ring where the ball comes down</small></span>
-        <button type="button" class="switch" role="switch" data-set="arc" aria-checked="${SET.arc}" aria-labelledby="setArcL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setMotionL">Interface motion<small>Animated tab changes, amounts that roll, a pick that flies to the slip, placeholders while a page loads and a press on every button</small></span>
+        <button type="button" class="switch" role="switch" data-set="motion" aria-checked="${SET.motion}" aria-labelledby="setMotionL"><i></i></button></div>
       <div class="set-row"><span class="set-l" id="setSpoilL">Hide scores<small>No spoilers: finished games you haven't watched here show no score on the board, the ticker and big plays</small></span>
         <button type="button" class="switch" role="switch" data-set="spoil" aria-checked="${SET.spoil}" aria-labelledby="setSpoilL"><i></i></button></div>
       ${typeof CHAT_ON!=='undefined'&&CHAT_ON?`<div class="set-row"><span class="set-l" id="setChatShieldL">Chat spoiler shield<small>In the General chat, a message that looks like the score of a game you haven't watched to the end stays folded until you tap it</small></span>
         <button type="button" class="switch" role="switch" data-set="chatShield" aria-checked="${SET.chatShield}" aria-labelledby="setChatShieldL"><i></i></button></div>`:''}
       <div class="set-row"><span class="set-l">Clock<small>${CLOCK.demo?'Preview time: the week plays from a moment you pick':'Real time, Europe/Brussels'}</small></span>
         <button type="button" class="chip-btn" data-openclock>Change the clock</button></div>
+    </div>
+    <div class="card set-card"><div class="card-h"><h2>Match visuals</h2><span class="label">Off by default</span></div>
+      <div class="set-row"><span class="set-l" id="setPawnL">3D players<small>Players stand on the field and wear their jersey number, instead of the flat O and X markers</small></span>
+        <button type="button" class="switch" role="switch" data-set="pawn" aria-checked="${SET.pawn}" aria-labelledby="setPawnL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setArcL">Ball flight<small>Passes and kicks rise in an arc, with a shadow on the field and a ring where the ball comes down</small></span>
+        <button type="button" class="switch" role="switch" data-set="arc" aria-checked="${SET.arc}" aria-labelledby="setArcL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setSlowL">Slow motion on big plays<small>Touchdowns, interceptions and gains of 20 yards or more slow down at the key moment · the play still ends on time</small></span>
+        <button type="button" class="switch" role="switch" data-set="slow" aria-checked="${SET.slow}" aria-labelledby="setSlowL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setRoutesL">Routes before the snap<small>The planned routes of the offence are drawn while the teams line up · hidden while the next-play market is open</small></span>
+        <button type="button" class="switch" role="switch" data-set="routes" aria-checked="${SET.routes}" aria-labelledby="setRoutesL"><i></i></button></div>
+      <div class="set-row"><span class="set-l" id="setClubL">Club colours on the field<small>Each end zone in its team’s colour, and the home team’s mark at midfield</small></span>
+        <button type="button" class="switch" role="switch" data-set="club" aria-checked="${SET.club}" aria-labelledby="setClubL"><i></i></button></div>
     </div>
     ${soundCard()}
     ${SERVER?pushCard():''}
@@ -10393,7 +10584,7 @@ async function serverPlace(picks,comboLegs){
     if(!slip.picks.length) slip.tab='open';
     const n=res.accepted.length, st=res.accepted.reduce((s,b)=>s+b.stake,0); HIST.at=0;
     BET_SIG=''; renderSlip(); syncPressed(); saveSlip(); walletRender(nowMs()); renderView(true);
-    if(n){ sfxUi('placed'); const c=res.accepted.find(b=>b.legs); toast(c?`${betKind(c)} placed · ${c.legs.length} legs at ${fmtO(amOf(c.price_dec))} · ${money(c.stake)}`:`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
+    if(n){ sfxUi('placed'); moPlaced(); const c=res.accepted.find(b=>b.legs); toast(c?`${betKind(c)} placed · ${c.legs.length} legs at ${fmtO(amOf(c.price_dec))} · ${money(c.stake)}`:`Bet placed · ${n} bet${n>1?'s':''} · ${money(r2(st))}`); }
     if(moved||closed||other) toastErr([moved?`${moved} price${moved>1?'s':''} moved: accept the new odds to place ${moved>1?'them':'it'}.`:'',closed?`${closed} market${closed>1?'s':''} closed.`:'',other].filter(Boolean).join(' '));
   }catch(e){ toastErr(`The bet was not placed: ${e.message}. Check your connection and place it again.`); renderSlip(); }
 }

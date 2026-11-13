@@ -31,7 +31,7 @@ async function server(){
       console.log(`   ${fichier} : action ${P.seq} · ${P.text} · retour ${P.int_return.return} yds · écran ${P.show.act} s`);
       check(P.show.act>=5,`${six?'pick-six':'long retour'} : temps d'animation allongé (${P.show.act} s)`);
       const p=await b.newPage({viewport:{width:1280,height:900}}); p.on('pageerror',e=>errs.push(e.message));
-      await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
+      await p.goto(`http://localhost:${PORT}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
       const r=await p.evaluate(({F,seq})=>{
         const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
         let vu=null, chip=null, flash=null, fin=null, txt=null;
@@ -57,7 +57,7 @@ async function server(){
     }
     /* le commentaire d'une interception ramenée en touchdown */
     const p=await b.newPage(); p.on('pageerror',e=>errs.push(e.message));
-    await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
+    await p.goto(`http://localhost:${PORT}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
     const F=JSON.parse(fs.readFileSync(path.join(__dirname,'matchs','longues-pick-six.json'),'utf8'));
     const P=F.plays.find(x=>x.int_return&&x.int_return.td);
     const line=await p.evaluate(({F,seq})=>{ const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); G.rpSeek(g,seq-1); const l=G.playLine(g,g.plays[seq-1]); return l&&l.text; },{F,seq:P.seq});

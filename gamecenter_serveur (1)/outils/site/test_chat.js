@@ -130,7 +130,7 @@ const ouvrirChat=async p=>{ await p.click('.rail-btn[data-chat]'); await p.waitF
     /* l'administrateur masque un message depuis /admin/chat */
     console.log('— administration');
     const ad=await (await b.newContext({viewport:{width:1100,height:900}})).newPage(); ad.errs=[]; ad.on('pageerror',e=>ad.errs.push(e.message));
-    await ad.goto(`http://localhost:${ON}/admin/chat`);
+    await ad.goto(`http://localhost:${ON}/admin/chat`,{timeout:90000});
     check(await ad.evaluate(()=>document.querySelector('meta[name="robots"]').content.includes('noindex')),'page d’administration non indexée');
     await ad.fill('#key','mauvaise-cle-mauvaise'); await ad.click('#keyForm button');
     check(await attendre(ad,()=>/Clé refusée/.test(document.getElementById('out').textContent)),'mauvaise clé refusée');

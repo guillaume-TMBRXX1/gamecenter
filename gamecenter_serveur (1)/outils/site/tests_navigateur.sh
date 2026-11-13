@@ -93,6 +93,7 @@ if [ $S1 = 1 ]; then
   lancer "Site : Bigger field en plein écran (ordinateur, téléphone)" node outils/site/test_plein_ecran.js
   lancer "Site : noms des joueurs sur le terrain" node outils/site/test_noms.js
   lancer "Site : joueurs en relief et ballon en cloche (Settings, coupés par défaut)" node outils/site/test_relief.js
+  lancer "Site : ralenti, tracés avant le snap, terrain du club, Interface motion (Settings, coupés par défaut)" node outils/site/test_effets.js
   lancer "Site : histoire, records, carrières" node outils/site/test_histoire.js
   lancer "Site : classement des joueurs (Ranking)" node outils/site/test_classement.js
   lancer "Site : rappels avant le coup d.envoi" node outils/site/test_rappels.js

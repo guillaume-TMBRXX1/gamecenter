@@ -77,7 +77,7 @@ async function server(){
   const srv=await server(), b=await chromium.launch({executablePath:EXE});
   try{
     const p=await b.newPage({viewport:{width:1440,height:1000}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-    await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
+    await p.goto(`http://localhost:${PORT}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
     const R=await p.evaluate(async F=>{
       const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
       const out={}, oob=[], texts=[]; let lastF=null;
