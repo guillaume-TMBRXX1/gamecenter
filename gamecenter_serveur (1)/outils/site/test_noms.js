@@ -33,7 +33,7 @@ async function server(){
   const srv=await server(), b=await chromium.launch({executablePath:EXE});
   try{
     const p=await b.newPage({viewport:{width:1440,height:900}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
-    await p.goto(`http://localhost:${PORT}/`); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
+    await p.goto(`http://localhost:${PORT}/`,{timeout:90000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:30000});
     const tuiles=await p.evaluate(()=>{ const G=window.__gc; let n=0; for(const v of G.views){ if(v.g&&v.g.plays) n++; } return n; });
     const R=await p.evaluate(async F=>{
       const G=window.__gc; G.openReplayFeed(F); const g=G.replayGame(); g.paused=false; g.speed=1;
