@@ -3534,6 +3534,19 @@ visuels retirés en section 120 ne reviennent pas.
   200 Ko/s. **Pas vu** : la vibration sur un vrai téléphone (seul l'appel à `navigator.vibrate` est vérifié), Safari et
   Firefox, la cascade des News sur une semaine où les articles arrivent après l'ouverture de l'onglet.
 
+### 122. « Interface motion » actif pour tous les visiteurs (16/11/2026)
+**Décision de Guillaume (16/11)** : les effets d'interface de la section 121 sont actifs par défaut ; le réglage
+Settings › Display › « Interface motion » sert désormais à les couper.
+- **Le changement** (`gamecenter_source.html`) : `SET.motion` vaut vrai sauf `"motion":false` enregistré dans
+  `gc-settings-v1` (`d.motion!==false`, au lieu de `d.motion===true`) ; l'amorce de la page pose `data-mo` et les
+  silhouettes du premier chargement (`mo-boot`) sauf ce même `false` ou « réduire les animations ». Un visiteur qui avait
+  coupé le réglage le garde coupé ; un visiteur qui ne l'avait jamais touché voit les effets.
+- **Ce qui ne change pas** : les effets eux-mêmes (section 121), rien avec « réduire les animations » (`moOn`,
+  `@media (prefers-reduced-motion:no-preference)`), rien qui touche une valeur ou un instant du jeu.
+- **Tests** : `moteur/tests/test_effets_visuels.py` (actif sauf `false` enregistré, amorce) ; `outils/site/test_effets.js`
+  (allumé sans rien enregistré, un clic le coupe et il reste coupé au rechargement sans `data-mo` ni silhouettes, rallumé
+  il reprend tous les effets ; silhouettes et « réduire les animations » testés pour un visiteur neuf, sans réglage).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

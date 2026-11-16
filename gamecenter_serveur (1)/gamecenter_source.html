@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
-<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(s&&s.motion===true&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
+<script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(!(s&&s.motion===false)&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -2673,7 +2673,7 @@
   }
 </style>
 <style id="mo-fx">
-  /* Sections 119 et 121 (13/11/2026) — « Interface motion » (Settings › Display : body.mo-on, et html[data-mo] posé par
+  /* Sections 119, 121 et 122 — « Interface motion » (actif pour tous depuis la section 122, coupé dans Settings › Display : body.mo-on, et html[data-mo] posé par
      l'amorce avant tout dessin). Rien ne s'applique sans le réglage, ni avec « réduire les animations ». Les animations
      ne touchent que l'affichage : aucune valeur ni aucun instant du jeu. (Visuels de match retirés : section 120.) */
   @keyframes moIn{from{opacity:0;translate:0 8px}}
@@ -6508,7 +6508,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&pcard){ e.stopImme
 /* perf: adaptive quality (see frame()). If the device can't keep up, first the neon halos (canvas shadowBlur,
    the slowest canvas operation on Safari / iPad) are dropped, then the resolution is lowered (2x → 1.5x → 1x) */
 let FX_DPR=2, FX_GLOW=true;
-/* Section 119 (13/11/2026) — UI_MO: « Interface motion », off unless turned on in Settings › Display (applySettings sets
+/* Section 119 (13/11/2026) — UI_MO: « Interface motion », on for everyone since section 122 unless turned off in Settings › Display (applySettings sets
    it): tab changes, the match opening from its tile, rolling amounts, the pick flying to the slip, the win, the
    probability curve drawing itself, loading placeholders, press feedback. Nothing of the match reads it. */
 let UI_MO=false;
@@ -9251,7 +9251,7 @@ function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }cat
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
 const SET=(()=>{ const d=lsGet(SET_KEY)||{}; const st=num(d.stake,10);
   return {stake:st>=MIN_STAKE?Math.round(st*100)/100:10, quick:QUICK_SETS[d.quick]?d.quick:'m', odds:['better','ask','any'].includes(d.odds)?d.odds:'better', fx:d.fx!==false,
-    /* section 119 : « Interface motion », off unless asked for */ motion:d.motion===true,
+    /* section 119 : « Interface motion » ; section 122 : on unless turned off */ motion:d.motion!==false,
     /* bloc 2 : scores of finished games shown everywhere unless the viewer asks for spoiler protection */ spoil:d.spoil===true,
     /* bloc 3 : the General chat folds score-like messages about games not watched to the end (on unless turned off) */ chatShield:d.chatShield!==false,
     /* sound (step 8) */ snd:d.snd===true, vol:clamp(num(d.vol,70),0,100), sfx:d.sfx!==false, crowd:d.crowd!==false, talk:['full','big','off'].includes(d.talk)?d.talk:'full', voice:typeof d.voice==='string'?d.voice:'', rate:[0.9,1.05,1.2].includes(d.rate)?d.rate:1.05, cap:d.cap!==false,

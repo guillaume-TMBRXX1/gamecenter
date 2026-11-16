@@ -1,5 +1,5 @@
-"""« Interface motion » (README sections 119, 120 et 121) : animations de l'interface au choix du spectateur, coupées par
-défaut (Settings › Display). Section 121 : onglets en 180 ms, terrain qui grandit depuis sa vignette, score qui bascule
+"""« Interface motion » (README sections 119, 120, 121 et 122) : animations de l'interface, actives pour tous les
+visiteurs depuis la section 122 ; le réglage de Settings › Display sert à les couper. Section 121 : onglets en 180 ms, terrain qui grandit depuis sa vignette, score qui bascule
 sur un touchdown, « Bet placed » à la place du bouton, célébration aux couleurs de l'équipe, cascade une fois par
 visite, silhouettes des cartes au premier chargement. Les visuels de match des sections 118 et 119 (3D players, Ball flight, Slow motion on big
 plays, Routes before the snap, Club colours on the field) ont été retirés le 13/11/2026 (section 120) : ce test vérifie
@@ -22,12 +22,14 @@ class TestInterfaceMotion(unittest.TestCase):
         with open(PAGE, encoding="utf-8") as f:
             cls.html = f.read()
 
-    def test_coupe_par_defaut(self):
+    def test_actif_par_defaut(self):
+        # section 122 : actif sauf « false » enregistré (UI_MO reste faux jusqu'à applySettings, au démarrage)
         self.assertIn("let UI_MO=false;", self.html)
-        self.assertIn("motion:d.motion===true,", self.html)
-        # l'amorce de la page ne pose data-mo (silhouette du premier chargement) que pour un « true » enregistré
+        self.assertIn("motion:d.motion!==false,", self.html)
+        self.assertNotIn("motion:d.motion===true", self.html)
+        # l'amorce pose data-mo et les silhouettes sauf « false » enregistré ou « réduire les animations »
         amorce = self.html[self.html.index('<script id="da-theme-boot">'):self.html.index("</script>")]
-        self.assertIn('if(s&&s.motion===true&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))'
+        self.assertIn('if(!(s&&s.motion===false)&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))'
                       '{var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");', amorce)
         # les silhouettes ne restent jamais : retirées au premier dessin de la grille, sinon 1,5 s après DOMContentLoaded
         self.assertIn('document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})', amorce)
