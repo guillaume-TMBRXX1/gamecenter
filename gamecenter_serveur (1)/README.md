@@ -3534,6 +3534,41 @@ visuels retirés en section 120 ne reviennent pas.
   200 Ko/s. **Pas vu** : la vibration sur un vrai téléphone (seul l'appel à `navigator.vibrate` est vérifié), Safari et
   Firefox, la cascade des News sur une semaine où les articles arrivent après l'ouverture de l'onglet.
 
+### 122. « Interface motion » actif pour tous les visiteurs (16/11/2026)
+**Décision de Guillaume (16/11)** : les effets d'interface de la section 121 sont actifs par défaut ; le réglage
+Settings › Display › « Interface motion » sert désormais à les couper.
+- **Le changement** (`gamecenter_source.html`) : `SET.motion` vaut vrai sauf `"motion":false` enregistré dans
+  `gc-settings-v1` (`d.motion!==false`, au lieu de `d.motion===true`) ; l'amorce de la page pose `data-mo` et les
+  silhouettes du premier chargement (`mo-boot`) sauf ce même `false` ou « réduire les animations ». Un visiteur qui avait
+  coupé le réglage le garde coupé ; un visiteur qui ne l'avait jamais touché voit les effets.
+- **Ce qui ne change pas** : les effets eux-mêmes (section 121), rien avec « réduire les animations » (`moOn`,
+  `@media (prefers-reduced-motion:no-preference)`), rien qui touche une valeur ou un instant du jeu.
+- **Tests** : `moteur/tests/test_effets_visuels.py` (actif sauf `false` enregistré, amorce) ; `outils/site/test_effets.js`
+  (allumé sans rien enregistré, un clic le coupe et il reste coupé au rechargement sans `data-mo` ni silhouettes, rallumé
+  il reprend tous les effets ; silhouettes et « réduire les animations » testés pour un visiteur neuf, sans réglage).
+### 123. Semaine 8 : quatre tests navigateur réparés, le QB2 qui court (16/11/2026)
+**Constat** : après l'arrivée de la semaine du 16/11 (`week_2026-11-16`), quatre tests du groupe « site » échouaient
+sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande de Guillaume (16/11)** : les examiner.
+- **Le QB2 qui court** (`gamecenter_source.html`, `rpSlot`, et la cellule 427 du notebook, reportée à la main) :
+  **vrai défaut du site**. Le porteur d'une course est placé d'après son poste ; `QB1` était reconnu, pas `QB2`. Dans la
+  finale (Mirage, QB remplaçant Ivo Bellamy), son touchdown de 3 yards et son scramble étaient dessinés comme une course
+  du running back, avec le nom du back sur le ballon. Tout poste `QBn` est maintenant le quarterback, exactement comme
+  `QB1` (`test_noms.js`).
+- **Le bandeau des scores** (`test_bandeau.js`) : défaut du test. Il rangeait les résultats par affiche « AWAY@HOME » ;
+  en semaine 8, trois affiches se rejouent en playoffs (CPH@MRG lundi puis en demi-finale), et le second résultat
+  écrasait le premier. Il compare désormais au match déjà commencé à l'heure du test. Le site affichait le bon score.
+- **Les changements de joueurs** (`test_banc.js`) : défaut du test. « Draven comes in unblocked » (un rusher libre sur
+  un sack) était pris pour une entrée en jeu. Le test ne compte plus « comes in unblocked / untouched ».
+- **Le vote des supporters** (`test_front_office.js`) : le premier appel à `/api/fans` après le démarrage du serveur
+  mesure tous les matchs terminés de la semaine et de la précédente (≈ 20 ms par match, puis cache par match) : 10 à
+  15 s mesurées, au-delà des 15 s d'attente du test. Les attentes qui dépendent de ce vote passent à 60 s. **Ce n'est
+  pas réglé côté serveur** : le premier visiteur après un redémarrage attend autant (piste : préchauffer ce cache au
+  démarrage).
+- **Tests** : les quatre tests, plus `test_courses`, `test_actions`, `test_audibles`, `test_poche` et `test_cellule427`
+  (dessin des actions, que `rpSlot` sert aussi).
+- **`test_effets.js`** (section 121) : le pari posé part au serveur ; « Bet placed » arrive avec sa réponse. Le test
+  l'attendait 300 ms exactement et pouvait échouer quand le serveur tardait : il l'attend désormais jusqu'à 5 s.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

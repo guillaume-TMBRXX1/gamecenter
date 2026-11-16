@@ -16,7 +16,9 @@ const week=fs.readdirSync(WEEKS).filter(w=>w.startsWith('week_')).sort().pop();
 const W=JSON.parse(fs.readFileSync(path.join(WEEKS,week,'week.json'),'utf8'));
 const ko0=Math.min(...W.schedule.map(g=>Date.parse(g.kickoff)));
 const AT=new Date(ko0+2*3600e3+5*60e3).toISOString();
-const final={}; for(const g of W.schedule) if(g.result) final[`${W.teams[g.away]?W.teams[g.away].abbr:g.away}@${W.teams[g.home]?W.teams[g.home].abbr:g.home}`]=g;
+/* 16/11/2026 : une même affiche peut se rejouer en playoffs (semaine 8 : CPH@MRG lundi puis en demi-finale) — on garde
+   les matchs déjà commencés à l'heure du test, et le bandeau doit montrer le score de l'un d'eux */
+const final={}; for(const g of W.schedule) if(g.result&&Date.parse(g.kickoff)<Date.parse(AT)) (final[`${W.teams[g.away]?W.teams[g.away].abbr:g.away}@${W.teams[g.home]?W.teams[g.home].abbr:g.home}`]||=[]).push(g);
 
 async function server(){
   const data=fs.mkdtempSync(path.join(os.tmpdir(),'gc-bandeau-'));
@@ -40,7 +42,7 @@ const basculer=async p=>{ await ouvrirReglages(p); await p.click('[data-set="spo
   const v=await p.getAttribute('[data-set="spoil"]','aria-checked'); await p.click('.rail-btn[data-view="live"]'); await p.waitForTimeout(800); return v; };
 
 (async()=>{
-  console.log(`${week} · horloge ${AT} · ${Object.keys(final).length} matchs avec résultat dans la semaine`);
+  console.log(`${week} · horloge ${AT} · ${Object.values(final).flat().length} matchs commencés avec résultat`);
   const srv=await server();
   const b=await chromium.launch({executablePath:EXE});
   try{
@@ -51,7 +53,7 @@ const basculer=async p=>{ await ouvrirReglages(p); await p.click('[data-set="spo
     console.log('   par défaut :',JSON.stringify(e).slice(0,300));
     check(e.tk.length>0,`bandeau : ${e.tk.length} matchs terminés`);
     check(e.tk.every(x=>/^\d+$/.test(x.away)&&/^\d+$/.test(x.home)),'bandeau : un score pour chaque match terminé, sans réglage');
-    check(e.tk.every(x=>{ const g=final[x.m]; return g&&+x.home===g.result.home&&+x.away===g.result.away; }),'bandeau : score = celui du moteur');
+    check(e.tk.every(x=>(final[x.m]||[]).some(g=>+x.home===g.result.home&&+x.away===g.result.away)),'bandeau : score = celui du moteur');
     check(e.tiles.length>0&&e.tiles.every(t=>t.sc.length&&t.sc.every(s=>s!==MINUS)),`tuiles des matchs terminés avec leur score (${e.tiles.length})`);
     check(e.mo>0,`Big plays des matchs terminés (${e.mo})`);
     await ouvrirReglages(p);

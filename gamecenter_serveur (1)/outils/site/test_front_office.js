@@ -27,6 +27,9 @@ const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')
 const CAP=process.env.FO_CAPTURES||'';            // dossier : captures des écrans (validation), facultatif
 const capture=async(p,nom,sel)=>{ if(!CAP) return; fs.mkdirSync(CAP,{recursive:true}); await p.waitForTimeout(400);
   const el=sel?await p.$(sel):null; await (el||p).screenshot({path:path.join(CAP,nom+'.png'),...(el?{}:{fullPage:false})}); };
+/* 16/11/2026 : attentes qui dépendent de /api/fans. Le premier appel après le démarrage d'un serveur mesure tous les
+   matchs terminés de la semaine et de la précédente (cache par match ensuite) : 10 à 15 s mesurées en semaine 8 */
+const FANS_MS=60000;
 let fail=0; const check=(c,msg)=>{ console.log((c?'  ✓ ':'  ✗ ')+msg); if(!c) fail++; };
 
 /* ---- les données : copie des deux dernières semaines, une question posée ---- */
@@ -73,7 +76,7 @@ const ouvrir=async(b,opts)=>{ const ctx=await b.newContext(Object.assign({viewpo
 const connecter=async(p,c)=>{ await p.evaluate(c=>localStorage.setItem('gc-player-v1',JSON.stringify({token:c.token,name:c.name,account:true,fav_team:c.fav})),c);
   await p.reload({timeout:120000}); await p.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:120000}); };
 const myteam=async p=>{ await p.click('.rail-btn[data-view="myteam"]'); await p.waitForSelector('#viewMyteam .mt-bar, #viewMyteam .st-empty',{timeout:15000}); };
-const frontOffice=async p=>{ await p.click('#viewMyteam [data-mttab="fo"]'); await p.waitForSelector('#viewMyteam .fo-wrap',{timeout:15000}); };
+const frontOffice=async p=>{ await p.click('#viewMyteam [data-mttab="fo"]'); await p.waitForSelector('#viewMyteam .fo-wrap',{timeout:FANS_MS}); };
 const texte=async(p,s)=>((await p.textContent(s))||'').replace(/\s+/g,' ').trim();
 const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register',{pseudo,password:'motdepasse1'})).json;
   if(changee) await api('/account/team',{token:c.token,team:fav});               // franchise choisie cette semaine
@@ -95,7 +98,7 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
 
     /* ---- compte de VEC : le rappel « Vote now » sur Overview ---- */
     const pb=await ouvrir(b); await connecter(pb,B); await myteam(pb);
-    await pb.waitForSelector('#viewMyteam .fo-teaser',{timeout:15000});
+    await pb.waitForSelector('#viewMyteam .fo-teaser',{timeout:FANS_MS});
     await capture(pb,'3-overview-rappel','#viewMyteam .fo-teaser');
     check(/How bold should we be on fourth down\?/.test(await texte(pb,'#viewMyteam .fo-teaser')),'Overview : rappel « Vote now » tant que le compte n’a pas voté');
     errs.push(...pb.errs); await pb.context().close();
@@ -104,7 +107,7 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
     const p=await ouvrir(b); await connecter(p,A); await myteam(p);
     const tabs=await p.$$eval('#viewMyteam .mt-tabs [data-mttab]',bs=>bs.map(b=>b.textContent.trim()));
     check(tabs.join('|')==='Overview|Front office',`My team : onglets Overview / Front office (${tabs.join(' | ')})`);
-    await frontOffice(p); await p.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:15000});
+    await frontOffice(p); await p.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:FANS_MS});
     check(!!(await p.$('#viewMyteam [data-foscreen="vote"]')),'jeudi : l’écran de vote par défaut');
     const qtxt=await texte(p,'#viewMyteam [data-fo="question"]'), COORD=W.teams.CTX.coordinators.offense;
     check(new RegExp('Fan vote · for week '+(W.week.index+1),'i').test(qtxt),`« Fan vote · for week ${W.week.index+1} »`);
@@ -170,14 +173,14 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
 
     /* ---- compte qui a changé de franchise cette semaine ---- */
     const pc=await ouvrir(b); await connecter(pc,C); await myteam(pc); await frontOffice(pc);
-    await pc.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:15000});
+    await pc.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:FANS_MS});
     check(/your vote counts from Monday/.test(await texte(pc,'#viewMyteam [data-fo="question"]'))&&await pc.evaluate(()=>[...document.querySelectorAll('#viewMyteam [data-fochoice]')].every(b=>b.disabled)),'franchise changée cette semaine : raison affichée, options désactivées');
     errs.push(...pc.errs); await pc.context().close();
 
     /* ---- téléphone 390 px ---- */
     const ph=await ouvrir(b,{viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true}); await connecter(ph,A);
     await ph.evaluate(()=>window.__gc.season.setView('myteam')); await ph.waitForSelector('#viewMyteam .mt-bar',{timeout:15000});
-    await frontOffice(ph); await ph.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:15000});
+    await frontOffice(ph); await ph.waitForSelector('#viewMyteam [data-fo="question"]',{timeout:FANS_MS});
     const lay=await ph.evaluate(()=>{ const o=[...document.querySelectorAll('#viewMyteam .fo-opt')].map(e=>e.getBoundingClientRect());
       return {sw:document.documentElement.scrollWidth, w:innerWidth, stacked:o.length===3&&o[1].top>o[0].bottom-1&&o[2].top>o[1].bottom-1,
         pad:parseFloat(getComputedStyle(document.querySelector('#viewMyteam .fo-wrap')).paddingBottom)}; });
@@ -193,7 +196,7 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
   try{
     const A=(await api('/account/login',{pseudo:'FanCTX',password:'motdepasse1'})).json;
     const p=await ouvrir(b); await connecter(p,{token:A.token,name:A.name,fav:'CTX'}); await myteam(p); await frontOffice(p);
-    await p.waitForSelector('#viewMyteam [data-foscreen]',{timeout:15000});
+    await p.waitForSelector('#viewMyteam [data-foscreen]',{timeout:FANS_MS});
     check(!!(await p.$('#viewMyteam [data-foscreen="reveal"]')),'lundi : la révélation s’affiche d’abord');
     check(/Vote|Change/.test(await texte(p,'#viewMyteam .fo-nextc [data-foview="vote"]')),'lundi : bouton vers la nouvelle question');
     errs.push(...p.errs);
@@ -204,7 +207,7 @@ const compte=async(pseudo,fav,changee)=>{ const c=(await api('/account/register'
   try{
     const A=(await api('/account/login',{pseudo:'FanCTX',password:'motdepasse1'})).json;
     const p=await ouvrir(b); await connecter(p,{token:A.token,name:A.name,fav:'CTX'}); await myteam(p); await frontOffice(p);
-    await p.waitForSelector('#viewMyteam [data-fo="result"]',{timeout:15000});
+    await p.waitForSelector('#viewMyteam [data-fo="result"]',{timeout:FANS_MS});
     const res=await texte(p,'#viewMyteam [data-fo="result"]');
     check(/fans have decided/.test(await texte(p,'#viewMyteam .fo-rev'))&&/Applies next week/.test(res)&&/Fewer than 5 votes/.test(res),'après le verrou : résultat de la semaine suivante (1 vote : le coordinateur décide)');
     check(/✓ Your vote/.test(res),'après le verrou : « Your vote »');

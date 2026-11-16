@@ -1,14 +1,15 @@
-// « Interface motion » (README sections 119, 120 et 121) — test navigateur (Playwright + serveur réel).
+// « Interface motion » (README sections 119, 120, 121 et 122) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_effets.js [dossier data/weeks]     (depuis « gamecenter_serveur (1) »)
-// Un réglage de Settings › Display, coupé par défaut. Les visuels de match des sections 118 et 119 ont été retirés
+// Actif pour tous les visiteurs depuis la section 122 ; le réglage de Settings › Display sert à le couper. Les visuels de match des sections 118 et 119 ont été retirés
 // (section 120) : le test vérifie aussi que leurs interrupteurs n'existent plus.
-//   · sans rien toucher : interrupteur éteint, pas de classe d'animation, aucun des cinq réglages retirés ;
-//   · après un vrai clic : réglage enregistré ; un onglet ouvert arrive en cascade ; une cote cliquée vole vers le
+//   · sans rien toucher : interrupteur allumé, rien d'enregistré, classes d'animation posées, aucun des cinq réglages
+//     retirés ; un clic le coupe (« false » enregistré), coupé il le reste au rechargement (l'amorce ne pose rien) ;
+//   · rallumé d'un clic : réglage enregistré ; un onglet ouvert arrive en cascade ; une cote cliquée vole vers le
 //     bulletin et le gain potentiel roule jusqu'à sa valeur ; le grand écran d'un match s'ouvre sans erreur ;
 //   · section 121 : onglet en 180 ms ; cascade du Schedule une seule fois par visite (30 ms d'écart) ; « Bet placed »
 //     à la place du bouton et vibration courte à la pose d'un pari, puis retour à l'état normal ; score qui bascule sur
 //     un touchdown (6 points d'un coup) mais pas sur un field goal ; dernier point de la courbe qui bat à chaque action ;
-//     silhouettes des cartes pendant un premier chargement bridé, retirées au premier dessin ;
+//     silhouettes des cartes pendant un premier chargement bridé d'un visiteur neuf, retirées au premier dessin ;
 //   · après rechargement : réglage gardé ; un clic le recoupe ; aucune erreur JS ;
 //   · « réduire les animations » : réglage allumé mais aucune animation (ni silhouettes, ni cascade, ni bascule).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -47,15 +48,21 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
     const p=await b.newPage({viewport:{width:1440,height:1000}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
     await ouvrir(p);
     let R=await etat(p);
-    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]!==true),'« Interface motion » est présent et éteint par défaut');
-    check(!R.body&&!R.html,'pas de classe d\'animation sur la page');
+    check(NOMS.every(n=>R[n]==='true'&&R['ls_'+n]===undefined),'« Interface motion » est présent et allumé par défaut (rien d\'enregistré)');
+    check(R.body&&R.html,'la page porte la classe d\'animation sans rien toucher');
     const reste=await p.evaluate(N=>N.filter(n=>document.querySelector(`#viewSettings [data-set="${n}"]`)).concat(/Match visuals/.test(document.getElementById('viewSettings').textContent)?['Match visuals']:[]),RETIRES);
     check(!reste.length,'les cinq visuels de match retirés ne sont plus dans Settings'+(reste.length?' : '+reste:''));
     const ret0=await p.evaluate(()=>document.getElementById('tRet').textContent);
 
     for(const n of NOMS) await p.click(`#viewSettings .switch[data-set="${n}"]`);
     R=await etat(p);
-    check(NOMS.every(n=>R[n]==='true'&&R['ls_'+n]===true),'un clic : interrupteur allumé, réglage enregistré');
+    check(NOMS.every(n=>R[n]==='false'&&R['ls_'+n]===false)&&!R.body&&!R.html,'un clic le coupe : « false » enregistré, classes retirées');
+    await ouvrir(p);
+    R=await etat(p);
+    check(NOMS.every(n=>R[n]==='false')&&!R.body&&!R.html&&!(await p.evaluate(()=>document.documentElement.classList.contains('mo-boot'))),'coupé, il le reste au rechargement (l\'amorce ne pose ni data-mo ni silhouettes)');
+    for(const n of NOMS) await p.click(`#viewSettings .switch[data-set="${n}"]`);
+    R=await etat(p);
+    check(NOMS.every(n=>R[n]==='true'&&R['ls_'+n]===true),'un clic le rallume, réglage enregistré');
     check(R.body&&R.html,'la page porte la classe d\'animation');
 
     /* interface : un onglet ouvert arrive en cascade */
@@ -85,9 +92,12 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
       check(mid!==fin.ret,`en passant par des valeurs intermédiaires (${mid})`);
       /* le pari posé : « Bet placed » remplace le bouton, le téléphone vibre, puis tout revient */
       const P=await p.evaluate(()=>new Promise(r=>{ window.__vib=[]; navigator.vibrate=x=>{ window.__vib.push(x); return true; };
-        const b=document.getElementById('place'); if(b.disabled) return r({dis:true}); b.click();
-        setTimeout(()=>{ const s=getComputedStyle(b,'::after'); r({ok:b.classList.contains('mo-ok'),after:s.content,foot:!document.getElementById('slipFoot').hidden,vib:window.__vib.slice()}); },300); }));
-      check(P.ok&&/Bet placed/.test(P.after||'')&&P.foot,`pari posé : « Bet placed » à la place du bouton (${P.dis?'bouton désactivé':P.after})`);
+        const b=document.getElementById('place'), lab=b.textContent; if(b.disabled) return r({dis:true,lab}); b.click();
+        /* le pari part au serveur (« Placing… ») : « Bet placed » arrive avec sa réponse — on l'attend jusqu'à 5 s (16/11/2026) */
+        const t0=performance.now(), voir=()=>{ if(!b.classList.contains('mo-ok')&&performance.now()-t0<5000) return setTimeout(voir,50);
+          const s=getComputedStyle(b,'::after'); r({ok:b.classList.contains('mo-ok'),after:s.content,foot:!document.getElementById('slipFoot').hidden,vib:window.__vib.slice(),lab}); };
+        setTimeout(voir,50); }));
+      check(P.ok&&/Bet placed/.test(P.after||'')&&P.foot,`pari posé : « Bet placed » à la place du bouton (${P.dis?'bouton désactivé':P.after} ; bouton : « ${P.lab} »)`);
       check(P.vib&&P.vib.length===1&&P.vib[0]<=20,`vibration courte (${JSON.stringify(P.vib)})`);
       await p.waitForTimeout(1400);
       const P2=await p.evaluate(()=>({ok:document.querySelectorAll('.cta.mo-ok').length,open:document.querySelector('.slip-tabs [data-tab="open"]').getAttribute('aria-selected'),foot:document.getElementById('slipFoot').hidden}));
@@ -123,7 +133,7 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
 
     /* premier chargement bridé : silhouettes des cartes, retirées au premier dessin de la grille */
     const c2=await b.newContext({viewport:{width:390,height:844}}); const p2=await c2.newPage();
-    await c2.addInitScript(()=>{ try{ localStorage.setItem('gc-settings-v1','{"motion":true}'); }catch(e){} });
+    /* visiteur neuf : aucun réglage enregistré */
     const cdp=await c2.newCDPSession(p2); await cdp.send('Network.enable');
     await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:100,downloadThroughput:1024*1024,uploadThroughput:256*1024});
     p2.goto(`http://localhost:${PORT}/`,{timeout:180000}).catch(()=>{});
@@ -136,14 +146,13 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
 
     /* « réduire les animations » : rien ne bouge, même réglage allumé */
     const c3=await b.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}); const p3=await c3.newPage();
-    await c3.addInitScript(()=>{ try{ localStorage.setItem('gc-settings-v1','{"motion":true}'); }catch(e){} });
     await p3.goto(`http://localhost:${PORT}/`); await p3.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000});
     const RM=await p3.evaluate(F=>{ const G=window.__gc; const boot=document.documentElement.classList.contains('mo-boot');
       G.season.setView('schedule'); const el=document.getElementById('viewSchedule');
       const o={boot,it:el.querySelectorAll('.mo-it').length,anim:el.getAnimations({subtree:true}).filter(a=>a.animationName==='moIn').length};
       G.season.setView('live'); G.openReplayFeed(F); const g=G.replayGame(); g.paused=true; const sc=document.querySelector('#modal .sc[data-f="hs"]');
       g.hs+=7; G.updateGameUI(g); o.flip=sc.classList.contains('mo-flip'); o.panel=document.querySelector('#modal .m-panel').getAnimations().filter(a=>!a.animationName).length; g.hs-=7; return o; },F);
-    check(!RM.boot&&RM.it===0&&RM.anim===0&&!RM.flip&&RM.panel===0,`réduire les animations : ni silhouettes, ni cascade, ni bascule, ni ouverture animée (${JSON.stringify(RM)})`);
+    check(!RM.boot&&RM.it===0&&RM.anim===0&&!RM.flip&&RM.panel===0,`réduire les animations (visiteur neuf, réglage par défaut) : ni silhouettes, ni cascade, ni bascule, ni ouverture animée (${JSON.stringify(RM)})`);
     await c3.close();
   }finally{ await b.close(); srv.kill(); }
   console.log(fail?`${fail} échec(s)`:'OK'); process.exit(fail?1:0);
