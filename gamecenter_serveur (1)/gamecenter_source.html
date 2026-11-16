@@ -4547,6 +4547,7 @@ function rpSlot(P){
   const id=(P.players&&P.players.carrier&&P.players.carrier.id)||'', m=/_([A-Z]+\d*)$/.exec(id), k=m?m[1]:'';
   if(RP_SLOT[k]!=null) return RP_SLOT[k];
   if(/^WR/.test(k)) return 8; if(/^TE/.test(k)) return 5; if(/^(RB|FB|HB)/.test(k)) return 7;
+  if(/^QB/.test(k)) return 6;   /* 16/11/2026 : le QB2 entré en jeu (finale de la semaine 8) court lui-même, pas le back */
   return null;
 }
 /* bloc 2 — a conversion after a touchdown (play.conversion) is drawn as the play it is: the extra point as a

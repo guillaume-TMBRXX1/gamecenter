@@ -3546,6 +3546,26 @@ Settings › Display › « Interface motion » sert désormais à les couper.
 - **Tests** : `moteur/tests/test_effets_visuels.py` (actif sauf `false` enregistré, amorce) ; `outils/site/test_effets.js`
   (allumé sans rien enregistré, un clic le coupe et il reste coupé au rechargement sans `data-mo` ni silhouettes, rallumé
   il reprend tous les effets ; silhouettes et « réduire les animations » testés pour un visiteur neuf, sans réglage).
+### 123. Semaine 8 : quatre tests navigateur réparés, le QB2 qui court (16/11/2026)
+**Constat** : après l'arrivée de la semaine du 16/11 (`week_2026-11-16`), quatre tests du groupe « site » échouaient
+sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande de Guillaume (16/11)** : les examiner.
+- **Le QB2 qui court** (`gamecenter_source.html`, `rpSlot`, et la cellule 427 du notebook, reportée à la main) :
+  **vrai défaut du site**. Le porteur d'une course est placé d'après son poste ; `QB1` était reconnu, pas `QB2`. Dans la
+  finale (Mirage, QB remplaçant Ivo Bellamy), son touchdown de 3 yards et son scramble étaient dessinés comme une course
+  du running back, avec le nom du back sur le ballon. Tout poste `QBn` est maintenant le quarterback, exactement comme
+  `QB1` (`test_noms.js`).
+- **Le bandeau des scores** (`test_bandeau.js`) : défaut du test. Il rangeait les résultats par affiche « AWAY@HOME » ;
+  en semaine 8, trois affiches se rejouent en playoffs (CPH@MRG lundi puis en demi-finale), et le second résultat
+  écrasait le premier. Il compare désormais au match déjà commencé à l'heure du test. Le site affichait le bon score.
+- **Les changements de joueurs** (`test_banc.js`) : défaut du test. « Draven comes in unblocked » (un rusher libre sur
+  un sack) était pris pour une entrée en jeu. Le test ne compte plus « comes in unblocked / untouched ».
+- **Le vote des supporters** (`test_front_office.js`) : le premier appel à `/api/fans` après le démarrage du serveur
+  mesure tous les matchs terminés de la semaine et de la précédente (≈ 20 ms par match, puis cache par match) : 10 à
+  15 s mesurées, au-delà des 15 s d'attente du test. Les attentes qui dépendent de ce vote passent à 60 s. **Ce n'est
+  pas réglé côté serveur** : le premier visiteur après un redémarrage attend autant (piste : préchauffer ce cache au
+  démarrage).
+- **Tests** : les quatre tests, plus `test_courses`, `test_actions`, `test_audibles`, `test_poche` et `test_cellule427`
+  (dessin des actions, que `rpSlot` sert aussi).
 
 ### Annexe — `.github/workflows/semaine.yml`
 

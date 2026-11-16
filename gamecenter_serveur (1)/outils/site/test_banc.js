@@ -119,10 +119,12 @@ async function server(){
             const h=G.playerCardHTML(g,'def',i); out.cardCB3=/Depth<\/span><b>Backup · /.test(h)&&/Snaps<\/span><b>\d+ \(\d+ %\)/.test(h); }
           const qb=subs.find(x=>x.pos==='QB'&&x.reason==='garbage');
           if(qb){ out.qbSpot=sm.off[6]&&sm.off[6].id===qb.in; }
-          const note=/comes in/.test(G.rpFeedItem(g,P).text), line=(G.playLine(Object.assign({},g,{idx:k}),P)||{}).text||'';
+          /* « comes in unblocked / untouched » : un rusher libre, pas un changement de joueur (16/11/2026, w8-r156) */
+          const SUB=/comes in(?! un(?:blocked|touched))|is in at quarterback/;
+          const note=SUB.test(G.rpFeedItem(g,P).text), line=(G.playLine(Object.assign({},g,{idx:k}),P)||{}).text||'';
           const notable=subs.some(x=>x.pos==='QB'&&x.reason==='garbage')||subs.some(x=>x.side==='def'&&x.pos==='CB2'&&RO[x.in].pos==='LB');
           if(notable){ out.notes.push(note); if(P.result!=='penalty') out.lines.push(/comes in|is in at quarterback|on the field/.test(line)); }   /* 07/11/2026 : a flag, the commentator talks about the flag first */
-          else out.quiet.push(!note&&!/comes in|is in at quarterback/.test(line));
+          else out.quiet.push(!note&&!SUB.test(line));
         }
       });
       // fin de match : énergie dans la fiche ; onglet Players (snaps)
