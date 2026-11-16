@@ -92,9 +92,12 @@ const versSettings=async p=>{ await p.keyboard.press('Escape'); await p.waitForF
       check(mid!==fin.ret,`en passant par des valeurs intermédiaires (${mid})`);
       /* le pari posé : « Bet placed » remplace le bouton, le téléphone vibre, puis tout revient */
       const P=await p.evaluate(()=>new Promise(r=>{ window.__vib=[]; navigator.vibrate=x=>{ window.__vib.push(x); return true; };
-        const b=document.getElementById('place'); if(b.disabled) return r({dis:true}); b.click();
-        setTimeout(()=>{ const s=getComputedStyle(b,'::after'); r({ok:b.classList.contains('mo-ok'),after:s.content,foot:!document.getElementById('slipFoot').hidden,vib:window.__vib.slice()}); },300); }));
-      check(P.ok&&/Bet placed/.test(P.after||'')&&P.foot,`pari posé : « Bet placed » à la place du bouton (${P.dis?'bouton désactivé':P.after})`);
+        const b=document.getElementById('place'), lab=b.textContent; if(b.disabled) return r({dis:true,lab}); b.click();
+        /* le pari part au serveur (« Placing… ») : « Bet placed » arrive avec sa réponse — on l'attend jusqu'à 5 s (16/11/2026) */
+        const t0=performance.now(), voir=()=>{ if(!b.classList.contains('mo-ok')&&performance.now()-t0<5000) return setTimeout(voir,50);
+          const s=getComputedStyle(b,'::after'); r({ok:b.classList.contains('mo-ok'),after:s.content,foot:!document.getElementById('slipFoot').hidden,vib:window.__vib.slice(),lab}); };
+        setTimeout(voir,50); }));
+      check(P.ok&&/Bet placed/.test(P.after||'')&&P.foot,`pari posé : « Bet placed » à la place du bouton (${P.dis?'bouton désactivé':P.after} ; bouton : « ${P.lab} »)`);
       check(P.vib&&P.vib.length===1&&P.vib[0]<=20,`vibration courte (${JSON.stringify(P.vib)})`);
       await p.waitForTimeout(1400);
       const P2=await p.evaluate(()=>({ok:document.querySelectorAll('.cta.mo-ok').length,open:document.querySelector('.slip-tabs [data-tab="open"]').getAttribute('aria-selected'),foot:document.getElementById('slipFoot').hidden}));

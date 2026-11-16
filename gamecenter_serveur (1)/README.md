@@ -3566,6 +3566,8 @@ sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande
   démarrage).
 - **Tests** : les quatre tests, plus `test_courses`, `test_actions`, `test_audibles`, `test_poche` et `test_cellule427`
   (dessin des actions, que `rpSlot` sert aussi).
+- **`test_effets.js`** (section 121) : le pari posé part au serveur ; « Bet placed » arrive avec sa réponse. Le test
+  l'attendait 300 ms exactement et pouvait échouer quand le serveur tardait : il l'attend désormais jusqu'à 5 s.
 
 ### Annexe — `.github/workflows/semaine.yml`
 
