@@ -3569,6 +3569,53 @@ sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande
 - **`test_effets.js`** (section 121) : le pari posé part au serveur ; « Bet placed » arrive avec sa réponse. Le test
   l'attendait 300 ms exactement et pouvait échouer quand le serveur tardait : il l'attend désormais jusqu'à 5 s.
 
+### 124. Insights › Tracking : les statistiques de suivi du moteur (« Next Gen Stats », NGS-1 à NGS-4 — 18/11/2026)
+Plan : `programme/Next_Gen_Stats_plan.md` (décisions de Guillaume du 18/11 : stat du jour et une stat par fiche joueur
+gratuites, le reste Pro ; nom « Tracking » — « Next Gen Stats » est une marque de la NFL ; tout le catalogue ; modèles
+« attendus » dès le départ ; la semaine en cours seulement). **Aucun changement du moteur, du notebook ni du calcul du
+samedi** : tout est compté dans les GameFeeds déjà produits (`play.decision`, `play.geo`, `play.pocket`, `play.run`,
+`play.subs`), sur les **seuls matchs terminés**.
+- **Module** `moteur/ngs.py` : `compter(feed, modeles)` (comptes d'un match, par joueur et par équipe), `agreger`,
+  `tableaux` (huit groupes : Passing, Receiving, Rushing, Pass rush, Coverage, Tackling, Blocking, Teams ; joueurs
+  qualifiés par match joué de leur équipe — 14 tentatives, 3 cibles, 6 courses, 12 rushes, 2 cibles en couverture,
+  1,5 plaquage tenté, 15 blocs de passe —, moyenne de la ligue, une ligne d'aide anglaise par statistique) et
+  `stat_du_jour` (rotation sur sept statistiques, une par jour joué). Définitions en tête du module. **Rôle -> joueur** :
+  `WR1`… -> `<EQ>_WR1`, `TE` -> `<EQ>_TE1`, `RB` -> `<EQ>_RB1`, puis chaque remplacement de `play.subs` jusqu'au suivant
+  (vérifié : 42 588 cibles sur 42 588, semaine du 16/11). Séparation = celle du moteur à la cible (`geo.rec`, bornée par
+  le statut) ; la trace `geo.cov` ne lui correspond pas (elle sert au dessin). Air yards = profondeur de la route de la
+  cible (`call.route.depth`, qui suit bien la cible).
+- **Modèles attendus** (`moteur/ngs_modeles.json`, 10 Ko, versé au dépôt) : xComp (statut de la cible × profondeur ×
+  pression × temps de lancer), xYAC (statut × profondeur × réception), xRush (boîte × classe de course × down et
+  distance : ce qui est connu avant le snap), lissés vers la case parente (25 actions). Appris sur la **semaine du
+  09/11** (la première avec `play.geo`), appliqués aux semaines suivantes ; l'écart moyen de la ligue est retiré à
+  l'affichage (CPOE, RYOE et YAC over expected de la ligue = 0). Mesuré sur la semaine du 16/11 : écart CPOE +0,45 pt,
+  RYOE −0,06 yd. Refaire : `python outils/moteur/ngs_modeles.py --semaines data/weeks/<semaine passée>` ; rapport (écart
+  de la ligue, stabilité d'une moitié des matchs à l'autre, trois premiers) : `--controle data/weeks/<semaine>`.
+- **Stabilité** (corrélation matchs pairs / impairs, semaine du 16/11) : temps de lancer 0,92, aDOT 0,93, open rate
+  0,85, taux de blitz 0,97, run block win rate 0,90, missed tackle rate 0,79, pass rush win rate 0,69, RYOE 0,63 ;
+  faibles : CPOE 0,30 (≈ 0,46 sur la semaine entière), couverture 0,14. D'où les tris par défaut (couverture : yards
+  par cible, 0,62) et le retrait de la séparation concédée par équipe (0,02 : du bruit).
+- **Serveur** : `/api/tracking?token=` — compte Insights Pro (`GC_INSIGHTS_USERS`) : `groups` (≈ 110 Ko, gzip) et
+  `today` ; les autres (invité compris) : `today` seulement, l'API n'envoie aucun groupe. Comptes d'un match gardés
+  (calculés une fois), tableaux en cache par nombre de matchs finis. ≈ 5 s pour une semaine entière au premier appel
+  après un démarrage, ensuite < 0,5 s par nouveau match terminé. Interrupteur `GC_TRACKING=off` (ou `GC_INSIGHTS=off`) :
+  ni API (404) ni onglet ; drapeau `tracking` dans `#gf-server`.
+- **Site** (`gamecenter_source.html`, serveur seulement : rien dans la cellule 427) : onglet **Tracking** dans Insights
+  (entre Head-to-head et Day recap). En tête, la **Tracking stat of the day** (gratuite, aussi en tête du Day recap) ;
+  pour un compte Pro, les huit groupes, chacun un tableau triable (clic sur une colonne, deuxième clic : l'autre sens,
+  `aria-sort`), les 25 premiers puis « Show all », la moyenne de la ligue en pied, un nom ouvre la fiche du joueur, une
+  définition par statistique ; sur téléphone, le tableau défile dans sa carte et la colonne des noms reste visible. Sans
+  accès : aperçu flouté inerte dessiné avec des chiffres et des joueurs factices (« Sample Player »), « Unlock · €4.99 »
+  inactif (le même déblocage qu'Insights).
+- **Tests** : `moteur/tests/test_ngs.py` (comptage d'un petit match fabriqué vérifié à la main, remplacements,
+  exclusions, modèles et lissage, ligue recentrée, seuils, postes, stat du jour, un vrai match et une semaine sans
+  `geo` ; serveur : matchs finis seulement, accès, interrupteur, temps) et `outils/site/test_tracking.js` (groupe site ;
+  invité, compte hors liste, compte Pro, tri, « Show all », fiche joueur, Day recap, téléphone 390 px sombre,
+  interrupteur ; `SHOTS=<dossier>` pour les captures).
+- **Reste** (plan, NGS-5 et NGS-6) : la stat de suivi gratuite sur la fiche d'un joueur, les profils d'équipe côte à
+  côte (Head-to-head), le récap de suivi d'un match ; plus tard, cartes des passes et des courses, historique d'une
+  semaine à l'autre. À surveiller : réapprendre les modèles si le moteur change (l'écart de la ligue le dira).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -3749,7 +3796,7 @@ README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
-(pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_INSIGHTS_USERS` (pseudos qui
+(pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_TRACKING` (`off` : pas d'onglet Tracking, section 124), `GC_INSIGHTS_USERS` (pseudos qui
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·

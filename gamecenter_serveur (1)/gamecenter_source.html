@@ -1292,6 +1292,47 @@
   .ins-pl em,.rc-item em.up,.rc-item em.down{font:700 12.5px var(--f-mono);font-style:normal;white-space:nowrap}
   .ins-pl em.up,.rc-item em.up{color:var(--cyan)}.ins-pl em.down,.rc-item em.down{color:var(--pink)}
   .ins-cb b{color:var(--ink)}
+  /* Tracking (section 124): the engine's tracking stats, Insights Pro; the stat of the day is free */
+  .trk-today{display:flex;align-items:center;gap:14px;margin-top:14px}
+  .trk-today .trk-ic{flex:0 0 auto;width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:var(--cyan-soft);color:var(--cyan)}
+  .trk-today .trk-ic svg{width:22px;height:22px}
+  .trk-today .grow{flex:1;min-width:0}
+  .trk-today .grow .label{display:block;margin-bottom:3px}
+  .trk-today .grow b{font:700 19px var(--f-display);letter-spacing:.02em}
+  .trk-today .grow p{margin:3px 0 0;color:var(--ink-2);font-size:13.5px;line-height:1.45}
+  .trk-today .grow small{display:block;color:var(--ink-3);font-size:12px;margin-top:3px}
+  .trk-today .trk-v{flex:0 0 auto;text-align:right}
+  .trk-today .trk-v b{display:block;font:700 26px var(--f-display);letter-spacing:.02em;color:var(--cyan)}
+  .trk-today .trk-v small{color:var(--ink-3);font-size:11.5px;white-space:nowrap}
+  .seg.trk-groups{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:thin;margin-top:14px}
+  .seg.trk-groups button{flex:0 0 auto;white-space:nowrap}
+  .tst.trk td,.tst.trk th{padding-left:5px;padding-right:5px;width:auto}
+  .tst.trk thead th{vertical-align:bottom;white-space:normal;min-width:50px;max-width:84px;line-height:1.25;letter-spacing:.08em}
+  .tst.trk thead th button{all:unset;cursor:pointer;display:inline-block;text-align:right}
+  .tst.trk thead th button:hover,.tst.trk thead th[aria-sort] button{color:var(--ink)}
+  .tst.trk thead th button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:3px}
+  .tst.trk thead th[aria-sort] button::after{content:" \25BE";color:var(--cyan)}
+  .tst.trk thead th[aria-sort="ascending"] button::after{content:" \25B4"}
+  .tst.trk thead th.pl{text-align:left;min-width:0;max-width:none}
+  .tst.trk td.rk{width:30px;text-align:left;font:700 italic 13px var(--f-display);color:var(--ink-3)}
+  .tst.trk td.lead{color:var(--ink);font-weight:700}
+  .tst.trk td.up{color:var(--cyan)}.tst.trk td.dn{color:var(--pink)}
+  .tst.trk td{font-family:var(--f-mono);font-size:12.5px}
+  .tst.trk .trk-pl{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;max-width:180px}
+  .tst.trk .trk-pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tst.trk .trk-pl:hover span{color:var(--cyan)}
+  .tst.trk .trk-pl:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:3px}
+  .tst.trk .trk-pl small{color:var(--ink-3);font:700 10px var(--f-display);letter-spacing:.06em}
+  .tst.trk tfoot td,.tst.trk tfoot th{border-top:1px solid var(--line-2);color:var(--ink-2);font-style:italic}
+  .tst.trk tfoot th{text-align:left;font:500 12px var(--f-ui)}
+  .trk-more{margin-top:10px}
+  .trk-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 22px;margin:14px 0 0;font-size:12.5px;line-height:1.45}
+  .trk-help div{padding:7px 0;border-top:1px solid var(--line)}
+  .trk-help dt{font-weight:700;color:var(--ink)}.trk-help dd{margin:2px 0 0;color:var(--ink-3)}
+  @media (max-width:760px){ .trk-help{grid-template-columns:minmax(0,1fr)} .trk-today{align-items:flex-start} .trk-today .trk-ic,.trk-today .grow .trk-def{display:none}
+    .trk-today .trk-v b{font-size:22px}
+    .tst.trk .trk-pl{max-width:128px}
+    .tst.trk tbody th,.tst.trk tfoot th{position:sticky;left:0;background:var(--l1);z-index:1} }
   @media (max-width:980px){ .ins-angles,.rc-grid,.ins-three{grid-template-columns:minmax(0,1fr)} .ins-grid{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:760px){
     .ins-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -8949,7 +8990,7 @@ function seasonRefresh(force){
    preview drawn with made-up numbers (the real ones never reach their browser). */
 const INS={on:!!(SERVER&&SERVER.insights),d:null,tok:null,busy:false,err:0,retry:0,tab:'week',a:null,b:null,day:null,pair:{},pairBusy:null};
 const INS_KEY='gc-insights-v1';
-(()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
+(()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].concat(SERVER&&SERVER.tracking?['tracking']:[]).includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
 const INS_SVG={tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M6.5 16v-4.5M11 16V8M15.5 16v-6M20 16V7.5"/><path d="M5 9l5-4 4.5 3 5.5-4"/></svg>',
   lock:'<svg class="ins-lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>'};
 function insInit(){
@@ -8962,6 +9003,10 @@ function insInit(){
     const tb=t.closest('[data-ins-tab]'); if(tb){ INS.tab=tb.dataset.insTab; insSave(); renderInsights(nowMs(),true); return; }
     const pk=t.closest('[data-h2h]'); if(pk){ INS[pk.dataset.h2h]=pk.dataset.t; insSave(); renderInsights(nowMs(),true); return; }
     const dy=t.closest('[data-ins-day]'); if(dy){ INS.day=dy.dataset.insDay; renderInsights(nowMs(),true); return; }
+    const tg=t.closest('[data-trk-g]'); if(tg){ TRK.grp=tg.dataset.trkG; TRK.sort=null; TRK.all=false; trkSave(); renderInsights(nowMs(),true); return; }
+    const ts=t.closest('[data-trk-s]'); if(ts){ const k=ts.dataset.trkS; if(TRK.sort===k) TRK.asc=!TRK.asc; else { TRK.sort=k; TRK.asc=ts.dataset.asc==='1'; } renderInsights(nowMs(),true);
+      const b=document.querySelector(`#viewInsights [data-trk-s="${k}"]`); if(b) b.focus({preventScroll:true}); return; }
+    if(t.closest('[data-trk-all]')){ TRK.all=!TRK.all; renderInsights(nowMs(),true); return; }
     const ip=t.closest('[data-ins-pl]'); if(ip){ openRosterCard(ip.dataset.pt,ip.dataset.insPl,e.clientX,e.clientY); } });
 }
 function insSave(){ lsSet(INS_KEY,{tab:INS.tab,a:INS.a,b:INS.b}); }
@@ -9169,17 +9214,106 @@ function insRecapHTML(D){
     <div class="card"><div class="card-h"><h2>Games of the day</h2></div>${cb}${gm(r.shootout,'Highest-scoring game')}${gm(r.thriller,'Closest game')}</div></div>
     ${insBigHTML(r.big,rp)}`;
 }
+/* ---------- Tracking (section 124): the engine's tracking stats, from the games already final ----------
+   /api/tracking: every group for Insights Pro accounts; the others get the stat of the day only (free, also in Day recap)
+   and see a blurred preview drawn with made-up numbers (the real ones never reach their browser). */
+const TRK={on:!!(SERVER&&SERVER.tracking),d:null,tok:null,busy:false,err:0,retry:0,grp:'passing',sort:null,asc:false,all:false};
+const TRK_KEY='gc-tracking-v1', TRK_ROWS=25;
+(()=>{ const s=lsGet(TRK_KEY); if(s&&typeof s.grp==='string') TRK.grp=s.grp; })();
+function trkSave(){ lsSet(TRK_KEY,{grp:TRK.grp}); }
+const TRK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M7.5 16.5C10 14 9 10 12 9s3.5-1.5 4.5-1.5"/><path d="M3 21h18"/></svg>';
+async function trkFetch(){
+  if(TRK.busy) return; TRK.busy=true;
+  const tok=PLAYER&&PLAYER.token||'';
+  try{ TRK.d=await api('/tracking'+(tok?'?token='+encodeURIComponent(tok):'')); TRK.tok=tok; TRK.err=0; }
+  catch(e){ TRK.err++; TRK.retry=Date.now()+Math.min(60e3,5e3*TRK.err); }
+  finally{ TRK.busy=false; }
+  if(VIEW==='insights') renderInsights(nowMs(),true);
+}
+function trkNeed(finals){ const tok=PLAYER&&PLAYER.token||'';
+  if(TRK.on&&(!TRK.d||TRK.d.final!==finals||TRK.tok!==tok)&&!TRK.busy&&Date.now()>=TRK.retry) trkFetch(); }
+/* one value, in its unit: s seconds · yd yards · pct share · pp percentage points (signed) · sy signed yards · n count */
+function trkFmt(v,f,unit){
+  if(v==null) return '—';
+  const sg=(x,d)=>(x>0?'+':x<0?MINUS:'')+Math.abs(x).toFixed(d);
+  if(f==='s') return v.toFixed(2)+(unit?' s':'');
+  if(f==='yd') return v.toFixed(1)+(unit?' yd':'');
+  if(f==='pct') return (Math.round(v*1000)/10).toFixed(1)+'%';
+  if(f==='pp') return sg(+v.toFixed(1),1)+(unit?' pts':'');
+  if(f==='sy') return sg(+v.toFixed(2),2)+(unit?' yd':'');
+  if(f==='sn') return sg(Math.round(v),0)+(unit?' yd':'');
+  return String(Math.round(v));
+}
+function trkTodayHTML(T){
+  if(!T) return '';
+  const n=TEAMS[T.team]?TEAMS[T.team].name:T.team, lg=T.league==null?'':` · league average ${trkFmt(T.league,T.fmt,true)}`;
+  return `<div class="card trk-today"><span class="trk-ic">${TRK_SVG}</span>
+    <div class="grow"><span class="label">Tracking stat of the day · free</span><b>${esc(T.title)}</b>
+      <p><button class="link" type="button" data-ins-pl="${esc(T.id)}" data-pt="${esc(T.team)}">${esc(T.name)}</button> (${esc(n)}${T.pos?', '+esc(T.pos):''}) ${esc(T.phrase)} ${trkFmt(T.value,T.fmt,true)}.</p>
+      <small>This week so far${lg}.</small><small class="trk-def">${esc(T.label)}: ${esc(T.help)}</small></div>
+    <div class="trk-v"><b>${trkFmt(T.value,T.fmt,true)}</b><small>${esc(T.label)}</small></div></div>`;
+}
+/* made-up numbers for the locked preview (never real ones) */
+function trkSample(){
+  let s=20261118; const r=()=>{ s=(s*1103515245+12345)%2147483648; return s/2147483648; };
+  const cols=[['tt','Time to throw','s',0],['adot','aDOT','yd',0],['cpoe','CPOE','pp',1],['cmp','Comp %','pct',1],['agg','Aggressive','pct',0],['fr','1st read','pct',0],['prs','Pressured','pct',-1],['sk','Sack %','pct',-1]]
+    .map(([k,l,f,sn])=>({k,l,f,s:sn,h:''}));
+  const T=Object.keys(SW.teams).sort();
+  const rows=T.slice(0,14).map((t,i)=>({id:'x'+i,name:'Sample Player',pos:'QB',team:t,n:400,v:{tt:1.8+r()*.7,adot:7+r()*7,cpoe:r()*8-4,cmp:.6+r()*.2,agg:.04+r()*.1,fr:.4+r()*.15,prs:.25+r()*.2,sk:.05+r()*.06}}));
+  rows.sort((a,b)=>b.v.cpoe-a.v.cpoe);
+  return {key:'passing',label:'Passing',who:'Quarterbacks',sort:'cpoe',min:['att',14],cols,rows,league:{tt:2.04,adot:10.1,cpoe:0,cmp:.72,agg:.08,fr:.47,prs:.34,sk:.09},sample:true};
+}
+function trkGroupHTML(G){
+  const C=G.cols, k=TRK.sort&&C.some(c=>c.k===TRK.sort)?TRK.sort:G.sort, col=C.find(c=>c.k===k);
+  const asc=TRK.sort===k?TRK.asc:(col&&col.s===-1);
+  const rows=G.rows.filter(r=>r.v[k]!=null).sort((a,b)=>(asc?1:-1)*(a.v[k]-b.v[k])||a.name.localeCompare(b.name)).concat(G.rows.filter(r=>r.v[k]==null));
+  const shown=TRK.all||G.sample?rows:rows.slice(0,TRK_ROWS), team=G.key==='teams';
+  const L=G.league||{};
+  const tone=(c,v)=>{ if(v==null||!c.s||!['pp','sy','sn'].includes(c.f)) return ''; const g=v*c.s; return g>0?' up':g<0?' dn':''; };
+  const head=`<tr><th>#</th><th scope="col" class="pl">${team?'Team':'Player'}</th>${C.map(c=>`<th scope="col"${c.k===k?` aria-sort="${asc?'ascending':'descending'}"`:''}><button type="button" data-trk-s="${c.k}" data-asc="${c.s===-1?1:0}" title="${esc(c.h)}">${esc(c.l)}</button></th>`).join('')}</tr>`;
+  const body=shown.map((r,i)=>{
+    const who=team?`<span class="badge">${esc(r.team)}</span><span>${insName(r.team)}</span>`
+      :`<span class="badge">${esc(r.team)}</span><span>${esc(r.name)}</span><small>${esc(r.pos||'')}</small>`;
+    const cell=team||G.sample?`<span class="trk-pl">${who}</span>`:`<button class="trk-pl" type="button" data-ins-pl="${esc(r.id)}" data-pt="${esc(r.team)}">${who}</button>`;
+    return `<tr><td class="rk">${i+1}</td><th scope="row">${cell}</th>${C.map(c=>`<td class="${c.k===k?'lead':''}${tone(c,r.v[c.k])}">${trkFmt(r.v[c.k],c.f)}</td>`).join('')}</tr>`; }).join('');
+  const foot=`<tr><td></td><th scope="row">League average</th>${C.map(c=>`<td>${trkFmt(L[c.k],c.f)}</td>`).join('')}</tr>`;
+  const per=G.min?`${G.min[1]}+ ${({att:'attempts',tgt:'targets',car:'carries',pr_d:'pass rushes',cv_t:'targets in coverage',tk_a:'tackle attempts',pb_d:'pass blocks'})[G.min[0]]||G.min[0]} per team game`:'every team';
+  const more=!G.sample&&rows.length>TRK_ROWS?`<button class="link trk-more" type="button" data-trk-all aria-expanded="${TRK.all}">${TRK.all?`Show the top ${TRK_ROWS}`:`Show all ${rows.length}`}</button>`:'';
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><h2>${esc(G.label)}</h2><span class="label">${esc(G.who)} · ${per} · ${G.rows.length} qualified</span></div>
+    ${G.rows.length?`<div class="st-scroll"><table class="tst trk"><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
+      :'<p class="st-empty"><b>Nobody qualifies yet</b>Players appear once they have enough plays for the games their team has played.</p>'}
+    <p class="np-note">Measured by the engine on every play of this week's final games. Tap a column to sort, a name for the player card.</p>
+    ${G.sample?'':`<dl class="trk-help">${C.map(c=>`<div><dt>${esc(c.l)}</dt><dd>${esc(c.h)}</dd></div>`).join('')}</dl>`}</div>`;
+}
+function trkHTML(){
+  const D=TRK.d;
+  if(!D) return `<div class="card" style="margin-top:14px">${TRK.err?'<p class="st-empty"><b>Tracking could not be loaded</b>Trying again in a moment.</p>':'<p class="st-none">Loading…</p>'}</div>`;
+  if(!D.final) return '<div class="card" style="margin-top:14px"><p class="st-empty"><b>No final games yet</b>Tracking stats fill in as soon as the first games of the week are final.</p></div>';
+  const today=trkTodayHTML(D.today);
+  if(!D.pro) return today+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert><div class="seg trk-groups">${['Passing','Receiving','Rushing','Pass rush','Coverage','Tackling','Blocking','Teams'].map((l,i)=>`<button type="button" aria-selected="${i===0}">${l}</button>`).join('')}</div>${trkGroupHTML(trkSample())}</div>
+    <div class="card ins-pay" role="note"><span class="label">Tracking · Pro</span><h3>See what the engine sees</h3>
+      <ul><li>Passing: time to throw, CPOE, tight windows, pressure</li><li>Receivers and rushers: separation, open rate, yards over expected</li><li>Defense and blocking: win rates, coverage, missed tackles</li></ul>
+      <button class="cta" type="button" disabled>Unlock · €4.99</button>
+      <p><b>Coming soon.</b> The same unlock as Insights. The stat of the day stays free. Play money only: this is a preview with made-up numbers.</p></div></div>`;
+  const G=D.groups||[]; if(!G.some(g=>g.key===TRK.grp)) TRK.grp=G.length?G[0].key:'passing';
+  const g=G.find(x=>x.key===TRK.grp);
+  return today+`<div class="seg trk-groups" role="tablist" aria-label="Tracking groups">${G.map(x=>`<button type="button" role="tab" data-trk-g="${x.key}" aria-selected="${x.key===TRK.grp}">${esc(x.label)}</button>`).join('')}</div>
+    ${g?trkGroupHTML(g):''}`;
+}
 function renderInsights(t,force){
   const el=document.getElementById('viewInsights'); if(!el) return;
   const finals=SCHED.reduce((n,g)=>n+(gStatus(g,t)==='final'?1:0),0), tok=PLAYER&&PLAYER.token||'';
   if((!INS.d||INS.d.final!==finals||INS.tok!==tok)&&!INS.busy&&Date.now()>=INS.retry) insFetch();
+  if(INS.tab==='tracking'||INS.tab==='recap') trkNeed(finals);
   const D=INS.d;
-  const key=['ins',D?D.final:'-',D&&D.pro,INS.tab,INS.a,INS.b,INS.day,INS.err>0&&!D,INS.tab==='h2h'?SCHED.map(g=>gStatus(g,t)[0]).join(''):''].join('|');
+  const key=['ins',D?D.final:'-',D&&D.pro,INS.tab,INS.a,INS.b,INS.day,INS.err>0&&!D,INS.tab==='h2h'?SCHED.map(g=>gStatus(g,t)[0]).join(''):'',
+    TRK.d?TRK.d.final+':'+TRK.d.pro:'-',TRK.err>0&&!TRK.d,TRK.grp,TRK.sort,TRK.asc,TRK.all].join('|');
   if(!force&&el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>Insights</h2><p class="eyebrow">Week ${SW.week.index} · from the ${D?D.final:finals} game${(D?D.final:finals)===1?'':'s'} already played · updates as each game ends · play money only</p>
-    <div class="seg ins-tabs" role="tablist" aria-label="Insights">${[['week','This week'],['h2h','Head-to-head'],['recap','Day recap']].map(([k,l])=>`<button type="button" role="tab" data-ins-tab="${k}" aria-selected="${INS.tab===k}">${l}</button>`).join('')}</div></div>`;
+    <div class="seg ins-tabs" role="tablist" aria-label="Insights">${[['week','This week'],['h2h','Head-to-head']].concat(TRK.on?[['tracking','Tracking']]:[],[['recap','Day recap']]).map(([k,l])=>`<button type="button" role="tab" data-ins-tab="${k}" aria-selected="${INS.tab===k}">${l}</button>`).join('')}</div></div>`;
+  if(INS.tab==='tracking'&&TRK.on){ el.innerHTML=head+trkHTML(); return; }
   if(!D){ el.innerHTML=head+(INS.err?'<div class="card"><p class="st-empty"><b>Insights could not be loaded</b>Trying again in a moment.</p></div>':'<div class="card"><p class="st-none">Loading…</p></div>'); return; }
-  if(INS.tab==='recap'){ el.innerHTML=head+insRecapHTML(D); return; }
+  if(INS.tab==='recap'){ el.innerHTML=head+(TRK.on&&TRK.d?trkTodayHTML(TRK.d.today):'')+insRecapHTML(D); return; }
   if(D.pro){ el.innerHTML=head+`<div style="margin-top:14px">${INS.tab==='h2h'?insH2HHTML(D,t):insWeekHTML(D)}</div>`; return; }
   const S=insSample(), body=INS.tab==='h2h'?insH2HHTML(S,t):insWeekHTML(S);
   el.innerHTML=head+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert>${body}</div>

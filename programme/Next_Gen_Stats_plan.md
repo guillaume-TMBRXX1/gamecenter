@@ -128,9 +128,9 @@ site : Insights › Tracking (classements) · fiche joueur · fiche équipe · D
 ## Les étapes
 
 ### NGS-0 — Plan *(ce fichier)* — ✅ 18/11
-Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points à décider ci-dessous.
+Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points décidés le 18/11 (ci-dessous).
 
-### NGS-1 — Module de comptage *(module seul, sans serveur ni site)*
+### NGS-1 — Module de comptage *(module seul, sans serveur ni site)* — ✅ 18/11 (README section 124)
 - `moteur/ngs.py` : `compter(match, feed)` → comptes bruts par joueur (identifiant, poste, franchise) et par équipe pour
   un match ; `agreger(liste de comptes, modeles=None)` → statistiques finales, seuils d'échantillon, moyenne de ligue,
   rang. Statistiques sans modèle d'abord (temps de lancer, aDOT, séparation, open rate, pression, win rates, yards
@@ -141,7 +141,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points à d
   déterminisme, un match sans `geo` (semaine ancienne) ne plante pas.
 - Outil `outils/moteur/ngs_rapport.py` : distributions et classements d'une semaine entière (pour fixer les seuils).
 
-### NGS-2 — Modèles « attendus » *(module + outil)*
+### NGS-2 — Modèles « attendus » *(module + outil)* — ✅ 18/11 (README section 124)
 - `xComp` : complétion attendue par case (statut de la cible × profondeur × pression × temps de lancer), lissée vers la
   case parente quand elle a peu d'actions. `xYAC` : YAC attendu (statut, profondeur, réception). `xRush` : yards attendus
   d'une course d'après ce qui est connu **avant le snap** (boîte, classe, côté, down, distance, position).
@@ -151,7 +151,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points à d
 - **Contrôle** : sur une semaine entière, somme attendue ≈ somme réelle (CPOE de la ligue ≈ 0, RYOE ≈ 0) ; écarts par
   joueur et stabilité d'une moitié de semaine à l'autre (si un CPOE ne se répète pas, ne pas l'afficher en tête).
 
-### NGS-3 — Serveur *(serveur)*
+### NGS-3 — Serveur *(serveur)* — ✅ 18/11 (README section 124)
 - `/api/tracking?view=leaders&group=qb|wr|rb|def|ol|team`, `view=player&id=`, `view=team&team=` ; matchs terminés
   seulement, comptes d'un match en cache, agrégat en cache par nombre de matchs finis (comme `insights_data`).
 - Accès : `insights_pro` → tout ; sinon le teaser seulement (statistique du jour, la stat phare d'un joueur) ; invité :
@@ -159,7 +159,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points à d
 - Tests `moteur/tests/test_tracking_serveur.py` (sur une copie des données, jamais `data/` du dépôt) : matchs finis
   seulement, rien de Pro dans la réponse d'un compte hors liste, interrupteur, temps de réponse.
 
-### NGS-4 — Site : Insights › Tracking *(site)*
+### NGS-4 — Site : Insights › Tracking *(site)* — ✅ 18/11 en local, captures à valider par Guillaume (README section 124)
 - Nouveau sous-onglet dans Insights : groupes (Passing, Receiving, Rushing, Pass rush, Coverage, Blocking, Teams),
   classements triables, une ligne d'aide par statistique, moyenne de la ligue, seuil d'échantillon affiché.
 - Aperçu flouté verrouillé (chiffres factices) pour les comptes non Pro, bouton « Unlock » existant.
@@ -178,14 +178,19 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points à d
 - Promotion : carton « Tracking stat of the week » pour les vidéos (étape 8), sans mot de paris.
 - Récompenses de la semaine (« Fastest release », « Most separation »…).
 
-## Points à décider (Guillaume)
+## Points décidés (Guillaume, 18/11/2026 : « Ça me va »)
 
-1. **Gratuit / Pro** : d'accord avec « stat du jour + une stat par fiche joueur gratuites, tout le reste Pro » ?
-2. **Nom affiché** : « Tracking » (recommandé), « Field data », « Deep stats », autre ?
-3. **Catalogue** : tout d'un coup en NGS-4, ou d'abord Passing / Receiving / Rushing, puis défense et lignes ?
-4. **Modèles attendus** (CPOE, RYOE, YAC over expected) : les veut-on dès la 1re mise en ligne, ou après (NGS-2 peut
-   passer après NGS-4) ?
-5. **Fenêtre** : la semaine en cours seulement (comme Insights), ou aussi « depuis la semaine X » (comme History) ?
+1. **Gratuit / Pro** : la stat du jour (Day recap et en tête de Tracking) et une stat par fiche joueur (NGS-5) gratuites,
+   tout le reste Pro (même cadenas qu'Insights).
+2. **Nom affiché** : « Tracking ».
+3. **Catalogue** : tout d'un coup (huit groupes).
+4. **Modèles attendus** : dès la première mise en ligne (appris sur la semaine du 09/11).
+5. **Fenêtre** : la semaine en cours seulement, comme Insights.
+
+**Constats de NGS-1 / NGS-2** (semaine du 16/11) : les deux réserves sont levées (séparation : `geo.rec`, la trace
+`geo.cov` sert au dessin ; air yards : la route suit bien la cible). Stabilité d'une moitié des matchs à l'autre :
+forte pour le temps de lancer, l'aDOT, l'open rate, le blitz, les blocs ; faible pour le CPOE (0,30) et la couverture
+(0,14) → tri de la couverture par yards par cible, séparation concédée par équipe retirée.
 
 ## Garde-fous (définition de fini de chaque étape)
 

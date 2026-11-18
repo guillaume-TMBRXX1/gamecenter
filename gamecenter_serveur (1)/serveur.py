@@ -33,6 +33,7 @@ from moteur import insights as _insights
 from moteur import meme_match as _mm
 from moteur import rivalites as _riv
 from moteur import empreinte as _emp
+from moteur import ngs as _ngs
 from moteur import recap_semaine as _rev
 from moteur import supporters as _fo
 from moteur import draft as _dr
@@ -980,6 +981,8 @@ def page(request: Request = None):
         srv["chat"] = chat_mode()
     if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
+        if tracking_on():                            # Insights › Tracking (statistiques de suivi, section 124)
+            srv["tracking"] = True
     if os.environ.get("GC_SCHEDULE_PLUS", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if rivalites_on():                               # rivalités et bilans (section 88)
@@ -3978,6 +3981,67 @@ def api_insights_h2h(a: str = "", b: str = "", token: str = ""):
     return JSONResponse({"a": a, "b": b, "meetings": meet, "series": _riv.serie(meet, a, b) if rivalites_on() else None,
                          "players": {k: _insights.joueurs(insights_roster(w, k)) for k in (a, b)}},
                         headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ Tracking (README section 124)
+# Statistiques de suivi (« Next Gen Stats » dans le programme, moteur/ngs.py) : comptées dans les GameFeeds des seuls
+# matchs terminés, un match compté une fois, l'ensemble en cache par nombre de matchs finis (comme Insights). Les
+# modèles « attendus » (CPOE, RYOE, YAC) viennent de moteur/ngs_modeles.json, appris sur des semaines passées. Tout est
+# réservé aux comptes Insights Pro (GC_INSIGHTS_USERS) ; les autres reçoivent la statistique du jour seulement (gratuite,
+# Day recap). GC_TRACKING=off (ou Insights coupé) : ni API ni onglet.
+_TRK_MATCH, _TRK_CACHE, _TRK_LOCK, _TRK_MODELES = {}, {}, threading.Lock(), []
+
+
+def tracking_on():
+    return insights_on() and os.environ.get("GC_TRACKING", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def tracking_modeles():
+    if not _TRK_MODELES:
+        try:
+            with open(os.path.join(HERE, "moteur", "ngs_modeles.json"), encoding="utf-8") as fh:
+                _TRK_MODELES.append(json.load(fh))
+        except (OSError, ValueError):
+            _TRK_MODELES.append(None)                # sans modèles : CPOE, RYOE et YAC attendus restent vides
+    return _TRK_MODELES[0]
+
+
+def tracking_data(w, t):
+    """(tableaux de la semaine w à l'instant t, nombre de matchs finis, jours joués) ; matchs terminés seulement."""
+    finis = sorted((g for g in w.sched if w.status(g, t) == "final" and g.get("result")), key=lambda g: (g["ko"], g["id"]))
+    cle = (w.start, len(finis))
+    with _TRK_LOCK:
+        d = _TRK_CACHE.get(cle)
+        if d is None:
+            M = tracking_modeles()
+            comptes = []
+            for g in finis:
+                k = (w.folder, g["id"])
+                c = _TRK_MATCH.get(k)
+                if c is None:
+                    c = _TRK_MATCH[k] = _ngs.compter(w.feed(g["id"]), M)
+                comptes.append(c)
+            jours = len({datetime.fromtimestamp(g["ko"] / 1000, TZ).date() for g in finis})
+            d = (_ngs.tableaux(_ngs.agreger(comptes), M) if finis else None, len(finis), jours)
+            _TRK_CACHE.clear(); _TRK_CACHE[cle] = d
+            if len(_TRK_MATCH) > 1200:               # une semaine et demie de matchs au plus : on repart de zéro
+                _TRK_MATCH.clear()
+    return d
+
+
+@app.get("/api/tracking")
+def api_tracking(token: str = ""):
+    if not tracking_on():
+        raise HTTPException(404, "tracking_off")
+    w = _need_week(); t = now_ms()
+    tab, n, jours = tracking_data(w, t)
+    pro = insights_pro(player_by_token(token) if token else None)
+    out = {"week": w.start, "final": n, "pro": pro, "today": _ngs.stat_du_jour(tab, jours) if tab else None,
+           "version": _ngs.VERSION}
+    if pro and tab:
+        out["groups"] = tab["groups"]
+        out["models"] = tab["models"]
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
 
 
 # ------------------------------------------------------------------ rivalités et bilans (README section 88)
