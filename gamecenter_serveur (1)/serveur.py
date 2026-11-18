@@ -921,7 +921,10 @@ _LIGHT_DROP = ("decision", "clock_decision", "adjust", "tracks", "spot", "odds")
 # Page encore allégée (03/11/2026, section 90 : iPhone / iPad, onglet rechargé en plein match, ouverture lente en fin de
 # semaine) : la poche du QB, le pré-snap et le scouting ne servent qu'à dessiner et raconter le replay, qui recharge le
 # match complet. 84,5 → 61 Mo le dimanche. GC_PAGE_LEGERE=off : la page d'avant.
-_LIGHT_DROP_PLUS = ("pocket", "presnap", "scout")
+# Phase 1 de la relance (18/11/2026, section 124) : les trajectoires du moteur (play.geo, sections 94 à 104, arrivées
+# après cette mesure) ne servent qu'à dessiner le terrain, et le replay recharge le match complet. 45 % du poids d'un
+# match allégé : 96 → 64 Mo le dimanche (15,1 → 7,0 Mo compressés).
+_LIGHT_DROP_PLUS = ("pocket", "presnap", "scout", "geo")
 
 
 def page_legere_on():
@@ -935,11 +938,34 @@ def _light_play(p, drop=_LIGHT_DROP):
     return q
 
 
+# Phase 1 de la relance (18/11/2026, section 124) : d'un match à l'autre, le roster d'une équipe ne change que par
+# quelques chiffres (snaps, energy, snap_pct, une blessure) ; il était pourtant répété en entier dans chaque match (510
+# fois sur 534 le dimanche, 1,9 Mo compressés). Un joueur déjà dans le roster de référence (w.rosters) n'est plus écrit
+# que par ce qui change : {"@": id, champ: valeur…, "-": [champs absents]} ; la page le recompose. Un joueur absent de
+# la référence reste écrit en entier. GC_PAGE_LEGERE=off : rosters complets, comme avant.
+def _roster_patch(roster, ref):
+    by = {p.get("id"): p for p in ref if isinstance(p, dict) and p.get("id")}
+    out = []
+    for p in roster:
+        q = by.get(p.get("id")) if isinstance(p, dict) else None
+        if q is None or "@" in p or "-" in p:
+            out.append(p)
+            continue
+        e = {"@": p["id"]}
+        e.update({k: v for k, v in p.items() if k not in q or q[k] != v})
+        gone = [k for k in q if k not in p]
+        if gone:
+            e["-"] = gone
+        out.append(e)
+    return out
+
+
 def _page_bundle(w, t):
     finals = sorted((g for g in w.sched if w.status(g, t) == "final"), key=lambda g: g["end"], reverse=True)
     full = {g["id"] for g in finals[:FULL_RECENT_FINALS]}
     feeds, rosters = {}, {}
-    drop = _LIGHT_DROP + _LIGHT_DROP_PLUS if page_legere_on() else _LIGHT_DROP
+    legere = page_legere_on()
+    drop = _LIGHT_DROP + _LIGHT_DROP_PLUS if legere else _LIGHT_DROP
     for g in w.sched:
         f = w.public_feed(g, t)
         if w.status(g, t) == "final" and g["id"] not in full:
@@ -951,6 +977,8 @@ def _page_bundle(w, t):
                 ref = rosters.setdefault(tm["abbr"], tm["roster"])
                 if ref == tm["roster"]:
                     game = dict(game, **{side: dict(tm, roster="@" + tm["abbr"])})
+                elif legere:
+                    game = dict(game, **{side: dict(tm, roster=_roster_patch(tm["roster"], ref))})
         feeds[g["id"]] = dict(f, game=game) if game else f
     return {"week": w.public_state(t), "feeds": feeds, "rosters": rosters}
 

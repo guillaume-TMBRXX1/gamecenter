@@ -3569,6 +3569,37 @@ sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande
 - **`test_effets.js`** (section 121) : le pari posé part au serveur ; « Bet placed » arrive avec sa réponse. Le test
   l'attendait 300 ms exactement et pouvait échouer quand le serveur tardait : il l'attend désormais jusqu'à 5 s.
 
+### 124. Page d'accueil allégée : 15 → 4,8 Mo compressés le dimanche (phase 1 de la relance, 18/11/2026)
+**Constat** : `snapline.live` pesait 57,7 Mo le mercredi après-midi (8,8 Mo compressés, ≈ 7 s d'ouverture même sur
+une bonne connexion) et 96 Mo le dimanche (15,1 Mo compressés). Toute la semaine jouée est écrite dans la page
+(`#gf-week`). Les deux sections qui avaient allégé la page (09/10 et section 90) dataient d'avant les trajectoires
+du moteur (sections 94 à 104), qui l'avaient alourdie de nouveau. Pour un visiteur venu d'un réseau social, en 4G et
+dans le navigateur de l'appli, la page restait blanche. **Demande de Guillaume (18/11)** : alléger la page, première
+étape de la phase 1.
+- **Trajectoires hors des matchs allégés** (`serveur.py`, `_LIGHT_DROP_PLUS`) : `play.geo` ne sert qu'à dessiner le
+  terrain, et le replay d'un match allégé recharge déjà le match complet (`/api/feed/{id}`, `feedFull`). C'était
+  45 % du poids d'un match allégé. Les 12 matchs terminés les plus récents (ceux de l'accueil) restent complets.
+- **Rosters par différence** (`serveur.py`, `_roster_patch` ; `gamecenter_source.html`, lecture de `#gf-week`) : le
+  roster d'une équipe n'était dédoublonné que s'il était identique à sa première apparition, soit 24 fois sur 534. D'un
+  match à l'autre, seuls `snaps`, `energy`, `snap_pct` et parfois une blessure changent. Un joueur déjà dans le roster
+  de référence (`rosters`) est maintenant écrit `{"@": id, champ: valeur…, "-": [champs absents]}`, et la page le
+  recompose avant toute autre lecture : le reste du site voit le roster entier, comme avant. Un nouveau joueur reste
+  écrit en entier.
+- **Mesures** (semaine du 16/11, même heure, `_page_bundle` + gzip) :
+
+  | Moment | Avant | Après |
+  |---|---|---|
+  | Mercredi 14:00 | 57,7 Mo · 8,8 Mo compressés | 28,1 Mo · **2,9 Mo** compressés |
+  | Dimanche, semaine finie | 96,0 Mo · 15,1 Mo compressés | 49,3 Mo · **4,8 Mo** compressés |
+
+  Le serveur prépare aussi la page plus vite (≈ 0,5 s de calcul et 0,8 s de compression, contre 2,3 s de compression
+  seule avant). Le navigateur lit 2 fois moins de texte JSON.
+- **Interrupteur** : `GC_PAGE_LEGERE=off` remet la page d'avant la section 90 (rosters entiers, trajectoires comprises).
+- **Tests** : `test_serveur.py` (`test_page_legere` : plus de `geo` dans les matchs allégés ; `test_page_rosters_par_difference` :
+  chaque roster recomposé est celui du moteur, et entier avec l'interrupteur). Le code de lecture de la page a été
+  exécuté sur la semaine réelle : 558 rosters recomposés, tous identiques. Tests navigateur : `test_banc`,
+  `test_blessures`, `test_classement`, `test_front_office`, `test_mobile`, `test_accueil`, `test_insights`, `test_memoire`.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
