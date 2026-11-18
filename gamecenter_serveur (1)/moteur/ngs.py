@@ -538,10 +538,12 @@ def _poste_ok(g, pos):
             "blocking": pos in ("LT", "LG", "C", "RG", "RT", "OL", "TE", "RB", "FB")}.get(g, True)
 
 
-def tableaux(agg, modeles=None):
+def tableaux(agg, modeles=None, ligue=None, facteur=1.0):
     """Statistiques finales : {"groups": [{key, label, who, cols: [...], rows: [...], league: {...}}], "teams": {...}}.
-    Une ligne = un joueur qualifié (assez d'actions pour les matchs joués par son équipe)."""
-    L = _ligue(agg)
+    Une ligne = un joueur qualifié (assez d'actions pour les matchs joués par son équipe). ligue : recentrage imposé
+    (celui de la semaine, pour un seul match) ; sinon celui de agg. facteur : multiplie les seuils (0 : tout joueur qui a
+    au moins une action du groupe, pour le récap d'un match)."""
+    L = ligue or _ligue(agg)
     out = []
     for G in GROUPES:
         qk, par = G["qual"]
@@ -551,7 +553,7 @@ def tableaux(agg, modeles=None):
             if not _poste_ok(G["key"], pos):
                 continue
             gp = agg["gp"].get(eq, 0)
-            if not gp or c[qk] < par * gp:
+            if not gp or not c[qk] or c[qk] < par * gp * facteur:
                 continue
             c = collections.Counter(c); c["_team"] = eq
             v = {k: _rond(f(c, L), fmt) for k, _, f, fmt, _, _ in G["cols"]}
@@ -577,7 +579,7 @@ def tableaux(agg, modeles=None):
     out.append({"key": "teams", "label": EQUIPES["label"], "who": EQUIPES["who"], "sort": EQUIPES["sort"], "min": None,
                 "cols": [{"k": k, "l": l, "f": fmt, "s": s, "h": h} for k, l, _, fmt, s, h in EQUIPES["cols"]],
                 "rows": rows, "league": ligue})
-    return {"version": VERSION, "groups": out, "models": bool(modeles)}
+    return {"version": VERSION, "groups": out, "models": bool(modeles), "_ligue": L}
 
 
 # ------------------------------------------------------------------ la statistique gratuite du jour
@@ -615,3 +617,103 @@ def stat_du_jour(tab, cle):
                 "id": best["id"], "name": best["name"], "pos": best["pos"], "team": best["team"],
                 "value": best["v"][ck], "league": g["league"].get(ck), "phrase": phrase}
     return None
+
+
+# ------------------------------------------------------------------ fiches (NGS-5) : un joueur, une équipe, un match
+# La statistique phare de chaque poste (gratuite sur la fiche du joueur) : (groupe, colonne).
+# Une seconde colonne sert de repli quand la première n'a pas de valeur (sans modèles : ni CPOE ni RYOE).
+PHARE = {"QB": ("passing", "cpoe", "tt"), "WR": ("receiving", "sep"), "TE": ("receiving", "sep"),
+         "RB": ("rushing", "ryoe_c", "ypc"), "FB": ("rushing", "ryoe_c", "ypc"), "EDGE": ("passrush", "prwr"), "DT": ("passrush", "prwr"), "LB": ("tackling", "mtr"),
+         "CB": ("coverage", "cvy"), "S": ("coverage", "cvy"), "LT": ("blocking", "pbwr"), "LG": ("blocking", "pbwr"),
+         "C": ("blocking", "pbwr"), "RG": ("blocking", "pbwr"), "RT": ("blocking", "pbwr")}
+
+
+def _rang(rows, k, s, v):
+    """Rang de v parmi les lignes qualifiées (1 = le meilleur ; sens neutre : la plus grande valeur d'abord)."""
+    xs = [r["v"][k] for r in rows if r["v"].get(k) is not None]
+    if v is None or not xs:
+        return None
+    sens = -1 if s == -1 else 1
+    return 1 + sum(1 for x in xs if x * sens > v * sens)
+
+
+def _publique(tab):
+    """Le JSON public des tableaux (sans le recentrage interne)."""
+    return {k: v for k, v in tab.items() if not k.startswith("_")} if tab else None
+
+
+def joueur(agg, tab, pid):
+    """La fiche de suivi d'un joueur cette semaine : {"id", "name", "pos", "team", "headline", "groups"}.
+    headline : la statistique phare de son poste (valeur, rang parmi les qualifiés, moyenne de la ligue) — gratuite.
+    groups : chaque groupe où il a des actions, toutes les colonnes avec leur rang (Pro). Un joueur pas encore
+    qualifié a ses valeurs, sans rang."""
+    c = agg["players"].get(pid) if agg else None
+    nom, pos, eq = (agg["names"].get(pid) if agg else None) or [pid, "", pid.split("_")[0]]
+    out = {"id": pid, "name": nom, "pos": pos, "team": eq, "headline": None, "groups": []}
+    if not c:
+        return out
+    L = tab["_ligue"]
+    par_g = {g["key"]: g for g in tab["groups"]}
+    gp = agg["gp"].get(eq, 0)
+    for G in GROUPES:
+        qk, seuil = G["qual"]
+        if not c.get(qk) or not _poste_ok(G["key"], pos):
+            continue
+        cc = collections.Counter(c); cc["_team"] = eq
+        T = par_g[G["key"]]
+        ok = bool(gp) and cc[qk] >= seuil * gp
+        stats = []
+        for k, l, f, fmt, sn, h in G["cols"]:
+            v = _rond(f(cc, L), fmt)
+            stats.append({"k": k, "l": l, "f": fmt, "s": sn, "h": h, "v": v, "league": T["league"].get(k),
+                          "rank": _rang(T["rows"], k, sn, v) if ok else None})
+        out["groups"].append({"key": G["key"], "label": G["label"], "n": cc[qk], "min": [qk, seuil * gp],
+                              "qualified": ok, "of": len(T["rows"]), "stats": stats})
+    ph = PHARE.get(pos)
+    if ph:
+        g = next((x for x in out["groups"] if x["key"] == ph[0]), None)
+        st = None
+        for k in ph[1:]:
+            st = next((x for x in g["stats"] if x["k"] == k and x["v"] is not None), None) if g else None
+            if st:
+                break
+        if st:
+            out["headline"] = dict(st, group=g["label"], qualified=g["qualified"], of=g["of"], n=g["n"], min=g["min"])
+    return out
+
+
+def equipe(tab, team):
+    """Le profil de suivi d'une équipe : chaque colonne du groupe Teams, sa valeur, son rang sur les équipes."""
+    T = next((g for g in tab["groups"] if g["key"] == "teams"), None) if tab else None
+    r = next((x for x in T["rows"] if x["team"] == team), None) if T else None
+    if not r:
+        return None
+    return {"team": team, "games": r["n"], "of": len(T["rows"]),
+            "stats": [dict(c, v=r["v"].get(c["k"]), league=T["league"].get(c["k"]),
+                           rank=_rang(T["rows"], c["k"], c["s"], r["v"].get(c["k"]))) for c in T["cols"]]}
+
+
+def match(comptes, modeles, ligue):
+    """Le suivi d'un match terminé : le profil de chaque équipe sur ce match et ses joueurs marquants (le passeur, le
+    receveur le plus ciblé, le porteur le plus utilisé, le meilleur rusher), recentrés comme la semaine (ligue)."""
+    agg = agreger([comptes])
+    tab = tableaux(agg, modeles, dict(ligue, team_tgt=_ligue(agg)["team_tgt"]), facteur=0)  # cibles : celles du match
+    par_g = {g["key"]: g for g in tab["groups"]}
+    out = {"teams": [], "cols": par_g["teams"]["cols"]}
+    choix = (("passing", "QB", lambda r: r["n"]), ("receiving", "Target", lambda r: r["n"]),
+             ("rushing", "Carrier", lambda r: r["n"]), ("passrush", "Rusher", lambda r: (r["v"].get("prs") or 0, r["n"])))
+    for eq in comptes.get("gp") or []:
+        r = next((x for x in par_g["teams"]["rows"] if x["team"] == eq), None)
+        if not r:
+            continue
+        pls = []
+        for gk, role, cle in choix:
+            G = par_g[gk]
+            cands = [x for x in G["rows"] if x["team"] == eq]
+            if cands:
+                x = max(cands, key=cle)
+                pls.append({"role": role, "group": gk, "id": x["id"], "name": x["name"], "pos": x["pos"], "n": x["n"],
+                            "v": x["v"], "cols": [c["k"] for c in G["cols"]]})
+        out["teams"].append({"team": eq, "v": r["v"], "players": pls})
+    out["player_cols"] = {k: par_g[k]["cols"] for k in ("passing", "receiving", "rushing", "passrush")}
+    return out

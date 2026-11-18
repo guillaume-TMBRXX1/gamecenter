@@ -3616,6 +3616,35 @@ samedi** : tout est compté dans les GameFeeds déjà produits (`play.decision`,
   côte (Head-to-head), le récap de suivi d'un match ; plus tard, cartes des passes et des courses, historique d'une
   semaine à l'autre. À surveiller : réapprendre les modèles si le moteur change (l'écart de la ligue le dira).
 
+### 125. Tracking dans les fiches : joueur, franchise, Head-to-head, Match centre (NGS-5 — 18/11/2026)
+Suite de la section 124, validée par Guillaume le 18/11. Toujours sans toucher au moteur ; matchs terminés seulement.
+- **Module** (`moteur/ngs.py`) : `joueur(agg, tab, id)` — la **statistique phare** de son poste (`PHARE` : QB CPOE, WR et
+  TE séparation, RB RYOE / course, EDGE et DT pass rush win rate, LB missed tackle %, CB et S yards par cible, ligne
+  offensive pass block win rate ; repli sur le temps de lancer ou les yards par course quand le modèle manque), avec son
+  rang parmi les qualifiés et la moyenne de la ligue, puis chaque groupe où il a des actions (un joueur pas encore
+  qualifié a ses valeurs, sans rang) ; `equipe(tab, eq)` — le profil Teams d'une franchise et ses rangs sur 24 ;
+  `match(comptes, modeles, ligue)` — le suivi d'un seul match, **recentré comme la semaine** (un CPOE n'est pas remis à
+  zéro sur un match), part des cibles du match, et ses joueurs marquants (le QB, le receveur le plus ciblé, le porteur
+  le plus utilisé, le rusher qui a mis le plus de pression ; sans seuil sur un seul match). `tableaux` prend `ligue` et
+  `facteur` (multiplie les seuils).
+- **Serveur** : `/api/tracking/player?id=` (la stat phare pour tous ; `groups` pour un compte Pro), `/api/tracking/team?
+  team=[&b=]` et `/api/tracking/game?id=` (comptes Pro, 403 sinon ; un match pas terminé : 404). Même cache que la
+  section 124 (l'agrégat de la semaine y est gardé).
+- **Site** : **fiche joueur** — section « Tracking · this week » avant la carrière : la stat phare, son rang (« #21 of
+  24 ») ou « not ranked yet » (actions faites / nécessaires), la moyenne de la ligue et sa définition ; pour un compte
+  Pro, chaque groupe et chaque statistique avec son rang ; sinon un cadenas. **Page d'une franchise** (Teams, My team) —
+  « Tracking · this week » : neuf tuiles classées sur 24 (Pro ; cadenas sinon). **Insights › Head-to-head** — carte
+  « Tracking » : les deux profils côte à côte, le meilleur rang en couleur. **Match centre** — onglet « Tracking » d'un
+  match de la semaine : rien tant que le replay n'est pas allé au bout (« At the final whistle », pas de spoiler), puis
+  le tableau des deux équipes et les joueurs marquants (un nom ouvre sa fiche). Les appels sont protégés
+  (`typeof trkOn`) : la cellule 427, sans serveur, n'a jamais l'onglet.
+- **Tests** : `moteur/tests/test_ngs.py` (classe `Fiches` : phare, repli, pas encore qualifié, sens des rangs, équipe,
+  match sans seuil ; serveur : accès, 400 / 403 / 404, interrupteur) et `outils/site/test_tracking_fiches.js` (groupe
+  site : fiche invité et Pro, page de la franchise, Head-to-head, Match centre avant et après la fin du replay,
+  téléphone 390 px ; `SHOTS=<dossier>`). Le crochet de test (`GC_TEST_HOOK=1`) expose `__gc.trk`.
+- **Reste** (NGS-6, plus tard) : cartes des passes et des courses d'un joueur, historique d'une semaine à l'autre,
+  carton « Tracking stat of the week » pour les vidéos, récompenses de la semaine.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

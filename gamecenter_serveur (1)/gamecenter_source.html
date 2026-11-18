@@ -1326,6 +1326,21 @@
   .tst.trk tfoot td,.tst.trk tfoot th{border-top:1px solid var(--line-2);color:var(--ink-2);font-style:italic}
   .tst.trk tfoot th{text-align:left;font:500 12px var(--f-ui)}
   .trk-more{margin-top:10px}
+  /* NGS-5: tracking on the player card, the team page, head-to-head and the Match centre */
+  .trk-rk{display:inline-block;margin-left:6px;font:700 10.5px var(--f-display);letter-spacing:.04em;color:var(--ink-3)}
+  .trk-rk.top{color:var(--cyan)}
+  .pc-line b .trk-rk{margin-left:5px}
+  .trk-gl{margin:6px 0 0;font:600 10px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .trk-tp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+  .trk-tp .mt-st b{font:700 17px var(--f-display);letter-spacing:.02em}
+  .trk-tp .mt-st small{color:var(--ink-3);font-size:11.5px}
+  .trk-h2h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+  .trk-h2h:first-of-type{border-top:0}
+  .trk-h2h .lab{text-align:center;color:var(--ink-3);font-size:12px}
+  .trk-h2h .v{font:600 13.5px var(--f-mono)}.trk-h2h .v.r{text-align:right}.trk-h2h .v.best{color:var(--cyan)}
+  .trk-gm .pst td{font-family:var(--f-mono)}
+  .trk-gm .st-cols{margin-top:18px}
+  @media (max-width:760px){ .trk-tp{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .trk-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 22px;margin:14px 0 0;font-size:12.5px;line-height:1.45}
   .trk-help div{padding:7px 0;border-top:1px solid var(--line)}
   .trk-help dt{font-weight:700;color:var(--ink)}.trk-help dd{margin:2px 0 0;color:var(--ink-3)}
@@ -5914,7 +5929,7 @@ function computeStatsNow(g,n){
   return {team,pl,drives};
 }
 function statsHTML(g){
-  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives'],['plan','Game plan']];
+  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives'],['plan','Game plan']].concat((typeof trkOn==='function'&&trkOn())&&rivGid(g)?[['tracking','Tracking']]:[]);
   return `<section class="panel stats" data-g="${g.id}" data-f="stats" data-tab="team" aria-label="Match centre">
     <div class="st-head"><span class="label">Match centre</span>
       <div class="seg st-tabs" role="tablist" aria-label="Match statistics">${tabs.map(([k,l],i)=>`<button type="button" role="tab" data-st="${k}" aria-selected="${i===0}">${l}</button>`).join('')}</div></div>
@@ -5996,6 +6011,9 @@ function renderStats(g){
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
+    } else if(tab==='tracking'){
+      const tg=rivGid(g)||'';
+      body.innerHTML=`<div class="trk-gm" data-trkx="game" data-trkx-a="${esc(tg)}" data-trkx-n="${n<g.plays.length?0:1}">${trkGameHTML(tg,n>=g.plays.length)}</div>`;
     } else if(tab==='plan'){
       body.innerHTML=gamePlanHTML(g,n);
     } else {
@@ -6516,7 +6534,7 @@ function rosterCardHTML(abbr,pid){
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${esc(T.name)} · ${POS_NAME[p.pos]||esc(p.pos)}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
   const ab=p.status==='out'?injBanner((p.absence||{}).part,`out this week${(p.absence||{}).weeks_left>1?` (${p.absence.weeks_left} weeks)`:''}`):'';   /* step 7.4 */
-  return head+ab+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
+  return head+ab+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+((typeof trkOn==='function'&&trkOn())?`<div class="pc-sec pc-trk" data-trkx="player" data-trkx-a="${esc(pid)}">${trkPlayerHTML(pid)}</div>`:'')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
 }
 function openRosterCard(abbr,pid,cx,cy){ const h=rosterCardHTML(abbr,pid); if(h) showCardEl(h,cx,cy,null); }
 /* nearest player dot to a click, through the field's 3D tilt */
@@ -8249,6 +8267,7 @@ function teamDetailHTML(abbr,t,mine){
       ${!mine?foTeamLineHTML(abbr):''}
       ${RIV_ON?rivTeamPanel(abbr):''}
       ${FP_ON?fpTeamPanel(abbr):''}
+      ${(typeof trkOn==='function'&&trkOn())?`<div class="panel" style="margin-bottom:12px"><span class="label">Tracking · this week</span><div data-trkx="team" data-trkx-a="${abbr}">${trkTeamHTML(abbr)}</div></div>`:''}
       <div class="tp-grid"><div class="panel"><span class="label">Coordinators</span><div class="pc-line"><span>Offense</span><b>${esc(T.coordinators.offense)}</b></div><div class="pc-line"><span>Defense</span><b>${esc(T.coordinators.defense)}</b></div>
         <span class="label" style="margin-top:12px;display:block">Unit ratings (from the roster)</span>${unitBar('Pass offense',u.pass_off)}${unitBar('Run offense',u.run_off)}${unitBar('Pass defense',u.pass_def)}${unitBar('Run defense',u.run_def)}${unitBar('Special teams',u.special_teams)}</div>
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
@@ -9175,7 +9194,8 @@ function insH2HHTML(D,t){
     <div class="ins-grid"><div class="card"><div class="card-h"><h2>Head-to-head history</h2><span class="label">Every meeting since week ${esc(String((SERVER&&SERVER.hist_since)||2))}</span></div>${insHistHTML(P,A,B)}</div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}
       <p class="np-note"><b>Ratings line</b> = the spread the power ratings suggest. A gap of a point or more against the engine line points to the side the ratings like.</p></div>
-      ${FP_ON?`<div class="card"><div class="card-h"><h2>Play fingerprint</h2><span class="label">What each team actually calls</span></div><div class="fp-box">${D.fp==='sample'?fpRadar(fpSample(A,B),null,true):`<div class="fp-box" data-fp="h2h" data-fp-a="${A}" data-fp-b="${B}">${fpHTML('h2h',A,B)}</div>`}</div></div>`:''}</div></div>
+      ${FP_ON?`<div class="card"><div class="card-h"><h2>Play fingerprint</h2><span class="label">What each team actually calls</span></div><div class="fp-box">${D.fp==='sample'?fpRadar(fpSample(A,B),null,true):`<div class="fp-box" data-fp="h2h" data-fp-a="${A}" data-fp-b="${B}">${fpHTML('h2h',A,B)}</div>`}</div></div>`:''}
+      ${(typeof trkOn==='function'&&trkOn())&&D.fp!=='sample'?`<div class="card"><div class="card-h"><h2>Tracking</h2><span class="label">This week · rank of 24</span></div><div data-trkx="h2h" data-trkx-a="${A}" data-trkx-b="${B}">${trkH2HHTML(A,B)}</div></div>`:''}</div></div>
     <div class="ins-grid"><div class="ins-col"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
       <div class="card"><div class="card-h"><h2>Strength match-up</h2><span class="label">Offense against defense</span></div>${insDuelHTML(D,a,b)}</div></div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Players to watch</h2><span class="label">Starters' form this week</span></div>${insPlayersHTML(P,A,B)}</div>
@@ -9300,6 +9320,75 @@ function trkHTML(){
   return today+`<div class="seg trk-groups" role="tablist" aria-label="Tracking groups">${G.map(x=>`<button type="button" role="tab" data-trk-g="${x.key}" aria-selected="${x.key===TRK.grp}">${esc(x.label)}</button>`).join('')}</div>
     ${g?trkGroupHTML(g):''}`;
 }
+/* ---------- NGS-5: tracking on the player card (headline free, the rest Pro), the team page, head-to-head and the
+   Match centre (Pro). One cache, keyed by the number of final games and the account: nothing from an unfinished game. */
+function trkOn(){ try{ return !!TRK.on; }catch(e){ return false; } }
+const TRKX={};
+function trkGet(path){
+  const tok=PLAYER&&PLAYER.token||'', k=path+'|'+tok+'|'+fpFinals(), d=TRKX[k];
+  if(d&&d!=='busy') return d;
+  if(!d){ TRKX[k]='busy';
+    api(path+(path.includes('?')?'&':'?')+'token='+encodeURIComponent(tok)).then(x=>{ TRKX[k]=x; trkFill(); })
+      .catch(e=>{ TRKX[k]={err:e&&e.status===403?'locked':'down'}; trkFill(); }); }
+  return null; }
+function trkFill(){ document.querySelectorAll('[data-trkx]').forEach(el=>{ const a=el.dataset.trkxA, b=el.dataset.trkxB, k=el.dataset.trkx;
+  const h=k==='player'?trkPlayerHTML(a):k==='team'?trkTeamHTML(a):k==='h2h'?trkH2HHTML(a,b):k==='game'?trkGameHTML(a,el.dataset.trkxN==='1'):'';
+  if(el._h!==h){ el._h=h; el.innerHTML=h; } }); }
+const trkRk=(r,of)=>r?`<span class="trk-rk${r<=3?' top':''}">#${r}${of?' of '+of:''}</span>`:'';
+const trkLockP=txt=>fpLock(txt);
+function trkPlayerHTML(pid){
+  const lab='<span class="label">Tracking · this week</span>';
+  const d=trkGet('/tracking/player?id='+encodeURIComponent(pid));
+  if(!d) return lab+'<p class="pc-note">Loading…</p>';
+  if(d.err) return lab+'<p class="pc-note">Tracking stats are not available right now.</p>';
+  const h=d.headline;
+  if(!h&&!(d.groups&&d.groups.length)) return lab+'<p class="pc-note">No tracking stats for him yet this week.</p>';
+  let out=lab;
+  if(h) out+=`<div class="pc-line"><span>${esc(h.l)}</span><b>${trkFmt(h.v,h.f,true)}${h.qualified?trkRk(h.rank,h.of):''}</b></div>
+    <p class="pc-note">${h.qualified?`League average ${trkFmt(h.league,h.f,true)} · among ${h.of} qualified`:`Not ranked yet: ${h.n} of ${Math.ceil(h.min[1])} plays needed so far`}. ${esc(h.h)}</p>`;
+  if(!d.pro) return out+trkLockP('Every tracking stat and its league rank · Insights Pro');
+  for(const g of d.groups){
+    out+=`<p class="trk-gl">${esc(g.label)}${g.qualified?'':` · not ranked yet (${g.n} of ${Math.ceil(g.min[1])})`}</p>`+
+      g.stats.filter(x=>!(h&&x.k===h.k&&g.label===h.group)).map(x=>`<div class="pc-line"><span title="${esc(x.h)}">${esc(x.l)}</span><b>${trkFmt(x.v,x.f,true)}${trkRk(x.rank)}</b></div>`).join(''); }
+  return out; }
+function trkTeamHTML(abbr){
+  const d=trkGet('/tracking/team?team='+encodeURIComponent(abbr));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err==='locked') return trkLockP('Time to throw, pressure, CPOE, blitz and more, ranked · Insights Pro');
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const x=d.teams&&d.teams[0]; if(!x) return '<p class="st-none">No finished game yet this week.</p>';
+  return `<div class="trk-tp">${x.stats.map(st=>`<div class="mt-st" title="${esc(st.h)}"><span class="label">${esc(st.l)}</span><b>${trkFmt(st.v,st.f,true)}</b><small>${st.rank?`#${st.rank} of ${x.of}`:'—'} · league ${trkFmt(st.league,st.f,true)}</small></div>`).join('')}</div>
+    <p class="np-note">${x.games} finished game${x.games===1?'':'s'} this week · #1 = the best in the league (for time to throw and blitz rate: the highest).</p>`; }
+function trkH2HHTML(A,B){
+  const d=trkGet('/tracking/team?team='+encodeURIComponent(A)+'&b='+encodeURIComponent(B));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const [a,b]=d.teams||[]; if(!a||!b) return '<p class="st-none">Not enough finished games yet for both teams.</p>';
+  return a.stats.map((st,i)=>{ const o=b.stats[i], ba=st.rank&&o.rank&&st.s?st.rank<o.rank:false, bb=st.rank&&o.rank&&st.s?o.rank<st.rank:false;
+    return `<div class="trk-h2h" title="${esc(st.h)}"><span class="v${ba?' best':''}">${trkFmt(st.v,st.f,true)}${trkRk(st.rank)}</span><span class="lab">${esc(st.l)}</span><span class="v r${bb?' best':''}">${trkRk(o.rank)} ${trkFmt(o.v,o.f,true)}</span></div>`; }).join('')+
+    `<p class="np-note">${esc(A)} left, ${esc(B)} right · rank of 24 this week · highlighted: the better rank where higher or lower is better.</p>`; }
+function trkGameHTML(gid,end){
+  if(!gid) return '<p class="st-none">Tracking comes with the league games.</p>';
+  const s=SCHED_BY[gid];
+  if(!s||gStatus(s,nowMs())!=='final'||!end) return '<p class="st-empty"><b>At the final whistle</b>Tracking stats for this game appear once it is over and you have watched it to the end: no spoiler.</p>';
+  const d=trkGet('/tracking/game?id='+encodeURIComponent(gid));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err==='locked') return trkLockP('Time to throw, pressure, separation and yards over expected for every game · Insights Pro');
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const T=Object.fromEntries(d.teams.map(x=>[x.team,x])), A=T[s.away], H=T[s.home];
+  if(!A||!H) return '<p class="st-none">No tracking stats in this game.</p>';
+  const rows=d.cols.map(c=>{ const va=A.v[c.k], vh=H.v[c.k]; let ca='', ch='';
+    if(c.s&&va!=null&&vh!=null&&va!==vh){ if((va>vh)===(c.s>0)) ca='lead'; else ch='lead'; }
+    return `<tr><th scope="row" title="${esc(c.h)}">${esc(c.l)}</th><td class="${ca}">${trkFmt(va,c.f,true)}</td><td class="${ch}">${trkFmt(vh,c.f,true)}</td></tr>`; }).join('');
+  const PICK={passing:['tt','cpoe','prs'],receiving:['sep','tgt','croe'],rushing:['ryoe_c','ybc','yaco'],passrush:['prwr','prs']};
+  const side=x=>{ const t=TEAMS[x.team];
+    const li=x.players.map(p=>{ const cols=(d.player_cols[p.group]||[]).filter(c=>PICK[p.group].includes(c.k));
+      return `<tr><th scope="row"><span class="pos">${esc(p.role)}</span><button class="link" type="button" data-trk-card="${esc(p.id)}" data-pt="${esc(x.team)}">${esc(p.name)}</button></th><td>${cols.map(c=>`${esc(c.l)} <b>${trkFmt(p.v[c.k],c.f,true)}</b>`).join(' · ')}</td></tr>`; }).join('');
+    return `<div class="st-team"><div class="st-tn"><span class="abbr">${t?t.abbr:esc(x.team)}</span>${t?esc(t.name):''}</div>${li?`<table class="pst"><caption>Key players</caption><tbody>${li}</tbody></table>`:'<p class="st-none">No player with enough plays.</p>'}</div>`; };
+  return `<div class="st-scroll"><table class="tst"><thead><tr><th scope="col">Tracking</th><th scope="col"><span class="abbr">${esc(s.away)}</span></th><th scope="col"><span class="abbr">${esc(s.home)}</span></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="st-cols">${side(A)}${side(H)}</div>
+    <p class="np-note">Measured by the engine on every play of this game. CPOE and yards over expected use this week's league as the baseline.</p>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-trk-card]'); if(b) openRosterCard(b.dataset.pt,b.dataset.trkCard,e.clientX,e.clientY); });
 function renderInsights(t,force){
   const el=document.getElementById('viewInsights'); if(!el) return;
   const finals=SCHED.reduce((n,g)=>n+(gStatus(g,t)==='final'?1:0),0), tok=PLAYER&&PLAYER.token||'';

@@ -174,6 +174,60 @@ class Tableaux(unittest.TestCase):
         self.assertIsNotNone(N.stat_du_jour(T, 5))                    # un groupe vide : on passe au suivant
 
 
+class Fiches(unittest.TestCase):
+    """NGS-5 : la fiche d'un joueur (phare + rangs), le profil d'une équipe, le suivi d'un match."""
+    def setUp(self):
+        self.F = _feed([_passe(i, "complete" if i % 3 else "incomplete", 9, tt=1.5 + i / 50, prof=8,
+                               duels=[DUEL_GAGNE if i % 4 == 0 else DUEL_PERDU]) for i in range(1, 31)] +
+                       [_course(100 + i, 3 + i % 4) for i in range(12)])
+        self.C = N.compter(self.F)
+        self.A = N.agreger([self.C])
+        self.T = N.tableaux(self.A)
+
+    def test_joueur(self):
+        q = N.joueur(self.A, self.T, "AAA_QB1")
+        self.assertEqual((q["name"], q["pos"], q["team"]), ("AAA QB1", "QB", "AAA"))
+        h = q["headline"]
+        self.assertEqual((h["k"], h["group"], h["qualified"], h["rank"], h["of"]), ("tt", "Passing", True, 1, 1))  # sans modèles
+        M = N.entrainer([self.F])
+        T = N.tableaux(N.agreger([N.compter(self.F, M)]), M)
+        self.assertEqual(N.joueur(N.agreger([N.compter(self.F, M)]), T, "AAA_QB1")["headline"]["k"], "cpoe")
+        self.assertEqual([g["key"] for g in q["groups"]], ["passing"])
+        self.assertTrue(all(x["rank"] == 1 for x in q["groups"][0]["stats"] if x["v"] is not None))
+        e = N.joueur(self.A, self.T, "BBB_EDGE1")
+        self.assertEqual(e["headline"]["k"], "prwr")
+        self.assertAlmostEqual(e["headline"]["v"], round(7 / 30, 3), places=3)    # gagné sur i = 4, 8, … 28 (7 fois)
+        self.assertEqual(N.joueur(self.A, self.T, "ZZZ_QB1")["headline"], None)    # inconnu : rien, sans erreur
+
+    def test_pas_encore_qualifie(self):
+        F = _feed([_passe(i, "complete", 9) for i in range(1, 6)])
+        A = N.agreger([N.compter(F)]); T = N.tableaux(A)
+        h = N.joueur(A, T, "AAA_QB1")["headline"]
+        self.assertFalse(h["qualified"]); self.assertIsNone(h["rank"])
+        self.assertEqual((h["n"], h["min"]), (5, ["att", 14]))
+
+    def test_rang_dans_le_bon_sens(self):
+        rows = [{"v": {"x": v}} for v in (0.1, 0.3, 0.2)]
+        self.assertEqual(N._rang(rows, "x", 1, 0.3), 1)
+        self.assertEqual(N._rang(rows, "x", -1, 0.3), 3)
+        self.assertEqual(N._rang(rows, "x", 0, 0.1), 3)
+
+    def test_equipe_et_match(self):
+        e = N.equipe(self.T, "AAA")
+        self.assertEqual((e["team"], e["games"], e["of"]), ("AAA", 1, 2))
+        self.assertEqual(len(e["stats"]), len(N.EQUIPES["cols"]))
+        self.assertIsNone(N.equipe(self.T, "ZZZ"))
+        m = N.match(self.C, None, self.T["_ligue"])
+        aaa = next(x for x in m["teams"] if x["team"] == "AAA")
+        self.assertEqual([p["role"] for p in aaa["players"]], ["QB", "Target", "Carrier"])
+        self.assertEqual(aaa["players"][1]["v"]["share"], 1.0)                 # la part des cibles : celles du match
+        bbb = next(x for x in m["teams"] if x["team"] == "BBB")
+        self.assertEqual([p["role"] for p in bbb["players"]], ["Rusher"])
+        peu = N.compter(_feed([_passe(1, "complete", 9), _course(2, 4)]))         # un match : pas de seuil
+        aaa = next(x for x in N.match(peu, None, self.T["_ligue"])["teams"] if x["team"] == "AAA")
+        self.assertEqual([p["role"] for p in aaa["players"]], ["QB", "Target", "Carrier"])
+
+
 class Donnees(unittest.TestCase):
     def test_vrai_match_et_semaine_sans_geo(self):
         semaines = sorted(glob.glob(os.path.join(RACINE, "data", "weeks", "week_*")))
@@ -247,6 +301,48 @@ class Serveur(ts.Base):
                 self.assertNotIn('"tracking":true', ts.serveur.page().body.decode())
         with mock.patch.dict(os.environ, {"GC_TRACKING": "on", "GC_INSIGHTS": "on"}):
             self.assertIn('"tracking":true', ts.serveur.page().body.decode())
+
+    def test_fiches_ngs5(self):
+        t = self.reg[40]["ko"] + 60_000
+        ts.a_l_heure(t)
+        jo = self._compte("Trk Fiche")
+        finis = [g for g in self.w.sched if self.w.status(g, t) == "final" and g.get("result")]
+        pas_fini = next(g for g in self.w.sched if self.w.status(g, t) != "final")
+        qb = finis[0]["home"] + "_QB1"
+        with mock.patch.dict(os.environ, {"GC_INSIGHTS_USERS": "Trk Fiche"}):
+            libre = json.loads(ts.serveur.api_tracking_player(qb, "").body)
+            self.assertEqual(libre["headline"]["k"], "cpoe")                     # la stat phare : gratuite
+            self.assertNotIn("groups", libre)
+            pro = json.loads(ts.serveur.api_tracking_player(qb, jo).body)
+            self.assertTrue(pro["groups"]) ; self.assertEqual(pro["headline"], libre["headline"])
+            for bad in ("", "qb1", "<x>", "AAA-QB1"):
+                with self.assertRaises(ts.HTTPException) as e:
+                    ts.serveur.api_tracking_player(bad, jo)
+                self.assertEqual(e.exception.status_code, 400)
+            a, b = finis[0]["home"], finis[0]["away"]
+            d = json.loads(ts.serveur.api_tracking_team(a, b, jo).body)
+            self.assertEqual([x["team"] for x in d["teams"]], [a, b])
+            for args in ((a, "", ""), (a, b, "")):                              # sans compte Pro : verrouillé
+                with self.assertRaises(ts.HTTPException) as e:
+                    ts.serveur.api_tracking_team(*args)
+                self.assertEqual(e.exception.status_code, 403)
+            with self.assertRaises(ts.HTTPException) as e:
+                ts.serveur.api_tracking_team(a, a, jo)
+            self.assertEqual(e.exception.status_code, 400)
+            m = json.loads(ts.serveur.api_tracking_game(finis[0]["id"], jo).body)
+            self.assertEqual({x["team"] for x in m["teams"]}, {a, b})
+            with self.assertRaises(ts.HTTPException) as e:                       # un match pas fini : rien
+                ts.serveur.api_tracking_game(pas_fini["id"], jo)
+            self.assertEqual(e.exception.status_code, 404)
+            with self.assertRaises(ts.HTTPException) as e:
+                ts.serveur.api_tracking_game(finis[0]["id"], "")
+            self.assertEqual(e.exception.status_code, 403)
+        with mock.patch.dict(os.environ, {"GC_TRACKING": "off"}):
+            for fn, args in ((ts.serveur.api_tracking_player, (qb, "")), (ts.serveur.api_tracking_team, (a, "", jo)),
+                             (ts.serveur.api_tracking_game, (finis[0]["id"], jo))):
+                with self.assertRaises(ts.HTTPException) as e:
+                    fn(*args)
+                self.assertEqual(e.exception.status_code, 404)
 
     def test_temps_semaine_entiere(self):
         ts.a_l_heure(self.reg[-1]["end"] + 1000)

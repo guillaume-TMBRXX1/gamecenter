@@ -159,7 +159,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - Tests `moteur/tests/test_tracking_serveur.py` (sur une copie des données, jamais `data/` du dépôt) : matchs finis
   seulement, rien de Pro dans la réponse d'un compte hors liste, interrupteur, temps de réponse.
 
-### NGS-4 — Site : Insights › Tracking *(site)* — ✅ 18/11 en local, captures à valider par Guillaume (README section 124)
+### NGS-4 — Site : Insights › Tracking *(site)* — ✅ 18/11, captures validées par Guillaume (README section 124)
 - Nouveau sous-onglet dans Insights : groupes (Passing, Receiving, Rushing, Pass rush, Coverage, Blocking, Teams),
   classements triables, une ligne d'aide par statistique, moyenne de la ligue, seuil d'échantillon affiché.
 - Aperçu flouté verrouillé (chiffres factices) pour les comptes non Pro, bouton « Unlock » existant.
@@ -167,7 +167,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - Tests navigateur `outils/site/test_tracking.js` : invité, compte hors liste, compte Pro, téléphone 390 px, iPad,
   mode sombre, interrupteur. Charger la skill `dataviz` avant le premier graphique.
 
-### NGS-5 — Fiches et match *(site + serveur)*
+### NGS-5 — Fiches et match *(site + serveur)* — ✅ 18/11 en local, captures à valider (README section 125)
 - Fiche joueur : bloc « Tracking » (la stat phare en clair, le reste Pro, rang dans la ligue).
 - Fiche équipe (Teams, My team) et Head-to-head : profil de suivi des deux équipes côte à côte (Pro).
 - Match terminé : « Tracking » dans le récap du match (temps de lancer, pression, séparation de chaque équipe).
