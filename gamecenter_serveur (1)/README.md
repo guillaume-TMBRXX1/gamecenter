@@ -3569,7 +3569,38 @@ sur `main` (vu sur la PR de la section 122, qui n'y était pour rien). **Demande
 - **`test_effets.js`** (section 121) : le pari posé part au serveur ; « Bet placed » arrive avec sa réponse. Le test
   l'attendait 300 ms exactement et pouvait échouer quand le serveur tardait : il l'attend désormais jusqu'à 5 s.
 
-### 124. Insights › Tracking : les statistiques de suivi du moteur (« Next Gen Stats », NGS-1 à NGS-4 — 18/11/2026)
+### 124. Page d'accueil allégée : 15 → 4,8 Mo compressés le dimanche (phase 1 de la relance, 18/11/2026)
+**Constat** : `snapline.live` pesait 57,7 Mo le mercredi après-midi (8,8 Mo compressés, ≈ 7 s d'ouverture même sur
+une bonne connexion) et 96 Mo le dimanche (15,1 Mo compressés). Toute la semaine jouée est écrite dans la page
+(`#gf-week`). Les deux sections qui avaient allégé la page (09/10 et section 90) dataient d'avant les trajectoires
+du moteur (sections 94 à 104), qui l'avaient alourdie de nouveau. Pour un visiteur venu d'un réseau social, en 4G et
+dans le navigateur de l'appli, la page restait blanche. **Demande de Guillaume (18/11)** : alléger la page, première
+étape de la phase 1.
+- **Trajectoires hors des matchs allégés** (`serveur.py`, `_LIGHT_DROP_PLUS`) : `play.geo` ne sert qu'à dessiner le
+  terrain, et le replay d'un match allégé recharge déjà le match complet (`/api/feed/{id}`, `feedFull`). C'était
+  45 % du poids d'un match allégé. Les 12 matchs terminés les plus récents (ceux de l'accueil) restent complets.
+- **Rosters par différence** (`serveur.py`, `_roster_patch` ; `gamecenter_source.html`, lecture de `#gf-week`) : le
+  roster d'une équipe n'était dédoublonné que s'il était identique à sa première apparition, soit 24 fois sur 534. D'un
+  match à l'autre, seuls `snaps`, `energy`, `snap_pct` et parfois une blessure changent. Un joueur déjà dans le roster
+  de référence (`rosters`) est maintenant écrit `{"@": id, champ: valeur…, "-": [champs absents]}`, et la page le
+  recompose avant toute autre lecture : le reste du site voit le roster entier, comme avant. Un nouveau joueur reste
+  écrit en entier.
+- **Mesures** (semaine du 16/11, même heure, `_page_bundle` + gzip) :
+
+  | Moment | Avant | Après |
+  |---|---|---|
+  | Mercredi 14:00 | 57,7 Mo · 8,8 Mo compressés | 28,1 Mo · **2,9 Mo** compressés |
+  | Dimanche, semaine finie | 96,0 Mo · 15,1 Mo compressés | 49,3 Mo · **4,8 Mo** compressés |
+
+  Le serveur prépare aussi la page plus vite (≈ 0,5 s de calcul et 0,8 s de compression, contre 2,3 s de compression
+  seule avant). Le navigateur lit 2 fois moins de texte JSON.
+- **Interrupteur** : `GC_PAGE_LEGERE=off` remet la page d'avant la section 90 (rosters entiers, trajectoires comprises).
+- **Tests** : `test_serveur.py` (`test_page_legere` : plus de `geo` dans les matchs allégés ; `test_page_rosters_par_difference` :
+  chaque roster recomposé est celui du moteur, et entier avec l'interrupteur). Le code de lecture de la page a été
+  exécuté sur la semaine réelle : 558 rosters recomposés, tous identiques. Tests navigateur : `test_banc`,
+  `test_blessures`, `test_classement`, `test_front_office`, `test_mobile`, `test_accueil`, `test_insights`, `test_memoire`.
+
+### 125. Insights › Tracking : les statistiques de suivi du moteur (« Next Gen Stats », NGS-1 à NGS-4 — 18/11/2026)
 Plan : `programme/Next_Gen_Stats_plan.md` (décisions de Guillaume du 18/11 : stat du jour et une stat par fiche joueur
 gratuites, le reste Pro ; nom « Tracking » — « Next Gen Stats » est une marque de la NFL ; tout le catalogue ; modèles
 « attendus » dès le départ ; la semaine en cours seulement). **Aucun changement du moteur, du notebook ni du calcul du
@@ -3616,8 +3647,8 @@ samedi** : tout est compté dans les GameFeeds déjà produits (`play.decision`,
   côte (Head-to-head), le récap de suivi d'un match ; plus tard, cartes des passes et des courses, historique d'une
   semaine à l'autre. À surveiller : réapprendre les modèles si le moteur change (l'écart de la ligue le dira).
 
-### 125. Tracking dans les fiches : joueur, franchise, Head-to-head, Match centre (NGS-5 — 18/11/2026)
-Suite de la section 124, validée par Guillaume le 18/11. Toujours sans toucher au moteur ; matchs terminés seulement.
+### 126. Tracking dans les fiches : joueur, franchise, Head-to-head, Match centre (NGS-5 — 18/11/2026)
+Suite de la section 125, validée par Guillaume le 18/11. Toujours sans toucher au moteur ; matchs terminés seulement.
 - **Module** (`moteur/ngs.py`) : `joueur(agg, tab, id)` — la **statistique phare** de son poste (`PHARE` : QB CPOE, WR et
   TE séparation, RB RYOE / course, EDGE et DT pass rush win rate, LB missed tackle %, CB et S yards par cible, ligne
   offensive pass block win rate ; repli sur le temps de lancer ou les yards par course quand le modèle manque), avec son
@@ -3629,7 +3660,7 @@ Suite de la section 124, validée par Guillaume le 18/11. Toujours sans toucher 
   `facteur` (multiplie les seuils).
 - **Serveur** : `/api/tracking/player?id=` (la stat phare pour tous ; `groups` pour un compte Pro), `/api/tracking/team?
   team=[&b=]` et `/api/tracking/game?id=` (comptes Pro, 403 sinon ; un match pas terminé : 404). Même cache que la
-  section 124 (l'agrégat de la semaine y est gardé).
+  section 125 (l'agrégat de la semaine y est gardé).
 - **Site** : **fiche joueur** — section « Tracking · this week » avant la carrière : la stat phare, son rang (« #21 of
   24 ») ou « not ranked yet » (actions faites / nécessaires), la moyenne de la ligue et sa définition ; pour un compte
   Pro, chaque groupe et chaque statistique avec son rang ; sinon un cadenas. **Page d'une franchise** (Teams, My team) —
@@ -3825,7 +3856,7 @@ README section 52) · `GC_EDITEUR`,
 `GC_EDITEUR_ADRESSE`, `GC_CONTACT` (mentions légales de `/legal`), README section 47 · `GC_CHAT` (`off` par défaut, `read`, `on` : le chat,
 section 71) · `GC_CHAT_DAYS` (conservation des messages du chat, défaut 30 jours) · `GC_MESURE=1` (liens
 courts `/tt` `/ig` `/yt` `/r/…`, visites comptées, tableau de bord `/admin/stats`, section 77) · `GC_STATS_EXCLURE`
-(pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_TRACKING` (`off` : pas d'onglet Tracking, section 124), `GC_INSIGHTS_USERS` (pseudos qui
+(pseudos exclus du tableau de bord) · `GC_INSIGHTS` (`off` : pas d'onglet Insights), `GC_TRACKING` (`off` : pas d'onglet Tracking, section 125), `GC_INSIGHTS_USERS` (pseudos qui
 ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étape 9.2, section 80) · `GC_ACCUEIL=1` (bandeau des nouveaux venus et
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·

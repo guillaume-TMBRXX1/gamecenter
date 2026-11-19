@@ -1,4 +1,4 @@
-// Tracking dans les fiches (NGS-5, section 125, 18/11/2026) — test navigateur (Playwright + serveur réel).
+// Tracking dans les fiches (NGS-5, section 126, 18/11/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_tracking_fiches.js          (depuis « gamecenter_serveur (1) »)
 //   SHOTS=<dossier> node outils/site/test_tracking_fiches.js     (captures)
 // Horloge du serveur au milieu de la dernière semaine (GC_DEMO_AT), GC_INSIGHTS_USERS=Analyste.

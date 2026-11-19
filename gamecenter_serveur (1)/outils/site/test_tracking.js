@@ -1,4 +1,4 @@
-// Insights › Tracking (section 124, 18/11/2026) — test navigateur (Playwright + serveur réel).
+// Insights › Tracking (section 125, 18/11/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_tracking.js          (depuis « gamecenter_serveur (1) » ; Python + fastapi/uvicorn, Playwright)
 //   SHOTS=<dossier> node outils/site/test_tracking.js     (captures : ordinateur, téléphone, mode sombre)
 // Horloge du serveur au milieu de la dernière semaine (GC_DEMO_AT), GC_INSIGHTS_USERS=Analyste.

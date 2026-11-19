@@ -130,7 +130,7 @@ site : Insights › Tracking (classements) · fiche joueur · fiche équipe · D
 ### NGS-0 — Plan *(ce fichier)* — ✅ 18/11
 Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points décidés le 18/11 (ci-dessous).
 
-### NGS-1 — Module de comptage *(module seul, sans serveur ni site)* — ✅ 18/11 (README section 124)
+### NGS-1 — Module de comptage *(module seul, sans serveur ni site)* — ✅ 18/11 (README section 125)
 - `moteur/ngs.py` : `compter(match, feed)` → comptes bruts par joueur (identifiant, poste, franchise) et par équipe pour
   un match ; `agreger(liste de comptes, modeles=None)` → statistiques finales, seuils d'échantillon, moyenne de ligue,
   rang. Statistiques sans modèle d'abord (temps de lancer, aDOT, séparation, open rate, pression, win rates, yards
@@ -141,7 +141,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
   déterminisme, un match sans `geo` (semaine ancienne) ne plante pas.
 - Outil `outils/moteur/ngs_rapport.py` : distributions et classements d'une semaine entière (pour fixer les seuils).
 
-### NGS-2 — Modèles « attendus » *(module + outil)* — ✅ 18/11 (README section 124)
+### NGS-2 — Modèles « attendus » *(module + outil)* — ✅ 18/11 (README section 125)
 - `xComp` : complétion attendue par case (statut de la cible × profondeur × pression × temps de lancer), lissée vers la
   case parente quand elle a peu d'actions. `xYAC` : YAC attendu (statut, profondeur, réception). `xRush` : yards attendus
   d'une course d'après ce qui est connu **avant le snap** (boîte, classe, côté, down, distance, position).
@@ -151,7 +151,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - **Contrôle** : sur une semaine entière, somme attendue ≈ somme réelle (CPOE de la ligue ≈ 0, RYOE ≈ 0) ; écarts par
   joueur et stabilité d'une moitié de semaine à l'autre (si un CPOE ne se répète pas, ne pas l'afficher en tête).
 
-### NGS-3 — Serveur *(serveur)* — ✅ 18/11 (README section 124)
+### NGS-3 — Serveur *(serveur)* — ✅ 18/11 (README section 125)
 - `/api/tracking?view=leaders&group=qb|wr|rb|def|ol|team`, `view=player&id=`, `view=team&team=` ; matchs terminés
   seulement, comptes d'un match en cache, agrégat en cache par nombre de matchs finis (comme `insights_data`).
 - Accès : `insights_pro` → tout ; sinon le teaser seulement (statistique du jour, la stat phare d'un joueur) ; invité :
@@ -159,7 +159,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - Tests `moteur/tests/test_tracking_serveur.py` (sur une copie des données, jamais `data/` du dépôt) : matchs finis
   seulement, rien de Pro dans la réponse d'un compte hors liste, interrupteur, temps de réponse.
 
-### NGS-4 — Site : Insights › Tracking *(site)* — ✅ 18/11, captures validées par Guillaume (README section 124)
+### NGS-4 — Site : Insights › Tracking *(site)* — ✅ 18/11, captures validées par Guillaume (README section 125)
 - Nouveau sous-onglet dans Insights : groupes (Passing, Receiving, Rushing, Pass rush, Coverage, Blocking, Teams),
   classements triables, une ligne d'aide par statistique, moyenne de la ligue, seuil d'échantillon affiché.
 - Aperçu flouté verrouillé (chiffres factices) pour les comptes non Pro, bouton « Unlock » existant.
@@ -167,7 +167,7 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - Tests navigateur `outils/site/test_tracking.js` : invité, compte hors liste, compte Pro, téléphone 390 px, iPad,
   mode sombre, interrupteur. Charger la skill `dataviz` avant le premier graphique.
 
-### NGS-5 — Fiches et match *(site + serveur)* — ✅ 18/11 en local, captures à valider (README section 125)
+### NGS-5 — Fiches et match *(site + serveur)* — ✅ 18/11 en local, captures à valider (README section 126)
 - Fiche joueur : bloc « Tracking » (la stat phare en clair, le reste Pro, rang dans la ligue).
 - Fiche équipe (Teams, My team) et Head-to-head : profil de suivi des deux équipes côte à côte (Pro).
 - Match terminé : « Tracking » dans le récap du match (temps de lancer, pression, séparation de chaque équipe).
