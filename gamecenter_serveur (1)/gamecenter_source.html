@@ -2828,6 +2828,8 @@
     .modal:not(.theater) .m-body{gap:0}
     .modal:not(.theater) .m-main>.field.big{border-radius:0;margin:0;aspect-ratio:4/3;border-left:0;border-right:0}
     .modal:not(.theater) .m-main>div,.modal:not(.theater) .m-main>.panel,.modal:not(.theater) .m-side,.modal:not(.theater) .m-lower{margin-left:10px;margin-right:10px}
+    .modal:not(.theater) .m-lower{overflow-x:auto;min-width:0}   /* les tableaux de stats défilent dans leur bloc, la page ne déborde pas */
+    .modal:not(.theater) .qb{margin:8px 0 0;bottom:0}   /* ses marges de -6 px compensaient le rembourrage de la carte, retiré ici */
   }
 </style>
 <style id="spect">
