@@ -5081,8 +5081,15 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
      et le roster d'une équipe, répété dans chacun de ses matchs, n'est gardé qu'une fois quand il est identique */
   el.textContent='';
   /* le serveur écrit le roster d'une équipe une seule fois (w.rosters) : chaque match le retrouve par « @ABR » */
+  /* section 124 (18/11/2026) : un joueur déjà dans ce roster de référence n'arrive que par ce qui change
+     ({"@": id, champ: valeur…, "-": [champs absents]}) ; il est recomposé ici, la suite de la page voit le roster entier */
+  const RBY={}, rby=a=>RBY[a]||(RBY[a]=new Map((w.rosters[a]||[]).map(p=>[p.id,p])));
   if(w&&w.feeds&&w.rosters) for(const id in w.feeds){ const gm=w.feeds[id]&&w.feeds[id].game; if(!gm) continue;
-    for(const side of ['home','away']){ const t=gm[side]; if(t&&typeof t.roster==='string'&&t.roster[0]==='@') t.roster=w.rosters[t.roster.slice(1)]||[]; } }
+    for(const side of ['home','away']){ const t=gm[side]; if(!t) continue;
+      if(typeof t.roster==='string'&&t.roster[0]==='@') t.roster=w.rosters[t.roster.slice(1)]||[];
+      else if(Array.isArray(t.roster)&&t.abbr) t.roster=t.roster.map(e=>{ if(!e||e['@']===undefined) return e;
+        const b=rby(t.abbr).get(e['@']); if(!b) return e;
+        const p=Object.assign({},b,e); delete p['@']; delete p['-']; if(Array.isArray(e['-'])) for(const k of e['-']) delete p[k]; return p; }); } }
   return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
 /* section 86 (30/10/2026): Same Game Combos (GC_SAME_GAME=off: combos as before) and the quick bet on the big screen
    (GC_PARI_RAPIDE=off: the page as before) */

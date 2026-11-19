@@ -172,7 +172,7 @@ class Direct(Base):
         """Section 90 : les matchs terminés allégés n'emportent ni la poche du QB, ni le pré-snap, ni le scouting (le
         replay recharge le match complet) ; les plus récents restent complets ; GC_PAGE_LEGERE=off : la page d'avant."""
         t = self.reg[-1]["end"] + 60_000
-        lourd = ("pocket", "presnap", "scout")
+        lourd = ("pocket", "presnap", "scout", "geo")
 
         def cles(b):
             leg = {k for f in b["feeds"].values() if f.get("light") for p in f["plays"] for k in p}
@@ -193,6 +193,41 @@ class Direct(Base):
             else:
                 os.environ["GC_PAGE_LEGERE"] = old
         self.assertTrue(set(lourd) & leg2)
+
+    def test_page_rosters_par_difference(self):
+        """Section 124 : un joueur déjà dans le roster de référence n'est écrit que par ce qui change ; recomposé comme
+        le fait la page, chaque roster est celui du moteur ; GC_PAGE_LEGERE=off : rosters entiers."""
+        t = self.reg[-1]["end"] + 60_000
+        b = serveur._page_bundle(self.w, t)
+        n = 0
+        for gid, f in b["feeds"].items():
+            vrai = self.w.public_feed(self.w.by[gid], t).get("game") or {}
+            for side in ("home", "away"):
+                tm = (f.get("game") or {}).get(side)
+                if not isinstance(tm, dict) or "roster" not in tm:
+                    continue
+                ref = {p["id"]: p for p in b["rosters"][tm["abbr"]]}
+                r = tm["roster"]
+                if isinstance(r, str):
+                    r = b["rosters"][r[1:]]
+                else:
+                    n += sum(1 for e in r if "@" in e)
+                    r = [e if "@" not in e else {k: v for k, v in dict(ref[e["@"]], **e).items()
+                                                 if k not in ("@", "-") and k not in e.get("-", ())} for e in r]
+                self.assertEqual(r, vrai[side]["roster"], (gid, side))
+        self.assertGreater(n, 0)                                              # des joueurs écrits par différence
+        old = os.environ.get("GC_PAGE_LEGERE")
+        os.environ["GC_PAGE_LEGERE"] = "off"
+        try:
+            b2 = serveur._page_bundle(self.w, t)
+        finally:
+            if old is None:
+                os.environ.pop("GC_PAGE_LEGERE", None)
+            else:
+                os.environ["GC_PAGE_LEGERE"] = old
+        self.assertFalse(any("@" in e for f in b2["feeds"].values() for s in ("home", "away")
+                             if isinstance((f.get("game") or {}).get(s), dict)
+                             and isinstance(f["game"][s].get("roster"), list) for e in f["game"][s]["roster"]))
 
     def test_resultat_public_egal_au_score_du_moteur(self):
         """Score de la fiche du calendrier = score final du GameFeed = score après la dernière action (tous les matchs)."""
