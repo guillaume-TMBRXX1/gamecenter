@@ -1032,6 +1032,8 @@ def page(request: Request = None):
         srv["nettete_off"] = True                    # netteté du terrain (section 90) : la règle de fluidité d'avant
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
         srv["fluide_off"] = True
+    if not accueil_terrain_on():                     # le terrain d'abord (section 125) : GC_ACCUEIL_TERRAIN=off, la page d'avant
+        srv["spect_off"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -1043,6 +1045,8 @@ def page(request: Request = None):
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
     if CF_ANALYTICS:                                 # statistiques d'audience : rien sans GC_CF_ANALYTICS
         s = s.replace("</title>", "</title>\n" + _cf_beacon(CF_ANALYTICS), 1)
+    if not accueil_terrain_on():
+        s = _SPECT_TETE.sub("", s, count=1)
     if accueil_on():
         s = s.replace(_ACCUEIL_CACHE, _ACCUEIL_CACHE[:-len(" hidden>")] + ">", 1).replace("</title>", "</title>\n" + _ACCUEIL_TETE, 1)
     if ADS_CLIENT:                                   # publicités (bloc 2 bis) : rien sans GC_ADSENSE_CLIENT
@@ -1065,6 +1069,17 @@ def jeu_fluide_on():
 
 def accueil_on():
     return os.environ.get("GC_ACCUEIL", "").strip() == "1"
+
+
+# Le terrain d'abord (section 125, phase 1 de la relance, 18/11/2026) : un visiteur qui n'a jamais parié (ni pari, ni
+# ticket, ni compte) voit les matchs sans solde ni ticket ; la colonne de droite laisse sa place au terrain sur ordinateur.
+# Le script <script id="spect-boot"> du <head> décide avant la 1re image (html.spect) ; toucher une cote remet le ticket
+# pour de bon (gc-bettor). Actif par défaut ; GC_ACCUEIL_TERRAIN=off : script retiré, la page d'avant à l'identique.
+_SPECT_TETE = re.compile(r'<script id="spect-boot">.*?</script>\n?', re.S)
+
+
+def accueil_terrain_on():
+    return os.environ.get("GC_ACCUEIL_TERRAIN", "on").strip().lower() not in ("off", "0", "non", "no")
 
 
 _ACCUEIL_CACHE = '<section class="card welcome" id="welcome" aria-labelledby="welcomeTitle" hidden>'

@@ -75,6 +75,32 @@ class TestAccueil(unittest.TestCase):
         self.assertIs(self.srv(on)["accueil"], True)
         self.assertEqual(len(on) - len(off), len(serveur._ACCUEIL_TETE) + 1 - len(" hidden") + len(',"accueil":true'))
 
+    def test_terrain_d_abord(self):
+        """Section 125 : le script spect-boot (html.spect avant le 1er dessin) est dans le <head> par défaut ;
+        GC_ACCUEIL_TERRAIN=off le retire et pose « spect_off » pour la page. Navigateur : outils/site/test_terrain.js."""
+        avant = os.environ.get("GC_ACCUEIL_TERRAIN")
+        try:
+            os.environ.pop("GC_ACCUEIL_TERRAIN", None)
+            self.assertTrue(serveur.accueil_terrain_on())
+            on = serveur.page().body.decode()
+            tete = on.split("</head>")[0]
+            self.assertEqual(tete.count('<script id="spect-boot">'), 1)
+            for mot in ("gc-bettor", "gc-slip-v1", "gc-player-v1", "spect"):
+                self.assertIn(mot, tete.split('<script id="spect-boot">', 1)[1].split("</script>", 1)[0])
+            self.assertNotIn("spect_off", self.srv(on))
+            for v in ("off", "0", "no", "OFF"):
+                os.environ["GC_ACCUEIL_TERRAIN"] = v
+                self.assertFalse(serveur.accueil_terrain_on(), v)
+            off = serveur.page().body.decode()
+            self.assertNotIn('id="spect-boot"', off)
+            self.assertIs(self.srv(off)["spect_off"], True)
+            self.assertIn("html.spect", off)                      # les règles restent, sans effet sans la classe
+        finally:
+            if avant is None:
+                os.environ.pop("GC_ACCUEIL_TERRAIN", None)
+            else:
+                os.environ["GC_ACCUEIL_TERRAIN"] = avant
+
 
 if __name__ == "__main__":
     unittest.main()

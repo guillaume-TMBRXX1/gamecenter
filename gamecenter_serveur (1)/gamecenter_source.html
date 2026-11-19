@@ -2,6 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(!(s&&s.motion===false)&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
+<script id="spect-boot">/* section 125 : un visiteur qui n'a jamais parié voit le terrain sans solde ni ticket (html.spect), décidé avant le premier dessin */(function(){try{var b=localStorage.getItem("gc-bettor"),s=JSON.parse(localStorage.getItem("gc-slip-v1")||"null"),p=JSON.parse(localStorage.getItem("gc-player-v1")||"null");if(!b&&!(s&&s.picks&&s.picks.length)&&!(p&&p.account))document.documentElement.classList.add("spect")}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -2720,6 +2721,33 @@
   @media (max-width:1100px){ html.mo-boot #liveGrid>.mo-skt.f{grid-column:1/-1;min-height:300px} html.mo-boot #liveGrid>.mo-skt:nth-child(n+3){display:none} }
   @media (max-width:600px){ html.mo-boot #liveGrid>.mo-skt:nth-child(n+2){display:none} }
 </style>
+<style id="spect">
+  /* Section 125 (phase 1 de la relance, 18/11/2026) — le terrain d'abord. Un visiteur qui n'a jamais parié (html.spect :
+     ni pari, ni ticket, ni compte) ne voit ni le solde ni le ticket : sur ordinateur, la colonne de droite laisse sa
+     place aux matchs ; sur téléphone, plus de pastille « Balance » ni de bouton « Bet slip » flottant. Les cotes restent
+     sous chaque match : en toucher une remet le ticket, pour de bon (gc-bettor). Sur téléphone, le bandeau d'accueil est
+     resserré pour que le terrain arrive plus haut. GC_ACCUEIL_TERRAIN=off : la page d'avant. */
+  html.spect .wallet-pill,html.spect .fab{display:none}
+  @media (min-width:1280px){
+    html.spect .app{grid-template-columns:72px minmax(0,1fr)}
+    html.spect .slip-col{display:none}
+  }
+  /* téléphone : le terrain du match vedette dans le premier écran (iPhone 13, 603 px utiles sous la barre d'onglets :
+     il commençait à 788 px). Le titre du bandeau dit l'essentiel, « How it works » mène au texte complet ; l'horloge, le
+     grand titre « Live now », la ligne de la semaine et « Big plays » reviennent dès que le visiteur a parié (les filtres
+     Live / Upcoming / Results restent). Sans l'horloge, la recherche tient sur la ligne des boutons dès le premier
+     dessin : rien ne la renvoie plus bas ensuite (CLS). */
+  @media (max-width:600px){
+    html.spect .clock-wrap,html.spect .live-head>div:first-child{display:none}
+    html.spect .live-head{margin-top:0;padding-bottom:0;border-bottom:0}
+    html.spect .live-grid{margin-top:12px}
+    html.spect .welcome{margin:8px 0 10px;padding:12px 16px 12px}
+    html.spect .welcome h2{font-size:20px;margin:0 44px 0 0}
+    html.spect .welcome .eyebrow,html.spect .welcome p.wc-txt,html.spect .welcome .wc-next,html.spect .moments{display:none}
+    html.spect .welcome .wc-act{margin-top:10px}
+    html.spect .welcome .wc-act .cta{flex:1 1 auto;height:42px}
+  }
+</style>
 
 <div class="ticker" role="region" aria-label="Live scores and market ticker">
   <div class="tk-label"><i class="dot pulse"></i>Live</div>
@@ -5091,6 +5119,7 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
         const b=rby(t.abbr).get(e['@']); if(!b) return e;
         const p=Object.assign({},b,e); delete p['@']; delete p['-']; if(Array.isArray(e['-'])) for(const k of e['-']) delete p[k]; return p; }); } }
   return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
+if(!SEASON||(SERVER&&SERVER.spect_off)) document.documentElement.classList.remove('spect');   /* section 125 : maquette sans semaine, ou interrupteur coupé */
 /* section 86 (30/10/2026): Same Game Combos (GC_SAME_GAME=off: combos as before) and the quick bet on the big screen
    (GC_PARI_RAPIDE=off: the page as before) */
 const SG_ON=!!SEASON&&(!SERVER||SERVER.same_game!==false), QB_ON=!!SEASON&&(!SERVER||SERVER.quick_bet!==false);
@@ -9236,7 +9265,8 @@ function welcomeTick(t){
 function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.classList.add('gc-seen'); }
 function welcomeInit(){
   const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
-  document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1'); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); } });
+  document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1');
+    if(h&&h.offsetParent){ h.tabIndex=-1; h.focus({preventScroll:true}); } else { const t=document.querySelector('.live-head .seg [aria-selected="true"]'); if(t) t.focus({preventScroll:true}); } });   /* section 125 : titre caché sur téléphone, le filtre reçoit le focus */
   document.getElementById('welcomeWatch').addEventListener('click',()=>{ const P=WELCOME.pick; if(!P) return; welcomeSeen();
     if(P.kind==='replay') openReplayFeed(SEASON.feeds[P.s.id]); else watchGame(P.s.id); });
   welcomeTick(nowMs()); setInterval(()=>welcomeTick(nowMs()),15000);
@@ -9646,8 +9676,17 @@ function seasonTotals(){
   document.getElementById('fabR').textContent=money(r2(rt));
   document.querySelectorAll('[data-balance]').forEach(el=>moMoney(el,L.balance));
   if(QB_ON) qbSync(btn,rt);
+  spectSync();
   const fine=document.querySelector('#slipFoot .fine');
   if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · ${SERVER&&WALLET_CARRY?'play money, carried week to week':`$${BANKROLL.toLocaleString('en-US')} play money a week`}${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
+}
+/* section 125 : le visiteur qui a déjà parié, ou qui touche une cote, retrouve le solde et le ticket (gc-bettor : pour de
+   bon dans ce navigateur) ; GC_ACCUEIL_TERRAIN=off (#gf-server .spect_off) : la page d'avant pour tous */
+function spectSync(){
+  const h=document.documentElement; if(!h.classList.contains('spect')) return;
+  const off=!!(SERVER&&SERVER.spect_off), bet=slip.picks.length>0||WAL.bets.length>0||!!(PLAYER&&PLAYER.account);
+  if(bet&&!off){ try{ localStorage.setItem('gc-bettor','1'); }catch(e){} }
+  if(bet||off) h.classList.remove('spect');
 }
 function seasonPlace(){
   const btn=document.getElementById('place'), act=btn.dataset.act, t=nowMs();
