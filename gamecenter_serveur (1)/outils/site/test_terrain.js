@@ -1,4 +1,4 @@
-// Le terrain d'abord (section 125, phase 1 de la relance — 18/11/2026) — test navigateur (Playwright + serveurs réels).
+// Le terrain d'abord (section 127, phase 1 de la relance — 18/11/2026) — test navigateur (Playwright + serveurs réels).
 //   node outils/site/test_terrain.js        (depuis « gamecenter_serveur (1) » ; Python + fastapi/uvicorn, Playwright)
 // Deux serveurs pendant un créneau (GC_DEMO_AT) : 8240 avec GC_ACCUEIL_TERRAIN=off (la page d'avant : aucun script
 // spect-boot, solde et ticket pour tous), 8241 par défaut, avec le bandeau d'accueil (GC_ACCUEIL=1).

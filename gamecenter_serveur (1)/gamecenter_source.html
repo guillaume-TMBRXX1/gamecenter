@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(!(s&&s.motion===false)&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
-<script id="spect-boot">/* section 125 : un visiteur qui n'a jamais parié voit le terrain sans solde ni ticket (html.spect), décidé avant le premier dessin */(function(){try{var b=localStorage.getItem("gc-bettor"),s=JSON.parse(localStorage.getItem("gc-slip-v1")||"null"),p=JSON.parse(localStorage.getItem("gc-player-v1")||"null");if(!b&&!(s&&s.picks&&s.picks.length)&&!(p&&p.account))document.documentElement.classList.add("spect")}catch(e){}})();</script>
+<script id="spect-boot">/* section 127 : un visiteur qui n'a jamais parié voit le terrain sans solde ni ticket (html.spect), décidé avant le premier dessin */(function(){try{var b=localStorage.getItem("gc-bettor"),s=JSON.parse(localStorage.getItem("gc-slip-v1")||"null"),p=JSON.parse(localStorage.getItem("gc-player-v1")||"null");if(!b&&!(s&&s.picks&&s.picks.length)&&!(p&&p.account))document.documentElement.classList.add("spect")}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -1293,6 +1293,62 @@
   .ins-pl em,.rc-item em.up,.rc-item em.down{font:700 12.5px var(--f-mono);font-style:normal;white-space:nowrap}
   .ins-pl em.up,.rc-item em.up{color:var(--cyan)}.ins-pl em.down,.rc-item em.down{color:var(--pink)}
   .ins-cb b{color:var(--ink)}
+  /* Tracking (section 125): the engine's tracking stats, Insights Pro; the stat of the day is free */
+  .trk-today{display:flex;align-items:center;gap:14px;margin-top:14px}
+  .trk-today .trk-ic{flex:0 0 auto;width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:var(--cyan-soft);color:var(--cyan)}
+  .trk-today .trk-ic svg{width:22px;height:22px}
+  .trk-today .grow{flex:1;min-width:0}
+  .trk-today .grow .label{display:block;margin-bottom:3px}
+  .trk-today .grow b{font:700 19px var(--f-display);letter-spacing:.02em}
+  .trk-today .grow p{margin:3px 0 0;color:var(--ink-2);font-size:13.5px;line-height:1.45}
+  .trk-today .grow small{display:block;color:var(--ink-3);font-size:12px;margin-top:3px}
+  .trk-today .trk-v{flex:0 0 auto;text-align:right}
+  .trk-today .trk-v b{display:block;font:700 26px var(--f-display);letter-spacing:.02em;color:var(--cyan)}
+  .trk-today .trk-v small{color:var(--ink-3);font-size:11.5px;white-space:nowrap}
+  .seg.trk-groups{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:thin;margin-top:14px}
+  .seg.trk-groups button{flex:0 0 auto;white-space:nowrap}
+  .tst.trk td,.tst.trk th{padding-left:5px;padding-right:5px;width:auto}
+  .tst.trk thead th{vertical-align:bottom;white-space:normal;min-width:50px;max-width:84px;line-height:1.25;letter-spacing:.08em}
+  .tst.trk thead th button{all:unset;cursor:pointer;display:inline-block;text-align:right}
+  .tst.trk thead th button:hover,.tst.trk thead th[aria-sort] button{color:var(--ink)}
+  .tst.trk thead th button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:3px}
+  .tst.trk thead th[aria-sort] button::after{content:" \25BE";color:var(--cyan)}
+  .tst.trk thead th[aria-sort="ascending"] button::after{content:" \25B4"}
+  .tst.trk thead th.pl{text-align:left;min-width:0;max-width:none}
+  .tst.trk td.rk{width:30px;text-align:left;font:700 italic 13px var(--f-display);color:var(--ink-3)}
+  .tst.trk td.lead{color:var(--ink);font-weight:700}
+  .tst.trk td.up{color:var(--cyan)}.tst.trk td.dn{color:var(--pink)}
+  .tst.trk td{font-family:var(--f-mono);font-size:12.5px}
+  .tst.trk .trk-pl{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;max-width:180px}
+  .tst.trk .trk-pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tst.trk .trk-pl:hover span{color:var(--cyan)}
+  .tst.trk .trk-pl:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:3px}
+  .tst.trk .trk-pl small{color:var(--ink-3);font:700 10px var(--f-display);letter-spacing:.06em}
+  .tst.trk tfoot td,.tst.trk tfoot th{border-top:1px solid var(--line-2);color:var(--ink-2);font-style:italic}
+  .tst.trk tfoot th{text-align:left;font:500 12px var(--f-ui)}
+  .trk-more{margin-top:10px}
+  /* NGS-5: tracking on the player card, the team page, head-to-head and the Match centre */
+  .trk-rk{display:inline-block;margin-left:6px;font:700 10.5px var(--f-display);letter-spacing:.04em;color:var(--ink-3)}
+  .trk-rk.top{color:var(--cyan)}
+  .pc-line b .trk-rk{margin-left:5px}
+  .trk-gl{margin:6px 0 0;font:600 10px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .trk-tp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+  .trk-tp .mt-st b{font:700 17px var(--f-display);letter-spacing:.02em}
+  .trk-tp .mt-st small{color:var(--ink-3);font-size:11.5px}
+  .trk-h2h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+  .trk-h2h:first-of-type{border-top:0}
+  .trk-h2h .lab{text-align:center;color:var(--ink-3);font-size:12px}
+  .trk-h2h .v{font:600 13.5px var(--f-mono)}.trk-h2h .v.r{text-align:right}.trk-h2h .v.best{color:var(--cyan)}
+  .trk-gm .pst td{font-family:var(--f-mono)}
+  .trk-gm .st-cols{margin-top:18px}
+  @media (max-width:760px){ .trk-tp{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .trk-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 22px;margin:14px 0 0;font-size:12.5px;line-height:1.45}
+  .trk-help div{padding:7px 0;border-top:1px solid var(--line)}
+  .trk-help dt{font-weight:700;color:var(--ink)}.trk-help dd{margin:2px 0 0;color:var(--ink-3)}
+  @media (max-width:760px){ .trk-help{grid-template-columns:minmax(0,1fr)} .trk-today{align-items:flex-start} .trk-today .trk-ic,.trk-today .grow .trk-def{display:none}
+    .trk-today .trk-v b{font-size:22px}
+    .tst.trk .trk-pl{max-width:128px}
+    .tst.trk tbody th,.tst.trk tfoot th{position:sticky;left:0;background:var(--l1);z-index:1} }
   @media (max-width:980px){ .ins-angles,.rc-grid,.ins-three{grid-template-columns:minmax(0,1fr)} .ins-grid{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:760px){
     .ins-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2722,7 +2778,7 @@
   @media (max-width:600px){ html.mo-boot #liveGrid>.mo-skt:nth-child(n+2){display:none} }
 </style>
 <style id="spect">
-  /* Section 125 (phase 1 de la relance, 18/11/2026) — le terrain d'abord. Un visiteur qui n'a jamais parié (html.spect :
+  /* Section 127 (phase 1 de la relance, 18/11/2026) — le terrain d'abord. Un visiteur qui n'a jamais parié (html.spect :
      ni pari, ni ticket, ni compte) ne voit ni le solde ni le ticket : sur ordinateur, la colonne de droite laisse sa
      place aux matchs ; sur téléphone, plus de pastille « Balance » ni de bouton « Bet slip » flottant. Les cotes restent
      sous chaque match : en toucher une remet le ticket, pour de bon (gc-bettor). Sur téléphone, le bandeau d'accueil est
@@ -5119,7 +5175,7 @@ const SEASON=(()=>{ try{ const el=document.getElementById('gf-week'), w=JSON.par
         const b=rby(t.abbr).get(e['@']); if(!b) return e;
         const p=Object.assign({},b,e); delete p['@']; delete p['-']; if(Array.isArray(e['-'])) for(const k of e['-']) delete p[k]; return p; }); } }
   return w&&w.week&&w.feeds&&w.week.schema==='season-week/1'?w:null; }catch(e){ return null; } })();
-if(!SEASON||(SERVER&&SERVER.spect_off)) document.documentElement.classList.remove('spect');   /* section 125 : maquette sans semaine, ou interrupteur coupé */
+if(!SEASON||(SERVER&&SERVER.spect_off)) document.documentElement.classList.remove('spect');   /* section 127 : maquette sans semaine, ou interrupteur coupé */
 /* section 86 (30/10/2026): Same Game Combos (GC_SAME_GAME=off: combos as before) and the quick bet on the big screen
    (GC_PARI_RAPIDE=off: the page as before) */
 const SG_ON=!!SEASON&&(!SERVER||SERVER.same_game!==false), QB_ON=!!SEASON&&(!SERVER||SERVER.quick_bet!==false);
@@ -5909,7 +5965,7 @@ function computeStatsNow(g,n){
   return {team,pl,drives};
 }
 function statsHTML(g){
-  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives'],['plan','Game plan']];
+  const tabs=[['team','Team stats'],['players','Players'],['drives','Drives'],['plan','Game plan']].concat((typeof trkOn==='function'&&trkOn())&&rivGid(g)?[['tracking','Tracking']]:[]);
   return `<section class="panel stats" data-g="${g.id}" data-f="stats" data-tab="team" aria-label="Match centre">
     <div class="st-head"><span class="label">Match centre</span>
       <div class="seg st-tabs" role="tablist" aria-label="Match statistics">${tabs.map(([k,l],i)=>`<button type="button" role="tab" data-st="${k}" aria-selected="${i===0}">${l}</button>`).join('')}</div></div>
@@ -5991,6 +6047,9 @@ function renderStats(g){
         return `<div class="st-team"><div class="st-tn"><span class="abbr">${T.abbr}</span>${T.name}</div>${html||'<p class="st-none">No stats yet</p>'}</div>`;
       };
       body.innerHTML=`<div class="st-cols">${side('away')}${side('home')}</div>`;
+    } else if(tab==='tracking'){
+      const tg=rivGid(g)||'';
+      body.innerHTML=`<div class="trk-gm" data-trkx="game" data-trkx-a="${esc(tg)}" data-trkx-n="${n<g.plays.length?0:1}">${trkGameHTML(tg,n>=g.plays.length)}</div>`;
     } else if(tab==='plan'){
       body.innerHTML=gamePlanHTML(g,n);
     } else {
@@ -6511,7 +6570,7 @@ function rosterCardHTML(abbr,pid){
       <div class="pc-sub"><span class="abbr">${T.abbr}</span> ${esc(T.name)} · ${POS_NAME[p.pos]||esc(p.pos)}</div></div>
       <button type="button" class="icon-btn pc-x" data-pclose aria-label="Close player card">${ICON.x}</button></div>`;
   const ab=p.status==='out'?injBanner((p.absence||{}).part,`out this week${(p.absence||{}).weeks_left>1?` (${p.absence.weeks_left} weeks)`:''}`):'';   /* step 7.4 */
-  return head+ab+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
+  return head+ab+playerBodyHTML(pl,tone,'This week',lines,'No games played yet this week')+((typeof trkOn==='function'&&trkOn())?`<div class="pc-sec pc-trk" data-trkx="player" data-trkx-a="${esc(pid)}">${trkPlayerHTML(pid)}</div>`:'')+`<div class="pc-sec pc-car" data-career="${esc(pid)}" data-cname="${esc(p.name)}">${careerHTML(pid,p.name,p.pos)}</div>`;
 }
 function openRosterCard(abbr,pid,cx,cy){ const h=rosterCardHTML(abbr,pid); if(h) showCardEl(h,cx,cy,null); }
 /* nearest player dot to a click, through the field's 3D tilt */
@@ -8244,6 +8303,7 @@ function teamDetailHTML(abbr,t,mine){
       ${!mine?foTeamLineHTML(abbr):''}
       ${RIV_ON?rivTeamPanel(abbr):''}
       ${FP_ON?fpTeamPanel(abbr):''}
+      ${(typeof trkOn==='function'&&trkOn())?`<div class="panel" style="margin-bottom:12px"><span class="label">Tracking · this week</span><div data-trkx="team" data-trkx-a="${abbr}">${trkTeamHTML(abbr)}</div></div>`:''}
       <div class="tp-grid"><div class="panel"><span class="label">Coordinators</span><div class="pc-line"><span>Offense</span><b>${esc(T.coordinators.offense)}</b></div><div class="pc-line"><span>Defense</span><b>${esc(T.coordinators.defense)}</b></div>
         <span class="label" style="margin-top:12px;display:block">Unit ratings (from the roster)</span>${unitBar('Pass offense',u.pass_off)}${unitBar('Run offense',u.run_off)}${unitBar('Pass defense',u.pass_def)}${unitBar('Run defense',u.run_def)}${unitBar('Special teams',u.special_teams)}</div>
       <div class="panel"><span class="label">Results this week</span>${teamResultRows(abbr,t)||'<p class="st-none">No finished games yet.</p>'}
@@ -8985,7 +9045,7 @@ function seasonRefresh(force){
    preview drawn with made-up numbers (the real ones never reach their browser). */
 const INS={on:!!(SERVER&&SERVER.insights),d:null,tok:null,busy:false,err:0,retry:0,tab:'week',a:null,b:null,day:null,pair:{},pairBusy:null};
 const INS_KEY='gc-insights-v1';
-(()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
+(()=>{ const s=lsGet(INS_KEY); if(s&&typeof s==='object'){ if(['week','h2h','recap'].concat(SERVER&&SERVER.tracking?['tracking']:[]).includes(s.tab)) INS.tab=s.tab; INS.a=s.a||null; INS.b=s.b||null; } })();
 const INS_SVG={tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16M6.5 16v-4.5M11 16V8M15.5 16v-6M20 16V7.5"/><path d="M5 9l5-4 4.5 3 5.5-4"/></svg>',
   lock:'<svg class="ins-lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>'};
 function insInit(){
@@ -8998,6 +9058,10 @@ function insInit(){
     const tb=t.closest('[data-ins-tab]'); if(tb){ INS.tab=tb.dataset.insTab; insSave(); renderInsights(nowMs(),true); return; }
     const pk=t.closest('[data-h2h]'); if(pk){ INS[pk.dataset.h2h]=pk.dataset.t; insSave(); renderInsights(nowMs(),true); return; }
     const dy=t.closest('[data-ins-day]'); if(dy){ INS.day=dy.dataset.insDay; renderInsights(nowMs(),true); return; }
+    const tg=t.closest('[data-trk-g]'); if(tg){ TRK.grp=tg.dataset.trkG; TRK.sort=null; TRK.all=false; trkSave(); renderInsights(nowMs(),true); return; }
+    const ts=t.closest('[data-trk-s]'); if(ts){ const k=ts.dataset.trkS; if(TRK.sort===k) TRK.asc=!TRK.asc; else { TRK.sort=k; TRK.asc=ts.dataset.asc==='1'; } renderInsights(nowMs(),true);
+      const b=document.querySelector(`#viewInsights [data-trk-s="${k}"]`); if(b) b.focus({preventScroll:true}); return; }
+    if(t.closest('[data-trk-all]')){ TRK.all=!TRK.all; renderInsights(nowMs(),true); return; }
     const ip=t.closest('[data-ins-pl]'); if(ip){ openRosterCard(ip.dataset.pt,ip.dataset.insPl,e.clientX,e.clientY); } });
 }
 function insSave(){ lsSet(INS_KEY,{tab:INS.tab,a:INS.a,b:INS.b}); }
@@ -9166,7 +9230,8 @@ function insH2HHTML(D,t){
     <div class="ins-grid"><div class="card"><div class="card-h"><h2>Head-to-head history</h2><span class="label">Every meeting since week ${esc(String((SERVER&&SERVER.hist_since)||2))}</span></div>${insHistHTML(P,A,B)}</div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Their game this week</h2></div>${meet}
       <p class="np-note"><b>Ratings line</b> = the spread the power ratings suggest. A gap of a point or more against the engine line points to the side the ratings like.</p></div>
-      ${FP_ON?`<div class="card"><div class="card-h"><h2>Play fingerprint</h2><span class="label">What each team actually calls</span></div><div class="fp-box">${D.fp==='sample'?fpRadar(fpSample(A,B),null,true):`<div class="fp-box" data-fp="h2h" data-fp-a="${A}" data-fp-b="${B}">${fpHTML('h2h',A,B)}</div>`}</div></div>`:''}</div></div>
+      ${FP_ON?`<div class="card"><div class="card-h"><h2>Play fingerprint</h2><span class="label">What each team actually calls</span></div><div class="fp-box">${D.fp==='sample'?fpRadar(fpSample(A,B),null,true):`<div class="fp-box" data-fp="h2h" data-fp-a="${A}" data-fp-b="${B}">${fpHTML('h2h',A,B)}</div>`}</div></div>`:''}
+      ${(typeof trkOn==='function'&&trkOn())&&D.fp!=='sample'?`<div class="card"><div class="card-h"><h2>Tracking</h2><span class="label">This week · rank of 24</span></div><div data-trkx="h2h" data-trkx-a="${A}" data-trkx-b="${B}">${trkH2HHTML(A,B)}</div></div>`:''}</div></div>
     <div class="ins-grid"><div class="ins-col"><div class="card"><div class="card-h"><h2>Side by side</h2><span class="label">This week · the better value is highlighted</span></div>${rows}</div>
       <div class="card"><div class="card-h"><h2>Strength match-up</h2><span class="label">Offense against defense</span></div>${insDuelHTML(D,a,b)}</div></div>
     <div class="ins-col"><div class="card"><div class="card-h"><h2>Players to watch</h2><span class="label">Starters' form this week</span></div>${insPlayersHTML(P,A,B)}</div>
@@ -9205,17 +9270,175 @@ function insRecapHTML(D){
     <div class="card"><div class="card-h"><h2>Games of the day</h2></div>${cb}${gm(r.shootout,'Highest-scoring game')}${gm(r.thriller,'Closest game')}</div></div>
     ${insBigHTML(r.big,rp)}`;
 }
+/* ---------- Tracking (section 125): the engine's tracking stats, from the games already final ----------
+   /api/tracking: every group for Insights Pro accounts; the others get the stat of the day only (free, also in Day recap)
+   and see a blurred preview drawn with made-up numbers (the real ones never reach their browser). */
+const TRK={on:!!(SERVER&&SERVER.tracking),d:null,tok:null,busy:false,err:0,retry:0,grp:'passing',sort:null,asc:false,all:false};
+const TRK_KEY='gc-tracking-v1', TRK_ROWS=25;
+(()=>{ const s=lsGet(TRK_KEY); if(s&&typeof s.grp==='string') TRK.grp=s.grp; })();
+function trkSave(){ lsSet(TRK_KEY,{grp:TRK.grp}); }
+const TRK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M7.5 16.5C10 14 9 10 12 9s3.5-1.5 4.5-1.5"/><path d="M3 21h18"/></svg>';
+async function trkFetch(){
+  if(TRK.busy) return; TRK.busy=true;
+  const tok=PLAYER&&PLAYER.token||'';
+  try{ TRK.d=await api('/tracking'+(tok?'?token='+encodeURIComponent(tok):'')); TRK.tok=tok; TRK.err=0; }
+  catch(e){ TRK.err++; TRK.retry=Date.now()+Math.min(60e3,5e3*TRK.err); }
+  finally{ TRK.busy=false; }
+  if(VIEW==='insights') renderInsights(nowMs(),true);
+}
+function trkNeed(finals){ const tok=PLAYER&&PLAYER.token||'';
+  if(TRK.on&&(!TRK.d||TRK.d.final!==finals||TRK.tok!==tok)&&!TRK.busy&&Date.now()>=TRK.retry) trkFetch(); }
+/* one value, in its unit: s seconds · yd yards · pct share · pp percentage points (signed) · sy signed yards · n count */
+function trkFmt(v,f,unit){
+  if(v==null) return '—';
+  const sg=(x,d)=>(x>0?'+':x<0?MINUS:'')+Math.abs(x).toFixed(d);
+  if(f==='s') return v.toFixed(2)+(unit?' s':'');
+  if(f==='yd') return v.toFixed(1)+(unit?' yd':'');
+  if(f==='pct') return (Math.round(v*1000)/10).toFixed(1)+'%';
+  if(f==='pp') return sg(+v.toFixed(1),1)+(unit?' pts':'');
+  if(f==='sy') return sg(+v.toFixed(2),2)+(unit?' yd':'');
+  if(f==='sn') return sg(Math.round(v),0)+(unit?' yd':'');
+  return String(Math.round(v));
+}
+function trkTodayHTML(T){
+  if(!T) return '';
+  const n=TEAMS[T.team]?TEAMS[T.team].name:T.team, lg=T.league==null?'':` · league average ${trkFmt(T.league,T.fmt,true)}`;
+  return `<div class="card trk-today"><span class="trk-ic">${TRK_SVG}</span>
+    <div class="grow"><span class="label">Tracking stat of the day · free</span><b>${esc(T.title)}</b>
+      <p><button class="link" type="button" data-ins-pl="${esc(T.id)}" data-pt="${esc(T.team)}">${esc(T.name)}</button> (${esc(n)}${T.pos?', '+esc(T.pos):''}) ${esc(T.phrase)} ${trkFmt(T.value,T.fmt,true)}.</p>
+      <small>This week so far${lg}.</small><small class="trk-def">${esc(T.label)}: ${esc(T.help)}</small></div>
+    <div class="trk-v"><b>${trkFmt(T.value,T.fmt,true)}</b><small>${esc(T.label)}</small></div></div>`;
+}
+/* made-up numbers for the locked preview (never real ones) */
+function trkSample(){
+  let s=20261118; const r=()=>{ s=(s*1103515245+12345)%2147483648; return s/2147483648; };
+  const cols=[['tt','Time to throw','s',0],['adot','aDOT','yd',0],['cpoe','CPOE','pp',1],['cmp','Comp %','pct',1],['agg','Aggressive','pct',0],['fr','1st read','pct',0],['prs','Pressured','pct',-1],['sk','Sack %','pct',-1]]
+    .map(([k,l,f,sn])=>({k,l,f,s:sn,h:''}));
+  const T=Object.keys(SW.teams).sort();
+  const rows=T.slice(0,14).map((t,i)=>({id:'x'+i,name:'Sample Player',pos:'QB',team:t,n:400,v:{tt:1.8+r()*.7,adot:7+r()*7,cpoe:r()*8-4,cmp:.6+r()*.2,agg:.04+r()*.1,fr:.4+r()*.15,prs:.25+r()*.2,sk:.05+r()*.06}}));
+  rows.sort((a,b)=>b.v.cpoe-a.v.cpoe);
+  return {key:'passing',label:'Passing',who:'Quarterbacks',sort:'cpoe',min:['att',14],cols,rows,league:{tt:2.04,adot:10.1,cpoe:0,cmp:.72,agg:.08,fr:.47,prs:.34,sk:.09},sample:true};
+}
+function trkGroupHTML(G){
+  const C=G.cols, k=TRK.sort&&C.some(c=>c.k===TRK.sort)?TRK.sort:G.sort, col=C.find(c=>c.k===k);
+  const asc=TRK.sort===k?TRK.asc:(col&&col.s===-1);
+  const rows=G.rows.filter(r=>r.v[k]!=null).sort((a,b)=>(asc?1:-1)*(a.v[k]-b.v[k])||a.name.localeCompare(b.name)).concat(G.rows.filter(r=>r.v[k]==null));
+  const shown=TRK.all||G.sample?rows:rows.slice(0,TRK_ROWS), team=G.key==='teams';
+  const L=G.league||{};
+  const tone=(c,v)=>{ if(v==null||!c.s||!['pp','sy','sn'].includes(c.f)) return ''; const g=v*c.s; return g>0?' up':g<0?' dn':''; };
+  const head=`<tr><th>#</th><th scope="col" class="pl">${team?'Team':'Player'}</th>${C.map(c=>`<th scope="col"${c.k===k?` aria-sort="${asc?'ascending':'descending'}"`:''}><button type="button" data-trk-s="${c.k}" data-asc="${c.s===-1?1:0}" title="${esc(c.h)}">${esc(c.l)}</button></th>`).join('')}</tr>`;
+  const body=shown.map((r,i)=>{
+    const who=team?`<span class="badge">${esc(r.team)}</span><span>${insName(r.team)}</span>`
+      :`<span class="badge">${esc(r.team)}</span><span>${esc(r.name)}</span><small>${esc(r.pos||'')}</small>`;
+    const cell=team||G.sample?`<span class="trk-pl">${who}</span>`:`<button class="trk-pl" type="button" data-ins-pl="${esc(r.id)}" data-pt="${esc(r.team)}">${who}</button>`;
+    return `<tr><td class="rk">${i+1}</td><th scope="row">${cell}</th>${C.map(c=>`<td class="${c.k===k?'lead':''}${tone(c,r.v[c.k])}">${trkFmt(r.v[c.k],c.f)}</td>`).join('')}</tr>`; }).join('');
+  const foot=`<tr><td></td><th scope="row">League average</th>${C.map(c=>`<td>${trkFmt(L[c.k],c.f)}</td>`).join('')}</tr>`;
+  const per=G.min?`${G.min[1]}+ ${({att:'attempts',tgt:'targets',car:'carries',pr_d:'pass rushes',cv_t:'targets in coverage',tk_a:'tackle attempts',pb_d:'pass blocks'})[G.min[0]]||G.min[0]} per team game`:'every team';
+  const more=!G.sample&&rows.length>TRK_ROWS?`<button class="link trk-more" type="button" data-trk-all aria-expanded="${TRK.all}">${TRK.all?`Show the top ${TRK_ROWS}`:`Show all ${rows.length}`}</button>`:'';
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><h2>${esc(G.label)}</h2><span class="label">${esc(G.who)} · ${per} · ${G.rows.length} qualified</span></div>
+    ${G.rows.length?`<div class="st-scroll"><table class="tst trk"><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
+      :'<p class="st-empty"><b>Nobody qualifies yet</b>Players appear once they have enough plays for the games their team has played.</p>'}
+    <p class="np-note">Measured by the engine on every play of this week's final games. Tap a column to sort, a name for the player card.</p>
+    ${G.sample?'':`<dl class="trk-help">${C.map(c=>`<div><dt>${esc(c.l)}</dt><dd>${esc(c.h)}</dd></div>`).join('')}</dl>`}</div>`;
+}
+function trkHTML(){
+  const D=TRK.d;
+  if(!D) return `<div class="card" style="margin-top:14px">${TRK.err?'<p class="st-empty"><b>Tracking could not be loaded</b>Trying again in a moment.</p>':'<p class="st-none">Loading…</p>'}</div>`;
+  if(!D.final) return '<div class="card" style="margin-top:14px"><p class="st-empty"><b>No final games yet</b>Tracking stats fill in as soon as the first games of the week are final.</p></div>';
+  const today=trkTodayHTML(D.today);
+  if(!D.pro) return today+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert><div class="seg trk-groups">${['Passing','Receiving','Rushing','Pass rush','Coverage','Tackling','Blocking','Teams'].map((l,i)=>`<button type="button" aria-selected="${i===0}">${l}</button>`).join('')}</div>${trkGroupHTML(trkSample())}</div>
+    <div class="card ins-pay" role="note"><span class="label">Tracking · Pro</span><h3>See what the engine sees</h3>
+      <ul><li>Passing: time to throw, CPOE, tight windows, pressure</li><li>Receivers and rushers: separation, open rate, yards over expected</li><li>Defense and blocking: win rates, coverage, missed tackles</li></ul>
+      <button class="cta" type="button" disabled>Unlock · €4.99</button>
+      <p><b>Coming soon.</b> The same unlock as Insights. The stat of the day stays free. Play money only: this is a preview with made-up numbers.</p></div></div>`;
+  const G=D.groups||[]; if(!G.some(g=>g.key===TRK.grp)) TRK.grp=G.length?G[0].key:'passing';
+  const g=G.find(x=>x.key===TRK.grp);
+  return today+`<div class="seg trk-groups" role="tablist" aria-label="Tracking groups">${G.map(x=>`<button type="button" role="tab" data-trk-g="${x.key}" aria-selected="${x.key===TRK.grp}">${esc(x.label)}</button>`).join('')}</div>
+    ${g?trkGroupHTML(g):''}`;
+}
+/* ---------- NGS-5: tracking on the player card (headline free, the rest Pro), the team page, head-to-head and the
+   Match centre (Pro). One cache, keyed by the number of final games and the account: nothing from an unfinished game. */
+function trkOn(){ try{ return !!TRK.on; }catch(e){ return false; } }
+const TRKX={};
+function trkGet(path){
+  const tok=PLAYER&&PLAYER.token||'', k=path+'|'+tok+'|'+fpFinals(), d=TRKX[k];
+  if(d&&d!=='busy') return d;
+  if(!d){ TRKX[k]='busy';
+    api(path+(path.includes('?')?'&':'?')+'token='+encodeURIComponent(tok)).then(x=>{ TRKX[k]=x; trkFill(); })
+      .catch(e=>{ TRKX[k]={err:e&&e.status===403?'locked':'down'}; trkFill(); }); }
+  return null; }
+function trkFill(){ document.querySelectorAll('[data-trkx]').forEach(el=>{ const a=el.dataset.trkxA, b=el.dataset.trkxB, k=el.dataset.trkx;
+  const h=k==='player'?trkPlayerHTML(a):k==='team'?trkTeamHTML(a):k==='h2h'?trkH2HHTML(a,b):k==='game'?trkGameHTML(a,el.dataset.trkxN==='1'):'';
+  if(el._h!==h){ el._h=h; el.innerHTML=h; } }); }
+const trkRk=(r,of)=>r?`<span class="trk-rk${r<=3?' top':''}">#${r}${of?' of '+of:''}</span>`:'';
+const trkLockP=txt=>fpLock(txt);
+function trkPlayerHTML(pid){
+  const lab='<span class="label">Tracking · this week</span>';
+  const d=trkGet('/tracking/player?id='+encodeURIComponent(pid));
+  if(!d) return lab+'<p class="pc-note">Loading…</p>';
+  if(d.err) return lab+'<p class="pc-note">Tracking stats are not available right now.</p>';
+  const h=d.headline;
+  if(!h&&!(d.groups&&d.groups.length)) return lab+'<p class="pc-note">No tracking stats for him yet this week.</p>';
+  let out=lab;
+  if(h) out+=`<div class="pc-line"><span>${esc(h.l)}</span><b>${trkFmt(h.v,h.f,true)}${h.qualified?trkRk(h.rank,h.of):''}</b></div>
+    <p class="pc-note">${h.qualified?`League average ${trkFmt(h.league,h.f,true)} · among ${h.of} qualified`:`Not ranked yet: ${h.n} of ${Math.ceil(h.min[1])} plays needed so far`}. ${esc(h.h)}</p>`;
+  if(!d.pro) return out+trkLockP('Every tracking stat and its league rank · Insights Pro');
+  for(const g of d.groups){
+    out+=`<p class="trk-gl">${esc(g.label)}${g.qualified?'':` · not ranked yet (${g.n} of ${Math.ceil(g.min[1])})`}</p>`+
+      g.stats.filter(x=>!(h&&x.k===h.k&&g.label===h.group)).map(x=>`<div class="pc-line"><span title="${esc(x.h)}">${esc(x.l)}</span><b>${trkFmt(x.v,x.f,true)}${trkRk(x.rank)}</b></div>`).join(''); }
+  return out; }
+function trkTeamHTML(abbr){
+  const d=trkGet('/tracking/team?team='+encodeURIComponent(abbr));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err==='locked') return trkLockP('Time to throw, pressure, CPOE, blitz and more, ranked · Insights Pro');
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const x=d.teams&&d.teams[0]; if(!x) return '<p class="st-none">No finished game yet this week.</p>';
+  return `<div class="trk-tp">${x.stats.map(st=>`<div class="mt-st" title="${esc(st.h)}"><span class="label">${esc(st.l)}</span><b>${trkFmt(st.v,st.f,true)}</b><small>${st.rank?`#${st.rank} of ${x.of}`:'—'} · league ${trkFmt(st.league,st.f,true)}</small></div>`).join('')}</div>
+    <p class="np-note">${x.games} finished game${x.games===1?'':'s'} this week · #1 = the best in the league (for time to throw and blitz rate: the highest).</p>`; }
+function trkH2HHTML(A,B){
+  const d=trkGet('/tracking/team?team='+encodeURIComponent(A)+'&b='+encodeURIComponent(B));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const [a,b]=d.teams||[]; if(!a||!b) return '<p class="st-none">Not enough finished games yet for both teams.</p>';
+  return a.stats.map((st,i)=>{ const o=b.stats[i], ba=st.rank&&o.rank&&st.s?st.rank<o.rank:false, bb=st.rank&&o.rank&&st.s?o.rank<st.rank:false;
+    return `<div class="trk-h2h" title="${esc(st.h)}"><span class="v${ba?' best':''}">${trkFmt(st.v,st.f,true)}${trkRk(st.rank)}</span><span class="lab">${esc(st.l)}</span><span class="v r${bb?' best':''}">${trkRk(o.rank)} ${trkFmt(o.v,o.f,true)}</span></div>`; }).join('')+
+    `<p class="np-note">${esc(A)} left, ${esc(B)} right · rank of 24 this week · highlighted: the better rank where higher or lower is better.</p>`; }
+function trkGameHTML(gid,end){
+  if(!gid) return '<p class="st-none">Tracking comes with the league games.</p>';
+  const s=SCHED_BY[gid];
+  if(!s||gStatus(s,nowMs())!=='final'||!end) return '<p class="st-empty"><b>At the final whistle</b>Tracking stats for this game appear once it is over and you have watched it to the end: no spoiler.</p>';
+  const d=trkGet('/tracking/game?id='+encodeURIComponent(gid));
+  if(!d) return '<p class="st-none">Loading…</p>';
+  if(d.err==='locked') return trkLockP('Time to throw, pressure, separation and yards over expected for every game · Insights Pro');
+  if(d.err) return '<p class="st-none">Tracking stats are not available right now.</p>';
+  const T=Object.fromEntries(d.teams.map(x=>[x.team,x])), A=T[s.away], H=T[s.home];
+  if(!A||!H) return '<p class="st-none">No tracking stats in this game.</p>';
+  const rows=d.cols.map(c=>{ const va=A.v[c.k], vh=H.v[c.k]; let ca='', ch='';
+    if(c.s&&va!=null&&vh!=null&&va!==vh){ if((va>vh)===(c.s>0)) ca='lead'; else ch='lead'; }
+    return `<tr><th scope="row" title="${esc(c.h)}">${esc(c.l)}</th><td class="${ca}">${trkFmt(va,c.f,true)}</td><td class="${ch}">${trkFmt(vh,c.f,true)}</td></tr>`; }).join('');
+  const PICK={passing:['tt','cpoe','prs'],receiving:['sep','tgt','croe'],rushing:['ryoe_c','ybc','yaco'],passrush:['prwr','prs']};
+  const side=x=>{ const t=TEAMS[x.team];
+    const li=x.players.map(p=>{ const cols=(d.player_cols[p.group]||[]).filter(c=>PICK[p.group].includes(c.k));
+      return `<tr><th scope="row"><span class="pos">${esc(p.role)}</span><button class="link" type="button" data-trk-card="${esc(p.id)}" data-pt="${esc(x.team)}">${esc(p.name)}</button></th><td>${cols.map(c=>`${esc(c.l)} <b>${trkFmt(p.v[c.k],c.f,true)}</b>`).join(' · ')}</td></tr>`; }).join('');
+    return `<div class="st-team"><div class="st-tn"><span class="abbr">${t?t.abbr:esc(x.team)}</span>${t?esc(t.name):''}</div>${li?`<table class="pst"><caption>Key players</caption><tbody>${li}</tbody></table>`:'<p class="st-none">No player with enough plays.</p>'}</div>`; };
+  return `<div class="st-scroll"><table class="tst"><thead><tr><th scope="col">Tracking</th><th scope="col"><span class="abbr">${esc(s.away)}</span></th><th scope="col"><span class="abbr">${esc(s.home)}</span></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="st-cols">${side(A)}${side(H)}</div>
+    <p class="np-note">Measured by the engine on every play of this game. CPOE and yards over expected use this week's league as the baseline.</p>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-trk-card]'); if(b) openRosterCard(b.dataset.pt,b.dataset.trkCard,e.clientX,e.clientY); });
 function renderInsights(t,force){
   const el=document.getElementById('viewInsights'); if(!el) return;
   const finals=SCHED.reduce((n,g)=>n+(gStatus(g,t)==='final'?1:0),0), tok=PLAYER&&PLAYER.token||'';
   if((!INS.d||INS.d.final!==finals||INS.tok!==tok)&&!INS.busy&&Date.now()>=INS.retry) insFetch();
+  if(INS.tab==='tracking'||INS.tab==='recap') trkNeed(finals);
   const D=INS.d;
-  const key=['ins',D?D.final:'-',D&&D.pro,INS.tab,INS.a,INS.b,INS.day,INS.err>0&&!D,INS.tab==='h2h'?SCHED.map(g=>gStatus(g,t)[0]).join(''):''].join('|');
+  const key=['ins',D?D.final:'-',D&&D.pro,INS.tab,INS.a,INS.b,INS.day,INS.err>0&&!D,INS.tab==='h2h'?SCHED.map(g=>gStatus(g,t)[0]).join(''):'',
+    TRK.d?TRK.d.final+':'+TRK.d.pro:'-',TRK.err>0&&!TRK.d,TRK.grp,TRK.sort,TRK.asc,TRK.all].join('|');
   if(!force&&el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>Insights</h2><p class="eyebrow">Week ${SW.week.index} · from the ${D?D.final:finals} game${(D?D.final:finals)===1?'':'s'} already played · updates as each game ends · play money only</p>
-    <div class="seg ins-tabs" role="tablist" aria-label="Insights">${[['week','This week'],['h2h','Head-to-head'],['recap','Day recap']].map(([k,l])=>`<button type="button" role="tab" data-ins-tab="${k}" aria-selected="${INS.tab===k}">${l}</button>`).join('')}</div></div>`;
+    <div class="seg ins-tabs" role="tablist" aria-label="Insights">${[['week','This week'],['h2h','Head-to-head']].concat(TRK.on?[['tracking','Tracking']]:[],[['recap','Day recap']]).map(([k,l])=>`<button type="button" role="tab" data-ins-tab="${k}" aria-selected="${INS.tab===k}">${l}</button>`).join('')}</div></div>`;
+  if(INS.tab==='tracking'&&TRK.on){ el.innerHTML=head+trkHTML(); return; }
   if(!D){ el.innerHTML=head+(INS.err?'<div class="card"><p class="st-empty"><b>Insights could not be loaded</b>Trying again in a moment.</p></div>':'<div class="card"><p class="st-none">Loading…</p></div>'); return; }
-  if(INS.tab==='recap'){ el.innerHTML=head+insRecapHTML(D); return; }
+  if(INS.tab==='recap'){ el.innerHTML=head+(TRK.on&&TRK.d?trkTodayHTML(TRK.d.today):'')+insRecapHTML(D); return; }
   if(D.pro){ el.innerHTML=head+`<div style="margin-top:14px">${INS.tab==='h2h'?insH2HHTML(D,t):insWeekHTML(D)}</div>`; return; }
   const S=insSample(), body=INS.tab==='h2h'?insH2HHTML(S,t):insWeekHTML(S);
   el.innerHTML=head+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert>${body}</div>
@@ -9266,7 +9489,7 @@ function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.class
 function welcomeInit(){
   const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
   document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1');
-    if(h&&h.offsetParent){ h.tabIndex=-1; h.focus({preventScroll:true}); } else { const g=document.getElementById('liveGrid'); if(g){ g.tabIndex=-1; g.focus({preventScroll:true}); } } });   /* section 125 : titre caché sur téléphone, la grille des matchs reçoit le focus */
+    if(h&&h.offsetParent){ h.tabIndex=-1; h.focus({preventScroll:true}); } else { const g=document.getElementById('liveGrid'); if(g){ g.tabIndex=-1; g.focus({preventScroll:true}); } } });   /* section 127 : titre caché sur téléphone, la grille des matchs reçoit le focus */
   document.getElementById('welcomeWatch').addEventListener('click',()=>{ const P=WELCOME.pick; if(!P) return; welcomeSeen();
     if(P.kind==='replay') openReplayFeed(SEASON.feeds[P.s.id]); else watchGame(P.s.id); });
   welcomeTick(nowMs()); setInterval(()=>welcomeTick(nowMs()),15000);
@@ -9680,7 +9903,7 @@ function seasonTotals(){
   const fine=document.querySelector('#slipFoot .fine');
   if(fine) fine.textContent = STORE_OK ? `${combo?'Combo':'Single bets'} · ${SERVER&&WALLET_CARRY?'play money, carried week to week':`$${BANKROLL.toLocaleString('en-US')} play money a week`}${CLOCK.demo?' · preview wallet':''}` : 'Browser storage is off: bets last for this visit only';
 }
-/* section 125 : le visiteur qui a déjà parié, ou qui touche une cote, retrouve le solde et le ticket (gc-bettor : pour de
+/* section 127 : le visiteur qui a déjà parié, ou qui touche une cote, retrouve le solde et le ticket (gc-bettor : pour de
    bon dans ce navigateur) ; GC_ACCUEIL_TERRAIN=off (#gf-server .spect_off) : la page d'avant pour tous */
 function spectSync(){
   const h=document.documentElement; if(!h.classList.contains('spect')) return;

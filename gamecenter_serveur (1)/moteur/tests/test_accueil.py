@@ -76,7 +76,7 @@ class TestAccueil(unittest.TestCase):
         self.assertEqual(len(on) - len(off), len(serveur._ACCUEIL_TETE) + 1 - len(" hidden") + len(',"accueil":true'))
 
     def test_terrain_d_abord(self):
-        """Section 125 : le script spect-boot (html.spect avant le 1er dessin) est dans le <head> par défaut ;
+        """Section 127 : le script spect-boot (html.spect avant le 1er dessin) est dans le <head> par défaut ;
         GC_ACCUEIL_TERRAIN=off le retire et pose « spect_off » pour la page. Navigateur : outils/site/test_terrain.js."""
         avant = os.environ.get("GC_ACCUEIL_TERRAIN")
         try:
