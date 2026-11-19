@@ -1341,6 +1341,22 @@
   .trk-h2h .v{font:600 13.5px var(--f-mono)}.trk-h2h .v.r{text-align:right}.trk-h2h .v.best{color:var(--cyan)}
   .trk-gm .pst td{font-family:var(--f-mono)}
   .trk-gm .st-cols{margin-top:18px}
+  /* NGS-6: pass chart, run lanes, week by week, awards */
+  .trk-pch{display:grid;grid-template-columns:44px repeat(3,minmax(0,1fr));gap:2px;margin-top:4px;font-size:11px}
+  .trk-pch .h{color:var(--ink-3);text-align:center;font:600 10px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;padding:2px 0}
+  .trk-pch .r{color:var(--ink-3);font:600 10px var(--f-ui);display:flex;align-items:center}
+  .trk-pch .c{position:relative;border-radius:4px;background:var(--l3);min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;overflow:hidden}
+  .trk-pch .c i{position:absolute;inset:0;background:var(--cyan);border-radius:4px}
+  .trk-pch .c b,.trk-pch .c small{position:relative;color:var(--ink)}
+  .trk-pch .c b{font:700 12.5px var(--f-mono)}.trk-pch .c small{font-size:10px;color:var(--ink-2)}
+  .trk-pch .c.e{background:transparent;border:1px dashed var(--line)}
+  .trk-lane{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-3);margin-top:4px}
+  .trk-lane .t{height:10px;border-radius:0 4px 4px 0;background:var(--l3);position:relative;overflow:hidden}
+  .trk-lane .t b{position:absolute;left:0;top:0;bottom:0;background:var(--cyan);border-radius:0 4px 4px 0}
+  .trk-lane em{font:600 11.5px var(--f-mono);font-style:normal;color:var(--ink);white-space:nowrap}
+  .trk-aw{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px 22px;margin-top:6px}
+  .trk-aw .rc-item b{font-size:13.5px}
+  @media (forced-colors:active){ .trk-pch .c i,.trk-lane .t b{background:Highlight} }
   @media (max-width:760px){ .trk-tp{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .trk-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 22px;margin:14px 0 0;font-size:12.5px;line-height:1.45}
   .trk-help div{padding:7px 0;border-top:1px solid var(--line)}
@@ -9345,7 +9361,7 @@ function trkHTML(){
   const D=TRK.d;
   if(!D) return `<div class="card" style="margin-top:14px">${TRK.err?'<p class="st-empty"><b>Tracking could not be loaded</b>Trying again in a moment.</p>':'<p class="st-none">Loading…</p>'}</div>`;
   if(!D.final) return '<div class="card" style="margin-top:14px"><p class="st-empty"><b>No final games yet</b>Tracking stats fill in as soon as the first games of the week are final.</p></div>';
-  const today=trkTodayHTML(D.today);
+  const today=trkAwardsHTML(D.awards)+trkTodayHTML(D.today);
   if(!D.pro) return today+`<div class="ins-lock"><div class="ins-blur" aria-hidden="true" inert><div class="seg trk-groups">${['Passing','Receiving','Rushing','Pass rush','Coverage','Tackling','Blocking','Teams'].map((l,i)=>`<button type="button" aria-selected="${i===0}">${l}</button>`).join('')}</div>${trkGroupHTML(trkSample())}</div>
     <div class="card ins-pay" role="note"><span class="label">Tracking · Pro</span><h3>See what the engine sees</h3>
       <ul><li>Passing: time to throw, CPOE, tight windows, pressure</li><li>Receivers and rushers: separation, open rate, yards over expected</li><li>Defense and blocking: win rates, coverage, missed tackles</li></ul>
@@ -9382,9 +9398,10 @@ function trkPlayerHTML(pid){
   let out=lab;
   if(h) out+=`<div class="pc-line"><span>${esc(h.l)}</span><b>${trkFmt(h.v,h.f,true)}${h.qualified?trkRk(h.rank,h.of):''}</b></div>
     <p class="pc-note">${h.qualified?`League average ${trkFmt(h.league,h.f,true)} · among ${h.of} qualified`:`Not ranked yet: ${h.n} of ${Math.ceil(h.min[1])} plays needed so far`}. ${esc(h.h)}</p>`;
-  if(!d.pro) return out+trkLockP('Every tracking stat and its league rank · Insights Pro');
+  if(!d.pro) return out+trkLockP('Every tracking stat, charts and league ranks · Insights Pro');
+  out+=trkHistHTML(d.history)+trkChartsHTML(d);
   for(const g of d.groups){
-    out+=`<p class="trk-gl">${esc(g.label)}${g.qualified?'':` · not ranked yet (${g.n} of ${Math.ceil(g.min[1])})`}</p>`+
+    out+=`<p class="trk-gl trk-grp">${esc(g.label)}${g.qualified?'':` · not ranked yet (${g.n} of ${Math.ceil(g.min[1])})`}</p>`+
       g.stats.filter(x=>!(h&&x.k===h.k&&g.label===h.group)).map(x=>`<div class="pc-line"><span title="${esc(x.h)}">${esc(x.l)}</span><b>${trkFmt(x.v,x.f,true)}${trkRk(x.rank)}</b></div>`).join(''); }
   return out; }
 function trkTeamHTML(abbr){
@@ -9403,6 +9420,43 @@ function trkH2HHTML(A,B){
   return a.stats.map((st,i)=>{ const o=b.stats[i], ba=st.rank&&o.rank&&st.s?st.rank<o.rank:false, bb=st.rank&&o.rank&&st.s?o.rank<st.rank:false;
     return `<div class="trk-h2h" title="${esc(st.h)}"><span class="v${ba?' best':''}">${trkFmt(st.v,st.f,true)}${trkRk(st.rank)}</span><span class="lab">${esc(st.l)}</span><span class="v r${bb?' best':''}">${trkRk(o.rank)} ${trkFmt(o.v,o.f,true)}</span></div>`; }).join('')+
     `<p class="np-note">${esc(A)} left, ${esc(B)} right · rank of 24 this week · highlighted: the better rank where higher or lower is better.</p>`; }
+/* NGS-6: where he throws (or is targeted), where he runs, his headline stat week by week */
+const TRK_LN={L:'Left',M:'Middle',R:'Right'}, TRK_DP=[['d','20+'],['i','10–19'],['s','0–9'],['b','Behind']];
+const TRK_RL={LO:'Left outside',LI:'Left inside',RI:'Right inside',RO:'Right outside'};
+function trkPassChartHTML(cells,lg,who){
+  const at=(L,ln,dp)=>(L||[]).find(x=>x[0]===ln&&x[1]===dp), tot=cells.reduce((n,x)=>n+x[2],0);
+  let h=`<p class="trk-gl">${who} · ${tot} throws</p><div class="trk-pch" role="table" aria-label="${who}: completions by depth and side"><span class="h"></span>${['L','M','R'].map(l=>`<span class="h" role="columnheader">${TRK_LN[l]}</span>`).join('')}`;
+  for(const [dp,dl] of TRK_DP){
+    h+=`<span class="r" role="rowheader">${dl}</span>`;
+    for(const ln of ['L','M','R']){
+      const x=at(cells,ln,dp), y=at(lg,ln,dp);
+      if(!x){ h+='<span class="c e" role="cell" aria-label="no throws"></span>'; continue; }
+      const p=x[3]/x[2], lp=y&&y[2]?y[3]/y[2]:null, op=Math.max(.08,Math.min(.5,(p-.35)/.6*.5));   /* plafonnée : le texte (encre) reste lisible sur la case */
+      const tip=`${TRK_LN[ln]}, ${dl} yards: ${x[3]}/${x[2]} (${Math.round(p*100)}%) · ${x[4]} yds · ${x[5]} TD · ${x[6]} INT${lp!=null?` · league ${Math.round(lp*100)}%`:''}`;
+      h+=`<span class="c" role="cell" title="${tip}" aria-label="${tip}"><i style="opacity:${op.toFixed(2)}"></i><b>${Math.round(p*100)}%</b><small>${x[3]}/${x[2]}</small></span>`; } }
+  return h+'</div><p class="pc-note">Completion % by depth of the route and side of the field (from the offense). Darker: more completions. Hover a cell for the league rate.</p>'; }
+function trkRunLanesHTML(lanes,lg){
+  const tot=lanes.reduce((n,x)=>n+x[1],0), mx=Math.max(...lanes.map(x=>x[1]));
+  const lgy=k=>{ const y=(lg||[]).find(x=>x[0]===k); return y&&y[1]?(y[2]/y[1]).toFixed(1):null; };
+  return `<p class="trk-gl">Run lanes · ${tot} carries</p>`+['LO','LI','RI','RO'].map(k=>{ const x=lanes.find(y=>y[0]===k);
+    if(!x) return `<div class="trk-lane"><span>${TRK_RL[k]}</span><span class="t"></span><em>—</em></div>`;
+    const tip=`${TRK_RL[k]}: ${x[1]} carries, ${(x[2]/x[1]).toFixed(1)} yds per carry, ${x[3]>0?'+':x[3]<0?MINUS:''}${Math.abs(x[3]/x[1]).toFixed(2)} over expected${lgy(k)?` · league ${lgy(k)} yds`:''}`;
+    return `<div class="trk-lane" title="${tip}" aria-label="${tip}"><span>${TRK_RL[k]}</span><span class="t"><b style="width:${Math.max(4,Math.round(x[1]/mx*100))}%"></b></span><em>${x[1]} · ${(x[2]/x[1]).toFixed(1)} yds</em></div>`; }).join('')+
+    '<p class="pc-note">Bar: share of his carries. Then carries and yards per carry in that lane.</p>'; }
+function trkChartsHTML(d){
+  const C=d.charts||{}, L=d.league_charts||{}, h=d.headline, qb=h&&h.k&&(h.group==='Passing');
+  let out='';
+  if(C.pass&&C.pass.length) out+=trkPassChartHTML(C.pass,L.pass,qb?'Where he throws':'Where he is targeted');
+  if(C.run&&C.run.reduce((n,x)=>n+x[1],0)>=10) out+=trkRunLanesHTML(C.run,L.run);   /* 10 courses au moins : pas les 3 courses d'un QB */
+  return out; }
+function trkHistHTML(H){
+  if(!H||H.length<2) return '';
+  return `<p class="trk-gl">Week by week · ${esc(H[0].l)}</p>`+H.map(x=>`<div class="pc-line"><span>Week ${x.week}</span><b>${trkFmt(x.v,x.f,true)}${x.qualified?trkRk(x.rank,x.of):' <span class="trk-rk">not ranked</span>'}</b></div>`).join(''); }
+function trkAwardsHTML(A){
+  if(!A||!A.length) return '';
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><h2>Tracking awards</h2><span class="label">Week ${SW.week.index} · final · free</span></div>
+    <div class="trk-aw">${A.map(a=>`<div class="rc-item"><span class="badge">${esc(a.team)}</span><div class="grow"><b>${esc(a.title)}</b><small><button class="link" type="button" data-ins-pl="${esc(a.id)}" data-pt="${esc(a.team)}">${esc(a.name)}</button> · ${esc(a.label)}</small></div><em>${trkFmt(a.value,a.fmt,true)}</em></div>`).join('')}</div>
+    <p class="np-note">The best qualified player of the whole week in each stat. League averages are in the Tracking tables.</p></div>`; }
 function trkGameHTML(gid,end){
   if(!gid) return '<p class="st-none">Tracking comes with the league games.</p>';
   const s=SCHED_BY[gid];

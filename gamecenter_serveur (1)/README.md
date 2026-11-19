@@ -3707,6 +3707,44 @@ avait pas montré. **Demande de Guillaume (19/11)** : deuxième étape de la pha
   cote touchée remet le ticket même après rechargement, `gc-bettor` ou un compte donnent le ticket dès la 1re image,
   aucune erreur JS.
 
+### 128. Tracking, NGS-6 : cartes des passes et des courses, semaine par semaine, récompenses, vidéo (19/11/2026)
+Dernière étape du plan (`programme/Next_Gen_Stats_plan.md`), à la demande de Guillaume. Toujours sans toucher au moteur.
+- **Repère du terrain** (vérifié sur 2 852 courses de la semaine du 16/11) : une course notée L (`geo.side`) part vers les
+  y plus petits que la balle, quelle que soit l'équipe qui attaque. Donc y croissant = vers la droite de l'attaque.
+- **Cartes** (`moteur/ngs.py`) : chaque tentative a une **zone** — couloir gauche / milieu (6 yards au plus de la balle) /
+  droite, d'après le bout de la route de la cible au lancer (`geo.cov`), et profondeur derrière la ligne / 0-9 / 10-19 /
+  20+, d'après la profondeur de la route (comme l'aDOT ; la trace s'arrête au lancer et ne dépasse jamais 17 yards).
+  Chaque course a un **couloir** : côté L / R et extérieur (`outside`, `perimeter`, `option`) ou intérieur. Comptés pour
+  le passeur, le receveur ciblé et le porteur (`pc:<couloir><profondeur>:a|c|y|t|i`, `rc:<couloir>:n|y|x`) ; `cartes(c)`,
+  `ligue_cartes(agg)` (repères : complétion des QB par case, yards par couloir). Complétion de la ligue, semaine du
+  16/11 : de 85 % (courtes, derrière la ligne) à 53 % (profondes, au milieu).
+- **Semaine par semaine** : `historique(semaines, id, nom, cle)` — la stat phare d'un joueur, chaque semaine depuis
+  `GC_NGS_DEPUIS` (7 : la semaine du 09/11, la première avec `play.geo`), seulement quand le même joueur tenait ce poste
+  du roster (un rookie peut reprendre l'identifiant d'un retraité). Les semaines finies sont calculées une fois et
+  gardées (`tracking_semaines_passees`).
+- **Récompenses de la semaine** : `recompenses(tab)` — le meilleur qualifié de chacune des sept statistiques de la stat
+  du jour. `/api/tracking` les envoie (**gratuites**, `awards`) quand tous les matchs de la semaine sont terminés.
+- **Serveur** : `/api/tracking/player` ajoute pour un compte Pro `charts`, `league_charts` et `history`.
+  **Préchauffage** (`tracking_prechauffer`, comme News) : au premier affichage de la page, un fil calcule la semaine,
+  les semaines passées (≈ 5 s chacune, une fois) et les repères des cartes, puis les tient à jour chaque minute ; coupé
+  sous `GC_TEST_HOOK=1` sauf `GC_NGS_WARM=1`.
+- **Site** : fiche joueur (Pro) — « Week by week » (dès deux semaines), « Where he throws » / « Where he is targeted »
+  (grille 4 profondeurs × 3 couloirs : complétion et passes complétées / tentées, une teinte plus foncée quand la
+  complétion monte, plafonnée pour que le texte reste lisible ; info-bulle avec yards, TD, INT et la complétion de la
+  ligue), « Run lanes » (dès 10 courses : part des courses, courses et yards par course par couloir). Insights ›
+  Tracking : carte « Tracking awards » en tête quand la semaine est finie, pour tous.
+- **Vidéo** (`outils/video`) : `python outils/video/faire_video.py tracking [--semaine data/weeks/<semaine>]` — la
+  récompense « Tracking » de la semaine (`choisir.tracking_de_la_semaine`) : rotation fixe par index de semaine sur
+  six statistiques qui se voient sur le terrain (pas le pass block win rate), la suivante si celle-ci n'a aucune action
+  à montrer ; ses plus belles actions dans cette statistique (sa passe, sa réception, sa course, son rush gagné), puis
+  un carton de quatre chiffres de suivi (texte formaté : « +2.69 yd ») ; légendes avec `#trackingstats` (jamais la
+  marque « Next Gen Stats »). Essai le 19/11 : 24 s, Valen Falkner, « Best rusher over expected ». Pas de calendrier
+  automatique : à lancer à la main (ou à ajouter au workflow des vidéos si Guillaume le veut).
+- **Tests** : `moteur/tests/test_ngs.py` (classe `Ngs6` : zones, couloirs, cartes, récompenses, historique, formatage ;
+  serveur : récompenses seulement la semaine finie, cartes et historique pour un compte Pro seulement),
+  `moteur/tests/test_videos.py` (`test_tracking`) et `outils/site/test_tracking_ngs6.js` (groupe site-2 ; horloge après
+  la Grand Final ; `SHOTS=<dossier>`).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

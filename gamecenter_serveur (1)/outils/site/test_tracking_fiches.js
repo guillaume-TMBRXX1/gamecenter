@@ -60,7 +60,7 @@ const fiche=async(p,team,pid)=>{ await p.evaluate(([t,id])=>window.__gc.trk.open
     let t=await g.textContent('.pcard .pc-trk');
     check(t.includes(libre.headline.l)&&/Insights Pro/.test(t),`invité : fiche joueur — ${libre.headline.l} visible, le reste sous cadenas`);
     if(!(t.includes(libre.headline.l)&&/Insights Pro/.test(t))) console.log('     texte : '+t.replace(/\s+/g,' ').slice(0,300));
-    check(!(await g.$('.pcard .pc-trk .trk-gl')),'invité : aucun groupe de suivi dans la fiche');
+    check(!(await g.$('.pcard .pc-trk .trk-grp')),'invité : aucun groupe de suivi dans la fiche');
     await g.$eval('.pcard .pc-trk',e=>e.scrollIntoView({block:'center'})); await shot(g,'fiche-joueur-invite.png','.pcard');
     await g.keyboard.press('Escape');
     await vue(g,'teams'); await g.click(`[data-team="${A}"]`);
@@ -71,7 +71,7 @@ const fiche=async(p,team,pid)=>{ await p.evaluate(([t,id])=>window.__gc.trk.open
     const q=await ouvrir(b,P1,null,pro.token,'Analyste');
     await fiche(q,A,QB);
     t=await q.textContent('.pcard .pc-trk');
-    const nG=await q.$$eval('.pcard .pc-trk .trk-gl',x=>x.length);
+    const nG=await q.$$eval('.pcard .pc-trk .trk-grp',x=>x.length);   /* 19/11 : les titres des cartes (NGS-6) sont aussi des .trk-gl */
     check(t.includes(plein.headline.l)&&nG===plein.groups.length&&!/Insights Pro/.test(t),`Pro : fiche joueur — stat phare et ${nG} groupe(s) classés`);
     check(plein.headline.qualified?/#\d+ of \d+/.test(t):/Not ranked yet/.test(t),'Pro : rang de la stat phare (ou « pas encore classé »)');
     await q.$eval('.pcard .pc-trk',e=>e.scrollIntoView({block:'center'})); await shot(q,'fiche-joueur-pro.png','.pcard');

@@ -167,12 +167,12 @@ Catalogue, sources vérifiées, mesures de faisabilité, découpage. Points déc
 - Tests navigateur `outils/site/test_tracking.js` : invité, compte hors liste, compte Pro, téléphone 390 px, iPad,
   mode sombre, interrupteur. Charger la skill `dataviz` avant le premier graphique.
 
-### NGS-5 — Fiches et match *(site + serveur)* — ✅ 18/11 en local, captures à valider (README section 126)
+### NGS-5 — Fiches et match *(site + serveur)* — ✅ 18/11, fusionné (PR #173, README section 126)
 - Fiche joueur : bloc « Tracking » (la stat phare en clair, le reste Pro, rang dans la ligue).
 - Fiche équipe (Teams, My team) et Head-to-head : profil de suivi des deux équipes côte à côte (Pro).
 - Match terminé : « Tracking » dans le récap du match (temps de lancer, pression, séparation de chaque équipe).
 
-### NGS-6 — Plus tard (si l'audience suit)
+### NGS-6 — Cartes, historique, récompenses, vidéo — ✅ 19/11 en local, captures à valider (README section 128)
 - Graphiques : carte des passes (profondeur × côté), carte des courses (trou × yards) d'un joueur.
 - Historique d'une semaine à l'autre (une semaine = une saison) : carrière de suivi d'un joueur.
 - Promotion : carton « Tracking stat of the week » pour les vidéos (étape 8), sans mot de paris.

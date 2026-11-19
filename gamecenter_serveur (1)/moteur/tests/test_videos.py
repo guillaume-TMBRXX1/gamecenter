@@ -272,6 +272,31 @@ class TestSemaineReelle(unittest.TestCase):
             self.assertIsNone(PARIS.search(t), PARIS.search(t))
             self.assertNotIn("🏆", str(seg2))                                           # pas d'emoji à l'écran
 
+    def test_tracking(self):
+        """NGS-6 : la récompense « Tracking » de la semaine — rotation par semaine, ses actions dans cette statistique,
+        carton de quatre chiffres de suivi, l'action d'abord, aucun mot de paris, pas de marque « Next Gen Stats »."""
+        d = SEMAINES[-1]
+        doc, feeds = C.charger_semaine(d)
+        plus_tard = datetime(2100, 1, 1, tzinfo=C.TZ)
+        r = C.tracking_de_la_semaine(d, plus_tard)
+        if r is None:
+            self.skipTest("aucune action de suivi à montrer")
+        self.assertEqual(r, C.tracking_de_la_semaine(d, plus_tard))                       # déterministe
+        self.assertIn(r["award"]["col"], C.TRACKING_VIDEO)
+        self.assertTrue(1 <= len(r["actions"]) <= 3)
+        for a in r["actions"]:
+            self.assertTrue(C._moment_tracking(a["play"], r["award"]["group"], r["joueur"]["id"]))
+        self.assertTrue(2 <= len(r["stats"]) <= 4 and all(isinstance(x["v"], str) for x in r["stats"]))
+        top, seg, info, leg = V.plan_tracking(r, doc)
+        self.assertEqual([x["type"] for x in seg[:2]], ["play", "stats"])
+        self.assertTrue(top["hook"] and r["joueur"]["name"] in top["title"])
+        self.assertEqual(seg[-1]["title"], "snapline.live")
+        for t in (leg, str(seg)):
+            self.assertIsNone(PARIS.search(t), PARIS.search(t))
+            self.assertNotIn("Next Gen", t); self.assertNotIn("nextgen", t.lower())
+        ko = min(datetime.fromisoformat(g["kickoff"]) for g in doc["schedule"])
+        self.assertIsNone(C.tracking_de_la_semaine(d, ko))
+
     def test_match_hors_norme(self):
         """Étape 8.6 b : un record battu au moment du match (égaler ne suffit pas), sinon 100 points cumulés ; jamais un
         match pas encore terminé ; actions du score dans l'ordre ; aucun mot de paris."""

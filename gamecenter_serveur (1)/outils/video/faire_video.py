@@ -392,6 +392,28 @@ def plan_joueur(res, doc):
     return _top(seg), seg, info, legende
 
 
+def plan_tracking(res, doc):
+    """Récompense « Tracking » de la semaine (NGS-6, ≈ 25 s) : ses plus belles actions dans cette statistique, carton des
+    chiffres de suivi (valeur de la récompense d'abord), carton snapline.live. Mesuré par le moteur : jamais de paris."""
+    aw, j = res["award"], res["joueur"]
+    equipe = _nom_equipe(doc, j["team"])
+    seg = [{"type": "stats", "kicker": "Tracking award · " + aw["title"], "title": j["name"],
+            "sub": f"{equipe} · {POSTE.get(j['pos'], j['pos'])} · measured by the engine on every play",
+            "team": j["team"], "stats": res["stats"], "dur": 3.4}]
+    seg += _segments_actions(res["actions"], {a["dossier"]: doc for a in res["actions"]},
+                             {"kicker": "AI vs AI · tracking award", "title": j["name"]})
+    seg.append(dict(FIN))
+    seg = ouvrir_sur_l_action(seg, f"{aw['title']}: {j['name']}")
+    info = {"type": "tracking", "award": aw["col"], "player": j["id"], "name": j["name"], "team": j["team"],
+            "value": res["valeur"], "plays": [{"game": a["game"], "index": a["index"]} for a in res["actions"]]}
+    ligne = " · ".join(f"{x['v']} {x['l']}" for x in res["stats"][:3])
+    legende = legendes(f"{aw['title']} of the week: {j['name']} ({equipe}) 📡",
+                       f"{ligne}. Every number measured by the engine on every play.",
+                       "Who should win it next week?", "#trackingstats",
+                       f"{aw['title']}: {j['name']}, {res['valeur']} | AI football tracking stats")
+    return _top(seg), seg, info, legende
+
+
 def _top(seg):
     """Le bandeau du haut au début de la vidéo : celui de la 1re action."""
     return next((x["top"] for x in seg if x["type"] == "play"), {"kicker": "", "title": "", "sub": ""})
@@ -528,7 +550,7 @@ def semaine_du(jour):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("type", choices=("action", "resume", "presentation", "joueur", "champion", "chiffres", "franchise"))
+    ap.add_argument("type", choices=("action", "resume", "presentation", "joueur", "champion", "chiffres", "franchise", "tracking"))
     ap.add_argument("--jour")
     ap.add_argument("--match")
     ap.add_argument("--meilleure", action="store_true", help="action : la plus belle de toutes les semaines (matchs terminés)")
@@ -552,6 +574,11 @@ def main():
                else C.champion(dossier, datetime.now(C.TZ), toutes))
         if not res or not res["actions"]:
             raise SystemExit("pas encore de match terminé" if a.type == "joueur" else "la Grand Final n'est pas terminée")
+    elif a.type == "tracking":                       # NGS-6 : la récompense « Tracking » de la semaine
+        dossier = a.semaine or semaine_du(jour)
+        res = C.tracking_de_la_semaine(dossier, datetime.now(C.TZ))
+        if not res:
+            raise SystemExit("pas encore de match terminé, ou aucune action à montrer")
     elif a.type == "presentation":
         choix = C.trois_actions(toutes, datetime.now(C.TZ))
         if len(choix) < 3:
@@ -576,6 +603,10 @@ def main():
         if g is None:
             raise SystemExit("aucune action de cette franchise")
         nom = f"franchise-{res['team']}-{os.path.basename(dossier)[5:]}"
+    elif a.type == "tracking":
+        top, seg, info, legende = plan_tracking(res, doc)
+        g = next(x for x in doc["schedule"] if x["id"] == res["actions"][0]["game"])
+        nom = f"tracking-{res['award']['col']}-{os.path.basename(dossier)[5:]}"
     elif a.type in ("joueur", "champion"):
         top, seg, info, legende = (plan_joueur if a.type == "joueur" else plan_champion)(res, doc)
         g = next(x for x in doc["schedule"] if x["id"] == res["actions"][0]["game"])
