@@ -3609,7 +3609,7 @@ samedi** : tout est compté dans les GameFeeds déjà produits (`play.decision`,
   inactif (le même déblocage qu'Insights).
 - **Tests** : `moteur/tests/test_ngs.py` (comptage d'un petit match fabriqué vérifié à la main, remplacements,
   exclusions, modèles et lissage, ligue recentrée, seuils, postes, stat du jour, un vrai match et une semaine sans
-  `geo` ; serveur : matchs finis seulement, accès, interrupteur, temps) et `outils/site/test_tracking.js` (groupe site ;
+  `geo` ; serveur : matchs finis seulement, accès, interrupteur, temps) et `outils/site/test_tracking.js` (groupe site-2 ;
   invité, compte hors liste, compte Pro, tri, « Show all », fiche joueur, Day recap, téléphone 390 px sombre,
   interrupteur ; `SHOTS=<dossier>` pour les captures).
 - **Reste** (plan, NGS-5 et NGS-6) : la stat de suivi gratuite sur la fiche d'un joueur, les profils d'équipe côte à
@@ -3640,7 +3640,7 @@ Suite de la section 124, validée par Guillaume le 18/11. Toujours sans toucher 
   (`typeof trkOn`) : la cellule 427, sans serveur, n'a jamais l'onglet.
 - **Tests** : `moteur/tests/test_ngs.py` (classe `Fiches` : phare, repli, pas encore qualifié, sens des rangs, équipe,
   match sans seuil ; serveur : accès, 400 / 403 / 404, interrupteur) et `outils/site/test_tracking_fiches.js` (groupe
-  site : fiche invité et Pro, page de la franchise, Head-to-head, Match centre avant et après la fin du replay,
+  site-2 : fiche invité et Pro, page de la franchise, Head-to-head, Match centre avant et après la fin du replay,
   téléphone 390 px ; `SHOTS=<dossier>`). Le crochet de test (`GC_TEST_HOOK=1`) expose `__gc.trk`.
 - **Reste** (NGS-6, plus tard) : cartes des passes et des courses d'un joueur, historique d'une semaine à l'autre,
   carton « Tracking stat of the week » pour les vidéos, récompenses de la semaine.
