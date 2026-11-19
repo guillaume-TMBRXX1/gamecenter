@@ -2734,18 +2734,18 @@
   }
   /* téléphone : le terrain du match vedette dans le premier écran (iPhone 13, 603 px utiles sous la barre d'onglets :
      il commençait à 788 px). Le titre du bandeau dit l'essentiel, « How it works » mène au texte complet ; l'horloge, le
-     grand titre « Live now », la ligne de la semaine et « Big plays » reviennent dès que le visiteur a parié (les filtres
-     Live / Upcoming / Results restent). Sans l'horloge, la recherche tient sur la ligne des boutons dès le premier
-     dessin : rien ne la renvoie plus bas ensuite (CLS). */
+     titre « Live now » et ses filtres (le calendrier complet reste dans Schedule), la ligne de la semaine et « Big
+     plays » reviennent dès que le visiteur a parié. Sans l'horloge, la recherche tient sur la ligne des boutons dès le
+     premier dessin : rien ne la renvoie plus bas ensuite (CLS). Une marge d'environ 60 px reste sous le terrain : les
+     polices et le navigateur du visiteur peuvent allonger un titre d'une ligne. */
   @media (max-width:600px){
-    html.spect .clock-wrap,html.spect .live-head>div:first-child{display:none}
-    html.spect .live-head{margin-top:0;padding-bottom:0;border-bottom:0}
-    html.spect .live-grid{margin-top:12px}
+    html.spect .clock-wrap,html.spect .live-head{display:none}
+    html.spect .live-grid{margin-top:4px}
     html.spect .welcome{margin:8px 0 10px;padding:12px 16px 12px}
     html.spect .welcome h2{font-size:20px;margin:0 44px 0 0}
     html.spect .welcome .eyebrow,html.spect .welcome p.wc-txt,html.spect .welcome .wc-next,html.spect .moments{display:none}
     html.spect .welcome .wc-act{margin-top:10px}
-    html.spect .welcome .wc-act .cta{flex:1 1 auto;height:42px}
+    html.spect .welcome .wc-act .cta{flex:1 1 auto;height:46px}   /* zone tactile ≥ 44 px */
   }
 </style>
 
@@ -9266,7 +9266,7 @@ function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.class
 function welcomeInit(){
   const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
   document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1');
-    if(h&&h.offsetParent){ h.tabIndex=-1; h.focus({preventScroll:true}); } else { const t=document.querySelector('.live-head .seg [aria-selected="true"]'); if(t) t.focus({preventScroll:true}); } });   /* section 125 : titre caché sur téléphone, le filtre reçoit le focus */
+    if(h&&h.offsetParent){ h.tabIndex=-1; h.focus({preventScroll:true}); } else { const g=document.getElementById('liveGrid'); if(g){ g.tabIndex=-1; g.focus({preventScroll:true}); } } });   /* section 125 : titre caché sur téléphone, la grille des matchs reçoit le focus */
   document.getElementById('welcomeWatch').addEventListener('click',()=>{ const P=WELCOME.pick; if(!P) return; welcomeSeen();
     if(P.kind==='replay') openReplayFeed(SEASON.feeds[P.s.id]); else watchGame(P.s.id); });
   welcomeTick(nowMs()); setInterval(()=>welcomeTick(nowMs()),15000);

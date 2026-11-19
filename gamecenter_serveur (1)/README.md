@@ -3616,10 +3616,11 @@ avait pas montré. **Demande de Guillaume (19/11)** : deuxième étape de la pha
   cote (`spectSync`, appelé à chaque mise à jour du ticket) retire le mode et pose `gc-bettor` : le ticket reste là pour
   de bon dans ce navigateur. Qui a déjà un pari cette semaine ou un compte le retrouve aussi.
 - **Téléphone (≤ 600 px), le terrain dans le premier écran** : pour le nouveau venu, le bandeau d'accueil garde son
-  titre, « Watch live now » et « How it works », sans paragraphe ni ligne d'état. L'horloge, le grand titre « Live
-  now », la ligne de la semaine et « Big plays » sont cachés ; les filtres Live / Upcoming / Results restent. Le terrain
-  du match vedette tient désormais entre 399 et 590 px (iPhone 13). Fermer le bandeau donne le focus au filtre quand le
-  titre est caché.
+  titre, « Watch live now » (pleine largeur, 46 px) et « How it works », sans paragraphe ni ligne d'état. L'horloge, le
+  titre « Live now » et ses filtres Live / Upcoming / Results (le calendrier complet reste dans Schedule), la ligne de la
+  semaine et « Big plays » sont cachés. Le terrain du match vedette tient désormais entre 347 et 538 px (iPhone 13),
+  avec environ 65 px de marge : sur le contrôle des PR, la page rendait 46 px plus haut qu'en local. Fermer le bandeau
+  donne le focus à la grille des matchs quand le titre est caché.
 - **Décalages de mise en page** : sans la pastille « Balance », la recherche tenait d'abord sur la ligne des boutons,
   puis l'horloge la renvoyait plus bas (CLS 0,054). Sans l'horloge sur téléphone, plus rien ne bouge : CLS ≤ 0,01.
 - **Interrupteur** : `GC_ACCUEIL_TERRAIN=off` retire le script `spect-boot` et pose `spect_off` dans `#gf-server` : la

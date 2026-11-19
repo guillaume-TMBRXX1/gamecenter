@@ -49,7 +49,9 @@ const etat=p=>p.evaluate(()=>{ const d=e=>e?getComputedStyle(e).display:'absent'
   return {spect:document.documentElement.classList.contains('spect'), first:window.__first, cls:window.__ls,
     slip:d(document.getElementById('slipCol')), fab:d(document.getElementById('fab')), pill:d(document.querySelector('.wallet-pill')),
     grid:(r('#liveGrid')||{}).width||0, field:r('.tile.feat .field'), tab:r('#tabbar'), vh:innerHeight,
-    hscroll:document.documentElement.scrollWidth>innerWidth+1, bettor:localStorage.getItem('gc-bettor')}; });
+    hscroll:document.documentElement.scrollWidth>innerWidth+1, bettor:localStorage.getItem('gc-bettor'),
+    /* en cas d'échec : où commence chaque bloc au-dessus du terrain (polices, retours à la ligne) */
+    blocs:['.topbar','#welcome','#welcome h2','.live-head','#liveGrid','.tile.feat'].map(s=>{ const b=r(s); return s+' '+(b&&b.height?Math.round(b.top)+'+'+Math.round(b.height):'—'); }).join(' · ')}; });
 async function toucherCote(p){
   const o=await p.$('#liveGrid .odd:not(:disabled):not([aria-pressed="true"])');
   if(!o) return false;
@@ -96,6 +98,7 @@ async function toucherCote(p){
     check(e.fab==='none'&&e.pill==='none','ni bouton « Bet slip » ni pastille « Balance »');
     const bas=e.tab&&e.tab.height?e.tab.top:e.vh;
     check(!!e.field&&e.field.top>=0&&e.field.bottom<=bas+1,`le terrain du match vedette tient dans le premier écran (${e.field?Math.round(e.field.top)+'–'+Math.round(e.field.bottom):'—'} px, écran utile ${Math.round(bas)} px)`);
+    console.log('    '+e.blocs);
     check(!e.hscroll,'aucun défilement horizontal');
     check(e.cls<0.1,`CLS ${e.cls.toFixed(3)} < 0,1`);
     await shot(m,'terrain-telephone.png');
