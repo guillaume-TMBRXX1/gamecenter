@@ -33,6 +33,7 @@ from moteur import insights as _insights
 from moteur import meme_match as _mm
 from moteur import rivalites as _riv
 from moteur import empreinte as _emp
+from moteur import ngs as _ngs
 from moteur import recap_semaine as _rev
 from moteur import supporters as _fo
 from moteur import draft as _dr
@@ -1008,6 +1009,8 @@ def page(request: Request = None):
         srv["chat"] = chat_mode()
     if insights_on():                                # onglet Insights (section 78) : sans lui, la page ne le dessine pas
         srv["insights"], srv["hist_since"] = True, HIST_DEPUIS
+        if tracking_on():                            # Insights › Tracking (statistiques de suivi, section 125)
+            srv["tracking"] = True
     if os.environ.get("GC_SCHEDULE_PLUS", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["schedule_plus"] = False                 # Schedule (section 84) : sans filtre par franchise ni paris sous un match
     if rivalites_on():                               # rivalités et bilans (section 88)
@@ -1038,6 +1041,7 @@ def page(request: Request = None):
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
                       "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,kfAt,missSpot,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,fluide:v=>{if(v!==undefined)JEU_FLUIDE=!!v;return JEU_FLUIDE;},psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},fo:{foGameRow,foGameStat,FO_ON},"
+                      "trk:{openRosterCard,watchGame,renderStats,rpAfterSeek,modalGame:()=>modalGame},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
@@ -4006,6 +4010,126 @@ def api_insights_h2h(a: str = "", b: str = "", token: str = ""):
     return JSONResponse({"a": a, "b": b, "meetings": meet, "series": _riv.serie(meet, a, b) if rivalites_on() else None,
                          "players": {k: _insights.joueurs(insights_roster(w, k)) for k in (a, b)}},
                         headers={"Cache-Control": "no-store"})
+
+
+# ------------------------------------------------------------------ Tracking (README sections 125-126)
+# Statistiques de suivi (« Next Gen Stats » dans le programme, moteur/ngs.py) : comptées dans les GameFeeds des seuls
+# matchs terminés, un match compté une fois, l'ensemble en cache par nombre de matchs finis (comme Insights). Les
+# modèles « attendus » (CPOE, RYOE, YAC) viennent de moteur/ngs_modeles.json, appris sur des semaines passées. Tout est
+# réservé aux comptes Insights Pro (GC_INSIGHTS_USERS) ; les autres reçoivent la statistique du jour seulement (gratuite,
+# Day recap). GC_TRACKING=off (ou Insights coupé) : ni API ni onglet.
+_TRK_MATCH, _TRK_CACHE, _TRK_LOCK, _TRK_MODELES = {}, {}, threading.Lock(), []
+
+
+def tracking_on():
+    return insights_on() and os.environ.get("GC_TRACKING", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def tracking_modeles():
+    if not _TRK_MODELES:
+        try:
+            with open(os.path.join(HERE, "moteur", "ngs_modeles.json"), encoding="utf-8") as fh:
+                _TRK_MODELES.append(json.load(fh))
+        except (OSError, ValueError):
+            _TRK_MODELES.append(None)                # sans modèles : CPOE, RYOE et YAC attendus restent vides
+    return _TRK_MODELES[0]
+
+
+def _trk_compte(w, g, M):
+    """Comptes d'un match terminé (calculés une fois : un match fini ne change plus)."""
+    k = (w.folder, g["id"])
+    c = _TRK_MATCH.get(k)
+    if c is None:
+        c = _TRK_MATCH[k] = _ngs.compter(w.feed(g["id"]), M)
+    return c
+
+
+def tracking_data(w, t):
+    """(tableaux de la semaine w à l'instant t, nombre de matchs finis, jours joués, agrégat) ; matchs terminés
+    seulement."""
+    finis = sorted((g for g in w.sched if w.status(g, t) == "final" and g.get("result")), key=lambda g: (g["ko"], g["id"]))
+    cle = (w.start, len(finis))
+    with _TRK_LOCK:
+        d = _TRK_CACHE.get(cle)
+        if d is None:
+            M = tracking_modeles()
+            comptes = [_trk_compte(w, g, M) for g in finis]
+            jours = len({datetime.fromtimestamp(g["ko"] / 1000, TZ).date() for g in finis})
+            agg = _ngs.agreger(comptes)
+            d = (_ngs.tableaux(agg, M) if finis else None, len(finis), jours, agg)
+            _TRK_CACHE.clear(); _TRK_CACHE[cle] = d
+            if len(_TRK_MATCH) > 1200:               # une semaine et demie de matchs au plus : on repart de zéro
+                _TRK_MATCH.clear()
+    return d
+
+
+@app.get("/api/tracking")
+def api_tracking(token: str = ""):
+    if not tracking_on():
+        raise HTTPException(404, "tracking_off")
+    w = _need_week(); t = now_ms()
+    tab, n, jours, _ = tracking_data(w, t)
+    pro = insights_pro(player_by_token(token) if token else None)
+    out = {"week": w.start, "final": n, "pro": pro, "today": _ngs.stat_du_jour(tab, jours) if tab else None,
+           "version": _ngs.VERSION}
+    if pro and tab:
+        out["groups"] = tab["groups"]
+        out["models"] = tab["models"]
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
+
+
+_PID_TRK = re.compile(r"^[A-Z]{2,4}_[A-Z0-9]{1,8}$")
+
+
+@app.get("/api/tracking/player")
+def api_tracking_player(id: str = "", token: str = ""):
+    """Fiche d'un joueur (NGS-5) : la statistique phare de son poste pour tous ; tous ses groupes pour un compte Pro."""
+    if not tracking_on():
+        raise HTTPException(404, "tracking_off")
+    if not _PID_TRK.match(id):
+        raise HTTPException(400, "bad_player")
+    w = _need_week(); t = now_ms()
+    tab, n, _, agg = tracking_data(w, t)
+    pro = insights_pro(player_by_token(token) if token else None)
+    j = _ngs.joueur(agg, tab, id) if tab else {"id": id, "headline": None, "groups": []}
+    out = {"final": n, "pro": pro, "id": id, "headline": j["headline"]}
+    if pro:
+        out["groups"] = j["groups"]
+    return JSONResponse(out, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/tracking/team")
+def api_tracking_team(team: str = "", b: str = "", token: str = ""):
+    """Profil de suivi d'une franchise (ou de deux, b=) avec ses rangs : comptes Pro seulement."""
+    if not tracking_on():
+        raise HTTPException(404, "tracking_off")
+    if not insights_pro(player_by_token(token) if token else None):
+        raise HTTPException(403, "insights_locked")
+    w = _need_week(); t = now_ms()
+    teams = [x for x in (team, b) if x]
+    if not teams or not all(_TEAM_INS.match(x) and x in w.doc["teams"] for x in teams) or (b and b == team):
+        raise HTTPException(400, "bad_teams")
+    tab, n, _, _ = tracking_data(w, t)
+    return JSONResponse({"final": n, "teams": [_ngs.equipe(tab, x) if tab else None for x in teams]},
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/tracking/game")
+def api_tracking_game(id: str = "", token: str = ""):
+    """Suivi d'un match TERMINÉ (récap du match) : comptes Pro seulement ; un match pas fini n'existe pas encore ici."""
+    if not tracking_on():
+        raise HTTPException(404, "tracking_off")
+    if not insights_pro(player_by_token(token) if token else None):
+        raise HTTPException(403, "insights_locked")
+    w = _need_week(); t = now_ms()
+    g = next((x for x in w.sched if x["id"] == id), None)
+    if not g or w.status(g, t) != "final" or not g.get("result"):
+        raise HTTPException(404, "not_final")
+    tab, _, _, _ = tracking_data(w, t)
+    M = tracking_modeles()
+    with _TRK_LOCK:
+        c = _trk_compte(w, g, M)
+    return JSONResponse(dict(_ngs.match(c, M, tab["_ligue"]), id=id), headers={"Cache-Control": "no-store"})
 
 
 # ------------------------------------------------------------------ rivalités et bilans (README section 88)

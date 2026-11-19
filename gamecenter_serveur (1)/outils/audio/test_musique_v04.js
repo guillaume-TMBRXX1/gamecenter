@@ -39,7 +39,10 @@ check(F(c({}),['GAME_END','VICTORY'])==='victory'&&F(c({}),['GAME_END','DEFEAT']
        l'antenne ne commande plus la musique et on repart d'un état calme : les vérifications ne dépendent plus de
        l'horloge. REPRO=final_drive (variable d'environnement) rejoue le cas qui échouait. */
     if(window.__REPRO) mm.request(window.__REPRO,true);
-    M.setMusic=()=>{}; mm.request('gameplay',true); await wait(400);
+    /* 18/11/2026 : le grand écran qui change de match à l'antenne appelle AudioManager.focus, qui pose « pregame »
+       directement (sans setMusic) : un match fini ou un coup d'envoi pendant les 4 s de « redescend après 20 s » le
+       faisait échouer selon l'heure (PR #173, 19:21 à Bruxelles). Le match à l'antenne ne commande plus rien ici. */
+    M.setMusic=()=>{}; M.focus=()=>{}; mm.request('gameplay',true); await wait(400);
     mm.request('red_zone'); await wait(400); out.up=mm.stats();
     mm.request('gameplay'); await wait(400); out.down=mm.stats();            /* < 20 s : attend */
     mm.since-=21; mm.tick(); await wait(3600); out.later=mm.stats();         /* 20 s plus tard : redescend */
