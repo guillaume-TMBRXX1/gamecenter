@@ -1,7 +1,7 @@
 // Le terrain d'abord (section 125, phase 1 de la relance — 18/11/2026) — test navigateur (Playwright + serveurs réels).
 //   node outils/site/test_terrain.js        (depuis « gamecenter_serveur (1) » ; Python + fastapi/uvicorn, Playwright)
-// Deux serveurs pendant un créneau (GC_DEMO_AT) : 8170 avec GC_ACCUEIL_TERRAIN=off (la page d'avant : aucun script
-// spect-boot, solde et ticket pour tous), 8171 par défaut, avec le bandeau d'accueil (GC_ACCUEIL=1).
+// Deux serveurs pendant un créneau (GC_DEMO_AT) : 8240 avec GC_ACCUEIL_TERRAIN=off (la page d'avant : aucun script
+// spect-boot, solde et ticket pour tous), 8241 par défaut, avec le bandeau d'accueil (GC_ACCUEIL=1).
 // Vérifie : un nouveau venu n'a ni solde ni ticket (ordinateur : colonne de droite absente, la grille des matchs plus
 // large ; téléphone : ni pastille « Balance » ni bouton « Bet slip ») dès la 1re image ; sur téléphone 390 × 844, le
 // terrain du match vedette tient dans le premier écran, sans défilement horizontal ; toucher une cote remet le ticket,
@@ -57,23 +57,23 @@ async function toucherCote(p){
 }
 
 (async()=>{
-  const off=await server(8170,{GC_ACCUEIL:'1',GC_ACCUEIL_TERRAIN:'off'}), on=await server(8171,{GC_ACCUEIL:'1'});
+  const off=await server(8240,{GC_ACCUEIL:'1',GC_ACCUEIL_TERRAIN:'off'}), on=await server(8241,{GC_ACCUEIL:'1'});
   const b=await chromium.launch({executablePath:EXE}), errs=[];
   try{
     /* ---- GC_ACCUEIL_TERRAIN=off : la page d'avant ---- */
     console.log('— GC_ACCUEIL_TERRAIN=off');
-    const h0=await (await fetch('http://localhost:8170/')).text();
+    const h0=await (await fetch('http://localhost:8240/')).text();
     check(!h0.includes('id="spect-boot"'),'aucun script spect-boot dans le HTML');
-    const z=await ouvrir(b,8170); let e=await etat(z);
+    const z=await ouvrir(b,8240); let e=await etat(z);
     check(!e.spect&&e.first===false,'nouveau venu : pas de mode spectateur, dès la 1re image');
     check(e.slip!=='none','ordinateur : la colonne solde et ticket est là');
     errs.push(...z.errs); await z.context().close();
 
     /* ---- par défaut, nouveau venu sur ordinateur ---- */
     console.log('— nouveau venu, ordinateur 1440 × 900');
-    const h1=await (await fetch('http://localhost:8171/')).text();
+    const h1=await (await fetch('http://localhost:8241/')).text();
     check(h1.includes('id="spect-boot"'),'script spect-boot dans le <head>');
-    const a=await ouvrir(b,8171); e=await etat(a);
+    const a=await ouvrir(b,8241); e=await etat(a);
     check(e.spect&&e.first===true,'mode spectateur dès la 1re image');
     check(e.slip==='none'&&e.pill==='none','ni colonne solde et ticket, ni pastille « Balance »');
     const gridSpect=e.grid;
@@ -91,7 +91,7 @@ async function toucherCote(p){
 
     /* ---- par défaut, nouveau venu sur téléphone ---- */
     console.log('— nouveau venu, téléphone 390 × 844');
-    const m=await ouvrir(b,8171,PHONE); e=await etat(m);
+    const m=await ouvrir(b,8241,PHONE); e=await etat(m);
     check(e.spect&&e.first===true,'mode spectateur dès la 1re image');
     check(e.fab==='none'&&e.pill==='none','ni bouton « Bet slip » ni pastille « Balance »');
     const bas=e.tab&&e.tab.height?e.tab.top:e.vh;
@@ -106,10 +106,10 @@ async function toucherCote(p){
 
     /* ---- qui a déjà parié ou a un compte : le ticket dès la 1re image ---- */
     console.log('— déjà venu');
-    const p1=await ouvrir(b,8171,null,()=>{ try{ localStorage.setItem('gc-bettor','1'); }catch(e){} }); e=await etat(p1);
+    const p1=await ouvrir(b,8241,null,()=>{ try{ localStorage.setItem('gc-bettor','1'); }catch(e){} }); e=await etat(p1);
     check(!e.spect&&e.first===false&&e.slip!=='none','gc-bettor : solde et ticket dès la 1re image');
     errs.push(...p1.errs); await p1.context().close();
-    const p2=await ouvrir(b,8171,null,()=>{ try{ localStorage.setItem('gc-player-v1',JSON.stringify({token:'x',name:'Test',account:true})); }catch(e){} }); e=await etat(p2);
+    const p2=await ouvrir(b,8241,null,()=>{ try{ localStorage.setItem('gc-player-v1',JSON.stringify({token:'x',name:'Test',account:true})); }catch(e){} }); e=await etat(p2);
     check(!e.spect&&e.first===false,'compte connu (gc-player-v1, account) : solde et ticket dès la 1re image');
     errs.push(...p2.errs.filter(x=>!/401|token/i.test(x))); await p2.context().close();
 
