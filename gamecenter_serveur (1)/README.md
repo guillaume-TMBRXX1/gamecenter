@@ -3676,6 +3676,37 @@ Suite de la section 125, validée par Guillaume le 18/11. Toujours sans toucher 
 - **Reste** (NGS-6, plus tard) : cartes des passes et des courses d'un joueur, historique d'une semaine à l'autre,
   carton « Tracking stat of the week » pour les vidéos, récompenses de la semaine.
 
+### 127. Le terrain d'abord : ni solde ni ticket avant le premier pari (phase 1 de la relance, 19/11/2026)
+**Constat** : la première chose qu'un visiteur voyait était un site de paris. Sur ordinateur, le tiers droit de l'écran
+était occupé par le solde de 1 000 $ et le ticket (« Place bet »). Sur téléphone, il voyait la pastille « Balance » et
+le bouton flottant « Bet slip », et le terrain du match vedette commençait à 788 px, sous le premier écran (603 px
+utiles sur un iPhone 13 sous la barre d'onglets). Or les règles de la promotion (`programme/Promotion.md`,
+`Lancement.md`) interdisent de parler de paris : le visiteur venu de Reddit ou de TikTok arrivait sur ce qu'on ne lui
+avait pas montré. **Demande de Guillaume (19/11)** : deuxième étape de la phase 1.
+- **Le mode spectateur** (`html.spect`) : un visiteur qui n'a jamais parié (pas de `gc-bettor`, ticket vide, pas de
+  compte) ne voit ni le solde ni le ticket. Le script `<script id="spect-boot">` du `<head>` le décide avant le premier
+  dessin, sans attendre la semaine : aucun saut de page. Sur ordinateur, la colonne de droite laisse sa place à la
+  grille des matchs (1 292 px de large au lieu de 912 en 1440 × 900) ; sur téléphone et tablette, plus de pastille
+  « Balance » ni de bouton « Bet slip ».
+- **Le pari reste à un geste** : les cotes restent sous chaque match, et l'onglet My bets est inchangé. Toucher une
+  cote (`spectSync`, appelé à chaque mise à jour du ticket) retire le mode et pose `gc-bettor` : le ticket reste là pour
+  de bon dans ce navigateur. Qui a déjà un pari cette semaine ou un compte le retrouve aussi.
+- **Téléphone (≤ 600 px), le terrain dans le premier écran** : pour le nouveau venu, le bandeau d'accueil garde son
+  titre, « Watch live now » (pleine largeur, 46 px) et « How it works », sans paragraphe ni ligne d'état. L'horloge, le
+  titre « Live now » et ses filtres Live / Upcoming / Results (le calendrier complet reste dans Schedule), la ligne de la
+  semaine et « Big plays » sont cachés. Le terrain du match vedette tient désormais entre 347 et 538 px (iPhone 13),
+  avec environ 65 px de marge : sur le contrôle des PR, la page rendait 46 px plus haut qu'en local. Fermer le bandeau
+  donne le focus à la grille des matchs quand le titre est caché.
+- **Décalages de mise en page** : sans la pastille « Balance », la recherche tenait d'abord sur la ligne des boutons,
+  puis l'horloge la renvoyait plus bas (CLS 0,054). Sans l'horloge sur téléphone, plus rien ne bouge : CLS ≤ 0,01.
+- **Interrupteur** : `GC_ACCUEIL_TERRAIN=off` retire le script `spect-boot` et pose `spect_off` dans `#gf-server` : la
+  page d'avant à l'identique.
+- **Tests** : `test_accueil.py` (`test_terrain_d_abord` : script présent par défaut, retiré avec l'interrupteur) ;
+  `outils/site/test_terrain.js`, nouveau, dans le groupe site-2 : interrupteur, nouveau venu sur ordinateur (pas de
+  colonne, grille plus large, CLS) et sur téléphone (terrain dans le premier écran, pas de défilement horizontal), une
+  cote touchée remet le ticket même après rechargement, `gc-bettor` ou un compte donnent le ticket dès la 1re image,
+  aucune erreur JS.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
