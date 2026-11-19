@@ -102,5 +102,25 @@ class TestAccueil(unittest.TestCase):
                 os.environ["GC_ACCUEIL_TERRAIN"] = avant
 
 
+    def test_decisions_interrupteur(self):
+        """Section 128 : la carte de décision du coach IA ; GC_DECISIONS=off pose « coach_off » pour la page.
+        Navigateur : outils/site/test_decisions.js."""
+        avant = os.environ.get("GC_DECISIONS")
+        try:
+            os.environ.pop("GC_DECISIONS", None)
+            self.assertTrue(serveur.decisions_on())
+            on = serveur.page().body.decode()
+            self.assertNotIn("coach_off", self.srv(on))
+            self.assertIn('data-f="coach"', on)                   # l'emplacement de la carte, dans le modèle du terrain
+            for v in ("off", "0", "no"):
+                os.environ["GC_DECISIONS"] = v
+                self.assertFalse(serveur.decisions_on(), v)
+            self.assertIs(self.srv(serveur.page().body.decode())["coach_off"], True)
+        finally:
+            if avant is None:
+                os.environ.pop("GC_DECISIONS", None)
+            else:
+                os.environ["GC_DECISIONS"] = avant
+
 if __name__ == "__main__":
     unittest.main()
