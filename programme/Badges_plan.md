@@ -128,7 +128,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Icônes : un pictogramme par catégorie + la couleur du palier (pas d'image par badge au départ).
 - Tests navigateur, captures, téléphone 390 px, mode sombre.
 
-### BD-4 — Plus tard
+### BD-4 — Notification et récapitulatif — ✅ 20/11 (README section 135) ; badges des idées d'engagement : plus tard
 - Web Push « You unlocked Season ticket · Silver » (abonnés seulement) ; récapitulatif du lundi (« New this week »).
 - Badges des idées d'engagement si elles sont faites ; badge Insights Pro si le paiement est branché.
 

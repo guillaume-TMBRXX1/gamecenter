@@ -1535,6 +1535,10 @@
   .bd-sum{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
   .bd-sum .bd-big{font:800 28px/1 var(--f-display);font-variant-numeric:tabular-nums}
   .bd-sum .bd-big small{font:600 14px/1 var(--f-ui);color:var(--ink-3);margin-left:4px}
+  .bd-new{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+  .bd-new .label{margin-right:2px}
+  .bd-new-i{display:inline-flex;align-items:center;gap:6px;font:600 13px/1.2 var(--f-ui)}
+  .bd-new-i .bd-chip{margin-left:0}
   .bd-feat{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .bd-feat button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:600 13px/1.2 var(--f-ui);cursor:pointer}
   .bd-feat button .bd-chip{margin-left:0}
@@ -9094,14 +9098,14 @@ let WATCH_ID=null;
 function pushSupported(){ return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window; }
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
 function isStandalone(){ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
-function pushSig(){ return [PUSH.ready,PUSH.enabled,!!PUSH.sub,PUSH.fav,PUSH.busy,PUSH.bells.size,[...PUSH.bells].join(','),(window.Notification&&Notification.permission)||''].join(':'); }
+function pushSig(){ return [PUSH.ready,PUSH.enabled,!!PUSH.sub,PUSH.fav,PUSH.badges,PUSH.busy,PUSH.bells.size,[...PUSH.bells].join(','),(window.Notification&&Notification.permission)||''].join(':'); }
 function b64u(s){ const p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
 async function pushInit(){
-  const d=lsGet(PUSH_KEY); if(d&&d.fav===false) PUSH.fav=false;
+  const d=lsGet(PUSH_KEY); if(d&&d.fav===false) PUSH.fav=false; if(d&&d.badges===false) PUSH.badges=false;
   try{ const k=await api('/push/key'); PUSH.key=k.public_key; PUSH.enabled=!!k.enabled; PUSH.min=k.minutes||10; }catch(e){}
   if(pushSupported()){
     try{ PUSH.reg=await navigator.serviceWorker.register('/sw.js'); PUSH.sub=await PUSH.reg.pushManager.getSubscription(); }catch(e){}
-    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); if(e.data&&e.data.myteam&&typeof drOpen==='function') drOpen(String(e.data.myteam)); });
+    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); if(e.data&&e.data.myteam&&typeof drOpen==='function') drOpen(String(e.data.myteam)); if(e.data&&e.data.badges&&typeof BD_ON!=='undefined'&&BD_ON) setView('badges'); });
   }
   PUSH.ready=true; await pushRebind(); renderView(true);
 }
@@ -9109,7 +9113,7 @@ async function pushInit(){
 async function pushRebind(){
   PUSH.bells=new Set();
   if(PUSH.sub&&PLAYER&&PLAYER.token&&window.Notification&&Notification.permission==='granted'){
-    try{ await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,subscription:PUSH.sub.toJSON(),fav:PUSH.fav})}); }catch(e){} }
+    try{ await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,subscription:PUSH.sub.toJSON(),fav:PUSH.fav,badges:PUSH.badges!==false})}); }catch(e){} }
   await loadBells();
 }
 function pushForget(){
@@ -9129,14 +9133,15 @@ function pushBlocked(){
   if(Notification.permission==='denied') return 'Notifications are blocked for this site: allow them in your browser or device settings, then come back.';
   return null;
 }
-async function pushSubscribe(fav){
+async function pushSubscribe(fav,badges){
+  if(badges===undefined) badges=PUSH.badges!==false;
   const perm=Notification.permission==='granted'?'granted':await Notification.requestPermission();   /* first: still inside the tap */
   if(perm!=='granted') throw Object.assign(new Error('denied'),{code:'denied'});
   const reg=PUSH.reg||await navigator.serviceWorker.ready;
   const s=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(PUSH.key)});
   const p=await ensurePlayer();
-  await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:p.token,subscription:s.toJSON(),fav:!!fav})});
-  PUSH.sub=s; PUSH.fav=!!fav; lsSet(PUSH_KEY,{fav:PUSH.fav});
+  await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:p.token,subscription:s.toJSON(),fav:!!fav,badges:!!badges})});
+  PUSH.sub=s; PUSH.fav=!!fav; PUSH.badges=!!badges; lsSet(PUSH_KEY,{fav:PUSH.fav,badges:PUSH.badges});
 }
 async function pushAction(a){
   if(PUSH.busy) return; PUSH.busy=true; renderView(true);
@@ -9145,6 +9150,7 @@ async function pushAction(a){
     else if(a==='off'){ const s=PUSH.sub; if(s){ try{ await api('/push/unsubscribe',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:s.endpoint})}); }catch(e){} try{ await s.unsubscribe(); }catch(e){} }
       PUSH.sub=null; toast('Reminders off on this device'); }
     else if(a==='fav'){ await pushSubscribe(!PUSH.fav); toast(PUSH.fav?'Your team’s games: on':'Your team’s games: off'); }
+    else if(a==='badges'){ await pushSubscribe(PUSH.fav,PUSH.badges===false); toast(PUSH.badges?'Badge notifications: on':'Badge notifications: off'); }
     else if(a==='test'){ await api('/push/test',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:PUSH.sub&&PUSH.sub.endpoint})}); toast('Test sent · it should arrive in a few seconds'); }
   }catch(e){
     toastErr(e.code==='denied'?'Notifications were not allowed. You can allow them in your browser settings.':e.status===429?'Wait a few seconds before the next test.':e.status===410?'This device is no longer subscribed: turn reminders on again.':'Could not change reminders. Try again.');
@@ -9159,6 +9165,8 @@ function pushCard(){
       <button type="button" class="switch" role="switch" data-push="${on?'off':'on'}" aria-checked="${on}" aria-labelledby="setPushL"${why||PUSH.busy?' disabled':''}><i></i></button></div>
     <div class="set-row"><span class="set-l" id="setPushFavL">My team’s games<small>${acct&&fav?`Every ${esc(team)} game, playoffs included`:acct?'Pick your team in My team first':'Needs an account and a team (My team)'}</small></span>
       <button type="button" class="switch" role="switch" data-push="fav" aria-checked="${on&&PUSH.fav&&!!fav}" aria-labelledby="setPushFavL"${!on||!fav||PUSH.busy?' disabled':''}><i></i></button></div>
+    ${typeof BD_ON!=='undefined'&&BD_ON?`<div class="set-row"><span class="set-l" id="setPushBdL">Badges I unlock<small>${acct?'At most one a week: the badges you earned, never a score':'Needs an account (badges are kept on accounts)'}</small></span>
+      <button type="button" class="switch" role="switch" data-push="badges" aria-checked="${on&&acct&&PUSH.badges!==false}" aria-labelledby="setPushBdL"${!on||!acct||PUSH.busy?' disabled':''}><i></i></button></div>`:''}
     <div class="set-row"><span class="set-l">Any other game<small>Tap the bell next to a game in the Schedule${PUSH.bells.size?` · ${PUSH.bells.size} picked this week`:''}</small></span>
       <button type="button" class="chip-btn" data-view-go="schedule">Schedule</button></div>
     <div class="set-row"><span class="set-l">Check this device<small>Sends one notification now</small></span>
@@ -9718,7 +9726,7 @@ function seasonBoot(){
   document.documentElement.classList.remove('gc-boot','mo-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître (section 121 : et ses silhouettes partent) */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ joinRefresh(); chatInit(); insInit(); bdInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
+  if(SERVER){ joinRefresh(); chatInit(); insInit(); bdInit(); bdFromUrl(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
   mesureVu();   /* section 131 */
 }
@@ -11150,6 +11158,10 @@ function bdChip(b){
   const c=BD_CAT[b.k], t=c[2]?Math.max(1,Math.min(4,b.t|0)):0, l=esc(bdLabel(b.k,t));
   return `<span class="bd-chip bd-t${t}" role="img" title="${l}" aria-label="Badge: ${l}">${BD_SVG[c[1]]||''}</span>`;
 }
+function bdFromUrl(){
+  if(!BD_ON) return;
+  try{ const u=new URL(location.href); if(u.searchParams.get('badges')){ u.searchParams.delete('badges'); history.replaceState(null,'',u.pathname+u.search+u.hash); setTimeout(()=>setView('badges'),0); } }catch(e){}
+}
 function bdInit(){
   if(!BD_ON||document.getElementById('viewBadges')) return;
   const set=document.querySelector('.rail-btn[data-view="settings"]');
@@ -11166,11 +11178,20 @@ async function bdLoad(force){
   catch(e){ BD.err=true; }
   finally{ BD.busy=false; if(VIEW==='badges') renderBadges(true); }
 }
+/* BD-4 : un badge écrit hors de la page (tous les comptes, à l'ouverture d'une semaine) est annoncé à la visite suivante :
+   l'appareil garde, par compte, la date du dernier badge déjà vu (gc-badges-seen-v1). */
+const BD_SEEN_KEY='gc-badges-seen-v1';
+function bdSeen(tok,v){ const m=lsGet(BD_SEEN_KEY)||{}; if(v===undefined) return m[tok]; m[tok]=v; lsSet(BD_SEEN_KEY,m); }
 function bdAnnounce(d){
-  if(!d||!d.account||!d.new||!d.new.length) return;
-  if(d.retro){ toast(`You already have ${d.earned} badge${d.earned===1?'':'s'} · see them in Badges`); return; }
-  const n=d.new[d.new.length-1];
-  toast('Badge unlocked · '+bdLabel(n.key,n.tier)+(d.new.length>1?` · and ${d.new.length-1} more`:''));
+  if(!d||!d.account) return;
+  const tok=PLAYER&&PLAYER.token, earned=d.badges.filter(b=>b.earned&&b.at), last=Math.max(0,...earned.map(b=>b.at)), seen=bdSeen(tok);
+  if(tok&&last) bdSeen(tok,Math.max(last,seen||0));
+  if(d.retro&&d.new&&d.new.length){ toast(`You already have ${d.earned} badge${d.earned===1?'':'s'} · see them in Badges`); return; }
+  let fresh=(d.new||[]).map(n=>({key:n.key,tier:n.tier}));
+  if(seen!=null) for(const b of earned) if(b.at>seen&&!fresh.some(f=>f.key===b.key)) fresh.push({key:b.key,tier:b.tier});
+  if(!fresh.length) return;
+  const n=fresh[fresh.length-1];
+  toast('Badge unlocked · '+bdLabel(n.key,n.tier)+(fresh.length>1?` · and ${fresh.length-1} more`:''));
 }
 /* compte : un calcul au chargement de la page (un badge gagné depuis la dernière visite est annoncé), une fois par clé */
 function bdAuto(){
@@ -11212,7 +11233,9 @@ function renderBadges(force){
       <button type="button" role="radio" data-bd-feat="none" aria-checked="${!d.featured}">None</button>
       ${earned.map(b=>`<button type="button" role="radio" data-bd-feat="${esc(b.key)}" aria-checked="${d.featured===b.key}">${bdChip({k:b.key,t:b.tier})}${esc(b.name)}${b.tier_name?' · '+esc(BD_TIERS[b.tier-1]):''}</button>`).join('')}</div>
       <p class="np-note">Shown next to your name in the leaderboards, your leagues and the chat.</p>`:d.account?'<p class="np-note">Your first badge can be shown next to your name in the leaderboards, your leagues and the chat.</p>':'';
-  const sum=`<div class="card"><div class="bd-sum"><span class="bd-big">${earned.length}<small>of ${d.badges.length} earned</small></span></div>${feat}</div>`;
+  const wk=d.week||(SERVER&&SERVER.week_start), nw=d.account&&wk?earned.filter(b=>b.week===wk):[];
+  const fresh=nw.length?`<div class="bd-new" aria-label="New this week"><span class="label">New this week</span>${nw.map(b=>`<span class="bd-new-i">${bdChip({k:b.key,t:b.tier})}${esc(b.name)}${b.tier_name&&b.tiers.length>1?' · '+esc(BD_TIERS[b.tier-1]):''}</span>`).join('')}</div>`:'';
+  const sum=`<div class="card"><div class="bd-sum"><span class="bd-big">${earned.length}<small>of ${d.badges.length} earned</small></span>${fresh}</div>${feat}</div>`;
   const cats=(d.categories||Object.keys(BD_CATS)).map(c=>{ const l=d.badges.filter(b=>b.category===c); if(!l.length) return '';
     l.sort((a,b)=>(b.earned-a.earned));
     return `<section class="bd-cat" aria-label="${esc(BD_CATS[c]||c)}"><h3>${esc(BD_CATS[c]||c)}</h3><div class="bd-grid">${l.map(bdCard).join('')}</div></section>`; }).join('');

@@ -7,6 +7,8 @@
 // et un message du chat ; « None » le retire ; invité : progression et « Create an account to keep them » qui ouvre la
 // fenêtre « Join Snapline », sans choix ; téléphone 390 px (pas de défilement horizontal, bouton dans « More ») ;
 // mode sombre ; GC_BADGES=off : ni bouton ni puce ; aucune erreur JS.
+// BD-4 : « New this week » ; un badge écrit hors de la page est annoncé à la visite suivante ; /?badges=1 (lien de la
+// notification) ouvre la vue ; Settings › Notifications : « Badges I unlock ».
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), os=require('os'), {spawn}=require('child_process');
 const ROOT=path.resolve(__dirname,'..','..'), WEEKS=path.join(ROOT,'data','weeks'), SHOTS=process.env.SHOTS||'';
@@ -109,6 +111,26 @@ async function parier(port,tok){
     await p.waitForFunction(()=>/No badge next to your name/.test(document.getElementById('toast').textContent),null,{timeout:8000}).catch(()=>{});
     check((await api(P1,'/badges?token='+encodeURIComponent(acc.token))).json.featured===null,'« None » retire le badge mis en avant');
     check(p.errs.length===0,'compte : aucune erreur JS'+(p.errs.length?' · '+p.errs.join(' | '):''));
+
+    /* 7b. BD-4 : New this week, badge gagné hors de la page, lien de la notification, réglage */
+    check(/New this week/.test(await p.textContent('#viewBadges .bd-sum'))&&/Founding fan/.test(await p.textContent('#viewBadges .bd-new')),'BD-4 : « New this week » montre Founding fan');
+    const pn=await ouvrir(b,P1,null,[([t])=>{ localStorage.setItem('gc-player-v1',JSON.stringify({token:t,name:'Badge Fan',account:true}));
+      localStorage.setItem('gc-badges-seen-v1',JSON.stringify({[t]:1})); },[acc.token]]);
+    await pn.waitForFunction(()=>/Badge unlocked · Founding fan/.test(document.getElementById('toast').textContent),null,{timeout:15000}).catch(()=>{});
+    check(/Badge unlocked · Founding fan/.test(await pn.textContent('#toast')),'BD-4 : un badge écrit depuis la dernière visite est annoncé (« Badge unlocked »)');
+    const seen=await pn.evaluate(t=>JSON.parse(localStorage.getItem('gc-badges-seen-v1'))[t],acc.token);
+    check(seen>1,'BD-4 : la date du dernier badge vu est gardée (pas d\'annonce en double)');
+    await vue(pn,'settings');
+    check(/Badges I unlock/.test(await pn.textContent('#pushCard').catch(()=>'')),'BD-4 : Settings › Notifications : « Badges I unlock »');
+    await shot(pn,'badges-reglage.png','#pushCard');
+    const ctxU=await b.newContext({viewport:{width:1440,height:1000}}); const pu=await ctxU.newPage(); pu.errs=[]; pu.on('pageerror',e=>pu.errs.push(e.message));
+    await ctxU.addInitScript(([t])=>localStorage.setItem('gc-player-v1',JSON.stringify({token:t,name:'Badge Fan',account:true})),[acc.token]);
+    await pu.goto(`http://localhost:${P1}/?badges=1`,{timeout:90000});
+    await pu.waitForFunction(()=>{ const v=document.getElementById('viewBadges'); return v&&!v.hidden; },null,{timeout:30000}).catch(()=>{});
+    check(await pu.$eval('#viewBadges',e=>!e.hidden).catch(()=>false),'BD-4 : /?badges=1 (lien de la notification) ouvre la vue Badges');
+    check(!/badges=/.test(pu.url()),'BD-4 : le paramètre est retiré de l\'adresse');
+    check(pn.errs.length===0&&pu.errs.length===0,'BD-4 : aucune erreur JS'+([...pn.errs,...pu.errs].length?' · '+[...pn.errs,...pu.errs].join(' | '):''));
+    await vue(p,'badges');
 
     /* 8. mode sombre */
     await p.click('#viewBadges [data-bd-feat="founding_fan"]');

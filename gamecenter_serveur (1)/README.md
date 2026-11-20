@@ -3906,6 +3906,25 @@ cellule 427 hors serveur), rien de tout cela n'apparaît.
   classements, la ligue et le chat, « None », mode sombre, invité, téléphone 390 px, `GC_BADGES=off`. `test_accueil`
   (CLS 0,036 ordinateur, 0 téléphone), `test_compte`, `test_ligues` inchangés.
 
+### 135. Badges, BD-4 : la notification « You unlocked … », « New this week » (20/11/2026)
+
+`programme/Badges_plan.md`. Suite des sections 133 (serveur) et 134 (site).
+
+- **Notification** (`badges_push`) : quand `badges_tous` (tous les comptes, à l'ouverture d'une semaine) écrit des badges
+  à un compte, ses appareils abonnés aux notifications reçoivent « You unlocked Season ticket · Silver » ou, s'il y en a
+  plusieurs, « New this week: 3 badges » (« Top 10, Combo and Newsroom · Bronze. Tap to see your badges. »). Jamais pour
+  les badges d'un premier calcul (rétroactifs), ni pour ceux gagnés page ouverte (le toast suffit). Une par appareil et
+  par semaine au plus (`push_sent`, game = « badges ») ; elle attend 12 h au plus un appareil éteint. Le lien
+  `/?badges=1` ouvre la vue Badges (service worker : message `{badges: 1}` à un onglet déjà ouvert).
+- **Réglage par appareil** « Badges I unlock » (Settings › Notifications, comptes) : colonne `push_subs.badges`
+  (NULL = oui : un appareil abonné avant BD-4 les reçoit) ; `POST /api/push/subscribe {…, badges}` (absent : inchangé).
+- **Site** : « New this week » dans la vue Badges (badges dont la semaine de gain est la semaine en cours,
+  `/api/badges` renvoie `week`). Un badge écrit hors de la page est annoncé à la visite suivante : l'appareil garde par
+  compte la date du dernier badge vu (`gc-badges-seen-v1`) ; « Badge unlocked · … » pour les plus récents.
+- **Tests** : `moteur/tests/test_badges.py` (classe `Notification` : textes, rien au premier calcul, une par semaine,
+  réglage, interrupteur) ; `outils/site/test_badges.js` (New this week, annonce à la visite suivante, `/?badges=1`,
+  réglage) ; `test_rappels.js` et `test_draft_serveur` inchangés.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

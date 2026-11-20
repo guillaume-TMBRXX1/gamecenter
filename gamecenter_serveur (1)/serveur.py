@@ -581,6 +581,9 @@ with db() as _c:
     CREATE TABLE IF NOT EXISTS push_bells(player TEXT, week TEXT, game TEXT, PRIMARY KEY(player, week, game));
     CREATE TABLE IF NOT EXISTS push_sent(endpoint TEXT, week TEXT, game TEXT, at INTEGER, PRIMARY KEY(endpoint, week, game));
     """)
+    # Badges, BD-4 : « Badges I unlock » par appareil (NULL = oui : un appareil abonné avant BD-4 les reçoit)
+    if "badges" not in {r[1] for r in _c.execute("PRAGMA table_info(push_subs)")}:
+        _c.execute("ALTER TABLE push_subs ADD COLUMN badges INTEGER")
     # Bloc 2, étape 7 : ligues privées entre amis (comptes seulement) : un code d'invitation par ligue.
     _c.executescript("""
     CREATE TABLE IF NOT EXISTS leagues(id TEXT PRIMARY KEY, name TEXT, code TEXT UNIQUE, owner TEXT, created INTEGER);
@@ -2111,14 +2114,67 @@ def badges_attribuer(p, t):
     return out, [{"key": k, "tier": v} for k, v in nv.items()], first
 
 
+def badges_push_texte(nv):
+    """Notification « You unlocked … » (BD-4) : un badge, ou le récapitulatif de la semaine. nv : [{key, tier}]."""
+    def nom(b):
+        c = _badges.PAR_CLE.get(b["key"])
+        if not c:
+            return b["key"]
+        return c[1] + (f" · {_badges.PALIERS[b['tier'] - 1].capitalize()}" if len(c[3]) > 1 and b["tier"] else "")
+    noms = [nom(b) for b in nv]
+    if len(noms) == 1:
+        return {"title": f"You unlocked {noms[0]}", "body": "A new badge on Snapline. Tap to see your badges.",
+                "url": "/?badges=1", "tag": "badges"}
+    liste = ", ".join(noms[:-1]) + " and " + noms[-1] if len(noms) <= 4 else ", ".join(noms[:3]) + f" and {len(noms) - 3} more"
+    return {"title": f"New this week: {len(noms)} badges", "body": f"{liste}. Tap to see your badges.",
+            "url": "/?badges=1", "tag": "badges"}
+
+
+BADGES_PUSH_TTL = 12 * 3600                          # une notification de badge attend au plus 12 h un appareil éteint
+
+
+def badges_push(pid, nv, t):
+    """BD-4 : prévient les appareils abonnés d'un compte (réglage « Badges I unlock », oui par défaut) de ses badges
+    nouveaux. Une notification par appareil et par semaine au plus (push_sent : game = « badges »). Renvoie le nombre
+    d'envois."""
+    if not nv or not push_ok() or not badges_on():
+        return 0
+    w = current_week(t)
+    wk = w.start if w else _jour_bxl(t)
+    with db() as c:
+        subs = [dict(r) for r in c.execute("SELECT * FROM push_subs WHERE player=? AND COALESCE(badges, 1)=1", (pid,))]
+        sent = {r[0] for r in c.execute("SELECT endpoint FROM push_sent WHERE week=? AND game='badges'", (wk,))}
+    n, data = 0, badges_push_texte(nv)
+    for sub in subs:
+        if sub["endpoint"] in sent:
+            continue
+        try:
+            ok = _push_envoyer(sub, data, ttl=BADGES_PUSH_TTL)
+        except Exception as e:
+            print("notification de badge non envoyée :", str(e)[:200])
+            continue
+        if not ok:
+            _push_oublier(sub["endpoint"])
+            continue
+        n += 1
+        with _db_lock, db() as c:
+            c.execute("INSERT OR IGNORE INTO push_sent(endpoint, week, game, at) VALUES(?,?,?,?)",
+                      (sub["endpoint"], wk, "badges", t))
+    return n
+
+
 def badges_tous(t):
-    """Tous les comptes évalués (ouverture d'une semaine : les badges de classement de la semaine finie, la fidélité)."""
+    """Tous les comptes évalués (ouverture d'une semaine : les badges de classement de la semaine finie, la fidélité).
+    BD-4 : les badges gagnés ainsi (pas ceux d'un premier calcul, rétroactifs) sont annoncés par une notification."""
     with db() as c:
         comptes = [dict(r) for r in c.execute("SELECT * FROM players WHERE login IS NOT NULL")]
     n = 0
     for p in comptes:
         try:
-            n += len(badges_attribuer(p, t)[1])
+            _, nv, first = badges_attribuer(p, t)
+            n += len(nv)
+            if nv and not first:
+                badges_push(p["id"], nv, t)
         except Exception as e:                       # un compte en erreur n'arrête pas les autres
             print(f"[badges] {p['id']} : {e!r}", flush=True)
     return n
@@ -2147,7 +2203,8 @@ def api_badges(token: str = ""):
     t = now_ms()
     out, nv, first = badges_attribuer(p, t)
     feat = badges_mis_en_avant().get(p["id"])
-    return {"account": bool(p.get("login")), "now": t, "version": _badges.VERSION,
+    w = current_week(t)
+    return {"account": bool(p.get("login")), "now": t, "version": _badges.VERSION, "week": w.start if w else None,
             "categories": list(_badges.CATEGORIES), "badges": out, "new": nv, "retro": first and bool(nv),
             "featured": feat["k"] if feat else None, "earned": sum(1 for b in out if b["earned"])}
 
@@ -2742,7 +2799,7 @@ def rappels_dus(t, subs, bells, sent):
     return out
 
 
-def _push_envoyer(sub, data):
+def _push_envoyer(sub, data, ttl=None):
     """Un envoi. Renvoie True (parti), False (abonnement à supprimer : 404 / 410) ; lève sinon (réessayé au tour suivant)."""
     if os.environ.get("GC_PUSH_FAKE") == "1":
         PUSH_LOG.append({"endpoint": sub["endpoint"], **data})
@@ -2751,7 +2808,7 @@ def _push_envoyer(sub, data):
     try:
         webpush({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}},
                 data=json.dumps(data), vapid_private_key=VAPID_PRIVATE, vapid_claims={"sub": VAPID_SUBJECT},
-                ttl=RAPPEL_MIN * 60, timeout=10)
+                ttl=ttl or RAPPEL_MIN * 60, timeout=10)
         return True
     except WebPushException as e:
         if e.response is not None and e.response.status_code in (404, 410):
@@ -2842,13 +2899,16 @@ async def api_push_subscribe(req: Request):
     p = _push_player(body)
     ep, p256, auth = _push_sub_from(body)
     fav = 1 if body.get("fav") else 0
+    bd = None if body.get("badges") is None else (1 if body.get("badges") else 0)   # BD-4 ; absent : inchangé
     with _db_lock, db() as c:
         if c.execute("SELECT COUNT(*) FROM push_subs WHERE player=? AND endpoint<>?", (p["id"], ep)).fetchone()[0] >= PUSH_MAX_PAR_JOUEUR:
             raise HTTPException(429, "too_many_devices")
-        c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created) VALUES(?,?,?,?,?,?) "
+        c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created, badges) VALUES(?,?,?,?,?,?,?) "
                   "ON CONFLICT(endpoint) DO UPDATE SET player=excluded.player, p256dh=excluded.p256dh, "
-                  "auth=excluded.auth, fav=excluded.fav", (ep, p["id"], p256, auth, fav, now_ms()))
-    return {"ok": True, "fav": bool(fav), "fav_team": p.get("fav_team")}
+                  "auth=excluded.auth, fav=excluded.fav, badges=COALESCE(excluded.badges, push_subs.badges)",
+                  (ep, p["id"], p256, auth, fav, now_ms(), bd))
+        r = c.execute("SELECT badges FROM push_subs WHERE endpoint=?", (ep,)).fetchone()
+    return {"ok": True, "fav": bool(fav), "fav_team": p.get("fav_team"), "badges": r[0] is None or bool(r[0])}
 
 
 @app.post("/api/push/unsubscribe")

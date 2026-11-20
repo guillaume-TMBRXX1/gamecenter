@@ -13,11 +13,13 @@ self.addEventListener('notificationclick', e => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin);
   const watch = url.searchParams.get('watch'), myteam = url.searchParams.get('myteam');   // myteam : FO-6, la draft
+  const badges = url.searchParams.get('badges');                                       // badges : BD-4, la vue Badges
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
     for (const c of list) {
       if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
         if (watch) c.postMessage({ watch });
         if (myteam) c.postMessage({ myteam });
+        if (badges) c.postMessage({ badges: 1 });
         return c.focus();
       }
     }
