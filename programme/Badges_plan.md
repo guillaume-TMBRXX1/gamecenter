@@ -120,7 +120,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Fait : « Sign up » dans la barre du haut, fenêtre « Join Snapline » (compte, puis franchise, puis « You're in »),
   toutes les invitations y mènent, carte « Nice pick! » après le premier pari gagné d'un invité, Settings sans formulaire.
 
-### BD-3 — Site *(site)*
+### BD-3 — Site *(site)* — ✅ 20/11, captures validées (README section 134)
 - My account › **Badges** : grille des badges (gagnés en couleur, à gagner en gris avec la progression « 7 / 12 weeks »),
   choix du badge mis en avant ; toast « Badge unlocked » au moment où il est gagné ; le badge mis en avant à côté du
   pseudo dans Standings › Season, les ligues privées et le chat.

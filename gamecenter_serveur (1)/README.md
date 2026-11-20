@@ -3885,6 +3885,27 @@ les sert. Rien ne s'affiche encore sur le site (BD-3).
   baisse, mis en avant refusé pour un badge non gagné ou un invité, présent dans le classement, la ligue, le chat et
   `/api/me`, `badges_tous`, interrupteur).
 
+### 134. Badges, BD-3 : la vue Badges, le badge à côté du pseudo (20/11/2026, captures validées)
+
+`programme/Badges_plan.md`. Le site lit `/api/badges` (BD-2, section 133). Sans `SERVER.badges` (`GC_BADGES=off`, ou la
+cellule 427 hors serveur), rien de tout cela n'apparaît.
+
+- **Rail « Badges »** (avant Settings ; dans « More » sur téléphone), vue `#viewBadges` : les 20 badges par catégorie
+  (Loyalty, Supporter, Reading the game, Community, Insights Pro). Gagné : pastille de la couleur du palier (bronze,
+  argent, or, Legend ; badge sans palier : accent), nom du palier, date. À gagner : pastille en pointillés et barre de
+  progression vers le palier suivant (« 1 / 4 weeks »). Un pictogramme par catégorie, pas d'image par badge.
+- **Badge mis en avant** (comptes) : compteur « N of 20 earned » et choix (« None » ou un badge gagné, radios),
+  `POST /api/badges/featured`, toast « … · shown next to your name ».
+- **Puce** (`bdChip`) à côté du pseudo dans les classements (semaine, saison), les ligues privées et les messages du chat
+  (`bd` du serveur) ; titre et nom accessible « Badge: Season ticket · Gold ». Un badge inconnu ne montre rien.
+- **Toasts** : un compte qui ouvre la page (`bdAuto`, 2,5 s après `/api/me`) ou la vue reçoit « Badge unlocked · … »
+  pour un badge gagné ; au premier calcul de son compte, un seul « You already have N badges ». Après la création d'un
+  compte, le calcul est refait.
+- **Invité** : sa progression, aucun badge gagné, pas de choix ; « Create an account to keep them » ouvre « Join Snapline ».
+- **Tests** : `outils/site/test_badges.js` (groupe site-2) : toast rétroactif, vue, choix et API, puce dans les
+  classements, la ligue et le chat, « None », mode sombre, invité, téléphone 390 px, `GC_BADGES=off`. `test_accueil`
+  (CLS 0,036 ordinateur, 0 téléphone), `test_compte`, `test_ligues` inchangés.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
