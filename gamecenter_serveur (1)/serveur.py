@@ -1038,6 +1038,8 @@ def page(request: Request = None):
         srv["fluide_off"] = True
     if not accueil_terrain_on():                     # le terrain d'abord (section 127) : GC_ACCUEIL_TERRAIN=off, la page d'avant
         srv["spect_off"] = True
+    if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
+        srv["coach_off"] = True
     s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
@@ -1081,6 +1083,14 @@ def accueil_on():
 # Le script <script id="spect-boot"> du <head> décide avant la 1re image (html.spect) ; toucher une cote remet le ticket
 # pour de bon (gc-bettor). Actif par défaut ; GC_ACCUEIL_TERRAIN=off : script retiré, la page d'avant à l'identique.
 _SPECT_TETE = re.compile(r'<script id="spect-boot">.*?</script>\n?', re.S)
+
+
+# La décision du coach IA sur le terrain (section 128, phase 1 de la relance, 19/11/2026) : avant un 4e essai ou une
+# tentative à 2 points, une carte sur le terrain (grand écran, tuile du match vedette) dit ce que le coach a décidé, la
+# chance de victoire de chaque option et, à la fin de l'action, le résultat. Données déjà dans le GameFeed
+# (play.fourth_down, play.conversion). Actif par défaut ; GC_DECISIONS=off : aucune carte.
+def decisions_on():
+    return os.environ.get("GC_DECISIONS", "on").strip().lower() not in ("off", "0", "non", "no")
 
 
 def accueil_terrain_on():

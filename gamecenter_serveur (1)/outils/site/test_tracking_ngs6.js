@@ -1,4 +1,4 @@
-// Tracking, NGS-6 (section 128, 19/11/2026) — test navigateur (Playwright + serveur réel).
+// Tracking, NGS-6 (section 129, 19/11/2026) — test navigateur (Playwright + serveur réel).
 //   node outils/site/test_tracking_ngs6.js          (depuis « gamecenter_serveur (1) »)
 //   SHOTS=<dossier> node outils/site/test_tracking_ngs6.js     (captures)
 // Horloge du serveur après le dernier match de la dernière semaine (GC_DEMO_AT), GC_INSIGHTS_USERS=Analyste.

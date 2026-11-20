@@ -3707,7 +3707,36 @@ avait pas montré. **Demande de Guillaume (19/11)** : deuxième étape de la pha
   cote touchée remet le ticket même après rechargement, `gc-bettor` ou un compte donnent le ticket dès la 1re image,
   aucune erreur JS.
 
-### 128. Tracking, NGS-6 : cartes des passes et des courses, semaine par semaine, récompenses, vidéo (19/11/2026)
+### 128. La décision du coach IA sur le terrain ; le grand écran sur téléphone (phase 1 de la relance, 19/11/2026)
+**Constat** : ce qui distingue Snapline, c'est que des coachs IA prennent les décisions d'un vrai staff. Le moteur
+écrivait déjà, pour chaque 4e essai, la chance de victoire de chaque option (`play.fourth_down.wp`) et la chance de
+convertir, et pour chaque tentative à 2 points, la raison du coordinateur (`play.conversion.reason`). Le site n'en
+montrait presque rien : une mention dans le déroulé (« goes for it on 4th »). Sur téléphone, le grand écran d'un match
+avait 210 px d'en-tête (état, noms des deux équipes sur deux lignes, saison, légende, boutons) ; le terrain, dans une
+carte avec des marges, faisait 336 × 210 px à 237 px du haut. **Demande de Guillaume (19/11)** : les bulles de décision
+de l'IA, et un grand écran plus grand et plus sobre sur téléphone.
+- **La carte du coach** (`coachOf`, `coachSet`, `coachResult` ; `.coach` dans le terrain du grand écran et de la tuile du
+  match vedette) : avant un 4e essai, « AI coach · ABR », la situation (« 4th & 2 · VEC 39 »), la décision (« Goes for
+  it », « Punts », « Kicks the field goal ») et chaque option avec sa chance de victoire en barres, la retenue en avant.
+  Quand le coach ne suit pas les chiffres (écart d'au moins 0,5 point) : « Plays it safe: the numbers said go for it »
+  ou « A gamble… ». Avant une tentative à 2 points : « Goes for two » et la raison, traduite du français du moteur
+  (« to tie the game », « to go up by 3 », « to cut the gap to 7 »…). La carte reste pendant l'action ; à la fin, le
+  résultat (« ✓ Converted », « ✗ Stopped », « ✓ Field goal good », « ✗ No good »), lisible 2,5 s de plus.
+  Environ 10 cartes par match ; rien sur les actions ordinaires. Aucune donnée nouvelle : tout était dans le GameFeed.
+- **Grand écran sur téléphone (≤ 600 px, hors « Bigger field »)** : plein écran, sans carte ni marges ; l'en-tête tient
+  sur une ligne de 49 px (état, « AEG @ CTD », partage, chat, plein écran, fermer) et reste en haut au défilement ; la
+  saison, la légende des couleurs et « Load GameFeed » sont cachés ; la pastille d'état du terrain aussi (elle est dans
+  l'en-tête). Le terrain est bord à bord juste sous l'en-tête : 390 × 293 px au lieu de 336 × 210.
+- **Interrupteur** : `GC_DECISIONS=off` (`coach_off` dans `#gf-server`) : aucune carte. Le grand écran sur téléphone n'a
+  pas d'interrupteur (CSS seulement).
+- **Tests** : `test_accueil.py` (`test_decisions_interrupteur`) ; `outils/site/test_decisions.js`, nouveau, dans le
+  groupe site-2 (ports 8242-8243) : les décisions sont cherchées dans les GameFeed de la dernière semaine (un « go », un
+  field goal alors que « go » était meilleur, une tentative à 2 points) ; contenu de la carte et chances de victoire du
+  moteur, « Plays it safe », raison en anglais, résultat d'après le GameFeed, aucune carte sur une action ordinaire ni
+  avec l'interrupteur ; téléphone : plein écran, en-tête ≤ 56 px, titre court, terrain bord à bord, carte dans le
+  terrain, pas de défilement horizontal.
+
+### 129. Tracking, NGS-6 : cartes des passes et des courses, semaine par semaine, récompenses, vidéo (19/11/2026)
 Dernière étape du plan (`programme/Next_Gen_Stats_plan.md`), à la demande de Guillaume. Toujours sans toucher au moteur.
 - **Repère du terrain** (vérifié sur 2 852 courses de la semaine du 16/11) : une course notée L (`geo.side`) part vers les
   y plus petits que la balle, quelle que soit l'équipe qui attaque. Donc y croissant = vers la droite de l'attaque.
