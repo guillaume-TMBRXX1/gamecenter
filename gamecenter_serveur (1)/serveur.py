@@ -1070,6 +1070,8 @@ def page(request: Request = None):
         srv["accueil"] = True
     if front_office_on():                            # FO-4 : My team › Front office (vote des supporters, section 111)
         srv["front_office"] = True
+    if badges_on():                                  # badges (BD-3) : vue Badges, puce à côté du pseudo
+        srv["badges"] = True
     if os.environ.get("GC_NETTETE", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["nettete_off"] = True                    # netteté du terrain (section 90) : la règle de fluidité d'avant
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
@@ -1088,6 +1090,7 @@ def page(request: Request = None):
                       "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,kfAt,missSpot,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,fluide:v=>{if(v!==undefined)JEU_FLUIDE=!!v;return JEU_FLUIDE;},psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},fo:{foGameRow,foGameStat,FO_ON},"
                       "trk:{openRosterCard,watchGame,renderStats,rpAfterSeek,modalGame:()=>modalGame},"
+                      "bd:{bdChip,state:()=>BD,chatNode:m=>chatNode(m,CH)},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
