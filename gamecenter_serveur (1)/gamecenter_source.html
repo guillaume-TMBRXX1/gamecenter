@@ -1331,7 +1331,7 @@
   #joinBtn{display:none}html.guest #joinBtn{display:inline-flex}   /* décidé avant le premier dessin (script de tête) : pas de décalage */
   .chip-btn.join-btn{color:var(--cyan-ink);background:var(--cyan);border-color:var(--cyan);font-weight:700}
   .chip-btn.join-btn:hover{filter:brightness(1.05)}
-  html.guest .topbar .search-wrap,html.guest .topbar .search{flex:1 1 110px}
+  @media (min-width:761px){ html.guest .topbar .search-wrap,html.guest .topbar .search{flex:1 1 110px} }   /* téléphone : la recherche garde sa ligne (sinon l'horloge du direct la décale : CLS) */
   .join{position:fixed;inset:0;z-index:330;display:grid;place-items:center;padding:16px;background:rgba(8,12,20,.55)}
   .join[hidden]{display:none}
   .join-card{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:26px 26px 22px;outline:0}
