@@ -95,7 +95,7 @@ site : My account › Badges · badge mis en avant à côté du pseudo (classeme
 ### BD-0 — Plan *(ce fichier)* — ✅ 20/11
 Catalogue, principes, données existantes, découpage. Points à décider ci-dessous.
 
-### BD-1 — Module des règles + jours de visite *(module + serveur, sans site)*
+### BD-1 — Module des règles + jours de visite *(module + serveur, sans site)* — ✅ 20/11 (README section 130)
 - `moteur/badges.py` : le catalogue (clé, nom, description, paliers, catégorie) et `evaluer(...)` → badges dus et
   progression vers le palier suivant ; tests `moteur/tests/test_badges.py` (chaque règle, paliers, séries de semaines
   avec trous, rien pour un invité, rien pour la mise ou les recharges).
@@ -109,6 +109,16 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Le badge mis en avant renvoyé avec les lignes du classement de la saison et des ligues.
 - Interrupteur `GC_BADGES=off` (ni API ni affichage). Tests serveur sur une copie des données.
 
+### BD-2 bis — Créer un compte et choisir sa franchise *(site + serveur)*
+- Une entrée visible pour un invité : bouton « Create account » dans la barre du haut (à la place du solde avant le
+  premier pari, voir section 127) et invitations au bon moment (après un premier pari gagné, au vote des supporters,
+  sur la page Badges : « Create an account to keep them »).
+- Un parcours court en deux écrans : pseudo + mot de passe (la clé d'invité devient le compte : ses paris, ses jours et
+  sa progression restent), puis **le choix de la franchise favorite** (grille des 24 logos, « Skip » possible), qui
+  ouvre My team, le vote des supporters et True fan.
+- Settings garde la gestion du compte (changer de franchise, se déconnecter) ; le formulaire du bas de Settings disparaît.
+- À plan validé par Guillaume (écrans sur le vrai site, comme pour le Front office) avant de coder.
+
 ### BD-3 — Site *(site)*
 - My account › **Badges** : grille des badges (gagnés en couleur, à gagner en gris avec la progression « 7 / 12 weeks »),
   choix du badge mis en avant ; toast « Badge unlocked » au moment où il est gagné ; le badge mis en avant à côté du
@@ -121,14 +131,20 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Web Push « You unlocked Season ticket · Silver » (abonnés seulement) ; récapitulatif du lundi (« New this week »).
 - Badges des idées d'engagement si elles sont faites ; badge Insights Pro si le paiement est branché.
 
-## Points à décider (Guillaume)
+## Points décidés (Guillaume, 20/11/2026)
 
-1. **Comptes seulement** (les invités voient leur progression, sans garder les badges) : d'accord ?
-2. **Badges de paris** : seulement « lecture du jeu » (surprise, journée parfaite, combiné, classements), rien sur la
-   mise ni le volume — ou aucun badge lié aux paris ?
-3. **Founding fan** : quelle date limite (par exemple le 31/12/2026) ?
-4. **Badge mis en avant à côté du pseudo** : classements et ligues seulement, ou aussi le chat ?
-5. **Badge Insights Pro** (si le paiement arrive un jour) : oui, ou les badges restent tous gagnés en jouant ?
+1. **Comptes seulement** : oui (les invités voient leur progression ; leurs jours de visite sont notés et comptent s'ils
+   créent un compte).
+2. **Badges de paris** : tous ceux du plan (Upset caller, Perfect day, Combo, Top of the league, Top 10), toujours sans
+   rien sur la mise ni le volume. Garde-fou ajouté en BD-1 : Top 10 seulement une semaine où 30 comptes au moins sont
+   classés (avec trois classés, tout le monde est « top 10 »).
+3. **Founding fan** : compte créé au plus tard le **31/12/2026**.
+4. **Badge mis en avant** : pas tranché ; par défaut, classements et ligues seulement (pas le chat).
+5. **Badge Insights Pro** : oui.
+
+**Remarque de Guillaume (20/11) — la création de compte.** Aujourd'hui, créer un compte demande d'aller tout en bas de
+Settings, et le choix de la franchise favorite n'est pas mis en avant. Les badges ne valent que pour les comptes : il
+faut donc une vraie entrée. Étape **BD-2 bis** ci-dessous, avant le site des badges.
 
 ## Garde-fous (définition de fini de chaque étape)
 
