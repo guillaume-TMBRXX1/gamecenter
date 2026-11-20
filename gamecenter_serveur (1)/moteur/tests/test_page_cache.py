@@ -91,6 +91,26 @@ class TestPageCache(unittest.TestCase):
             serveur._PAGE_HTML["verrou"].release()
         self.assertEqual(self.n, 1)
 
+    def test_libelle_de_semaine(self):
+        """Le bouton de semaine porte déjà son libellé dans le HTML (« This week » faisait bouger la barre du haut)."""
+        lib = serveur._semaine_libelle(self.w, self.t)
+        self.assertRegex(lib, r"^Week \d+ \u00b7 \d{1,2}\u2013\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Oct|Nov|Dec) $")
+        html = gzip.decompress(serveur.page(Req()).body).decode("utf-8")
+        self.assertIn('id="weekChip" data-view-go="schedule">' + lib.rstrip(), html)
+        self.assertNotIn('data-view-go="schedule">This week', html)
+
+    def test_bouton_du_bandeau(self):
+        """Le bouton du bandeau porte déjà le texte que la page lui donnera (il ne change plus au démarrage)."""
+        g = min(self.w.sched, key=lambda x: x["ko"])
+        apres = max(x["end"] for x in self.w.sched if x["ko"] == g["ko"]) + 1     # tout le 1er créneau terminé
+        self.assertLess(apres, min(x["ko"] for x in self.w.sched if x["ko"] > g["ko"]))
+        for t, attendu in ((g["ko"] - 60_000, "See the next game"), (g["ko"] + 60_000, "Watch live now"),
+                           (apres, "Watch a full game")):
+            self.assertEqual(serveur._bandeau_bouton(self.w, t), attendu)
+        self.t = apres
+        html = gzip.decompress(serveur.page(Req()).body).decode("utf-8")
+        self.assertIn('id="welcomeWatch">Watch a full game</button>', html)
+
     def test_coupe(self):
         os.environ["GC_PAGE_CACHE"] = "0"
         serveur.page(Req())

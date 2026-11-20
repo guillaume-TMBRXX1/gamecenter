@@ -3879,6 +3879,14 @@ ligue (≈ 20 s de plus).
 - **Mesure locale** (serveur réel, dimanche 22/11 21:00, 12 requêtes simultanées par vague) : accueil 0,9 à 3,9 s juste
   après le préchauffage (News et Tracking calculent encore), puis 0,2 s, puis 0,03 à 0,06 s ; pages des franchises 26 s,
   puis 1,7 s, puis 0,05 s.
+- **Page qui ne bouge plus au démarrage sur téléphone** (test « première visite » rouge en CI : CLS 0,225 ; reproduit
+  en local avec le processeur ralenti, à l'identique sur `main` : 0,228) : trois éléments changeaient de taille au
+  démarrage de la page. Le bouton de semaine (« This week », section 79, remplacé par « Week 8 · 16–22 Nov » : la barre
+  du haut passait sur trois lignes) et le bouton du bandeau de première visite (« Watch live now » remplacé la nuit
+  par « Watch a full game » : « How it works » passait à la ligne) sont maintenant écrits par le serveur avec leur
+  texte final (`_semaine_libelle`, `_bandeau_bouton`, mêmes règles que la page) ; la barre d'onglets du téléphone,
+  vide jusqu'au démarrage, réserve sa hauteur. CLS du téléphone : 0 avec le processeur ralenti 2, 4 et 6 fois (0,158
+  à 0,228 avant).
 - Coupé sous `GC_TEST_HOOK=1` (tests du site : chaque page refaite, pas de préchauffage). **Tests** :
   `moteur/tests/test_page_cache.py`.
 - **À faire par Guillaume** : redemander l'examen AdSense une fois la PR déployée, et **éviter de fusionner des PR

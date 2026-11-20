@@ -1112,6 +1112,30 @@ def _page_cachee(ttl):
         C["verrou"].release()
 
 
+_MOIS_GB = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec")   # Intl en-GB, mois courts
+
+
+def _semaine_libelle(w, t):
+    """Le libellé du bouton de semaine (« Week 8 · 16–22 Nov »), écrit comme le fait la page (wRange : premier coup
+    d'envoi, fin du dernier match ou coup d'envoi + 95 min, heure de Bruxelles). Écrit dès le HTML (section 133) : « This
+    week », plus court, était remplacé au démarrage de la page et faisait passer la barre du haut du téléphone sur trois
+    lignes (décalage de 0,23 quand le processeur est lent, comme sur la machine des tests)."""
+    debut = min(g["ko"] for g in w.sched)
+    fin = max(g["end"] if w.status(g, t) == "final" else g["ko"] + 95 * 60_000 for g in w.sched)
+    a, b = (datetime.fromtimestamp(x / 1000, TZ) for x in (debut, fin))
+    return f"Week {w.doc['week']['index']} \u00b7 {a.day}\u2013{b.day} {_MOIS_GB[b.month - 1]} "
+
+
+def _bandeau_bouton(w, t):
+    """Le texte du bouton du bandeau de première visite, choisi comme le fait la page (welcomePick) : écrit dès le HTML
+    (section 133). « Watch live now » devenait « Watch a full game » au démarrage, la nuit : sur téléphone, « How it
+    works » passait à la ligne et la page descendait de 31 px (décalage de 0,16 quand le processeur est lent)."""
+    st = [w.status(g, t) for g in w.sched]
+    if "live" in st:
+        return "Watch live now"
+    return "Watch a full game" if "final" in st else "See the next game" if "upcoming" in st else None
+
+
 def _page_html():
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
@@ -1155,7 +1179,12 @@ def _page_html():
     if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
         srv["coach_off"] = True
     # BD-2 bis : « __JOIN__ » = 1 dans le script de tête (le bouton « Sign up » n'existe qu'avec le serveur)
-    s = _page_source().replace("__JOIN__", "1").replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
+    s = _page_source().replace('id="weekChip" data-view-go="schedule">This week',
+                               'id="weekChip" data-view-go="schedule">' + html.escape(_semaine_libelle(w, t)).rstrip(), 1)
+    bouton = _bandeau_bouton(w, t)
+    if bouton:
+        s = s.replace('id="welcomeWatch">Watch live now</button>', 'id="welcomeWatch">' + bouton + "</button>", 1)
+    s = s.replace("__JOIN__", "1").replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
