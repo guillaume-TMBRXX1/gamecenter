@@ -20,6 +20,10 @@ from unittest import mock
 from moteur import ngs as N
 from moteur.tests import test_serveur as ts
 
+
+def _ngs_du_jour():
+    return N.DU_JOUR
+
 ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = os.path.dirname(os.path.dirname(ICI))
 
@@ -228,6 +232,56 @@ class Fiches(unittest.TestCase):
         self.assertEqual([p["role"] for p in aaa["players"]], ["QB", "Target", "Carrier"])
 
 
+class Ngs6(unittest.TestCase):
+    """NGS-6 : zones des passes, couloirs des courses, cartes, récompenses, historique, formatage."""
+    def test_zones_et_couloirs(self):
+        geo = {"cov": {"r": [["WR1", 0, 0, "X", [[0, 200], [120, 100]], []]]}}
+        self.assertEqual(N.zone_passe(geo, "WR1", 24.0), ("L", "i"))             # 14 yd à gauche, 12 yd de profondeur
+        self.assertEqual(N.zone_passe(geo, "WR1", 14.0, prof=25), ("M", "d"))    # profondeur de la route, au milieu
+        self.assertEqual(N.zone_passe(geo, "WR1", 2.0, prof=-2), ("R", "b"))
+        self.assertIsNone(N.zone_passe(geo, "TE", 24.0))
+        self.assertIsNone(N.zone_passe({}, "WR1", 24.0))
+        self.assertEqual(N.couloir_course({"side": "L", "cls": "outside"}), "LO")
+        self.assertEqual(N.couloir_course({"side": "R", "cls": "gap"}), "RI")
+        self.assertIsNone(N.couloir_course({"cls": "inside"}))
+
+    def test_cartes(self):
+        def passe(i, res, y_fin, prof):
+            P = _passe(i, res, 12 if res == "complete" else 0, prof=prof)
+            P["ball_y"] = 25.0
+            P["geo"]["cov"] = {"r": [["WR1", 0, 0, "X", [[0, 250], [prof * 10, y_fin * 10]], []]]}
+            return P
+        F = _feed([passe(1, "complete", 10, 5), passe(2, "incomplete", 10, 5), passe(3, "complete", 40, 25),
+                   _course(10, 6), _course(11, -1)])
+        for P in F["plays"][3:]:
+            P["geo"]["side"] = "R"
+        c = N.compter(F)["players"]
+        ch = N.cartes(c["AAA_QB1"])
+        self.assertEqual(sorted(ch["pass"]), [["L", "s", 2, 1, 12, 0, 0], ["R", "d", 1, 1, 12, 0, 0]])
+        self.assertEqual(N.cartes(c["AAA_WR1"])["pass"], ch["pass"])           # le receveur ciblé : la même carte
+        self.assertEqual(N.cartes(c["AAA_RB1"])["run"], [["RI", 2, 5, 0]])
+        A = N.agreger([N.compter(F)])
+        self.assertEqual(N.joueur(A, N.tableaux(A), "AAA_QB1")["charts"], ch)
+        self.assertEqual(N.ligue_cartes(A)["pass"], sorted(ch["pass"], key=lambda x: ("LMR".index(x[0]), "bsid".index(x[1]))))
+
+    def test_recompenses_et_historique(self):
+        F = _feed([_passe(i, "complete", 9, tt=1.5 + i / 100) for i in range(1, 30)])
+        A = N.agreger([N.compter(F)]); T = N.tableaux(A)
+        aw = N.recompenses(T)
+        self.assertIn("Fastest release", [a["title"] for a in aw])
+        self.assertEqual(next(a for a in aw if a["col"] == "tt")["id"], "AAA_QB1")
+        self.assertEqual(N.recompenses(None), [])
+        H = N.historique([(7, A, T), (8, A, T)], "AAA_QB1", "AAA QB1")
+        self.assertEqual([h["week"] for h in H], [7, 8])
+        self.assertEqual(N.historique([(7, A, T)], "AAA_QB1", "Un autre"), [])     # un autre joueur au même poste
+        self.assertEqual(N.historique([(7, A, T)], "AAA_QB1", "AAA QB1", ("passing", "adot"))[0]["k"], "adot")
+
+    def test_formater(self):
+        self.assertEqual([N.formater(1.844, "s"), N.formater(0.1432, "pct"), N.formater(3.94, "pp"),
+                          N.formater(-2.5, "sy"), N.formater(273.6, "sn"), N.formater(None, "s"), N.formater(1234, "n")],
+                         ["1.84 s", "14.3%", "+3.9 pts", "−2.50 yd", "+274 yd", "—", "1,234"])
+
+
 class Donnees(unittest.TestCase):
     def test_vrai_match_et_semaine_sans_geo(self):
         semaines = sorted(glob.glob(os.path.join(RACINE, "data", "weeks", "week_*")))
@@ -343,6 +397,23 @@ class Serveur(ts.Base):
                 with self.assertRaises(ts.HTTPException) as e:
                     fn(*args)
                 self.assertEqual(e.exception.status_code, 404)
+
+    def test_ngs6_recompenses_cartes_historique(self):
+        jo = self._compte("Trk Six")
+        ts.a_l_heure(self.reg[40]["ko"] + 60_000)                            # semaine en cours : pas de récompenses
+        self.assertNotIn("awards", self._get())
+        ts.a_l_heure(max(g["end"] for g in self.w.sched) + 60_000)            # semaine finie : les récompenses, pour tous
+        ts.serveur._TRK_CACHE.clear()
+        d = self._get()
+        self.assertEqual(len(d["awards"]), len(_ngs_du_jour()))
+        qb = d["awards"][0]["id"]
+        with mock.patch.dict(os.environ, {"GC_INSIGHTS_USERS": "Trk Six"}):
+            p = json.loads(ts.serveur.api_tracking_player(qb, jo).body)
+            self.assertTrue(p["charts"].get("pass")) ; self.assertTrue(p["league_charts"].get("pass"))
+            self.assertEqual(p["history"][-1]["week"], self.w.doc["week"]["index"])
+            libre = json.loads(ts.serveur.api_tracking_player(qb, "").body)
+            for k in ("charts", "league_charts", "history"):
+                self.assertNotIn(k, libre)
 
     def test_temps_semaine_entiere(self):
         ts.a_l_heure(self.reg[-1]["end"] + 1000)

@@ -1000,6 +1000,7 @@ def page(request: Request = None):
         compter_visite(request)
     if request is not None:
         news_prechauffer()                           # onglet News (section 115)
+        tracking_prechauffer()                       # Tracking (NGS-6) : semaine en cours, semaines passées, cartes
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
@@ -4097,6 +4098,8 @@ def api_tracking(token: str = ""):
     pro = insights_pro(player_by_token(token) if token else None)
     out = {"week": w.start, "final": n, "pro": pro, "today": _ngs.stat_du_jour(tab, jours) if tab else None,
            "version": _ngs.VERSION}
+    if tab and n == len(w.sched):                    # NGS-6 : la semaine est finie, ses récompenses (gratuites)
+        out["awards"] = _ngs.recompenses(tab)
     if pro and tab:
         out["groups"] = tab["groups"]
         out["models"] = tab["models"]
@@ -4116,11 +4119,83 @@ def api_tracking_player(id: str = "", token: str = ""):
     w = _need_week(); t = now_ms()
     tab, n, _, agg = tracking_data(w, t)
     pro = insights_pro(player_by_token(token) if token else None)
-    j = _ngs.joueur(agg, tab, id) if tab else {"id": id, "headline": None, "groups": []}
+    j = _ngs.joueur(agg, tab, id) if tab else {"id": id, "headline": None, "groups": [], "charts": {}}
     out = {"final": n, "pro": pro, "id": id, "headline": j["headline"]}
     if pro:
         out["groups"] = j["groups"]
+        out["charts"] = j.get("charts") or {}                        # NGS-6 : cartes des passes et des courses
+        if out["charts"]:
+            out["league_charts"] = tracking_ligue_cartes(w, t)
+        h = j["headline"]
+        cle = None
+        if h:
+            g = next((x for x in j["groups"] if x["label"] == h["group"]), None)
+            cle = (g["key"], h["k"]) if g else None
+        nom = (agg["names"].get(id) or [None])[0] if agg else None
+        past = tracking_semaines_passees(w, t)
+        cur = [(w.doc["week"]["index"], agg, tab)] if tab else []
+        out["history"] = _ngs.historique(past + cur, id, nom, cle) if nom else []
     return JSONResponse(out, headers={"Cache-Control": "no-store"})
+
+
+# NGS-6 : les semaines passées (finies : calculées une fois, gardées), depuis la 1re semaine où le moteur exporte
+# play.geo (GC_NGS_DEPUIS, 7 : la semaine du 09/11/2026).
+_TRK_SEM, _TRK_LC = {}, {}
+try:
+    NGS_DEPUIS = max(1, int(os.environ.get("GC_NGS_DEPUIS", "7")))
+except ValueError:
+    NGS_DEPUIS = 7
+
+
+def tracking_semaines_passees(w, t):
+    """[(index, agg, tab)] des semaines terminées avant w (depuis NGS_DEPUIS), dans l'ordre."""
+    out = []
+    ws = [x for x in sorted(load_weeks().values(), key=lambda x: x.monday)
+          if x.monday < w.monday and x.open <= t and x.doc["week"]["index"] >= NGS_DEPUIS]
+    M = tracking_modeles()
+    for x in ws:
+        k = x.folder
+        with _TRK_LOCK:
+            d = _TRK_SEM.get(k)
+            if d is None:
+                finis = [g for g in x.sched if x.status(g, t) == "final" and g.get("result")]
+                agg = _ngs.agreger([_ngs.compter(x.feed(g["id"]), M) for g in finis])
+                d = _TRK_SEM[k] = (x.doc["week"]["index"], agg, _ngs.tableaux(agg, M) if finis else None)
+        out.append(d)
+    return out
+
+
+def tracking_ligue_cartes(w, t):
+    """Repères de la ligue pour les cartes (complétion par case, yards par couloir), en cache comme les tableaux."""
+    tab, n, _, agg = tracking_data(w, t)
+    k = (w.start, n)
+    if k not in _TRK_LC:
+        _TRK_LC.clear(); _TRK_LC[k] = _ngs.ligue_cartes(agg) if agg else {}
+    return _TRK_LC[k]
+
+
+_TRK_CHAUD = {"on": False}
+
+
+def tracking_prechauffer():
+    """Au premier affichage de la page : les tableaux de la semaine, ceux des semaines passées (≈ 5 s chacune, une fois)
+    et les repères des cartes sont calculés à côté, puis tenus à jour chaque minute. Même règle que News : coupé sous le
+    crochet des tests automatiques (GC_TEST_HOOK=1) sauf GC_NGS_WARM=1 ; les API calculent de toute façon à la demande."""
+    v = os.environ.get("GC_NGS_WARM")
+    on = v.strip().lower() not in ("off", "0", "non", "no") if v is not None else os.environ.get("GC_TEST_HOOK") != "1"
+    if _TRK_CHAUD["on"] or not on or not tracking_on():
+        return
+    _TRK_CHAUD["on"] = True
+
+    def boucle():
+        while True:
+            try:
+                w = _need_week(); t = now_ms()
+                tracking_data(w, t); tracking_semaines_passees(w, t); tracking_ligue_cartes(w, t)
+            except Exception as e:                   # pragma: no cover
+                print("tracking :", e)
+            time.sleep(60)
+    threading.Thread(target=boucle, daemon=True).start()
 
 
 @app.get("/api/tracking/team")

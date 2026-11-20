@@ -167,6 +167,7 @@ def _actions(F):
                  "away": act == "THROWAWAY"}
             if act == "LANCER" and res in _TENTATIVE and q["tgt"]:
                 q["kind"] = "att"
+                q["zone"] = zone_passe(geo, tgt.get("role"), P.get("ball_y"), route.get("depth"))
             for r in geo.get("rec") or []:
                 q["routes"].append((qui(r[0]), r[1], r[2]))
             yield {"P": P, "off": off, "def": de, "q": q}
@@ -177,8 +178,85 @@ def _actions(F):
             c0 = (sim.get("c") or [None])[0]
             q = {"kind": "run", "car": car, "yds": gain, "box": (P.get("run") or {}).get("box"), "cls": geo.get("cls"),
                  "dn": P.get("down"), "tg": P.get("to_go"), "ybc": c0[0] if c0 else None,
-                 "ev": sim.get("ev") or [], "duels": geo.get("duels") or []}
+                 "ev": sim.get("ev") or [], "duels": geo.get("duels") or [],
+                 "lane": couloir_course(geo)}
             yield {"P": P, "off": off, "def": de, "q": q}
+
+
+# ------------------------------------------------------------------ cartes (NGS-6) : où vont les passes, où courent les porteurs
+# Repère du moteur (vérifié le 19/11/2026 sur 2 852 courses) : une course notée L part vers les y plus petits que la balle,
+# quelle que soit l'équipe qui attaque — y croissant = vers la droite de l'attaque.
+COULOIRS_PASSE = ("L", "M", "R")                 # gauche, milieu (à 6 yards au plus de la balle), droite
+PROFONDEURS = ("b", "s", "i", "d")               # derrière la ligne, 0-9, 10-19, 20+ yards
+MILIEU = 6.0
+COULOIRS_COURSE = ("LO", "LI", "RI", "RO")       # extérieur / intérieur, de chaque côté
+_EXTERIEUR = {"outside", "perimeter", "option"}
+
+
+def zone_passe(geo, role, ball_y, prof=None):
+    """(couloir, profondeur) d'une passe : le couloir d'après le bout de la route de la cible au lancer (geo.cov, dixièmes
+    de yard, en travers) ; la profondeur, celle de la route (prof, comme l'aDOT), sinon le bout de la trace."""
+    cov = geo.get("cov") or {}
+    r = next((x for x in cov.get("r") or [] if x and x[0] == role), None)
+    if not r or len(r) < 5 or not r[4] or ball_y is None:
+        return None
+    x, y = r[4][-1][0] / 10, r[4][-1][1] / 10
+    if prof is not None:
+        x = prof
+    dy = y - ball_y
+    ln = "L" if dy < -MILIEU else "R" if dy > MILIEU else "M"
+    return ln, "b" if x < 0 else "s" if x < 10 else "i" if x < 20 else "d"
+
+
+def couloir_course(geo):
+    """Couloir d'une course : côté (L / R) et extérieur (outside, perimeter, option) ou intérieur."""
+    sd = geo.get("side")
+    if sd not in ("L", "R"):
+        return None
+    return sd + ("O" if geo.get("cls") in _EXTERIEUR else "I")
+
+
+def _carte_passe(c, q):
+    z = q.get("zone")
+    if not z:
+        return
+    k = f"pc:{z[0]}{z[1]}:"
+    c[k + "a"] += 1; c[k + "c"] += q["cmp"]; c[k + "y"] += q["yds"] if q["cmp"] else 0
+    c[k + "t"] += q["res"] == "touchdown"; c[k + "i"] += q["res"] == "interception"
+
+
+def cartes(c):
+    """Les cartes d'un joueur à partir de ses comptes : {"pass": [[couloir, profondeur, a, c, y, td, int], …],
+    "run": [[couloir, n, yards, yards au-delà de l'attendu], …]} (cases vides omises)."""
+    out = {}
+    pas = []
+    for ln in COULOIRS_PASSE:
+        for pr in PROFONDEURS:
+            k = f"pc:{ln}{pr}:"
+            if c.get(k + "a"):
+                pas.append([ln, pr, c[k + "a"], c.get(k + "c", 0), c.get(k + "y", 0), c.get(k + "t", 0), c.get(k + "i", 0)])
+    if pas:
+        out["pass"] = pas
+    run = [[ln, c[f"rc:{ln}:n"], c.get(f"rc:{ln}:y", 0), round(c.get(f"rc:{ln}:x", 0), 1)]
+           for ln in COULOIRS_COURSE if c.get(f"rc:{ln}:n")]
+    if run:
+        out["run"] = run
+    return out
+
+
+def ligue_cartes(agg):
+    """Repères de la ligue pour les cartes : complétion par case, yards par course par couloir."""
+    tot = collections.Counter()
+    for pid, c in agg["players"].items():
+        nom, pos, eq = agg["names"].get(pid) or [pid, "", ""]
+        if pos == "QB":
+            for k, v in c.items():
+                if k.startswith("pc:"):
+                    tot[k] += v
+        for k, v in c.items():
+            if k.startswith("rc:"):
+                tot[k] += v
+    return cartes(tot)
 
 
 def _roster(F):
@@ -236,6 +314,7 @@ def compter(F, modeles=None):
                 if qb:
                     j = J[qb]
                     j["att"] += 1; j["cmp"] += q["cmp"]; j["pyds"] += q["yds"] if q["cmp"] else 0
+                    _carte_passe(j, q)
                     j["int"] += q["res"] == "interception"
                     if q["tt"] is not None:
                         j["tt_n"] += 1; j["tt_s"] += q["tt"]
@@ -253,6 +332,7 @@ def compter(F, modeles=None):
                 nomme(q["tgt"], (dec.get("target") or {}).get("name"), "", off)
                 vus.add(q["tgt"])
                 r["tgt"] += 1; r["rec"] += q["cmp"]; r["ryds"] += q["yds"] if q["cmp"] else 0
+                _carte_passe(r, q)
                 r["sep_s"] += q["sep"] or 0
                 if q["ay"] is not None:
                     r["ay_n"] += 1; r["ay_s"] += q["ay"]
@@ -312,6 +392,10 @@ def compter(F, modeles=None):
                 j["box8"] += (q["box"] or 0) >= 8
                 if xr is not None:
                     j["xr_n"] += 1; j["xr_s"] += q["yds"] - xr
+                if q["lane"]:
+                    j[f"rc:{q['lane']}:n"] += 1; j[f"rc:{q['lane']}:y"] += q["yds"]
+                    if xr is not None:
+                        j[f"rc:{q['lane']}:x"] += q["yds"] - xr
                 if q["ybc"] is not None:
                     j["ct_n"] += 1; j["ybc_s"] += q["ybc"]; j["yaco_s"] += q["yds"] - q["ybc"]
                     j["mtf"] += sum(1 for e in q["ev"] if len(e) > 2 and not e[2])
@@ -649,9 +733,10 @@ def joueur(agg, tab, pid):
     qualifié a ses valeurs, sans rang."""
     c = agg["players"].get(pid) if agg else None
     nom, pos, eq = (agg["names"].get(pid) if agg else None) or [pid, "", pid.split("_")[0]]
-    out = {"id": pid, "name": nom, "pos": pos, "team": eq, "headline": None, "groups": []}
+    out = {"id": pid, "name": nom, "pos": pos, "team": eq, "headline": None, "groups": [], "charts": {}}
     if not c:
         return out
+    out["charts"] = cartes(c)
     L = tab["_ligue"]
     par_g = {g["key"]: g for g in tab["groups"]}
     gp = agg["gp"].get(eq, 0)
@@ -717,3 +802,75 @@ def match(comptes, modeles, ligue):
         out["teams"].append({"team": eq, "v": r["v"], "players": pls})
     out["player_cols"] = {k: par_g[k]["cols"] for k in ("passing", "receiving", "rushing", "passrush")}
     return out
+
+
+# ------------------------------------------------------------------ NGS-6 : récompenses de la semaine, historique
+def _meilleur(tab, gk, ck):
+    """Le meilleur joueur qualifié d'une colonne (dans son sens ; le temps de lancer : le plus court)."""
+    g = next((x for x in tab["groups"] if x["key"] == gk), None) if tab else None
+    if not g:
+        return None, None
+    col = next(c for c in g["cols"] if c["k"] == ck)
+    rows = [r for r in g["rows"] if r["v"].get(ck) is not None]
+    if not rows:
+        return None, None
+    sens = -1 if ck == "tt" else (col["s"] or 1)
+    return min(rows, key=lambda r: (-r["v"][ck] * sens, r["name"])), col
+
+
+def recompenses(tab):
+    """Les récompenses de la semaine (une par statistique de DU_JOUR) : [{title, group, col, label, fmt, help, id, name,
+    pos, team, value, league}]."""
+    out = []
+    par = {g["key"]: g for g in tab["groups"]} if tab else {}
+    for gk, ck, titre, phrase in DU_JOUR:
+        best, col = _meilleur(tab, gk, ck)
+        if best:
+            out.append({"title": titre, "group": gk, "col": ck, "label": col["l"], "fmt": col["f"], "help": col["h"],
+                        "id": best["id"], "name": best["name"], "pos": best["pos"], "team": best["team"],
+                        "value": best["v"][ck], "league": par[gk]["league"].get(ck), "phrase": phrase})
+    return out
+
+
+def historique(semaines, pid, nom, cle=None):
+    """La statistique phare d'un joueur semaine après semaine : semaines = [(index, agg, tab)] dans l'ordre ; seulement
+    les semaines où ce poste du roster était tenu par le même joueur (un rookie peut reprendre l'identifiant d'un
+    retraité). cle : (groupe, colonne) imposés (sinon la stat phare de chaque semaine)."""
+    out = []
+    for idx, agg, tab in semaines:
+        if not agg or not tab:
+            continue
+        n = agg["names"].get(pid)
+        if not n or (nom and n[0] != nom):
+            continue
+        j = joueur(agg, tab, pid)
+        h = j["headline"]
+        if cle:
+            g = next((x for x in j["groups"] if x["key"] == cle[0]), None)
+            st = next((x for x in g["stats"] if x["k"] == cle[1]), None) if g else None
+            h = dict(st, group=g["label"], qualified=g["qualified"], of=g["of"], n=g["n"]) if st else None
+        if h and h["v"] is not None:
+            out.append({"week": idx, "k": h["k"], "l": h["l"], "f": h["f"], "s": h["s"], "v": h["v"], "rank": h["rank"],
+                        "of": h["of"], "qualified": h["qualified"], "league": h["league"]})
+    return out
+
+
+def formater(v, f, unite=True):
+    """Une valeur dans son unité, comme le site (trkFmt) : « 1.84 s », « 14.3% », « +3.9 pts », « +2.57 yd »."""
+    if v is None:
+        return "—"
+    def sg(x, d):
+        return ("+" if x > 0 else "−" if x < 0 else "") + f"{abs(x):.{d}f}"
+    if f == "s":
+        return f"{v:.2f}" + (" s" if unite else "")
+    if f == "yd":
+        return f"{v:.1f}" + (" yd" if unite else "")
+    if f == "pct":
+        return f"{v * 100:.1f}%"
+    if f == "pp":
+        return sg(v, 1) + (" pts" if unite else "")
+    if f == "sy":
+        return sg(v, 2) + (" yd" if unite else "")
+    if f == "sn":
+        return sg(round(v), 0) + (" yd" if unite else "")
+    return f"{round(v):,}"

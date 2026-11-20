@@ -16,6 +16,8 @@ Tout se lit dans les GameFeed d'une semaine (data/weeks/week_*/games) :
                         Final, avec leurs plus belles actions (étape 8.6 a) ;
   match_hors_norme(...), franchise(...) : le match hors norme de la semaine (record ou 100 points cumulés) et la
                         franchise de la semaine (ordre fixe sur 24 semaines), étape 8.6 b ;
+  tracking_de_la_semaine(...) : une récompense « Tracking » de la semaine (NGS-6), son joueur, quatre chiffres de suivi
+                        et ses plus belles actions dans cette statistique ;
   enjeu(...), bascule(...) : le texte de l'accroche (score, temps, 4e essai) et la probabilité de victoire avant /
                         après, pour le haut de la vidéo (étape 8.2).
 Rien d'aléatoire : la même semaine donne toujours les mêmes vidéos.
@@ -535,3 +537,77 @@ def franchise_de_la_semaine(dossier, toutes, maintenant, n_actions=2):
     cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
     return {"team": t, "fiche": doc["teams"][t], "bilan": bilan, "legende": legende,
             "actions": sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))}
+
+
+# ------------------------------------------------------------------ NGS-6 : la récompense « Tracking » de la semaine
+# Les récompenses qui se voient sur le terrain (pas le pass block win rate : un joueur de ligne qui tient son duel ne fait
+# pas une vidéo), en rotation fixe par index de semaine ; si celle de la semaine n'a aucune action à montrer, la suivante.
+TRACKING_VIDEO = ("tt", "sep", "ryoe_c", "prwr", "cpoe", "yacoe")
+TRACKING_CHIFFRES = {"passing": ("tt", "cpoe", "adot", "cmp"), "receiving": ("sep", "open", "yacoe", "tgt"),
+                     "rushing": ("ryoe_c", "ypc", "yaco", "mtf"), "passrush": ("prwr", "prs", "dbl", "rush")}
+
+
+def _ngs_module():
+    import sys
+    racine = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    if racine not in sys.path:
+        sys.path.insert(0, racine)
+    from moteur import ngs
+    with open(os.path.join(racine, "moteur", "ngs_modeles.json"), encoding="utf-8") as fh:
+        return ngs, json.load(fh)
+
+
+def _moment_tracking(P, groupe, pid):
+    """L'action montre le joueur dans sa statistique : sa passe, sa réception, sa course, son rush gagné."""
+    pl = P.get("players") or {}
+    r, gain = P.get("result"), P.get("gain") or 0
+    if groupe == "passing":
+        return (pl.get("passer") or {}).get("id") == pid and r in ("complete", "touchdown") and gain >= 10
+    if groupe in ("receiving", "rushing"):
+        k = "pass" if groupe == "receiving" else "run"
+        return ((pl.get("carrier") or {}).get("id") == pid and (P.get("geo") or {}).get("k") == k
+                and r in ("complete", "run", "touchdown") and gain >= 8)
+    if groupe == "passrush":
+        tt = (P.get("decision") or {}).get("throw_time")
+        return any((d.get("rusher") or {}).get("id") == pid and d.get("t") is not None and tt is not None and d["t"] <= tt
+                   for d in (P.get("pocket") or {}).get("duels") or []) and r in ("sack", "incomplete", "interception")
+    return False
+
+
+def tracking_de_la_semaine(dossier, maintenant, n_actions=3):
+    """{"award": la récompense, "joueur": {id, name, team, pos}, "stats": quatre chiffres [{v (texte), l}], "actions"}
+    sur les matchs terminés de la semaine ; None si aucun match n'est terminé ou s'il n'y a rien à montrer."""
+    doc, feeds = charger_semaine(dossier)
+    jeux = _termines(doc, maintenant)
+    if not jeux:
+        return None
+    ngs, M = _ngs_module()
+    agg = ngs.agreger([ngs.compter(feeds[g["id"]], M) for g in jeux])
+    tab = ngs.tableaux(agg, M)
+    awards = {a["col"]: a for a in ngs.recompenses(tab)}
+    debut = doc["week"]["index"] % len(TRACKING_VIDEO)
+    for i in range(len(TRACKING_VIDEO)):
+        aw = awards.get(TRACKING_VIDEO[(debut + i) % len(TRACKING_VIDEO)])
+        if not aw:
+            continue
+        cand = []
+        for g in jeux:
+            F = feeds[g["id"]]
+            for k, P in enumerate(F["plays"]):
+                if _moment_tracking(P, aw["group"], aw["id"]):
+                    n, why = interet(F, k)
+                    cand.append({"game": g["id"], "index": k, "note": n, "why": why, "play": P, "dossier": dossier,
+                                 "ko": g["kickoff"]})
+        if not cand:
+            continue
+        cand.sort(key=lambda a: (-a["note"], a["ko"], a["index"]))
+        actions = sorted(cand[:n_actions], key=lambda a: (a["ko"], a["index"]))
+        j = ngs.joueur(agg, tab, aw["id"])
+        grp = next(x for x in j["groups"] if x["key"] == aw["group"])
+        par = {x["k"]: x for x in grp["stats"]}
+        stats = [{"v": ngs.formater(par[k]["v"], par[k]["f"]), "l": par[k]["l"]}
+                 for k in TRACKING_CHIFFRES[aw["group"]] if k in par and par[k]["v"] is not None]
+        return {"award": aw, "joueur": {"id": aw["id"], "name": aw["name"], "team": aw["team"], "pos": aw["pos"]},
+                "stats": stats[:4], "valeur": ngs.formater(aw["value"], aw["fmt"]), "actions": actions,
+                "games": len(jeux)}
+    return None
