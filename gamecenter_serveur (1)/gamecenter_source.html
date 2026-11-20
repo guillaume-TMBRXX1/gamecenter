@@ -2777,6 +2777,61 @@
   @media (max-width:1100px){ html.mo-boot #liveGrid>.mo-skt.f{grid-column:1/-1;min-height:300px} html.mo-boot #liveGrid>.mo-skt:nth-child(n+3){display:none} }
   @media (max-width:600px){ html.mo-boot #liveGrid>.mo-skt:nth-child(n+2){display:none} }
 </style>
+<style id="coach-match">
+  /* Section 128 — la décision du coach IA sur le terrain (carte .coach), et l'écran de match minimaliste sur téléphone. */
+  .coach{position:absolute;z-index:4;top:50px;right:8px;width:min(212px,calc(100% - 16px));padding:9px 11px 10px;border-radius:12px;
+    background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line-2);
+    box-shadow:0 10px 28px -8px rgba(23,32,45,.35);color:var(--ink);font:500 12px/1.3 var(--f-ui);pointer-events:none}
+  :root[data-theme="dark"] .coach{background:rgba(14,20,30,.88)}
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .coach{background:rgba(14,20,30,.88)} }
+  .coach[hidden]{display:none}
+  .coach p{margin:0}
+  .coach .co-eye{font:700 10px/1.2 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  .coach .co-sit{margin-top:2px;color:var(--ink-2);font-size:11.5px}
+  .coach .co-do{margin-top:3px;font:800 19px/1.05 var(--f-display);font-stretch:80%;text-transform:uppercase;letter-spacing:.02em}
+  .coach .co-why{margin-top:3px;font-weight:600}
+  .coach .co-wp{list-style:none;margin:7px 0 0;padding:0;display:grid;gap:4px}
+  .coach .co-wp li{display:grid;grid-template-columns:72px 1fr 34px;align-items:center;gap:6px;color:var(--ink-2);font-size:11.5px}
+  .coach .co-wp li i{display:block;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--ink-3) var(--w),var(--line-2) var(--w))}
+  .coach .co-wp li b{text-align:right;font-variant-numeric:tabular-nums}
+  .coach .co-wp li.on{color:var(--ink);font-weight:700}
+  .coach .co-wp li.on i{background:linear-gradient(90deg,var(--cyan) var(--w),var(--line-2) var(--w))}
+  .coach .co-note{margin-top:5px;color:var(--ink-3);font-size:10.5px}
+  .coach .co-tag{margin-top:6px;padding:3px 7px;border-radius:6px;background:color-mix(in srgb,var(--pink) 14%,transparent);color:var(--ink);font-size:11px;font-weight:600}
+  .coach .co-res{margin-top:6px;font:800 14px/1.1 var(--f-display);font-stretch:80%;text-transform:uppercase;letter-spacing:.04em}
+  .coach .co-res.ok{color:var(--cyan)} .coach .co-res.ko{color:var(--pink)}
+  .coach .co-res[hidden]{display:none}
+  @media (prefers-reduced-motion:no-preference){ .coach:not([hidden]){animation:coIn .28s cubic-bezier(.2,.8,.2,1)} }
+  @keyframes coIn{from{opacity:0;translate:0 -6px}}
+  .modal .m-ab{display:none}
+  /* petites tuiles et terrains étroits : une carte plus courte */
+  @media (max-width:600px){
+    .coach{top:44px;right:6px;width:min(188px,calc(100% - 12px));padding:7px 9px 8px}
+    .coach .co-do{font-size:16px} .coach .co-wp li{grid-template-columns:62px 1fr 30px;font-size:11px} .coach .co-note{display:none}
+  }
+
+  /* Téléphone, grand écran d'un match (hors « Bigger field ») : plein écran, sans carte ni marges ; une seule ligne
+     d'en-tête (état, « SPK @ AXM », boutons) ; le terrain bord à bord juste dessous. Avant : 210 px d'en-tête, le
+     terrain de 336 × 210 px à 237 px du haut. */
+  @media (max-width:600px){
+    .modal:not(.theater){padding:0;align-items:stretch}
+    .modal:not(.theater) .m-panel{width:100%;max-height:none;height:100%;border-radius:0;border:0;padding:0 0 env(safe-area-inset-bottom,0px);box-shadow:none;background:var(--bg)}
+    .modal:not(.theater) .m-head{position:sticky;top:0;z-index:20;flex-wrap:nowrap;gap:6px;min-height:48px;padding:calc(4px + env(safe-area-inset-top,0px)) 6px 4px 10px;
+      background:var(--bg);border-bottom:1px solid var(--line-2)}
+    .modal:not(.theater) .m-head .pill{flex:none;height:24px;padding:0 8px;font-size:10px}
+    .modal:not(.theater) .m-title{flex:1 1 auto;min-width:0;margin:0;font-size:19px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .modal:not(.theater) .m-title .m-tl{display:none}
+    .modal:not(.theater) .m-title .m-ab{display:inline}
+    .modal:not(.theater) .m-head .watch,.modal:not(.theater) .m-head .tkey,.modal:not(.theater) .m-head .rp-load{display:none}
+    .modal:not(.theater) .field.big>.pill{display:none}   /* l'état est déjà dans l'en-tête */
+    .modal:not(.theater) .m-head .icon-btn{flex:none;width:40px;height:40px;margin:0}
+    .modal:not(.theater) .m-body{gap:0}
+    .modal:not(.theater) .m-main>.field.big{border-radius:0;margin:0;aspect-ratio:4/3;border-left:0;border-right:0}
+    .modal:not(.theater) .m-main>div,.modal:not(.theater) .m-main>.panel,.modal:not(.theater) .m-side,.modal:not(.theater) .m-lower{margin-left:10px;margin-right:10px}
+    .modal:not(.theater) .m-lower{overflow-x:auto;min-width:0}   /* les tableaux de stats défilent dans leur bloc, la page ne déborde pas */
+    .modal:not(.theater) .qb{margin:8px 0 0;bottom:0}   /* ses marges de -6 px compensaient le rembourrage de la carte, retiré ici */
+  }
+</style>
 <style id="spect">
   /* Section 127 (phase 1 de la relance, 18/11/2026) — le terrain d'abord. Un visiteur qui n'a jamais parié (html.spect :
      ni pari, ni ticket, ni compte) ne voit ni le solde ni le ticket : sur ordinateur, la colonne de droite laisse sa
@@ -4986,6 +5041,70 @@ function engineFlip(P,call){
   if(!o) return null;
   return Math.sign(o)!==side;   /* flip=true mirrors the formation (s=-1) */
 }
+/* ---------- section 128 (19/11/2026) : la décision du coach IA, sur le terrain ----------
+   Avant un 4e essai (play.fourth_down : la chance de victoire de chaque option, la chance de convertir) et avant une
+   tentative à 2 points (play.conversion, choice two_point : la raison du coordinateur), une carte sur le terrain dit ce
+   que le coach a décidé et pourquoi : chaque option avec sa chance de victoire, la retenue en avant, et quand le coach
+   ne suit pas les chiffres (« plays it safe », « gamble »). Elle reste pendant l'action ; à la fin, son résultat
+   (converti ou arrêté, field goal réussi ou manqué, 2 points ou non). Grand écran et tuile du match vedette ; rien de
+   nouveau dans les données (le moteur les donnait déjà). GC_DECISIONS=off (#gf-server .coach_off) : rien. */
+const coachOn=()=>{ try{ return !(SERVER&&SERVER.coach_off); }catch(e){ return true; } };   /* SERVER est défini plus bas dans la page */
+const CO_LAB={go:'Go for it',punt:'Punt',field_goal:'Field goal'}, CO_DO={go:'Goes for it',punt:'Punts',field_goal:'Kicks the field goal'};
+const pctS=v=>Math.round(num(v,0)*100)+'%';
+/* les raisons de la transformation, écrites en français par le moteur (moteur/transformation.py) */
+function coReason(r){ r=String(r||'').replace(/\s*\(.*\)\s*$/,'').trim(); let m;
+  if(r==='égaliser') return 'to tie the game';
+  if((m=r.match(/^passer à (\d+) points? d'avance/))) return 'to go up by '+m[1];
+  if((m=r.match(/^revenir à (\d+) points?/))) return 'to cut the gap to '+m[1];
+  if(/agressif/.test(r)) return 'an aggressive coordinator';
+  return ''; }
+function coachOf(g,P){
+  if(!P||!coachOn()) return null;
+  const t=TEAMS[P.offense==='home'?g.home:g.away]||{}, ab=esc(t.abbr||'');
+  const f=P.fourth_down;
+  if(f&&f.wp&&CO_LAB[f.choice]){
+    const opts=Object.keys(f.wp).filter(k=>CO_LAB[k]).map(k=>({k,v:num(f.wp[k],0)})).sort((a,b)=>b.v-a.v);
+    if(!opts.length) return null;
+    const best=opts[0].k, ch=f.choice, near=opts.length>1&&Math.abs(opts[0].v-opts[1].v)<0.005;
+    const tag=ch===best||near?'':ch==='go'?'A gamble: the numbers said '+CO_LAB[best].toLowerCase():'Plays it safe: the numbers said '+CO_LAB[best].toLowerCase();
+    const to=num(P.to_go,10), goal=to>=110-num(P.los_x,60)-0.5&&P.offense==='home'||to>=num(P.los_x,60)-10-0.5&&P.offense==='away';
+    const rows=opts.map(o=>`<li class="${o.k===ch?'on':''}"><span>${CO_LAB[o.k]}</span><i style="--w:${Math.round(o.v*100)}%"></i><b>${pctS(o.v)}</b></li>`).join('');
+    return {kind:'fourth', html:`<p class="co-eye">AI coach · ${ab}</p><p class="co-sit">4th &amp; ${goal?'goal':Math.max(1,Math.round(to))} · ${esc(spotLabel(g,num(P.los_x,60)))}</p>
+      <p class="co-do">${CO_DO[ch]}</p><ul class="co-wp" aria-label="Win probability for each option">${rows}</ul>
+      <p class="co-note">${'go' in f.wp&&f.conversion!=null?pctS(f.conversion)+' to convert · ':''}win probability</p>${tag?`<p class="co-tag">${esc(tag)}</p>`:''}<p class="co-res" hidden></p>`};
+  }
+  const c=P.conversion;
+  if(c&&c.choice==='two_point'){
+    const why=coReason(c.reason);
+    return {kind:'two', html:`<p class="co-eye">AI coach · ${ab}</p><p class="co-sit">After the touchdown</p><p class="co-do">Goes for two</p>
+      ${why?`<p class="co-why">${esc(why[0].toUpperCase()+why.slice(1))}</p>`:''}${c.p!=null?`<p class="co-note">${pctS(c.p)} to convert</p>`:''}<p class="co-res" hidden></p>`};
+  }
+  return null;
+}
+function coachEls(g){ return document.querySelectorAll(`[data-g="${g.id}"][data-f="coach"]`); }
+function coachSet(g){
+  const P=g.cur, C=(g.mode==='upcoming')?null:coachOf(g,P);
+  g.coachSeq=C?P.seq:null;
+  clearTimeout(g.coachT);
+  coachEls(g).forEach(el=>{
+    if(!C){ if(el.hidden) return;
+      /* le résultat reste lisible 2,5 s de plus (la pause après une action dure moins d'une seconde) */
+      const r=el.querySelector('.co-res');
+      if(r&&!r.hidden&&!el.dataset.linger){ el.dataset.linger='1'; g.coachT=setTimeout(()=>coachEls(g).forEach(e=>{ if(e.dataset.linger){ e.hidden=true; e.innerHTML=''; delete e.dataset.linger; } }),2500); return; }
+      if(!el.dataset.linger){ el.hidden=true; el.innerHTML=''; }
+      return; }
+    delete el.dataset.linger; el.className='coach co-'+C.kind; el.innerHTML=C.html; el.hidden=false; });
+}
+function coachResult(g){
+  const P=g.cur; if(!P||g.coachSeq!==P.seq) return;
+  let ok=null, txt='';
+  const f=P.fourth_down, c=P.conversion;
+  if(f&&f.choice==='go'){ ok=P.possession_change!=='downs'; txt=ok?(P.result==='touchdown'?'Touchdown':'Converted'):'Stopped'; }
+  else if(f&&f.choice==='field_goal'){ ok=P.result==='field_goal_good'; txt=ok?'Field goal good':'Field goal missed'; }
+  else if(c&&c.choice==='two_point'){ ok=!!c.good; txt=ok?'Two points':'No good'; }
+  if(ok===null) return;
+  coachEls(g).forEach(el=>{ const r=el.querySelector('.co-res'); if(!r) return; r.textContent=(ok?'✓ ':'✗ ')+txt; r.className='co-res '+(ok?'ok':'ko'); r.hidden=false; });
+}
 /* Put the board in the state just before play k */
 function rpEnter(g,k,hard){
   const P=g.plays[k]; g.idx=k; g.cur=P;
@@ -5008,6 +5127,7 @@ function rpEnter(g,k,hard){
   g.plan=null; g.snapped=false;
   g.tos=rpTimeouts(g,k);
   if(P.show&&P.show.to&&!hard){ const t=P.show.to==='home'?g.home:g.away; g.chip={t:'TIMEOUT · '+((TEAMS[t]||{}).abbr||t),c:''}; showChip(g); }
+  coachSet(g);   /* section 128 */
 }
 /* timeouts left before play k (engine's real clock: play.clock.timeouts after each play; 3 each at the half and in
    overtime) */
@@ -5040,6 +5160,7 @@ function rpSnap(g){
 }
 function rpResolve(g){
   const P=g.cur, A=P.after;
+  coachResult(g);   /* section 128 */
   for(const it of rpAdjItems(g,P)) g.feed.unshift(it);
   g.feed.unshift(rpFeedItem(g,P)); while(g.feed.length>40) g.feed.pop();
   g.hs=A.score.home; g.as=A.score.away;
@@ -5415,13 +5536,14 @@ function bugHTML(g){
     <div class="meta"><span data-g="${id}" data-f="q"></span><span data-g="${id}" data-f="clk"></span><span class="pclk" data-g="${id}" data-f="pc" title="Play clock"></span><span class="spot" data-g="${id}" data-f="spot"></span><span class="dd" data-g="${id}" data-f="dd"></span></div>
   </div>`;
 }
-function fieldHTML(g,cls,hit){
+function fieldHTML(g,cls,hit,coach){
   const A=TEAMS[g.away], H=TEAMS[g.home];
   return `<div class="field ${cls}">
     ${hit?`<button class="field-hit" type="button" data-open="${g.id}" aria-label="Open board: ${A.name} at ${H.name}"></button>`:''}
     <canvas aria-hidden="true"></canvas>
     <span class="pill live" data-g="${g.id}" data-f="status"><i class="dot pulse"></i><span>LIVE</span></span>
     <span class="chip-play" data-g="${g.id}" data-f="chip" hidden></span>
+    ${cls==="big"||coach?`<div class="coach" data-g="${g.id}" data-f="coach" role="status" aria-live="polite" hidden></div>`:''}
     <div class="td" data-g="${g.id}" data-f="td" aria-hidden="true">Touchdown</div>
     <div class="td to" data-g="${g.id}" data-f="to" aria-hidden="true">Interception</div>
     <div class="brk" data-g="${g.id}" data-f="brk" role="region" aria-live="polite" hidden></div>
@@ -5496,7 +5618,7 @@ function featTile(g){
   const meta = canReplay ? `<button type="button" class="rp-load rp-open" data-replay="${g.id}" title="Watch this match again from kickoff on the big screen">${ICON.restart}Replay</button>` : `<span class="watch">${ICON.eye}${g.viewers}</span>`;
   return `<article class="tile feat" data-gid="${g.id}">
     <div class="feat-head"><span class="pt-tag">${g.sched&&g.sched.phase!=='regular'?esc(PHASE[g.sched.phase]):'Prime time'}</span>${g.sched&&rivOf(g.away,g.home)?`<span class="riv-pill" title="Rivalry · ${esc(rivOf(g.away,g.home).trophy)}">Rivalry</span>`:''}<h3>${A.name}<em>@</em>${H.name}</h3>${meta}</div>
-    ${fieldHTML(g,'',true)}
+    ${fieldHTML(g,'',true,true)}
     ${g.replay?`<div class="rp-call" data-g="${g.id}" data-f="rpcall"></div>`:''}
     <div class="feat-bottom">
       <div class="feat-left">${powerHTML(g)}${marketsHTML(g,false)}${injOutHTML(g)}${g.replay?`<p class="rp-note">${g.gf&&g.gf.game.pregame_odds?'Moneyline, spread and total straight from the engine at every play.':'Moneyline straight from the engine at every play. Spread and total open once the engine prices them.'}</p>`:''}</div>
@@ -7125,7 +7247,7 @@ function openModal(id){
   modal.innerHTML=`<div class="m-panel">
     <header class="m-head">
       <span class="pill live" data-g="${g.id}" data-f="status"><i class="dot pulse"></i><span>LIVE</span></span>
-      <h2 class="m-title" id="mTitle">${A.name}<em>@</em>${H.name}</h2>
+      <h2 class="m-title" id="mTitle"><span class="m-tl">${A.name}<em>@</em>${H.name}</span><span class="m-ab" aria-hidden="true">${esc(A.abbr||g.away)}<em>@</em>${esc(H.abbr||g.home)}</span></h2>
       ${g.replay?`<span class="watch">Season ${esc(g.season||'')} · Week ${esc(g.week||'')}</span>`:`<span class="watch">${ICON.eye}${g.viewers} watching</span>`}
       ${teamKeyHTML(g)}
       ${rv?`<button type="button" class="rp-load" data-rp="load" data-rpg="${g.id}" title="Replay another engine match (a GameFeed .json file from section 11.4 of the notebook)">${ICON.upload}Load GameFeed</button>`:''}
