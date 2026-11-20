@@ -70,7 +70,8 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (5 $/mois), sinon le site s'arrête (les données du disque sont conservées un temps). GitHub : *Settings → Billing*
   → minutes Actions utilisées (~70 sur 2 000).
 - **Sauvegardes** : les semaines sont déjà archivées dans GitHub. Pour les paris, une fois par semaine :
-  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder. La clé est comparée sans les espaces, retours
+  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder (`&only=db` : la base seule, sans les semaines
+  déjà dans le dépôt). La clé est comparée sans les espaces, retours
   à la ligne et guillemets qui l'entourent (une valeur collée dans Railway en garde parfois) ; en cas de refus, le
   message dit si `GC_ADMIN_KEY` manque sur le serveur (ou fait moins de 16 caractères) ou si la clé reçue diffère
   (avec le nombre de caractères reçus, rien sur la clé attendue). Même règle pour toutes les fonctions d'administration.
@@ -4006,7 +4007,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/wallet/refill` | `{token}` → recharge de 1 000 $ quand le solde est vide et aucun pari ouvert (section 102) |
 | POST | `/api/bets` | `{token, picks:[{key, price_dec, line, stake, title, sub}]}` → acceptés / refusés (et pourquoi) |
 | GET | `/api/leaderboard` | classement de la semaine |
-| GET | `/api/backup?key=` | sauvegarde .zip (base + semaines), si `GC_ADMIN_KEY` est définie |
+| GET | `/api/backup?key=[&only=db]` | sauvegarde .zip (base + semaines, ou la base seule), si `GC_ADMIN_KEY` est définie |
 | GET | `/api/chat?room=&after=&upto=&rev=` | chat : messages d'un salon (si `GC_CHAT` = `read` ou `on`, section 71) |
 | POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |

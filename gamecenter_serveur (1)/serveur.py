@@ -4757,9 +4757,10 @@ def api_health():
 
 
 @app.get("/api/backup")
-def api_backup(key: str = ""):
+def api_backup(key: str = "", only: str = ""):
     """Sauvegarde complète (base des paris + semaines) en .zip. Protégée par la variable GC_ADMIN_KEY :
-    sans elle, la sauvegarde est désactivée. Usage : https://<site>/api/backup?key=<GC_ADMIN_KEY>"""
+    sans elle, la sauvegarde est désactivée. Usage : https://<site>/api/backup?key=<GC_ADMIN_KEY>
+    &only=db : la base seule (quelques Mo ; les semaines, plusieurs centaines de Mo, sont déjà dans le dépôt)."""
     import io, zipfile
     from fastapi.responses import Response
     if not admin_ok(key):
@@ -4772,13 +4773,14 @@ def api_backup(key: str = ""):
             src.backup(dst)
         src.close(); dst.close()
         z.write(snap, "gamecenter.db"); os.remove(snap)
-        for root, _, files in os.walk(WEEKS_DIR, followlinks=True):     # semaines : liens vers l'image (Dockerfile)
+        for root, _, files in ([] if only == "db" else os.walk(WEEKS_DIR, followlinks=True)):     # semaines : liens vers l'image (Dockerfile)
             for fn in files:
                 p = os.path.join(root, fn)
                 z.write(p, os.path.relpath(p, DATA))
     stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H%M")
+    nom = "gamecenter_db" if only == "db" else "gamecenter_backup"
     return Response(buf.getvalue(), media_type="application/zip",
-                    headers={"Content-Disposition": f'attachment; filename="gamecenter_backup_{stamp}.zip"'})
+                    headers={"Content-Disposition": f'attachment; filename="{nom}_{stamp}.zip"'})
 
 
 async def _json(req):
