@@ -562,7 +562,8 @@ with db() as _c:
     # et donne une place au classement de la saison. Migration douce : colonnes ajoutées à la base existante.
     _cols = {r[1] for r in _c.execute("PRAGMA table_info(players)")}
     for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER"), ("fav_team", "TEXT"),
-                       ("fav_team_at", "INTEGER")):        # FO-2 : depuis quand le compte tient sa franchise favorite
+                       ("fav_team_at", "INTEGER"),          # FO-2 : depuis quand le compte tient sa franchise favorite
+                       ("badge", "TEXT"), ("badges_at", "INTEGER")):   # BD-2 : badge mis en avant, dernier calcul
         if _col not in _cols:
             _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
     _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
@@ -1037,6 +1038,7 @@ def page(request: Request = None):
     if request is not None:
         news_prechauffer()                           # onglet News (section 115)
         tracking_prechauffer()                       # Tracking (NGS-6) : semaine en cours, semaines passées, cartes
+        badges_prechauffer()                         # badges (BD-2) : tous les comptes, une fois par semaine ouverte
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
@@ -1879,6 +1881,9 @@ def api_me(token: str = ""):
     mine = next((r for r in rows if r["id"] == p["id"]), None)
     season = {"rank": mine["rank"] if mine else None, "net": mine["net"] if mine else season_net(p["id"], t)["net"],
               "players": len(rows)}
+    feat = badges_mis_en_avant().get(p["id"])
+    if feat:
+        L = dict(L, badge=feat)                      # BD-2 : son badge mis en avant
     return {"name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team"), "week": w.start, "now": t,
             "season": season, "carry": wallet_on(w), "refill": {"amount": REFILL, "ok": refill_ok(w, L) is None}, **L}
 
@@ -1919,6 +1924,44 @@ def _fin_semaine(w):
     return max(g["end"] for g in w.sched)
 
 
+_BD_TOP10 = {}                                       # semaine finie -> ids du top 10 (ou vide) ; clé avec les comptes
+_BD_LIGUE = {}                                       # (ligue, semaine, membres, paris) -> vainqueur de la semaine
+
+
+def _bd_top10(w, t):
+    """Les ids du top 10 de la saison à la fin de la semaine w (vide si moins de TOP10_MIN comptes classés). Une
+    semaine finie ne change plus : gardée en mémoire, avec le nombre de paris et de comptes dans la clé (un pari ou
+    un compte de plus, en test où l'horloge recule, refait le calcul)."""
+    with db() as c:
+        nb = c.execute("SELECT COUNT(*) FROM bets WHERE week<=?", (w.start,)).fetchone()[0]
+        na = c.execute("SELECT COUNT(*) FROM players WHERE login IS NOT NULL").fetchone()[0]
+    k = (w.start, nb, na)
+    if k not in _BD_TOP10:
+        rows = season_rows(_fin_semaine(w))
+        _BD_TOP10[k] = frozenset(r["id"] for r in rows if r["rank"] <= 10) if len(rows) >= _badges.TOP10_MIN else frozenset()
+        if len(_BD_TOP10) > 500:
+            _BD_TOP10.clear()
+    return _BD_TOP10[k]
+
+
+def _bd_vainqueur(lid, membres, w):
+    """Le premier d'une ligue à la fin de la semaine w (solde de la semaine, comme le classement des ligues), ou None."""
+    with db() as c:
+        nb = c.execute(f"SELECT COUNT(*) FROM bets WHERE week=? AND player IN ({','.join('?' * len(membres))})",
+                       (w.start, *membres)).fetchone()[0]
+    k = (lid, w.start, tuple(sorted(membres)), nb)
+    if k not in _BD_LIGUE:
+        fin, best = _fin_semaine(w), []
+        for m in membres:
+            Lg = ledger(w, player_bets(m, w), fin)
+            if Lg["bets"]:
+                best.append((-Lg["balance"], m))
+        _BD_LIGUE[k] = min(best)[1] if best else None
+        if len(_BD_LIGUE) > 5000:
+            _BD_LIGUE.clear()
+    return _BD_LIGUE[k]
+
+
 def badges_classements(pid, t):
     """(semaines finies en tête d'une ligue privée de LIGUE_MIN membres ou plus, semaines finies dans le top 10 de la
     saison quand TOP10_MIN comptes au moins sont classés) : chaque semaine est classée à sa fin, comme les classements
@@ -1930,19 +1973,10 @@ def badges_classements(pid, t):
                    for lid in ligues}
     wins = top10 = 0
     for w in finies:
-        fin = _fin_semaine(w)
-        rows = season_rows(fin)
-        if len(rows) >= _badges.TOP10_MIN and any(r["id"] == pid and r["rank"] <= 10 for r in rows):
+        if pid in _bd_top10(w, t):
             top10 += 1
         for lid, ms_ in membres.items():
-            if len(ms_) < _badges.LIGUE_MIN:
-                continue
-            best = []
-            for m in ms_:
-                Lg = ledger(w, player_bets(m, w), fin)
-                if Lg["bets"]:
-                    best.append((-Lg["balance"], m))
-            if best and min(best)[1] == pid:
+            if len(ms_) >= _badges.LIGUE_MIN and _bd_vainqueur(lid, ms_, w) == pid:
                 wins += 1
     return wins, top10
 
@@ -1999,6 +2033,140 @@ def badges_donnees(p, t):
             "now": t, "days": days, "weeks": week_list, "bets": out_bets, "fan_votes": fan_votes,
             "draft_votes": draft_votes, "news_votes": news, "leagues_owned": owned, "league_wins": wins,
             "top10_weeks": top10, "pro": insights_pro(p)}
+
+
+
+# ------------------------------------------------------------------ badges, BD-2 : attribution, API, badge mis en avant
+# Attribution au chargement de la page Badges (/api/badges) et pour tous les comptes à l'ouverture d'une semaine
+# (badges_prechauffer, depuis la page). Un badge gagné ne se retire jamais : le palier montré est le plus haut entre
+# celui gardé dans player_badges et celui dû aujourd'hui. Premier calcul d'un compte (players.badges_at vide) : les badges
+# déjà mérités sont écrits « rétroactifs » (retro) : le site ne les annonce pas un par un. Badge mis en avant :
+# players.badge (un badge gagné), renvoyé à côté du pseudo dans les classements, les ligues et le chat.
+_BD_FEAT = {"map": None}                             # joueur -> {"k": badge, "t": palier} ; None : à relire
+_BD_SEMAINE = {"start": None}                        # semaine pour laquelle tous les comptes ont été évalués
+
+
+def _bd_need():
+    if not badges_on():
+        raise HTTPException(404, "badges_off")
+
+
+def badges_mis_en_avant():
+    """{joueur: {"k", "t"}} des comptes qui ont choisi un badge (gardé en mémoire, relu après une écriture)."""
+    if not badges_on():
+        return {}
+    if _BD_FEAT["map"] is None:
+        with db() as c:
+            _BD_FEAT["map"] = {r[0]: {"k": r[1], "t": r[2]} for r in c.execute(
+                "SELECT p.id, p.badge, b.tier FROM players p JOIN player_badges b ON b.player = p.id AND b.badge = p.badge "
+                "WHERE p.badge IS NOT NULL AND p.login IS NOT NULL")}
+    return _BD_FEAT["map"]
+
+
+def _bd_changed():
+    _BD_FEAT["map"] = None
+    if "_CHAT" in globals():                         # messages du chat gardés en mémoire avec le badge de l'auteur
+        with _CHAT_LOCK:
+            _CHAT["rooms"].clear()
+
+
+def _bd_merge(b, tier):
+    """Le palier montré : le plus haut entre celui gagné (gardé) et celui dû aujourd'hui (un badge ne se perd pas)."""
+    if tier <= b["tier"]:
+        return b
+    seuils = b["tiers"]
+    return dict(b, tier=tier, earned=True, tier_name=_badges.PALIERS[tier - 1] if len(seuils) > 1 else "",
+                next=seuils[tier] if tier < len(seuils) else None)
+
+
+def badges_attribuer(p, t):
+    """Évalue un joueur et écrit ses badges nouveaux (comptes seulement). Rend (badges du catalogue avec palier,
+    date et semaine de gain ; nouveaux [{key, tier}] ; retro : premier calcul du compte)."""
+    ev = _badges.evaluer(badges_donnees(p, t))
+    if not p.get("login"):
+        return ev, [], False
+    with db() as c:
+        deja = {r["badge"]: dict(r) for r in c.execute("SELECT badge, tier, at, week FROM player_badges WHERE player=?",
+                                                     (p["id"],))}
+        first = c.execute("SELECT badges_at FROM players WHERE id=?", (p["id"],)).fetchone()[0] is None
+    nv = _badges.nouveaux({k: v["tier"] for k, v in deja.items()}, {b["key"]: b["tier"] for b in ev if b["earned"]})
+    w = current_week(t)
+    wk = w.start if w else None
+    with _db_lock, db() as c:
+        for k, tier in nv.items():
+            c.execute("INSERT OR REPLACE INTO player_badges(player, badge, tier, at, week) VALUES(?,?,?,?,?)",
+                      (p["id"], k, tier, t, wk))
+            deja[k] = {"badge": k, "tier": tier, "at": t, "week": wk}
+        c.execute("UPDATE players SET badges_at=? WHERE id=?", (t, p["id"]))
+    if nv and p.get("badge") in nv:                  # palier plus haut du badge mis en avant
+        _bd_changed()
+    out = []
+    for b in ev:
+        g = deja.get(b["key"])
+        b = _bd_merge(b, g["tier"]) if g else b
+        out.append(dict(b, at=g["at"] if g else None, week=g["week"] if g else None))
+    return out, [{"key": k, "tier": v} for k, v in nv.items()], first
+
+
+def badges_tous(t):
+    """Tous les comptes évalués (ouverture d'une semaine : les badges de classement de la semaine finie, la fidélité)."""
+    with db() as c:
+        comptes = [dict(r) for r in c.execute("SELECT * FROM players WHERE login IS NOT NULL")]
+    n = 0
+    for p in comptes:
+        try:
+            n += len(badges_attribuer(p, t)[1])
+        except Exception as e:                       # un compte en erreur n'arrête pas les autres
+            print(f"[badges] {p['id']} : {e!r}", flush=True)
+    return n
+
+
+def badges_prechauffer(t=None):
+    """Une fois par semaine ouverte (au premier chargement de la page) : tous les comptes évalués, en arrière-plan."""
+    if not badges_on() or not news_prechauffage_on():
+        return
+    w = current_week(t)
+    if not w or _BD_SEMAINE["start"] == w.start:
+        return
+    _BD_SEMAINE["start"] = w.start
+    threading.Thread(target=lambda: badges_tous(now_ms()), daemon=True).start()
+
+
+@app.get("/api/badges")
+def api_badges(token: str = ""):
+    """Badges d'un joueur : le catalogue avec, pour chacun, palier gagné (jamais en baisse), progression vers le
+    suivant, date et semaine de gain ; « new » = gagnés à l'instant (vide pour un invité, qui ne voit que sa progression) ;
+    « retro » = premier calcul du compte (badges déjà mérités : pas d'annonce un par un) ; « featured » = mis en avant."""
+    _bd_need()
+    p = player_by_token(token)
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    t = now_ms()
+    out, nv, first = badges_attribuer(p, t)
+    feat = badges_mis_en_avant().get(p["id"])
+    return {"account": bool(p.get("login")), "now": t, "version": _badges.VERSION,
+            "categories": list(_badges.CATEGORIES), "badges": out, "new": nv, "retro": first and bool(nv),
+            "featured": feat["k"] if feat else None, "earned": sum(1 for b in out if b["earned"])}
+
+
+@app.post("/api/badges/featured")
+async def api_badges_featured(req: Request):
+    """Le badge mis en avant à côté du pseudo (comptes seulement) : {token, badge} ; badge vide = aucun. Seulement un
+    badge gagné."""
+    _bd_need()
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p or not p.get("login"):
+        raise HTTPException(401, "account_required")
+    k = str(body.get("badge") or "").strip() or None
+    if k is not None:
+        with db() as c:
+            if not c.execute("SELECT 1 FROM player_badges WHERE player=? AND badge=?", (p["id"], k)).fetchone():
+                raise HTTPException(400, "badge_not_earned")
+    with _db_lock, db() as c:
+        c.execute("UPDATE players SET badge=? WHERE id=?", (k, p["id"]))
+    _bd_changed()
+    return {"featured": k}
 
 
 # ------------------------------------------------------------------ « My team » : équipe favorite d'un compte
@@ -3097,23 +3265,29 @@ def api_leaderboard(token: str = "", scope: str = "week"):
     me = player_by_token(token)
     if scope == "season":
         rows = season_rows(t)
+        feat = badges_mis_en_avant()                # BD-2 : badge mis en avant à côté du pseudo
         out = [{k: r[k] for k in ("rank", "name", "net", "weeks", "bets", "won", "lost")} | {"me": bool(me and me["id"] == r["id"])}
-               for r in rows]
+               | ({"badge": feat[r["id"]]} if r["id"] in feat else {}) for r in rows]
         mine = next((r for r in out if r["me"]), None)
         if me and not mine:                         # invité, ou compte sans pari : sa ligne sans rang
             a = season_net(me["id"], t)
             mine = dict(a, rank=None, name=me["name"], me=True, account=bool(me.get("login")))
+            if me["id"] in feat:
+                mine["badge"] = feat[me["id"]]
         return {"scope": "season", "week": w.start, "weeks": [x.start for x in season_weeks(t)], "players": len(out),
                 "top": out[:50], "me": mine}
     with db() as c:
         players = [dict(r) for r in c.execute("SELECT DISTINCT p.* FROM players p JOIN bets b ON b.player=p.id WHERE b.week=?", (w.start,))]
     rows = []
+    feat = badges_mis_en_avant()
     for p in players:
         L = ledger(w, player_bets(p["id"], w), t)
         if not L["bets"]:
             continue
         rows.append({"name": p["name"], "balance": L["balance"], "net": round(L["balance"] - BANKROLL, 2), "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"],
                      "account": bool(p.get("login")), "me": bool(me and me["id"] == p["id"])})
+        if p["id"] in feat:
+            rows[-1]["badge"] = feat[p["id"]]
     rows.sort(key=lambda r: (-r["balance"], r["name"]))
     for i, r in enumerate(rows):
         r["rank"] = i + 1
@@ -3366,8 +3540,11 @@ def api_league_standings(lid: str, token: str = "", scope: str = "week"):
         pub = _ligue_public(c, L, p["id"])
     t = now_ms()
     _, rows = ligue_classement(L["id"], "season" if scope == "season" else "week", t)
+    feat = badges_mis_en_avant()
     for r in rows:
         r["me"] = r["id"] == p["id"]
+        if r["id"] in feat:
+            r["badge"] = feat[r["id"]]
     return {"league": pub, "scope": "season" if scope == "season" else "week", "rows": rows, "now": t}
 
 
@@ -3682,6 +3859,9 @@ def _chat_pub(r):
         d["teams"] = r["teams"].split(",")
     if r["adm"]:
         d["adm"] = 1
+    f = badges_mis_en_avant().get(r["player"]) if not r["adm"] else None
+    if f:                                            # BD-2 : badge mis en avant de l'auteur
+        d["bd"] = f
     return d
 
 

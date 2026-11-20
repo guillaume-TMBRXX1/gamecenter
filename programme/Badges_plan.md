@@ -103,7 +103,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Outil `outils/badges_rapport.py` : sur une copie de la base de production (lecture seule), combien de comptes
   auraient chaque badge au lancement (pour régler les seuils avant d'afficher quoi que ce soit).
 
-### BD-2 — Serveur : attribution et API *(serveur)*
+### BD-2 — Serveur : attribution et API *(serveur)* — ✅ 20/11 (README section 133)
 - `/api/badges?token=` : badges gagnés (datés), à gagner (progression), badge mis en avant ; `POST /api/badges/featured`.
 - Attribution au chargement (`/api/badges`) et à la révélation du lundi ; rétroactive au premier calcul d'un compte.
 - Le badge mis en avant renvoyé avec les lignes du classement de la saison et des ligues.

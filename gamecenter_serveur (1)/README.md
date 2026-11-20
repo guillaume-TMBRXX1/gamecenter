@@ -3859,6 +3859,32 @@ favorite n'était pas mis en avant. Les badges ne valent que pour les comptes (`
   posé sur la clé, 24 franchises, franchise enregistrée, My team, Settings, Sign in, Skip, invitations, téléphone ;
   `SHOTS=<dossier>`) ; `test_ligues.js` passe par la fenêtre.
 
+### 133. Badges, BD-2 : l'attribution, l'API, le badge mis en avant (20/11/2026)
+
+`programme/Badges_plan.md`. Les règles restent dans `moteur/badges.py` (BD-1) ; le serveur écrit les badges gagnés et
+les sert. Rien ne s'affiche encore sur le site (BD-3).
+
+- **Attribution** (`badges_attribuer`) : au chargement de `/api/badges`, et pour tous les comptes une fois par semaine
+  ouverte (`badges_prechauffer`, au premier chargement de la page, en arrière-plan : badges de classement de la semaine
+  finie, fidélité). Comptes seulement ; un invité voit sa progression, rien n'est écrit. Un badge ne se perd jamais :
+  le palier montré est le plus haut entre celui de `player_badges` et celui dû aujourd'hui (changer de franchise ne
+  retire pas True fan). Premier calcul d'un compte (`players.badges_at` vide) : les badges déjà mérités sont écrits d'un
+  coup, `retro: true` (le site ne les annonce pas un par un).
+- **`GET /api/badges?token=`** : `badges` (le catalogue : palier, nom du palier, valeur, seuil suivant, `at` et `week`
+  du gain), `new` (gagnés à l'instant : `[{key, tier}]`), `retro`, `featured`, `earned`, `categories`.
+- **`POST /api/badges/featured {token, badge}`** : le badge mis en avant (un badge gagné, sinon 400 `badge_not_earned` ;
+  vide = aucun ; comptes seulement). Il est renvoyé comme `badge: {k, t}` dans les lignes du classement (semaine et
+  saison), des ligues privées et `/api/me`, et comme `bd: {k, t}` dans les messages du chat (tampon du chat vidé quand un
+  badge mis en avant change).
+- **Classements des semaines finies** gardés en mémoire (`_bd_top10`, `_bd_vainqueur`), la clé portant le nombre de paris
+  et de comptes : calculés une fois, refaits si une donnée change. Sur la copie de la base de production du 20/11
+  (2 comptes) : 7 badges écrits en 0,02 s, rien au second passage.
+- **Colonnes** `players.badge` et `players.badges_at` (migration douce). `GC_BADGES=off` : routes en 404, aucun badge dans
+  les classements, les ligues, le chat ni `/api/me`.
+- **Tests** : `moteur/tests/test_badges.py` (classe `Attribution` : rétroactif puis rien de nouveau, palier jamais en
+  baisse, mis en avant refusé pour un badge non gagné ou un invité, présent dans le classement, la ligue, le chat et
+  `/api/me`, `badges_tous`, interrupteur).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
