@@ -1,4 +1,4 @@
-// Créer un compte et choisir sa franchise (BD-2 bis, section 131, 20/11/2026) — test navigateur (Playwright + serveur).
+// Créer un compte et choisir sa franchise (BD-2 bis, section 132, 20/11/2026) — test navigateur (Playwright + serveur).
 //   node outils/site/test_compte.js          (depuis « gamecenter_serveur (1) »)
 //   SHOTS=<dossier> node outils/site/test_compte.js     (captures)
 // Vérifie : un invité voit « Sign up » dans la barre du haut (pas un compte) ; la fenêtre « Join Snapline » s'ouvre,

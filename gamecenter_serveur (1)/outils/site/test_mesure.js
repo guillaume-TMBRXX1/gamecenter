@@ -4,7 +4,8 @@
 // Mesure allumée : /tt redirige vers l'accueil (302) et compte le clic ; l'accueil ouvert depuis TikTok compte une visite
 // « tiktok », un robot ne compte pas ; /admin/stats : clé refusée, puis tableau (tuiles, semaines, sources, liens courts,
 // ligne du bilan), session gardée dans l'onglet et fermée ; téléphone 390 px sans défilement horizontal, mode sombre ;
-// page légale avec la phrase sur les totaux ; aucune erreur JS. SHOTS=<dossier> : captures du tableau de bord.
+// page légale avec la phrase sur les totaux ; section 131 : personnes et retours (cases envoyées une fois par semaine,
+// dates seules dans le navigateur, match ouvert, appareil exclu depuis /admin/stats) ; aucune erreur JS. SHOTS=<dossier> : captures du tableau de bord.
 // Lancé par outils/site/tests_navigateur.sh (groupe site).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
 const fs=require('fs'), path=require('path'), os=require('os'), {spawn}=require('child_process');
@@ -63,7 +64,7 @@ const shot=async(p,nom)=>{ if(SHOTS){ fs.mkdirSync(SHOTS,{recursive:true}); awai
     check(await p.isHidden('#app'),'tableau caché sans la clé');
     await p.fill('#key',KEY); await p.click('#keyForm button');
     await p.waitForSelector('#app:not([hidden])',{timeout:5000});
-    check((await p.$$('#tiles .tile')).length===6,'6 tuiles');
+    check((await p.$$('#tiles .tile')).length===9,'9 tuiles (dont personnes, revenues, matchs : section 131)');
     check((await p.$$('#weeks tbody tr')).length===12,'12 semaines');
     const src=await p.$$eval('#sources tbody tr td:first-child',x=>x.map(e=>e.textContent));
     check(src.includes('tiktok'),`sources : ${src.join(', ')}`);
@@ -91,9 +92,53 @@ const shot=async(p,nom)=>{ if(SHOTS){ fs.mkdirSync(SHOTS,{recursive:true}); awai
     await shot(q,'admin_stats_telephone.png');
     await m.close();
 
+    /* ---- section 131 : des personnes, et des personnes qui reviennent ---- */
+    console.log('— personnes et retours (section 131)');
+    const env=[];   /* les cases envoyées par la page */
+    const P=await b.newContext({viewport:{width:1280,height:900},userAgent:UA});
+    P.on('request',r=>{ if(r.url().endsWith('/api/m')){ try{ env.push(JSON.parse(r.postData()).k.join(',')); }catch(e){} } });
+    const pp=await P.newPage(); pp.on('pageerror',e=>errs.push(e.message));
+    const avant=(await stats()).semaines[0];
+    const charger=async()=>{ await pp.goto(`http://localhost:${ON}/`,{waitUntil:'domcontentloaded',timeout:90000});
+      await pp.waitForFunction(()=>window.__gc&&window.__gc.season,null,{timeout:90000}); await pause(1500); };
+    await charger();
+    check(env[0]==='p:vu,p:nouveau','première visite : « p:vu, p:nouveau » (une personne, nouvelle)');
+    const st=await pp.evaluate(()=>JSON.parse(localStorage.getItem('gc-m-v1')||'{}'));
+    check(st.first&&st.seen===st.first&&Object.keys(st).every(k=>['first','seen','match'].includes(k))&&/^\d{4}-\d{2}-\d{2}$/.test(st.seen),
+      `le navigateur ne garde que des dates de semaine (${JSON.stringify(st)})`);
+    await charger();
+    check(env.length===1,'rechargée la même semaine : rien de plus');
+    await pp.evaluate(()=>{ const s=JSON.parse(localStorage.getItem('gc-m-v1')); const w=d=>{ const u=new Date(s.seen+'T00:00:00Z'); u.setUTCDate(u.getUTCDate()-d); return u.toISOString().slice(0,10); };
+      s.first=w(21); s.seen=w(7); delete s.match; localStorage.setItem('gc-m-v1',JSON.stringify(s)); });
+    await charger();
+    check(env[1]==='p:vu,p:revenu,p:retenu','venue la semaine d’avant : « p:vu, p:revenu, p:retenu »');
+    await pp.evaluate(()=>{ const b=document.querySelector('[data-open]'); if(b) b.click(); }); await pause(1200);
+    check(env[2]==='p:match','un match ouvert : « p:match », une fois');
+    await pp.keyboard.press('Escape'); await pause(300);
+    await pp.evaluate(()=>{ const b=document.querySelector('[data-open]'); if(b) b.click(); }); await pause(800);
+    check(env.length===3,'un second match la même semaine : rien de plus');
+    const apres=(await stats()).semaines[0];
+    check(apres.personnes-avant.personnes===2&&apres.nouveaux-avant.nouveaux===1&&apres.revenus-avant.revenus===1&&apres.retenus-avant.retenus===1&&apres.matchs-avant.matchs===1,
+      'le tableau de bord les additionne (personnes +2, nouvelles +1, revenues +1, dont la semaine d’avant +1, matchs +1)');
+    /* l'administrateur exclut son appareil depuis /admin/stats */
+    const ad=await P.newPage(); await ad.goto(`http://localhost:${ON}/admin/stats`);
+    await ad.fill('#key',KEY); await ad.click('#keyForm button'); await ad.waitForSelector('#people tbody tr',{timeout:10000});
+    check((await ad.textContent('#meBtn')).includes('Ne plus compter'),'« Cet appareil » : compté au départ');
+    await ad.click('#meBtn');
+    check((await ad.textContent('#meTxt')).includes("n'est pas compté")&&(await P.cookies()).some(c=>c.name==='gc_moi'&&c.value==='1'),'« Ne plus compter cet appareil » : cookie gc_moi posé');
+    await pp.evaluate(()=>localStorage.removeItem('gc-m-v1'));
+    const v0=(await stats()).semaines[0].visites;
+    await charger();
+    check(env.length===3,'appareil exclu : la page n’envoie rien');
+    check((await stats()).semaines[0].visites===v0,'appareil exclu : l’accueil ouvert n’est pas compté');
+    await ad.click('#meBtn');
+    check(!(await P.cookies()).some(c=>c.name==='gc_moi'),'« Compter de nouveau » : cookie retiré');
+    await P.close();
+
     /* ---- page légale ---- */
     const lg=await (await fetch(`http://localhost:${ON}/legal`)).text();
     check(lg.includes('short links')&&lg.includes('no IP address or identifier is kept'),'page légale : la phrase sur les totaux');
+    check(lg.includes('three dates in its own storage'),'page légale : la phrase sur les dates gardées par le navigateur');
     check(errs.length===0,'aucune erreur JS'+(errs.length?' : '+errs.join(' | '):''));
   }catch(e){ console.log('  ✗ '+(e.stack||e)); fail++; }
   finally{

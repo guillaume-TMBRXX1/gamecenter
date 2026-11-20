@@ -109,7 +109,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Le badge mis en avant renvoyé avec les lignes du classement de la saison et des ligues.
 - Interrupteur `GC_BADGES=off` (ni API ni affichage). Tests serveur sur une copie des données.
 
-### BD-2 bis — Créer un compte et choisir sa franchise *(site + serveur)* — ✅ 20/11 en local, captures à valider (README section 131)
+### BD-2 bis — Créer un compte et choisir sa franchise *(site + serveur)* — ✅ 20/11, captures validées (README section 132)
 - Une entrée visible pour un invité : bouton « Create account » dans la barre du haut (à la place du solde avant le
   premier pari, voir section 127) et invitations au bon moment (après un premier pari gagné, au vote des supporters,
   sur la page Badges : « Create an account to keep them »).

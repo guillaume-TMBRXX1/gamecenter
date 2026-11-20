@@ -1047,6 +1047,8 @@ def page(request: Request = None):
         srv["fluide_off"] = True
     if not accueil_terrain_on():                     # le terrain d'abord (section 127) : GC_ACCUEIL_TERRAIN=off, la page d'avant
         srv["spect_off"] = True
+    if mesure_on():                                  # personnes et retours (section 131) : rien sans GC_MESURE=1
+        srv["mesure"] = True
     if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
         srv["coach_off"] = True
     # BD-2 bis : « __JOIN__ » = 1 dans le script de tête (le bouton « Sign up » n'existe qu'avec le serveur)
@@ -1191,7 +1193,12 @@ _LEGAL_CF_FIN = "collects the page, the referring site, the country and the type
 _LEGAL_MESURE = ("\n    <p>Our server also counts, for each day, how many times the home page is opened, the name of the site "
                  "the visitor came from (for example \u201cgoogle\u201d or \u201ctiktok\u201d) and how many times our short "
                  "links are used (<code>snapline.live/tt</code>, <code>/ig</code>, <code>/yt</code>). These are totals "
-                 "only: no cookie is set and no IP address or identifier is kept for them.</p>")
+                 "only: no cookie is set and no IP address or identifier is kept for them.</p>"
+                 "\n    <p>To know whether visitors come back, your browser keeps three dates in its own storage (the week of "
+                 "your first visit, the last week you were counted and the last week you opened a game). At most once a week "
+                 "it tells our server whether this is a first visit, whether you also came the week before and whether you "
+                 "opened a game. Our server only adds these answers to daily totals: no identifier, IP address or cookie is "
+                 "kept, and nothing links one week to the next on our side. Clearing your browser data erases the dates.</p>")
 
 
 def _legal_chat(s):
@@ -1467,6 +1474,8 @@ def compter_visite(req):
     Les préchargements du navigateur (Sec-Purpose: prefetch) ne comptent pas."""
     if req.method != "GET" or "prefetch" in (req.headers.get("sec-purpose") or req.headers.get("purpose") or ""):
         return
+    if appareil_exclu(req):                          # l'administrateur, sur ses appareils (section 131)
+        return
     if _robot(req):
         compter("robot")
     else:
@@ -1477,10 +1486,54 @@ with db() as _c:
     _c.execute("CREATE TABLE IF NOT EXISTS stats_day(day TEXT, k TEXT, n INTEGER, PRIMARY KEY(day, k))")
 
 
+# Personnes, et personnes qui reviennent (section 131, 20/11/2026). Les visites ci-dessus comptent des ouvertures de
+# l'accueil : une même personne qui navigue compte plusieurs fois, et rien ne dit si elle revient la semaine suivante.
+# Le navigateur garde seulement des dates de semaine (localStorage « gc-m-v1 » : semaine de sa première visite, dernière
+# semaine comptée, dernière semaine où il a ouvert un match) et envoie, au plus une fois par semaine et par case, des
+# cases à additionner : « p:vu » (une personne cette semaine), « p:nouveau » (première visite), « p:revenu » (déjà venue
+# une semaine d'avant), « p:retenu » (venue aussi la semaine d'avant), « p:match » (a ouvert un match). Ni identifiant,
+# ni adresse IP, ni cookie : le serveur n'ajoute que des totaux par jour (stats_day). Les appareils de l'administrateur
+# s'excluent depuis /admin/stats (cookie gc_moi=1 posé sur eux seuls). Seulement avec GC_MESURE=1.
+MESURE_CASES = ("p:vu", "p:nouveau", "p:revenu", "p:retenu", "p:match")
+_MESURE_IP = {}                                      # ip → [début de l'heure, envois] : au plus 30 envois par heure
+
+
+def appareil_exclu(req):
+    try:
+        return req.cookies.get("gc_moi") == "1"
+    except Exception:
+        return False
+
+
+@app.post("/api/m")
+async def api_mesure(req: Request):
+    if not mesure_on():
+        raise HTTPException(404)
+    if _robot(req) or appareil_exclu(req):
+        return Response(status_code=204)
+    body = await _json(req)
+    cases = body.get("k") if isinstance(body, dict) else None
+    if not isinstance(cases, list):
+        raise HTTPException(400, "bad_request")
+    cases = [k for k in dict.fromkeys(cases) if isinstance(k, str) and k in MESURE_CASES]
+    ip, t = _ip(req), time.time()
+    with _db_lock:
+        e = _MESURE_IP.get(ip)
+        if not e or t - e[0] > 3600:
+            if len(_MESURE_IP) > 5000:
+                _MESURE_IP.clear()
+            e = _MESURE_IP[ip] = [t, 0]
+        e[1] += 1
+        trop = e[1] > 30
+    if cases and not trop:
+        compter(*cases)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
 def _lien_court(req, src):
     if not mesure_on() or not _SOURCE_RE.fullmatch(src or ""):
         raise HTTPException(404)
-    if req.method == "GET" and not _robot(req):
+    if req.method == "GET" and not _robot(req) and not appareil_exclu(req):
         compter("lien:" + src)
     return RedirectResponse("/", status_code=302, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
 
@@ -1554,6 +1607,9 @@ def stats_admin(n_semaines=12, now=None):
             semaines.append({
                 "debut": debut,
                 "visites": comptes.get("visite", 0), "robots": comptes.get("robot", 0),
+                "personnes": comptes.get("p:vu", 0), "nouveaux": comptes.get("p:nouveau", 0),
+                "revenus": comptes.get("p:revenu", 0), "retenus": comptes.get("p:retenu", 0),
+                "matchs": comptes.get("p:match", 0),
                 "sources": {k[7:]: v for k, v in comptes.items() if k.startswith("visite:")},
                 "liens": {k[5:]: v for k, v in comptes.items() if k.startswith("lien:")},
                 "joueurs": un("SELECT COUNT(*) FROM players WHERE created >= ? AND created < ?", "id", a, b),
