@@ -3855,6 +3855,35 @@ favorite n'était pas mis en avant. Les badges ne valent que pour les comptes (`
   posé sur la clé, 24 franchises, franchise enregistrée, My team, Settings, Sign in, Skip, invitations, téléphone ;
   `SHOTS=<dossier>`) ; `test_ligues.js` passe par la fenêtre.
 
+### 133. AdSense « site hors service ou inaccessible » : page d'accueil gardée, préchauffage au démarrage (20/11/2026)
+**Constat** (journaux et mesures Railway du 13 au 20/11) : le site répondait (aucune panne, 1 erreur 5xx sur 22 836
+requêtes en 7 jours), mais **trop lentement** pour les robots. Accueil : 5 à 16 s, parfois plus de 3 min ; pages des
+franchises : 8 à 38 s. Google-Display-Ads-Bot attendait 6 s pour l'accueil ; les robots de Meta abandonnaient à 5 s
+(499), ceux d'Amazon à 10 s, un autre à 30 s sur `/teams/…`. Causes : la page d'accueil emporte toute la semaine (jusqu'à
+50 Mo, 4 à 5 Mo compressés le dimanche) et était refaite puis compressée au niveau 9 **à chaque visite** (2 s + 3 s),
+le tout bien plus lent quand plusieurs robots arrivaient ensemble ; après chaque déploiement (plusieurs par jour), le
+premier visiteur attendait la lecture des semaines (≈ 25 s) et une page de franchise ou de semaine l'histoire de la
+ligue (≈ 20 s de plus).
+- **Page d'accueil gardée** (`_page_cachee`) : faite une fois toutes les `GC_PAGE_CACHE` secondes (15 par défaut ; 0 :
+  à chaque visite, comme avant), déjà compressée (gzip niveau 6, servie telle quelle aux navigateurs qui l'acceptent),
+  une seule construction à la fois, l'ancienne page servie pendant qu'elle se refait (2 min au plus). Refaite tout de
+  suite si la semaine, le fichier du site, une variable `GC_*` ou la régie change. Une page de quelques secondes reste
+  juste : le navigateur demande `/api/delta` dès l'ouverture avec les actions qu'il a, reçoit les suivantes, les
+  résultats et l'heure du serveur. Le comptage des visites et le préchauffage de News / Tracking restent faits à chaque
+  visite.
+- **Préchauffage au démarrage** (`_prechauffer`, lancé par le `lifespan` de l'application, donc seulement quand le
+  serveur démarre vraiment) : semaines, page d'accueil, histoire de la ligue (les deux variantes), puis News et
+  Tracking. Journaux : « préchauffage : semaines lues en … s » puis « terminé en … s » (≈ 55 s en local le dimanche).
+  `GC_PRECHAUFFAGE=off` : comme avant.
+- **Compression** : niveau 6 au lieu de 9 pour toutes les réponses (50 Mo : 1,1 s au lieu de 3,1 s, 20 % plus lourd).
+- **Mesure locale** (serveur réel, dimanche 22/11 21:00, 12 requêtes simultanées par vague) : accueil 0,9 à 3,9 s juste
+  après le préchauffage (News et Tracking calculent encore), puis 0,2 s, puis 0,03 à 0,06 s ; pages des franchises 26 s,
+  puis 1,7 s, puis 0,05 s.
+- Coupé sous `GC_TEST_HOOK=1` (tests du site : chaque page refaite, pas de préchauffage). **Tests** :
+  `moteur/tests/test_page_cache.py`.
+- **À faire par Guillaume** : redemander l'examen AdSense une fois la PR déployée, et **éviter de fusionner des PR
+  pendant l'examen** (chaque déploiement coupe le site ≈ 1 min et le remet à froid).
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml
@@ -4040,7 +4069,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 113) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_PAGE_CACHE` (secondes pendant lesquelles la page d'accueil est gardée, 15 ; 0 : refaite à chaque visite) et `GC_PRECHAUFFAGE=off` (pas de préchauffage au démarrage), section 133 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 113) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 
