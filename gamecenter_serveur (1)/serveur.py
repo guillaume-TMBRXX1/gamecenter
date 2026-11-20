@@ -37,6 +37,7 @@ from moteur import ngs as _ngs
 from moteur import recap_semaine as _rev
 from moteur import supporters as _fo
 from moteur import draft as _dr
+from moteur import badges as _badges
 import pages_franchises as _franchises
 import comptes_rendus as _recaps
 import actualites as _news
@@ -574,6 +575,14 @@ with db() as _c:
     CREATE TABLE IF NOT EXISTS news_votes(player TEXT, article TEXT, choice TEXT, at INTEGER, PRIMARY KEY(player, article));
     CREATE INDEX IF NOT EXISTS news_votes_a ON news_votes(article);
     """)
+    # Badges (BD-1, programme/Badges_plan.md) : les jours de visite (une ligne par joueur et par jour de Bruxelles,
+    # écrite par /api/me ; invités compris, pour que leurs jours comptent s'ils créent un compte) et les badges gagnés
+    # (jamais retirés ; tier = palier).
+    _c.executescript("""
+    CREATE TABLE IF NOT EXISTS player_days(player TEXT, day TEXT, PRIMARY KEY(player, day));
+    CREATE TABLE IF NOT EXISTS player_badges(player TEXT, badge TEXT, tier INTEGER, at INTEGER, week TEXT,
+                                             PRIMARY KEY(player, badge));
+    """)
 
 NAME_RE = re.compile(r"[^\w .'\-]", re.UNICODE)
 
@@ -1038,7 +1047,7 @@ def page(request: Request = None):
         srv["fluide_off"] = True
     if not accueil_terrain_on():                     # le terrain d'abord (section 127) : GC_ACCUEIL_TERRAIN=off, la page d'avant
         srv["spect_off"] = True
-    if mesure_on():                                  # personnes et retours (section 130) : rien sans GC_MESURE=1
+    if mesure_on():                                  # personnes et retours (section 131) : rien sans GC_MESURE=1
         srv["mesure"] = True
     if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
         srv["coach_off"] = True
@@ -1464,7 +1473,7 @@ def compter_visite(req):
     Les préchargements du navigateur (Sec-Purpose: prefetch) ne comptent pas."""
     if req.method != "GET" or "prefetch" in (req.headers.get("sec-purpose") or req.headers.get("purpose") or ""):
         return
-    if appareil_exclu(req):                          # l'administrateur, sur ses appareils (section 130)
+    if appareil_exclu(req):                          # l'administrateur, sur ses appareils (section 131)
         return
     if _robot(req):
         compter("robot")
@@ -1476,7 +1485,7 @@ with db() as _c:
     _c.execute("CREATE TABLE IF NOT EXISTS stats_day(day TEXT, k TEXT, n INTEGER, PRIMARY KEY(day, k))")
 
 
-# Personnes, et personnes qui reviennent (section 130, 20/11/2026). Les visites ci-dessus comptent des ouvertures de
+# Personnes, et personnes qui reviennent (section 131, 20/11/2026). Les visites ci-dessus comptent des ouvertures de
 # l'accueil : une même personne qui navigue compte plusieurs fois, et rien ne dit si elle revient la semaine suivante.
 # Le navigateur garde seulement des dates de semaine (localStorage « gc-m-v1 » : semaine de sa première visite, dernière
 # semaine comptée, dernière semaine où il a ouvert un match) et envoie, au plus une fois par semaine et par case, des
@@ -1838,6 +1847,7 @@ def api_me(token: str = ""):
     if not p:
         raise HTTPException(401, "Clé de joueur inconnue.")
     w = _need_week(); t = now_ms()
+    noter_visite(p["id"], t)                         # badges (BD-1) : le jour de visite, une fois par jour
     L = wallet(p["id"], w, t)
     rows = season_rows(t)
     mine = next((r for r in rows if r["id"] == p["id"]), None)
@@ -1845,6 +1855,124 @@ def api_me(token: str = ""):
               "players": len(rows)}
     return {"name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team"), "week": w.start, "now": t,
             "season": season, "carry": wallet_on(w), "refill": {"amount": REFILL, "ok": refill_ok(w, L) is None}, **L}
+
+
+# ------------------------------------------------------------------ badges (BD-1, programme/Badges_plan.md)
+# Les règles sont dans moteur/badges.py (pures) ; ici, les données d'un compte lues en base. L'API et l'attribution
+# arrivent en BD-2 ; en BD-1, seul le jour de visite est écrit (par /api/me).
+_VUS = {}                                            # (joueur, jour) déjà écrits depuis le démarrage : pas d'écriture inutile
+
+
+def badges_on():
+    return os.environ.get("GC_BADGES", "on").strip().lower() not in ("off", "0", "non", "no")
+
+
+def _jour_bxl(ms):
+    return datetime.fromtimestamp(ms / 1000, TZ).date().isoformat()
+
+
+def noter_visite(pid, t):
+    """Une ligne player_days par joueur et par jour de Bruxelles (INSERT OR IGNORE, au plus une écriture par jour)."""
+    if not badges_on():
+        return
+    k = (pid, _jour_bxl(t))
+    if k in _VUS:
+        return
+    with db() as c:
+        c.execute("INSERT OR IGNORE INTO player_days(player, day) VALUES(?,?)", k)
+    _VUS[k] = True
+    if len(_VUS) > 50000:
+        _VUS.clear()
+
+
+def _semaine_finie(w, t):
+    return all(w.status(g, t) == "final" for g in w.sched)
+
+
+def _fin_semaine(w):
+    return max(g["end"] for g in w.sched)
+
+
+def badges_classements(pid, t):
+    """(semaines finies en tête d'une ligue privée de LIGUE_MIN membres ou plus, semaines finies dans le top 10 de la
+    saison quand TOP10_MIN comptes au moins sont classés) : chaque semaine est classée à sa fin, comme les classements
+    du site (ligue : solde de la semaine)."""
+    finies = [w for w in season_weeks(t) if _semaine_finie(w, t)]
+    with db() as c:
+        ligues = [r[0] for r in c.execute("SELECT league FROM league_members WHERE player=?", (pid,))]
+        membres = {lid: [r[0] for r in c.execute("SELECT player FROM league_members WHERE league=?", (lid,))]
+                   for lid in ligues}
+    wins = top10 = 0
+    for w in finies:
+        fin = _fin_semaine(w)
+        rows = season_rows(fin)
+        if len(rows) >= _badges.TOP10_MIN and any(r["id"] == pid and r["rank"] <= 10 for r in rows):
+            top10 += 1
+        for lid, ms_ in membres.items():
+            if len(ms_) < _badges.LIGUE_MIN:
+                continue
+            best = []
+            for m in ms_:
+                Lg = ledger(w, player_bets(m, w), fin)
+                if Lg["bets"]:
+                    best.append((-Lg["balance"], m))
+            if best and min(best)[1] == pid:
+                wins += 1
+    return wins, top10
+
+
+def badges_donnees(p, t):
+    """Les données d'un compte pour moteur/badges.evaluer (voir sa docstring)."""
+    weeks = {w.start: w for w in load_weeks().values() if w.open <= t}
+    with db() as c:
+        days = [r[0] for r in c.execute("SELECT day FROM player_days WHERE player=?", (p["id"],))]
+        bets = [bet_row(r) for r in c.execute("SELECT * FROM bets WHERE player=?", (p["id"],))]
+        fv = [dict(r) for r in c.execute("SELECT week, team, lever, choice FROM fan_votes WHERE player=?", (p["id"],))]
+        news = c.execute("SELECT COUNT(*) FROM news_votes WHERE player=?", (p["id"],)).fetchone()[0]
+        owned = [r[0] for r in c.execute(
+            "SELECT COUNT(m.player) FROM leagues l JOIN league_members m ON m.league = l.id WHERE l.owner=? GROUP BY l.id",
+            (p["id"],))]
+    out_bets = []
+    for b in bets:
+        w = weeks.get(b["week"])
+        if w is None or b["pt"] > t:
+            continue
+        st, _ = w.settle(b, t)
+        if b.get("legs"):
+            kind = "sgp" if b.get("key") == "sgp" else "combo"
+        else:
+            k = (b.get("key") or "").split(":")
+            kind = "fut" if k[0] == "fut" else (k[1] if len(k) > 1 else "")
+        out_bets.append({"week": b["week"], "day": _jour_bxl(b["pt"]), "status": st, "price_dec": b["price_dec"],
+                         "kind": kind, "legs": len(b["legs"]) if b.get("legs") else 1})
+    today = _jour_bxl(t)
+    fan_votes, draft_votes = [], []
+    for v in fv:
+        if v["week"] > today:                        # vote encore ouvert (il s'applique le lundi qui vient) : pas jugé
+            if not v["lever"].startswith("draft:"):
+                fan_votes.append({"week": v["week"], "majority": None})
+            continue
+        if v["lever"].startswith("draft:"):
+            pid_ = v["lever"][6:]
+            w = weeks.get(v["week"])
+            d = next((x for x in (w.doc.get("drafted") or []) if x.get("id") == pid_), None) if w else None
+            draft_votes.append({"week": v["week"], "picked": bool(d and d.get("source") == "fans"
+                                                                  and d.get("profile") == v["choice"])})
+            continue
+        try:
+            r = fans_result(fans_counts(v["week"], v["team"]).get(v["team"], {}), _fo.options(v["lever"]))
+        except KeyError:                             # levier retiré du catalogue
+            r = {"source": "coordinators", "choice": None}
+        fan_votes.append({"week": v["week"], "majority": r["source"] == "fans" and r["choice"] == v["choice"]})
+    week_list = []
+    for w in sorted(weeks.values(), key=lambda x: x.monday):
+        fin = getattr(w, "final", None) or {}
+        week_list.append({"start": w.start, "final_day": _jour_bxl(fin["ko"]) if fin.get("ko") else None})
+    wins, top10 = badges_classements(p["id"], t) if p.get("login") else (0, 0)
+    return {"account": bool(p.get("login")), "acct_at": p.get("acct_at"), "fav_team_at": p.get("fav_team_at"),
+            "now": t, "days": days, "weeks": week_list, "bets": out_bets, "fan_votes": fan_votes,
+            "draft_votes": draft_votes, "news_votes": news, "leagues_owned": owned, "league_wins": wins,
+            "top10_weeks": top10, "pro": insights_pro(p)}
 
 
 # ------------------------------------------------------------------ « My team » : équipe favorite d'un compte

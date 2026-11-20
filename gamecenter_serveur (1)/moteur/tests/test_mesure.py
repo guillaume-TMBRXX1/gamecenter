@@ -214,10 +214,10 @@ class TestMesure(unittest.TestCase):
         self.assertIn("short links", s)
         self.assertIn("no IP address or identifier is kept", s)
         self.assertEqual(s.count("snapline.live/tt"), 1)
-        self.assertIn("three dates in its own storage", s)          # section 130 : personnes et retours
+        self.assertIn("three dates in its own storage", s)          # section 131 : personnes et retours
 
     def test_personnes(self):
-        """Section 130 : /api/m additionne les cases connues, une fois chacune par envoi ; robots, appareils exclus
+        """Section 131 : /api/m additionne les cases connues, une fois chacune par envoi ; robots, appareils exclus
         (cookie gc_moi=1) et envois au-delà de 30 par heure et par adresse ignorés ; sans GC_MESURE, 404 ; le tableau
         de bord les donne par semaine."""
         def m(cases, ip="5.6.7.8"):
@@ -245,7 +245,7 @@ class TestMesure(unittest.TestCase):
         self.assertEqual((w["personnes"], w["nouveaux"], w["revenus"], w["retenus"], w["matchs"]), (2, 1, 1, 1, 31))
 
     def test_appareil_exclu(self):
-        """Section 130 : l'accueil et les liens courts ouverts depuis un appareil exclu ne comptent pas."""
+        """Section 131 : l'accueil et les liens courts ouverts depuis un appareil exclu ne comptent pas."""
         os.environ["GC_MESURE"] = "1"
         r = Req(); r.cookies = {"gc_moi": "1"}
         ouvrir(r)

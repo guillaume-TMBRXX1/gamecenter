@@ -4,7 +4,7 @@
 // Mesure allumée : /tt redirige vers l'accueil (302) et compte le clic ; l'accueil ouvert depuis TikTok compte une visite
 // « tiktok », un robot ne compte pas ; /admin/stats : clé refusée, puis tableau (tuiles, semaines, sources, liens courts,
 // ligne du bilan), session gardée dans l'onglet et fermée ; téléphone 390 px sans défilement horizontal, mode sombre ;
-// page légale avec la phrase sur les totaux ; section 130 : personnes et retours (cases envoyées une fois par semaine,
+// page légale avec la phrase sur les totaux ; section 131 : personnes et retours (cases envoyées une fois par semaine,
 // dates seules dans le navigateur, match ouvert, appareil exclu depuis /admin/stats) ; aucune erreur JS. SHOTS=<dossier> : captures du tableau de bord.
 // Lancé par outils/site/tests_navigateur.sh (groupe site).
 let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=require('/opt/node-tools/node_modules/playwright')); }
@@ -64,7 +64,7 @@ const shot=async(p,nom)=>{ if(SHOTS){ fs.mkdirSync(SHOTS,{recursive:true}); awai
     check(await p.isHidden('#app'),'tableau caché sans la clé');
     await p.fill('#key',KEY); await p.click('#keyForm button');
     await p.waitForSelector('#app:not([hidden])',{timeout:5000});
-    check((await p.$$('#tiles .tile')).length===9,'9 tuiles (dont personnes, revenues, matchs : section 130)');
+    check((await p.$$('#tiles .tile')).length===9,'9 tuiles (dont personnes, revenues, matchs : section 131)');
     check((await p.$$('#weeks tbody tr')).length===12,'12 semaines');
     const src=await p.$$eval('#sources tbody tr td:first-child',x=>x.map(e=>e.textContent));
     check(src.includes('tiktok'),`sources : ${src.join(', ')}`);
@@ -92,8 +92,8 @@ const shot=async(p,nom)=>{ if(SHOTS){ fs.mkdirSync(SHOTS,{recursive:true}); awai
     await shot(q,'admin_stats_telephone.png');
     await m.close();
 
-    /* ---- section 130 : des personnes, et des personnes qui reviennent ---- */
-    console.log('— personnes et retours (section 130)');
+    /* ---- section 131 : des personnes, et des personnes qui reviennent ---- */
+    console.log('— personnes et retours (section 131)');
     const env=[];   /* les cases envoyées par la page */
     const P=await b.newContext({viewport:{width:1280,height:900},userAgent:UA});
     P.on('request',r=>{ if(r.url().endsWith('/api/m')){ try{ env.push(JSON.parse(r.postData()).k.join(',')); }catch(e){} } });

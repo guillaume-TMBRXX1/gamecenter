@@ -7298,7 +7298,7 @@ function openModal(id){
   if(g.chip && g.phase!=='play') showChip(g);
   modal.querySelector('[data-close]').focus();
   moOpen(id);   /* section 119 */
-  if(typeof mesureMatch==='function') mesureMatch();   /* section 130 */
+  if(typeof mesureMatch==='function') mesureMatch();   /* section 131 */
   if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
 }
 /* Big screen, "Bigger field" (theater): the match full screen (19/10/2026, see the CSS). Remembered on this device. */
@@ -9640,7 +9640,7 @@ function seasonBoot(){
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
-  mesureVu();   /* section 130 */
+  mesureVu();   /* section 131 */
 }
 /* Première visite (étape 9.3) : un match tout de suite — en direct s'il y en a un, sinon le dernier match terminé en replay,
    avec l'heure du prochain coup d'envoi (la nuit et le week-end entre deux créneaux, rien n'est en direct). Fermé, ou un
@@ -9664,7 +9664,7 @@ function welcomeTick(t){
     :nx?`No game live right now · next kickoff ${dStr(nx.ko)} ${tStr(nx.ko)} Brussels, in ${dans}`:'');
 }
 function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.classList.add('gc-seen'); }
-/* ---------- section 130 (20/11/2026) : des personnes, et des personnes qui reviennent ----------
+/* ---------- section 131 (20/11/2026) : des personnes, et des personnes qui reviennent ----------
    Le navigateur garde trois dates de semaine (« gc-m-v1 » : première visite, dernière semaine comptée, dernier match
    ouvert) et envoie au plus une fois par semaine des cases à additionner : p:vu, p:nouveau, p:revenu (déjà venu une
    semaine d'avant), p:retenu (venu aussi la semaine d'avant), p:match. Aucun identifiant. Rien sans GC_MESURE=1, rien

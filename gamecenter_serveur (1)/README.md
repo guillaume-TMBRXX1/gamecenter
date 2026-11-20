@@ -3774,7 +3774,33 @@ Dernière étape du plan (`programme/Next_Gen_Stats_plan.md`), à la demande de 
   `moteur/tests/test_videos.py` (`test_tracking`) et `outils/site/test_tracking_ngs6.js` (groupe site-2 ; horloge après
   la Grand Final ; `SHOTS=<dossier>`).
 
-### 130. Mesure : des personnes, et des personnes qui reviennent ; ses propres appareils exclus (20/11/2026)
+### 130. Badges, BD-1 : les règles, les jours de visite, le rapport (20/11/2026)
+Plan : `programme/Badges_plan.md` (décisions de Guillaume du 20/11 : comptes seulement ; tous les badges du plan, y
+compris « lecture du jeu » ; Founding fan jusqu'au 31/12/2026 ; un badge Insights Pro ; le badge mis en avant à côté du
+pseudo dans les classements et les ligues, pas le chat). **Rien ne s'affiche encore** : BD-1 pose les règles et commence
+à noter les visites ; l'API et l'attribution arrivent en BD-2, le site en BD-3.
+- **Module** `moteur/badges.py` (pur) : le catalogue (20 badges en cinq catégories : loyalty, supporter, reader,
+  community, pro ; paliers bronze / silver / gold / legend) et `evaluer(D)` → pour chaque badge, le palier gagné, la
+  valeur et le seuil suivant ; `gagnes(D)`, `nouveaux(deja, maintenant)` (un badge nouveau ou un palier plus haut,
+  jamais une baisse). Semaine active = une visite, un pari ou un vote cette semaine-là (la fidélité est donc
+  rétroactive). Un invité n'a aucun palier (progression seulement). Aucun badge pour la mise, le volume, les pertes,
+  les recharges ou le solde. Seuils : Upset caller à +200 (cote décimale 3,0) ; Perfect day 3 paris réglés et tous
+  gagnés le même jour (un cash-out n'est pas gagné) ; Combo 3 sélections ; ligue comptée à 3 membres ; Top 10
+  seulement une semaine où 30 comptes au moins sont classés.
+- **Serveur** : tables `player_days(player, day)` et `player_badges(player, badge, tier, at, week)` ; `/api/me` note le
+  jour de visite (Bruxelles, au plus une écriture par jour et par joueur ; invités compris, pour que leurs jours
+  comptent s'ils créent un compte) ; `badges_donnees(p, t)` rassemble les données d'un compte (paris réglés par
+  `Week.settle`, type et nombre de sélections ; votes des supporters jugés une fois fermés — `majority` = son choix a
+  été retenu par les supporters ; draft — `picked` = le profil drafté par les supporters ; réponses aux articles ;
+  ligues créées ; semaines finies en tête d'une ligue ou dans le top 10, classées à leur fin). Interrupteur
+  `GC_BADGES=off` (aucune visite notée).
+- **Outil** `outils/badges_rapport.py --base <gamecenter.db> [--at …]` : sur une copie de la base (l'original n'est
+  jamais ouvert en écriture), le nombre de comptes à chaque palier de chaque badge et la médiane de la progression, à
+  lancer sur la base de production avant BD-3 pour régler les seuils.
+- **Tests** : `moteur/tests/test_badges.py` (chaque règle, paliers, séries avec trous, invité, rien pour la mise ;
+  serveur : une visite par jour, types des paris, invité, interrupteur).
+
+### 131. Mesure : des personnes, et des personnes qui reviennent ; ses propres appareils exclus (20/11/2026)
 **Constat** (tableau de bord du 20/11) : 171 « visites » cette semaine, dont 116 venues d'une autre page de Snapline,
 c'est-à-dire des pages vues et non des personnes ; un seul joueur actif, sans doute Guillaume. Le post sur r/SideProject a
 eu 310 vues, 16 clics, aucun vote ni commentaire. Surtout, le chiffre qui doit décider de la suite du projet, combien
