@@ -214,6 +214,45 @@ class TestMesure(unittest.TestCase):
         self.assertIn("short links", s)
         self.assertIn("no IP address or identifier is kept", s)
         self.assertEqual(s.count("snapline.live/tt"), 1)
+        self.assertIn("three dates in its own storage", s)          # section 130 : personnes et retours
+
+    def test_personnes(self):
+        """Section 130 : /api/m additionne les cases connues, une fois chacune par envoi ; robots, appareils exclus
+        (cookie gc_moi=1) et envois au-delà de 30 par heure et par adresse ignorés ; sans GC_MESURE, 404 ; le tableau
+        de bord les donne par semaine."""
+        def m(cases, ip="5.6.7.8"):
+            return asyncio.run(serveur.api_mesure(Req(method="POST", body={"k": cases}, ip=ip)))
+        os.environ.pop("GC_MESURE", None)
+        with self.assertRaises(HTTPException) as e:
+            m(["p:vu"])
+        self.assertEqual(e.exception.status_code, 404)
+        os.environ["GC_MESURE"] = "1"
+        serveur._MESURE_IP.clear()
+        self.assertEqual(m(["p:vu", "p:nouveau", "p:vu", "visite", "lien:tt", 3, None]).status_code, 204)
+        m(["p:vu", "p:revenu", "p:retenu"], ip="9.9.9.9")
+        m(["p:match"], ip="9.9.9.9")
+        r = Req(method="POST", body={"k": ["p:vu"]}, headers={"user-agent": "Googlebot/2.1"})
+        asyncio.run(serveur.api_mesure(r))                         # robot : rien
+        r = Req(method="POST", body={"k": ["p:vu"]}); r.cookies = {"gc_moi": "1"}
+        asyncio.run(serveur.api_mesure(r))                         # appareil de l'administrateur : rien
+        with self.assertRaises(HTTPException):
+            asyncio.run(serveur.api_mesure(Req(method="POST", body={"k": "p:vu"})))
+        self.assertEqual(self.totaux(), {"p:vu": 2, "p:nouveau": 1, "p:revenu": 1, "p:retenu": 1, "p:match": 1})
+        for _ in range(40):                                        # une seule adresse : 30 envois par heure au plus
+            m(["p:match"], ip="7.7.7.7")
+        self.assertEqual(self.totaux()["p:match"], 31)
+        w = serveur.stats_admin(1)["semaines"][0]
+        self.assertEqual((w["personnes"], w["nouveaux"], w["revenus"], w["retenus"], w["matchs"]), (2, 1, 1, 1, 31))
+
+    def test_appareil_exclu(self):
+        """Section 130 : l'accueil et les liens courts ouverts depuis un appareil exclu ne comptent pas."""
+        os.environ["GC_MESURE"] = "1"
+        r = Req(); r.cookies = {"gc_moi": "1"}
+        ouvrir(r)
+        r = Req(); r.cookies = {"gc_moi": "1"}
+        serveur.lien_tt(r)
+        ouvrir(Req())
+        self.assertEqual(self.totaux(), {"visite": 1, "visite:direct": 1})
 
 
 if __name__ == "__main__":

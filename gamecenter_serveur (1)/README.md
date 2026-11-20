@@ -3774,6 +3774,36 @@ Dernière étape du plan (`programme/Next_Gen_Stats_plan.md`), à la demande de 
   `moteur/tests/test_videos.py` (`test_tracking`) et `outils/site/test_tracking_ngs6.js` (groupe site-2 ; horloge après
   la Grand Final ; `SHOTS=<dossier>`).
 
+### 130. Mesure : des personnes, et des personnes qui reviennent ; ses propres appareils exclus (20/11/2026)
+**Constat** (tableau de bord du 20/11) : 171 « visites » cette semaine, dont 116 venues d'une autre page de Snapline,
+c'est-à-dire des pages vues et non des personnes ; un seul joueur actif, sans doute Guillaume. Le post sur r/SideProject a
+eu 310 vues, 16 clics, aucun vote ni commentaire. Surtout, le chiffre qui doit décider de la suite du projet, combien
+d'inconnus reviennent d'une semaine à l'autre, n'était pas mesuré : les visites de Guillaume se mêlaient aux autres, et
+un spectateur qui ne parie pas n'était compté nulle part. **Demande de Guillaume (20/11)** : cette mesure avant de
+relancer la promotion.
+- **Le navigateur compte, le serveur additionne** (`mesureVu`, `mesureMatch` dans la page ; `POST /api/m` et
+  `MESURE_CASES` dans `serveur.py`) : le navigateur garde trois dates de semaine dans `localStorage` (`gc-m-v1` :
+  semaine de la première visite, dernière semaine comptée, dernier match ouvert). Au plus une fois par semaine, il envoie
+  des cases : `p:vu` (une personne), `p:nouveau` (première visite), `p:revenu` (déjà venue une semaine d'avant),
+  `p:retenu` (venue aussi la semaine d'avant), `p:match` (a ouvert un match). Le serveur ajoute ces cases aux totaux par
+  jour (`stats_day`). Aucun identifiant, aucune adresse IP, aucun cookie pour les visiteurs ; robots ignorés ; au plus
+  30 envois par heure et par adresse (gardé en mémoire, jamais écrit). Sans stockage dans le navigateur, rien n'est
+  envoyé (sinon chaque page compterait une nouvelle personne).
+- **Ses propres appareils exclus** : `/admin/stats` › « Cet appareil » › « Ne plus compter cet appareil » pose le
+  cookie `gc_moi=1` sur l'appareil de l'administrateur, et sur lui seul. Ni l'accueil, ni les liens courts, ni les cases
+  ne sont alors comptés. À faire dans chaque navigateur de chaque appareil. Le compte de jeu se retire des joueurs avec
+  `GC_STATS_EXCLURE` (section 77).
+- **Tableau de bord** : trois tuiles en tête (personnes, revenues, ont ouvert un match) ; tableau « Ceux qui
+  reviennent » (personnes, nouvelles, revenues, dont la semaine d'avant, ont ouvert un match) depuis la semaine du
+  16/11. Les visites (ouvertures de l'accueil) restent, renommées « pages d'accueil ».
+- **Page légale** : un paragraphe dit ce que le navigateur garde et ce que le serveur reçoit. Le choix de ne pas demander
+  de consentement repose sur l'exemption pour la mesure d'audience strictement anonyme ; c'est à l'éditeur de le valider.
+- **Interrupteur** : celui de la mesure, `GC_MESURE=1` (sans lui : ni `/api/m`, ni comptage dans la page).
+- **Tests** : `test_mesure.py` (`test_personnes` : cases connues seulement, une fois par envoi, robots et appareil exclu
+  ignorés, 30 envois par heure, 404 sans la mesure, totaux par semaine ; `test_appareil_exclu` ; page légale) ;
+  `test_mesure.js` : première visite, rechargement, retour la semaine d'après, match ouvert une seule fois, totaux du
+  tableau de bord, exclusion depuis `/admin/stats` (rien d'envoyé, accueil non compté), dates seules dans le navigateur.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

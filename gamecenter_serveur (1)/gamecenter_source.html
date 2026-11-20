@@ -7298,6 +7298,7 @@ function openModal(id){
   if(g.chip && g.phase!=='play') showChip(g);
   modal.querySelector('[data-close]').focus();
   moOpen(id);   /* section 119 */
+  if(typeof mesureMatch==='function') mesureMatch();   /* section 130 */
   if(window.GC_DIAG) window.GC_DIAG('open',{mode:g.mode});
 }
 /* Big screen, "Bigger field" (theater): the match full screen (19/10/2026, see the CSS). Remembered on this device. */
@@ -9639,6 +9640,7 @@ function seasonBoot(){
   setInterval(()=>seasonRefresh(false),1000);
   if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
+  mesureVu();   /* section 130 */
 }
 /* Première visite (étape 9.3) : un match tout de suite — en direct s'il y en a un, sinon le dernier match terminé en replay,
    avec l'heure du prochain coup d'envoi (la nuit et le week-end entre deux créneaux, rien n'est en direct). Fermé, ou un
@@ -9662,6 +9664,35 @@ function welcomeTick(t){
     :nx?`No game live right now · next kickoff ${dStr(nx.ko)} ${tStr(nx.ko)} Brussels, in ${dans}`:'');
 }
 function welcomeSeen(){ lsSet('gc-welcome-v1',1); document.documentElement.classList.add('gc-seen'); }
+/* ---------- section 130 (20/11/2026) : des personnes, et des personnes qui reviennent ----------
+   Le navigateur garde trois dates de semaine (« gc-m-v1 » : première visite, dernière semaine comptée, dernier match
+   ouvert) et envoie au plus une fois par semaine des cases à additionner : p:vu, p:nouveau, p:revenu (déjà venu une
+   semaine d'avant), p:retenu (venu aussi la semaine d'avant), p:match. Aucun identifiant. Rien sans GC_MESURE=1, rien
+   sur un appareil exclu depuis /admin/stats (cookie gc_moi=1). */
+const M_KEY='gc-m-v1';
+const mesureOn=()=>!!(SERVER&&SERVER.mesure)&&!/(?:^|;\s*)gc_moi=1(?:;|$)/.test(document.cookie||'');
+/* lundi de la semaine en cours, heure de Bruxelles (« 2026-11-16 ») */
+function mWeek(ms){
+  const d=new Date(ms), p={}; try{ new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'}).formatToParts(d).forEach(x=>{ p[x.type]=x.value; }); }catch(e){ return null; }
+  const back={Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6}[p.weekday]; if(back==null) return null;
+  const u=new Date(Date.UTC(+p.year,+p.month-1,+p.day-back)); return u.toISOString().slice(0,10); }
+function mPrev(wk){ const u=new Date(wk+'T00:00:00Z'); u.setUTCDate(u.getUTCDate()-7); return u.toISOString().slice(0,10); }
+function mSend(k){ if(!k.length) return; try{ fetch(SERVER.api+'/m',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k}),keepalive:true,cache:'no-store'}).catch(()=>{}); }catch(e){} }
+function mesureVu(){
+  if(!mesureOn()) return;
+  const wk=mWeek(Date.now()+SRV_OFF); if(!wk) return;
+  const s=lsGet(M_KEY)||{}; if(s.seen===wk) return;
+  const k=['p:vu'];
+  if(!s.first){ k.push('p:nouveau'); s.first=wk; } else if(s.first<wk) k.push('p:revenu');
+  if(s.seen===mPrev(wk)) k.push('p:retenu');
+  s.seen=wk; if(lsSet(M_KEY,s)) mSend(k);   /* sans stockage, rien : chaque page compterait une nouvelle personne */
+}
+function mesureMatch(){
+  if(!mesureOn()) return;
+  const wk=mWeek(Date.now()+SRV_OFF); if(!wk) return;
+  const s=lsGet(M_KEY)||{}; if(!s.seen||s.match===wk) return;
+  s.match=wk; if(lsSet(M_KEY,s)) mSend(['p:match']);
+}
 function welcomeInit(){
   const el=WELCOME.el=document.getElementById('welcome'); if(!el||el.hidden) return;
   document.getElementById('welcomeClose').addEventListener('click',()=>{ welcomeSeen(); const h=document.querySelector('.live-head h1');
