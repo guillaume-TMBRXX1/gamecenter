@@ -52,8 +52,10 @@ const lignes=p=>p.$$eval('#viewLeagues tbody tr',rs=>rs.map(r=>r.querySelector('
     const inv=await f.textContent('#viewLeagues .lg-invite');
     check(/Join Les potes/.test(inv)&&/created by Capitaine/.test(inv)&&/1 member/.test(inv),`lien d'invitation : « ${inv.replace(/\s+/g,' ').trim().slice(0,80)} »`);
     check(!/join=/.test(await f.evaluate(()=>location.search)),'le code ne reste pas dans l\'adresse');
-    await f.click('#viewLeagues .lg-invite [data-view-go="settings"]'); await f.waitForSelector('#acForm',{timeout:10000});
-    await f.fill('#acPseudo','Matelot'); await f.fill('#acPw','motdepasse2'); await f.click('#acGo');
+    /* 20/11/2026 (BD-2 bis) : le compte se crée dans la fenêtre « Join Snapline », plus en bas de Settings */
+    await f.click('#viewLeagues .lg-invite [data-join="register"]'); await f.waitForSelector('#joinForm',{timeout:10000});
+    await f.fill('#jnPseudo','Matelot'); await f.fill('#jnPw','motdepasse2'); await f.click('#jnGo');
+    await f.waitForSelector('#join [data-jteam]',{timeout:15000}); await f.keyboard.press('Escape');   /* le choix de la franchise : plus tard */
     let B=null;
     for(let i=0;i<40&&!B;i++){ await f.waitForTimeout(250); B=await f.evaluate(()=>{ try{ return JSON.parse(localStorage.getItem('gc-player-v1')); }catch(e){ return null; } }); if(B&&!B.account) B=null; }
     let mesB=null; for(let i=0;i<20;i++){ mesB=(await api('/leagues?token='+B.token)).json; if(mesB.leagues.length) break; await f.waitForTimeout(250); }

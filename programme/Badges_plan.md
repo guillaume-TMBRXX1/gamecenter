@@ -109,7 +109,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Le badge mis en avant renvoyé avec les lignes du classement de la saison et des ligues.
 - Interrupteur `GC_BADGES=off` (ni API ni affichage). Tests serveur sur une copie des données.
 
-### BD-2 bis — Créer un compte et choisir sa franchise *(site + serveur)*
+### BD-2 bis — Créer un compte et choisir sa franchise *(site + serveur)* — ✅ 20/11, captures validées (README section 132)
 - Une entrée visible pour un invité : bouton « Create account » dans la barre du haut (à la place du solde avant le
   premier pari, voir section 127) et invitations au bon moment (après un premier pari gagné, au vote des supporters,
   sur la page Badges : « Create an account to keep them »).
@@ -117,12 +117,13 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
   sa progression restent), puis **le choix de la franchise favorite** (grille des 24 logos, « Skip » possible), qui
   ouvre My team, le vote des supporters et True fan.
 - Settings garde la gestion du compte (changer de franchise, se déconnecter) ; le formulaire du bas de Settings disparaît.
-- À plan validé par Guillaume (écrans sur le vrai site, comme pour le Front office) avant de coder.
+- Fait : « Sign up » dans la barre du haut, fenêtre « Join Snapline » (compte, puis franchise, puis « You're in »),
+  toutes les invitations y mènent, carte « Nice pick! » après le premier pari gagné d'un invité, Settings sans formulaire.
 
 ### BD-3 — Site *(site)*
 - My account › **Badges** : grille des badges (gagnés en couleur, à gagner en gris avec la progression « 7 / 12 weeks »),
   choix du badge mis en avant ; toast « Badge unlocked » au moment où il est gagné ; le badge mis en avant à côté du
-  pseudo dans Standings › Season, les ligues privées (et le chat si Guillaume le veut).
+  pseudo dans Standings › Season, les ligues privées et le chat.
 - Invité : la page avec la progression et « Create an account to keep them ».
 - Icônes : un pictogramme par catégorie + la couleur du palier (pas d'image par badge au départ).
 - Tests navigateur, captures, téléphone 390 px, mode sombre.
@@ -139,7 +140,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
    rien sur la mise ni le volume. Garde-fou ajouté en BD-1 : Top 10 seulement une semaine où 30 comptes au moins sont
    classés (avec trois classés, tout le monde est « top 10 »).
 3. **Founding fan** : compte créé au plus tard le **31/12/2026**.
-4. **Badge mis en avant** : pas tranché ; par défaut, classements et ligues seulement (pas le chat).
+4. **Badge mis en avant** : classements, ligues **et le chat** (précisé par Guillaume le 20/11).
 5. **Badge Insights Pro** : oui.
 
 **Remarque de Guillaume (20/11) — la création de compte.** Aujourd'hui, créer un compte demande d'aller tout en bas de

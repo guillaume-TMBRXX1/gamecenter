@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Snapline — Live simulated American football: scores, odds &amp; replays</title>
 <script id="da-theme-boot">(function(){var p="auto";try{p=localStorage.getItem("gc-theme")||"auto"}catch(e){}var d=p==="dark"||(p==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.setAttribute("data-theme","dark");window.__gcThemePref=function(){try{return localStorage.getItem("gc-theme")||"auto"}catch(e){return "auto"}};try{var s=JSON.parse(localStorage.getItem("gc-settings-v1")||"{}");if(!(s&&s.motion===false)&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){var h=document.documentElement;h.setAttribute("data-mo","1");h.classList.add("mo-boot");document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){h.classList.remove("mo-boot")},1500)})}}catch(e){}})();</script>
-<script id="spect-boot">/* section 127 : un visiteur qui n'a jamais parié voit le terrain sans solde ni ticket (html.spect), décidé avant le premier dessin */(function(){try{var b=localStorage.getItem("gc-bettor"),s=JSON.parse(localStorage.getItem("gc-slip-v1")||"null"),p=JSON.parse(localStorage.getItem("gc-player-v1")||"null");if(!b&&!(s&&s.picks&&s.picks.length)&&!(p&&p.account))document.documentElement.classList.add("spect")}catch(e){}})();</script>
+<script id="spect-boot">/* section 127 : un visiteur qui n'a jamais parié voit le terrain sans solde ni ticket (html.spect), décidé avant le premier dessin */(function(){try{var b=localStorage.getItem("gc-bettor"),s=JSON.parse(localStorage.getItem("gc-slip-v1")||"null"),p=JSON.parse(localStorage.getItem("gc-player-v1")||"null");if(!b&&!(s&&s.picks&&s.picks.length)&&!(p&&p.account))document.documentElement.classList.add("spect");if("__JOIN__"==="1"&&!(p&&p.account))document.documentElement.classList.add("guest")}catch(e){}})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-180.png">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -1327,6 +1327,51 @@
   .tst.trk tfoot td,.tst.trk tfoot th{border-top:1px solid var(--line-2);color:var(--ink-2);font-style:italic}
   .tst.trk tfoot th{text-align:left;font:500 12px var(--f-ui)}
   .trk-more{margin-top:10px}
+  /* BD-2 bis (20/11/2026): Sign up in the top bar and the « Join Snapline » dialog (account, then the favorite team) */
+  #joinBtn{display:none}html.guest #joinBtn{display:inline-flex}   /* décidé avant le premier dessin (script de tête) : pas de décalage */
+  .chip-btn.join-btn{color:var(--cyan-ink);background:var(--cyan);border-color:var(--cyan);font-weight:700}
+  .chip-btn.join-btn:hover{filter:brightness(1.05)}
+  @media (min-width:761px){ html.guest .topbar .search-wrap,html.guest .topbar .search{flex:1 1 110px} }   /* téléphone : la recherche garde sa ligne (sinon l'horloge du direct la décale : CLS) */
+  .join{position:fixed;inset:0;z-index:330;display:grid;place-items:center;padding:16px;background:rgba(8,12,20,.55)}
+  .join[hidden]{display:none}
+  .join-card{position:relative;width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:26px 26px 22px;outline:0}
+  .join .join-card{background:var(--bg);box-shadow:0 24px 60px rgba(0,0,0,.35)}   /* opaque : la page ne transparaît pas */
+  .join-card h2{margin:4px 0 6px;font:700 26px var(--f-display);letter-spacing:.02em}
+  .join-card .join-sub{margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5}
+  .join-x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--l1);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+  .join-x svg{width:18px;height:18px}
+  .join-x:focus-visible,.join-team:focus-visible,.join-link:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .join-perks{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:7px;font-size:13.5px;color:var(--ink-2)}
+  .join-perks li{display:flex;gap:9px;align-items:flex-start}
+  .join-perks li::before{content:"";flex:0 0 8px;height:8px;margin-top:6px;border-radius:50%;background:var(--cyan)}
+  .join-card .ac-f{margin-bottom:12px}
+  .join-card .ac-f input{width:100%}
+  .join-card .cta{width:100%}
+  .join-alt{margin:14px 0 0;text-align:center;font-size:13px;color:var(--ink-2)}
+  .join-link{all:unset;cursor:pointer;color:var(--cyan);font-weight:700}
+  .join-steps{display:flex;gap:6px;margin:0 52px 12px 0}
+  .join-steps i{flex:1;height:4px;border-radius:2px;background:var(--l3)}.join-steps i.on{background:var(--cyan)}
+  .join-teams{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 16px}
+  .join-team{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border-radius:10px;border:1px solid var(--line);background:var(--l1);color:var(--ink-2);font:600 11.5px var(--f-ui);cursor:pointer;text-align:center;min-height:76px}
+  .join-team .badge{width:42px;height:32px;font-size:12px}
+  .join-team[aria-pressed="true"]{border-color:var(--tc,var(--cyan));box-shadow:inset 0 0 0 2px var(--tc,var(--cyan));color:var(--ink)}
+  .join-acts{display:flex;gap:10px;align-items:center;position:sticky;bottom:-22px;margin:0 -4px;padding:10px 4px 0;background:var(--bg)}
+  .join-acts .cta{flex:1}
+  .join-acts .chip-btn{height:50px}
+  .join-done{display:flex;align-items:center;gap:14px;margin:6px 0 18px}
+  .join-done .badge{width:56px;height:44px;font-size:15px}
+  .join-nudge{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:320;display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);padding:12px 12px 12px 16px;font-size:13.5px}
+  .join-nudge[hidden]{display:none}
+  .join-nudge p{margin:0;color:var(--ink-2)}.join-nudge b{color:var(--ink)}
+  @media (min-width:761px){ .join-teams{grid-template-columns:repeat(4,minmax(0,1fr))} }
+  @media (max-width:760px){
+    .join{place-items:end stretch;padding:0}
+    .join-card{width:100%;max-height:92dvh;border-radius:16px 16px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+    .join-acts{bottom:calc(-18px - env(safe-area-inset-bottom,0px));padding-bottom:12px}
+    .join-nudge{bottom:calc(84px + env(safe-area-inset-bottom,0px));flex-wrap:wrap}
+    .join-btn{height:36px;padding:0 12px}
+  }
+  @media (prefers-reduced-motion:no-preference){ .join:not([hidden]) .join-card{animation:joinIn .18s ease-out} @keyframes joinIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}} }
   /* NGS-5: tracking on the player card, the team page, head-to-head and the Match centre */
   .trk-rk{display:inline-block;margin-left:6px;font:700 10.5px var(--f-display);letter-spacing:.04em;color:var(--ink-3)}
   .trk-rk.top{color:var(--cyan)}
@@ -2939,6 +2984,7 @@
       </div>
       <div class="grow"></div>
       <span class="engine" id="engineTxt"><i class="dot"></i>Sim engine <b>V3</b></span>
+      <button class="chip-btn join-btn" type="button" id="joinBtn" data-join="register">Sign up</button>
       <button class="wallet-pill" type="button" data-drawer><span>Balance</span><b data-balance>$0.00</b></button>
     </div>
 
@@ -8491,7 +8537,7 @@ function renderMyteam(t){
   if(el._k===key) return; el._k=key;
   const head=`<div class="view-head"><h2>My team</h2><p class="eyebrow">Your franchise: its record, games played and still to play, Grand Final history and roster</p></div>`;
   if(!SERVER){ el.innerHTML=head+'<div class="card"><p class="st-empty"><b>Needs the GameCenter server</b>Your favourite team is kept with your account.</p></div>'; return; }
-  if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.${FO_ON?' Its fans vote each week on the game plan: 4th downs, run or pass, blitz…':''}</p><button type="button" class="chip-btn" data-view-go="settings">Create an account or sign in</button></div>`; return; }
+  if(!(P0&&P0.account)){ el.innerHTML=head+`<div class="card"><p class="st-empty"><b>Create an account to pick your team</b>Your favourite franchise follows you on every device, next to your wallet.${FO_ON?' Its fans vote each week on the game plan: 4th downs, run or pass, blitz…':''}</p><button type="button" class="chip-btn" data-join="register">Create an account or sign in</button></div>`; return; }
   if(!fav||MT_PICK){
     el.innerHTML=head+`<div class="card"><span class="label">Pick your team</span>${FO_ON&&!fav?'<p class="fo-invite">Pick your franchise to join its fans’ vote: one question a week on the game plan, applied to the next week’s games.</p>':''}${FO_ON&&fav?'<p class="fo-invite">Switching teams removes this week’s fans’ vote; you can vote for your new team from Monday.</p>':''}<div class="team-grid mt-pick">${Object.values(SW.teams).map(T=>`<button type="button" class="card team-card" data-favteam="${T.abbr}" aria-pressed="${fav===T.abbr}"><span class="badge">${T.abbr}</span><span class="tc-n">${esc(T.name)}</span><span class="tc-s">${esc(tStyle(T))}</span></button>`).join('')}</div>
       ${fav?'<button type="button" class="chip-btn" data-favcancel>Keep '+esc(SW.teams[fav]?SW.teams[fav].name:fav)+'</button>':''}<p class="np-note" id="mtErr" role="alert"></p></div>`;
@@ -9638,7 +9684,7 @@ function seasonBoot(){
   document.documentElement.classList.remove('gc-boot','mo-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître (section 121 : et ses silhouettes partent) */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
+  if(SERVER){ joinRefresh(); chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
   mesureVu();   /* section 131 */
 }
@@ -10231,6 +10277,7 @@ function betTick(t){
   if(fresh.length){ fresh.forEach(r=>SEEN.add(r.id));
     const pl=r2(fresh.reduce((s,r)=>s+r.ret-r.stake,0));
     sfxUi(pl>0?'won':pl<0?'lost':'push'); if(pl>0) moWin(fresh.filter(r=>r.st==='won'));   /* sections 119, 121 */
+    if(pl>0&&typeof joinNudge==='function') joinNudge();   /* BD-2 bis : une invitation, une seule fois, à un invité */
     toast(fresh.length===1 ? `${ST_LAB[fresh[0].st]} · ${fresh[0].title} · ${fresh[0].st==='won'?'+'+money(fresh[0].ret):fresh[0].st==='push'?'stake returned':MINUS+money(fresh[0].stake)}`
       : `${fresh.length} bets settled · ${pl<0?MINUS:'+'}${money(Math.abs(pl))}`); }
   const moved=slipTick(t), sig=L.rows.map(r=>r.id+r.st).join(',')+'#'+slipSig()+'#'+Math.floor(t/1e4)+'#'+(slip.tab==='open'?cashSig(L.rows,t):'')+'#'+slip.mode+(slip.comboStake||0);
@@ -11032,7 +11079,7 @@ function leaderboardHTML(){
     return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Week P/L</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · this week’s bets only, open bets count at their stake</p>`;
   }
   const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v));
-  const cta=PLAYER&&PLAYER.account?'':`<div class="lb-cta"><span>${PLAYER?'You play as a guest. Create an account to join the season leaderboard: your bets so far come with you.':'Create a free account to join the season leaderboard.'}</span><button class="chip-btn" type="button" data-view-go="settings">Create an account</button></div>`;
+  const cta=PLAYER&&PLAYER.account?'':`<div class="lb-cta"><span>${PLAYER?'You play as a guest. Create an account to join the season leaderboard: your bets so far come with you.':'Create a free account to join the season leaderboard.'}</span><button class="chip-btn" type="button" data-join="register">Create an account</button></div>`;
   if(!d.top.length) return `<p class="st-none">No account has a bet yet: the season leaderboard starts with the first one.</p>${cta}`;
   const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${r.net<0?'dn':r.net>0?'up':''}">${sgn(r.net)}</td><td>${r.weeks}</td><td>${r.won}–${r.lost}</td></tr>`;
   const mine=d.me&&d.me.rank!=null&&!d.top.some(r=>r.me)?row(d.me):'';
@@ -11137,10 +11184,10 @@ function renderLeagues(t){
   const P=LG.preview, inv=LG.invite?`<div class="card lg-invite"><div class="card-h"><h2>Invitation</h2></div>${!P?'<p class="st-none">Loading…</p>':P.error?`<p class="lg-err">${esc(P.error)}</p><button type="button" class="chip-btn" data-lg="later">Dismiss</button>`:
     `<p class="set-p">Join <b>${esc(P.name)}</b>${P.owner?` · created by ${esc(P.owner)}`:''} · ${P.members} member${P.members===1?'':'s'}</p>
      ${lgAcct()?(P.member?`<p class="set-p">You are already in this league.</p><button type="button" class="chip-btn" data-lg="later">OK</button>`:`<div class="lg-manage"><button type="button" class="chip-btn" data-lg="join" data-arg="${esc(LG.invite)}"${LG.busy?' disabled':''}>Join the league</button><button type="button" class="chip-btn" data-lg="later">Not now</button></div>`)
-      :`<p class="set-p">Leagues need a free account: create one (or sign in) and you join right after.</p><div class="lg-manage"><button type="button" class="chip-btn" data-view-go="settings">Create an account</button><button type="button" class="chip-btn" data-lg="later">Not now</button></div>`}`}</div>`:'';
+      :`<p class="set-p">Leagues need a free account: create one (or sign in) and you join right after.</p><div class="lg-manage"><button type="button" class="chip-btn" data-join="register">Create an account</button><button type="button" class="chip-btn" data-lg="later">Not now</button></div>`}`}</div>`:'';
   const key=['lg',!!lgAcct(),JSON.stringify(LG.list),LG.sel,LG.scope,LG.busy,LG.err,LG.confirm,JSON.stringify(P),LG.invite,(LG.data[LG.sel+'|'+LG.scope]||{}).at].join('|');
   if(el._k===key) return; el._k=key;
-  if(!lgAcct()){ el.innerHTML=head+inv+`<div class="card"><p class="st-empty"><b>Create a free account to play in leagues</b>Make a league for your friends, or join one with its code. Your wallet and bets stay yours.</p><button type="button" class="chip-btn" data-view-go="settings">Create an account</button></div>`; return; }
+  if(!lgAcct()){ el.innerHTML=head+inv+`<div class="card"><p class="st-empty"><b>Create a free account to play in leagues</b>Make a league for your friends, or join one with its code. Your wallet and bets stay yours.</p><button type="button" class="chip-btn" data-join="register">Create an account</button></div>`; return; }
   const list=LG.list;
   const side=`<div class="card"><div class="card-h"><h2>My leagues</h2><span class="label">${list?list.length:0} / ${LG.max}</span></div>
     <div class="lg-list">${list===null?'<p class="st-none">Loading…</p>':list.length?list.map(l=>`<button type="button" class="lg-item" data-lg="sel" data-arg="${esc(l.id)}" aria-pressed="${l.id===LG.sel}"><span>${esc(l.name)}${l.owner?'<span class="lg-own">★</span>':''}</span><small>${l.members} member${l.members===1?'':'s'}</small></button>`).join(''):'<p class="st-none">No league yet: create one for your friends, or join with a code.</p>'}</div>
@@ -11196,17 +11243,10 @@ function accountHTML(){
         <button class="cta" type="submit" id="acGo">Save new password</button></form>`:''}
       <div class="set-row"><span class="set-l">Sign out<small>This browser forgets your key · sign in again any time</small></span><button type="button" class="chip-btn" id="acOut">Sign out</button></div>`;
   }
-  const reg=ACCT.mode==='register', guestName=PLAYER&&PLAYER.name&&!/^Player \d{4}$/.test(PLAYER.name)?PLAYER.name:'';
-  return `<p class="set-p">${PLAYER?'You play as a guest: your wallet lives in this browser only, and clearing its data for this site loses it.':'You play as a guest.'} ${reg?(PLAYER?'Create an account to keep your wallet on any device and join the season leaderboard. Your bets so far come with you.':'Create an account to keep your wallet on any device and join the season leaderboard.'):'Sign in to get your wallet back on this device.'}</p>
-    <div class="seg ac-seg" role="tablist" aria-label="Account">${[['register','Create account'],['login','Sign in']].map(([k,l])=>`<button type="button" role="tab" data-acmode="${k}" aria-selected="${ACCT.mode===k}">${l}</button>`).join('')}</div>
-    <form class="ac-form" id="acForm" novalidate>
-      <div class="ac-f"><label class="set-l" for="acPseudo">Username${reg?'<small>3 to 24 characters · shown on the leaderboards</small>':''}</label><input id="acPseudo" class="set-sel" type="text" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(reg?guestName:'')}"></div>
-      <div class="ac-f"><label class="set-l" for="acPw">Password${reg?'<small>At least 8 characters</small>':''}</label><input id="acPw" class="set-sel" type="password" autocomplete="${reg?'new-password':'current-password'}"></div>
-      <p class="set-err" id="acErr" role="alert"></p>
-      <button class="cta" type="submit" id="acGo">${reg?'Create account':'Sign in'}</button>
-      ${reg?'':'<p class="ac-note">Forgot your password? Ask the GameCenter admin to reset it.</p>'}
-    </form>
-    ${reg?`<div class="set-row"><label class="set-l" for="setName">Guest name<small>Shown on this week's leaderboard${PLAYER?'':' · given with your first bet, or now'}</small></label><input id="setName" class="set-sel name-in" type="text" maxlength="24" value="${esc(PLAYER&&PLAYER.name||'')}" placeholder="e.g. Blitz Guillaume"></div>`:''}`;
+  /* BD-2 bis (20/11/2026): creating an account or signing in happens in the Join dialog (Sign up, top bar) */
+  return `<p class="set-p">${PLAYER?'You play as a guest: your wallet lives in this browser only, and clearing its data for this site loses it.':'You play as a guest.'} Create a free account to keep your wallet on any device, pick your team and join the season leaderboard.${PLAYER?' Your bets so far come with you.':''}</p>
+    <div class="lg-manage"><button type="button" class="cta" data-join="register" style="width:auto;padding:0 22px">Create account</button><button type="button" class="chip-btn" data-join="login">Sign in</button></div>
+    <div class="set-row"><label class="set-l" for="setName">Guest name<small>Shown on this week's leaderboard${PLAYER?'':' · given with your first bet, or now'}</small></label><input id="setName" class="set-sel name-in" type="text" maxlength="24" value="${esc(PLAYER&&PLAYER.name||'')}" placeholder="e.g. Blitz Guillaume"></div>`;
 }
 async function accountSubmit(){
   if(ACCT.busy) return;
@@ -11216,13 +11256,17 @@ async function accountSubmit(){
   acErr(''); ACCT.busy=true; const btn=document.getElementById('acGo'); btn.disabled=true; btn.textContent=reg?'Creating…':'Signing in…';
   try{
     const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
-    PLAYER={token:r.token,name:r.name,account:true,fav_team:r.fav_team||null}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
-    ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
-    await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs()); leaguesAfterLogin();
-    toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
-    if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
+    await authDone(r,reg);
   }catch(e){ ACCT.busy=false; btn.disabled=false; btn.textContent=reg?'Create account':'Sign in'; acErr(accMsg(e)); }
   finally{ ACCT.busy=false; }
+}
+/* after a successful sign-up or sign-in (Settings or the Join dialog): the key becomes the account's, everything reloads */
+async function authDone(r,reg,quiet){
+  PLAYER={token:r.token,name:r.name,account:true,fav_team:r.fav_team||null}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
+  ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
+  await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs()); leaguesAfterLogin(); joinRefresh();
+  if(!quiet) toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
+  if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
 }
 async function accountPassword(){
   if(ACCT.busy) return;
@@ -11240,9 +11284,114 @@ function accountSignOut(){
   LG.list=null; LG.sel=null; LG.data={};
   const n=PLAYER&&PLAYER.name; PLAYER=null; try{ localStorage.removeItem(PLAYER_KEY); }catch(e){}
   WAL={bets:[]}; markSeen(nowMs()); BET_SIG=''; ACCT={mode:'login',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
-  renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true);
+  renderSlip(); walletRender(nowMs()); renderView(true); renderSettings(true); joinRefresh();
   toast(`Signed out${n?' · '+n:''}. Sign in again any time.`);
 }
+/* ---------- BD-2 bis (20/11/2026): « Join Snapline » — create an account (or sign in), then pick the favorite team ----------
+   One dialog for every invitation (Sign up in the top bar, My team, leaderboards, leagues, chat, Settings): the guest key
+   becomes the account, so bets made so far stay. Step 2 picks the franchise (My team, the fans' vote, True fan badge);
+   it can be skipped. Esc or the cross closes it; focus stays inside while it is open and goes back where it was. */
+const JOIN={step:'account',mode:'register',busy:false,team:null,back:null,msg:''};
+const JOIN_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function joinRefresh(){ document.documentElement.classList.toggle('guest',!!SERVER&&!(PLAYER&&PLAYER.account)); }
+function joinEl(){
+  let el=document.getElementById('join');
+  if(!el){ document.body.insertAdjacentHTML('beforeend','<div class="join" id="join" hidden><div class="card join-card" role="dialog" aria-modal="true" aria-labelledby="joinTitle" tabindex="-1"></div></div>');
+    el=document.getElementById('join');
+    el.addEventListener('mousedown',e=>{ if(e.target===el) joinClose(); }); }
+  return el; }
+function joinOpen(mode,step){
+  if(!SERVER) return;
+  if(PLAYER&&PLAYER.account&&step!=='team'){ setView('settings'); return; }
+  JOIN.back=document.activeElement; JOIN.mode=mode==='login'?'login':'register'; JOIN.step=step||'account'; JOIN.msg=''; JOIN.busy=false;
+  JOIN.team=PLAYER&&PLAYER.fav_team||null;
+  const el=joinEl(); el.hidden=false; document.documentElement.classList.add('join-open'); joinRender(true); }
+function joinClose(){
+  const el=document.getElementById('join'); if(!el||el.hidden) return;
+  el.hidden=true; document.documentElement.classList.remove('join-open');
+  const b=JOIN.back; JOIN.back=null; if(b&&b.focus&&document.contains(b)) b.focus(); }
+function joinRender(focus){
+  const el=joinEl(), c=el.querySelector('.join-card'), reg=JOIN.mode==='register';
+  const steps=n=>`<div class="join-steps" aria-hidden="true"><i class="on"></i><i class="${n>1?'on':''}"></i></div>`;
+  let h=`<button type="button" class="join-x" data-joinx aria-label="Close">${JOIN_X}</button>`;
+  if(JOIN.step==='account'){
+    const guestName=PLAYER&&PLAYER.name&&!/^Player \d{4}$/.test(PLAYER.name)?PLAYER.name:'';
+    h+=(reg?steps(1):'')+`<span class="label">${reg?'Free · no email':'Welcome back'}</span><h2 id="joinTitle">${reg?'Join Snapline':'Sign in'}</h2>
+      ${reg?`<ul class="join-perks"><li>Keep your wallet and bets on every device</li><li>Pick your team: its fans vote each week on the game plan</li><li>Climb the season leaderboard and play in private leagues</li></ul>`:'<p class="join-sub">Your wallet, your team and your leagues, on this device too.</p>'}
+      <form id="joinForm" novalidate>
+        <div class="ac-f"><label class="set-l" for="jnPseudo">Username${reg?'<small>3 to 24 characters · shown on the leaderboards</small>':''}</label><input id="jnPseudo" class="set-sel" type="text" maxlength="24" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(reg?guestName:'')}"></div>
+        <div class="ac-f"><label class="set-l" for="jnPw">Password${reg?'<small>At least 8 characters</small>':''}</label><input id="jnPw" class="set-sel" type="password" autocomplete="${reg?'new-password':'current-password'}"></div>
+        <p class="set-err" id="jnErr" role="alert">${esc(JOIN.msg)}</p>
+        <button class="cta" type="submit" id="jnGo">${reg?'Create account':'Sign in'}</button>
+      </form>
+      <p class="join-alt">${reg?'Already have an account?':'New to Snapline?'} <button type="button" class="join-link" data-joinmode="${reg?'login':'register'}">${reg?'Sign in':'Create an account'}</button></p>
+      ${reg&&PLAYER?'<p class="join-alt">Your bets so far as a guest come with you.</p>':''}`;
+  } else if(JOIN.step==='team'){
+    const T=Object.values(SW.teams).sort((a,b)=>a.name.localeCompare(b.name));
+    h+=steps(2)+`<span class="label">Signed in as ${esc(PLAYER.name)}</span><h2 id="joinTitle">Pick your team</h2>
+      <p class="join-sub">Follow one franchise: its games in My team, and one vote a week with its fans on the game plan. You can change it later.</p>
+      <div class="join-teams" role="group" aria-label="Teams">${T.map(t=>`<button type="button" class="join-team" data-team="${t.abbr}" data-jteam="${t.abbr}" aria-pressed="${JOIN.team===t.abbr}"><span class="badge">${t.abbr}</span>${esc(t.name)}</button>`).join('')}</div>
+      <p class="set-err" id="jnErr" role="alert">${esc(JOIN.msg)}</p>
+      <div class="join-acts"><button type="button" class="cta" id="jnTeam" ${JOIN.team&&!JOIN.busy?'':'disabled'}>${JOIN.busy?'Saving…':JOIN.team?'Follow '+esc(SW.teams[JOIN.team]?SW.teams[JOIN.team].name:JOIN.team):'Pick a team'}</button><button type="button" class="chip-btn" data-joinskip>Skip for now</button></div>`;
+  } else {
+    const f=PLAYER&&PLAYER.fav_team, T=f&&SW.teams[f];
+    h+=`<span class="label">All set</span><h2 id="joinTitle">You're in, ${esc(PLAYER.name)}</h2>
+      ${T?`<div class="join-done" data-team="${f}"><span class="badge">${f}</span><div><b>${esc(T.name)}</b><p class="join-sub" style="margin:2px 0 0">Your team. Its games, roster and fans' vote are in My team.</p></div></div>`
+        :'<p class="join-sub">Pick a team any time in My team.</p>'}
+      <div class="join-acts"><button type="button" class="cta" data-joingo="${T?'myteam':'live'}">${T?'Go to My team':'Back to the games'}</button>${T?'<button type="button" class="chip-btn" data-joingo="live">Keep watching</button>':''}</div>`;
+  }
+  c.innerHTML=h;
+  if(focus){ const f=c.querySelector(JOIN.step==='account'?(JOIN.mode==='register'&&c.querySelector('#jnPseudo').value?'#jnPw':'#jnPseudo'):JOIN.step==='team'?'.join-team[aria-pressed="true"],.join-team':'.cta'); (f||c).focus(); }
+}
+async function joinSubmit(){
+  if(JOIN.busy) return;
+  const reg=JOIN.mode==='register', u=(document.getElementById('jnPseudo').value||'').trim().replace(/\s+/g,' '), pw=document.getElementById('jnPw').value||'';
+  const err=m=>{ JOIN.msg=m; const e=document.getElementById('jnErr'); if(e) e.textContent=m; };
+  if(reg){ if(u.length<3||u.length>24) return err(ACC_ERR.pseudo_length); if(/[^\p{L}\p{M}\p{N}_ .'\-]/u.test(u)) return err(ACC_ERR.pseudo_chars); if(pw.length<8) return err(ACC_ERR.password_length); }
+  else if(!u||!pw) return err('Enter your username and your password.');
+  err(''); JOIN.busy=true; const btn=document.getElementById('jnGo'); btn.disabled=true; btn.textContent=reg?'Creating…':'Signing in…';
+  try{
+    const r=await api(reg?'/account/register':'/account/login',{method:'POST',body:JSON.stringify({pseudo:u,password:pw,token:PLAYER&&PLAYER.token||null})});
+    await authDone(r,reg,true);
+    JOIN.busy=false; JOIN.msg='';
+    if(PLAYER.fav_team){ joinClose(); toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`); renderView(true); return; }
+    JOIN.step='team'; JOIN.team=null; joinRender(true);
+  }catch(e){ JOIN.busy=false; btn.disabled=false; btn.textContent=reg?'Create account':'Sign in'; err(accMsg(e)); }
+}
+async function joinTeam(){
+  if(JOIN.busy||!JOIN.team) return;
+  JOIN.busy=true; JOIN.msg=''; joinRender(false);
+  try{ const r=await api('/account/team',{method:'POST',body:JSON.stringify({token:PLAYER.token,team:JOIN.team})});
+    PLAYER.fav_team=r.fav_team; lsSet(PLAYER_KEY,PLAYER); MT_PICK=false; FO=null; FO_R=null; FO_SEL=null; FO_VIEW=null; DR=null; DR_SEL={}; DR_MSG={}; FO_MSG='';
+    JOIN.busy=false; JOIN.step='done'; joinRender(true); renderView(true); }
+  catch(e){ JOIN.busy=false; JOIN.msg='Could not save your team. Try again.'; joinRender(false); }
+}
+/* after a first winning bet as a guest: once, a quiet invitation (never the dialog by itself) */
+function joinNudge(){
+  if(!SERVER||(PLAYER&&PLAYER.account)||lsGet('gc-join-nudge-v1')) return;
+  lsSet('gc-join-nudge-v1',1);
+  let n=document.getElementById('joinNudge');
+  if(!n){ document.body.insertAdjacentHTML('beforeend',`<div class="card join-nudge" id="joinNudge" role="status"><p><b>Nice pick!</b> Create a free account to keep your winnings on every device.</p><button type="button" class="chip-btn join-btn" data-join="register">Create account</button><button type="button" class="join-x" style="position:static" data-nudgex aria-label="Dismiss">${JOIN_X}</button></div>`); n=document.getElementById('joinNudge'); }
+  n.hidden=false; clearTimeout(joinNudge.t); joinNudge.t=setTimeout(()=>{ n.hidden=true; },12000);
+}
+document.addEventListener('click',e=>{ const t=e.target; if(!t.closest) return;
+  const j=t.closest('[data-join]'); if(j){ e.preventDefault(); const n=document.getElementById('joinNudge'); if(n) n.hidden=true; joinOpen(j.dataset.join); return; }
+  if(t.closest('[data-nudgex]')){ const n=document.getElementById('joinNudge'); if(n) n.hidden=true; return; }
+  if(!t.closest('#join')) return;
+  if(t.closest('[data-joinx]')){ joinClose(); return; }
+  const m=t.closest('[data-joinmode]'); if(m){ JOIN.mode=m.dataset.joinmode; JOIN.msg=''; joinRender(true); return; }
+  const tm=t.closest('[data-jteam]'); if(tm){ JOIN.team=tm.dataset.jteam; JOIN.msg=''; joinRender(false); const b=document.querySelector(`#join [data-jteam="${JOIN.team}"]`); if(b) b.focus(); return; }
+  if(t.closest('#jnTeam')){ joinTeam(); return; }
+  if(t.closest('[data-joinskip]')){ JOIN.step='done'; joinRender(true); return; }
+  const g=t.closest('[data-joingo]'); if(g){ joinClose(); setView(g.dataset.joingo); return; } });
+document.addEventListener('submit',e=>{ if(e.target.id==='joinForm'){ e.preventDefault(); joinSubmit(); } });
+document.addEventListener('keydown',e=>{ const el=document.getElementById('join'); if(!el||el.hidden) return;
+  if(e.key==='Escape'){ e.stopImmediatePropagation(); joinClose(); return; }
+  if(e.key!=='Tab') return;
+  const f=[...el.querySelectorAll('button:not([disabled]),input,[tabindex="0"]')].filter(x=>x.offsetParent!==null);
+  if(!f.length) return;
+  if(e.shiftKey&&document.activeElement===f[0]){ e.preventDefault(); f[f.length-1].focus(); }
+  else if(!e.shiftKey&&document.activeElement===f[f.length-1]){ e.preventDefault(); f[0].focus(); } },true);
 document.addEventListener('submit',e=>{ if(!SERVER) return;
   if(e.target.id==='acForm'){ e.preventDefault(); accountSubmit(); } else if(e.target.id==='acPwForm'){ e.preventDefault(); accountPassword(); }
   else if(e.target.dataset&&e.target.dataset.lgform){ e.preventDefault(); leagueForm(e.target); } });
@@ -11535,7 +11684,7 @@ function chatFoot(X,force){
     return;
   }
   let html;
-  if(st.why==='account_required') html=`<p class="chat-cant"><b>Read along, or create a free account to chat.</b></p><button type="button" class="chip-btn" data-view-go="settings">Create an account</button>`;
+  if(st.why==='account_required') html=`<p class="chat-cant"><b>Read along, or create a free account to chat.</b></p><button type="button" class="chip-btn" data-join="register">Create an account</button>`;
   else if(st.why==='banned'&&st.ban) html=`<p class="chat-cant" data-chat-ban></p>`;
   else if(st.why==='pseudo_reserved') html=`<p class="chat-cant">${esc(CHAT_ERR.pseudo_reserved)}</p><button type="button" class="chip-btn" data-view-go="settings">Open Settings</button>`;
   else html=`<p class="chat-cant">${esc(CHAT_ERR[st.why]||CHAT_ERR.chat_read_only)}</p>`;
