@@ -550,6 +550,17 @@ class Comptes(Base):
             self.assertTrue(r["ok"])
             self.assertIsNone(serveur.player_by_token(tok2))
             appel(serveur.api_login, {"pseudo": "Fred Test", "password": "reinitialise1"}, "10.4.0.1")
+            # valeur collée avec des guillemets et un retour à la ligne (éditeur de Railway) : la clé marche quand même
+            os.environ["GC_ADMIN_KEY"] = '"cle-admin-de-test-0123456789"\n'
+            self.assertTrue(serveur.admin_ok("cle-admin-de-test-0123456789"))
+            self.assertTrue(serveur.admin_ok(" cle-admin-de-test-0123456789 "))
+            self.assertFalse(serveur.admin_ok("cle-admin-de-test-012345678"))
+            self.assertFalse(serveur.admin_ok("clé-admin-de-test-0123456789"))      # non ASCII : refus, pas d'erreur 500
+            self.assertIn("8 caractères reçus", serveur.admin_refus("mauvaise"))
+            self.assertEqual(serveur.api_backup("cle-admin-de-test-0123456789").status_code, 200)
+            os.environ["GC_ADMIN_KEY"] = '"courte"'
+            self.assertFalse(serveur.admin_ok("courte"))
+            self.assertIn("trop courte", serveur.admin_refus("courte"))
         finally:
             if old is None:
                 os.environ.pop("GC_ADMIN_KEY", None)

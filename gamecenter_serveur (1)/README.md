@@ -70,7 +70,10 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (5 $/mois), sinon le site s'arrête (les données du disque sont conservées un temps). GitHub : *Settings → Billing*
   → minutes Actions utilisées (~70 sur 2 000).
 - **Sauvegardes** : les semaines sont déjà archivées dans GitHub. Pour les paris, une fois par semaine :
-  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder.
+  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder. La clé est comparée sans les espaces, retours
+  à la ligne et guillemets qui l'entourent (une valeur collée dans Railway en garde parfois) ; en cas de refus, le
+  message dit si `GC_ADMIN_KEY` manque sur le serveur (ou fait moins de 16 caractères) ou si la clé reçue diffère
+  (avec le nombre de caractères reçus, rien sur la clé attendue). Même règle pour toutes les fonctions d'administration.
 - **Sécurité** : dépôt privé ; ne jamais publier `GC_ADMIN_KEY` ; pas de vrais comptes ; pas de limite de requêtes
   (à ajouter avant une grosse audience) ; argent fictif uniquement (de l'argent réel demanderait une licence de la
   Commission des jeux de hasard).
