@@ -64,6 +64,22 @@
     </section>
 
     <section>
+      <h2>Ceux qui reviennent</h2>
+      <p style="margin-top:0">Le chiffre du test : des personnes (un navigateur = une personne), pas des pages vues. « Revenues » :
+        déjà venues une semaine d'avant ; « dont la semaine d'avant » : venues aussi la semaine précédente. Comptées par le
+        navigateur, une fois par semaine, sans identifiant ; depuis le 20/11/2026. Les appareils exclus ci-dessous ne comptent pas.</p>
+      <div class="scroll"><table id="people"></table></div>
+    </section>
+
+    <section>
+      <h2>Cet appareil</h2>
+      <p style="margin-top:0" id="meTxt"></p>
+      <div class="row"><button type="button" id="meBtn"></button></div>
+      <p style="margin:10px 0 0"><small>À faire sur chacun de ses appareils (téléphone, ordinateur), dans chaque navigateur.
+        Le compte de jeu se retire aussi des joueurs avec <code>GC_STATS_EXCLURE</code> (son pseudo, dans Railway).</small></p>
+    </section>
+
+    <section>
       <h2>Ligne du bilan du lundi</h2>
       <p style="margin-top:0">La semaine qui vient de finir, à coller dans le tableau de <code>programme/Promotion.md</code>
         (section 9) ; compléter les colonnes des réseaux avec TikTok Studio.</p>
@@ -139,7 +155,10 @@
     var ws=j.semaines, w=ws[0], p=ws[1]||ws[0];
     $("wk").textContent="(depuis le lundi "+jour(w.debut)+")";
     var tl=$("tiles"); tl.textContent="";
-    tl.appendChild(tile("visites (hors robots)",w.visites,p.visites));
+    tl.appendChild(tile("personnes",w.personnes||0,p.personnes||0));
+    tl.appendChild(tile("revenues (déjà venues)",w.revenus||0,p.revenus||0));
+    tl.appendChild(tile("ont ouvert un match",w.matchs||0,p.matchs||0));
+    tl.appendChild(tile("visites (pages d'accueil)",w.visites,p.visites));
     tl.appendChild(tile("venues des réseaux",reseaux(w),reseaux(p)));
     tl.appendChild(tile("clics sur les liens courts",somme(w.liens),somme(p.liens)));
     tl.appendChild(tile("nouveaux joueurs",w.joueurs,p.joueurs));
@@ -153,11 +172,23 @@
       +" | "+b.joueurs+" | "+b.comptes+" | "+b.actifs+" | |";
     table($("weeks"),["Semaine","Visites","Robots","Réseaux","Liens","Joueurs","Comptes","Actifs","Paris","Ligues","Adhésions","Rappels","Messages"],
       ws.map(function(x){ return [jour(x.debut),x.visites,x.robots,reseaux(x),somme(x.liens),x.joueurs,x.comptes,x.actifs,x.paris,x.ligues,x.adhesions,x.rappels,x.messages]; }));
+    table($("people"),["Semaine","Personnes","Nouvelles","Revenues","dont la semaine d'avant","Ont ouvert un match"],
+      ws.filter(function(x){ return x.debut>="2026-11-16"; }).map(function(x){ return [jour(x.debut),x.personnes||0,x.nouveaux||0,x.revenus||0,x.retenus||0,x.matchs||0]; }));
     var cols=ws.slice(0,COLS), head=["Source"].concat(cols.map(function(x){ return jour(x.debut); }));
     table($("sources"),head,parCle(cols,"sources").map(function(k){ return [k].concat(cols.map(function(x){ return x.sources[k]||0; })); }));
     table($("links"),["Lien"].concat(head.slice(1)),parCle(cols,"liens").map(function(k){
       return [(k.length===2&&"tt ig yt".indexOf(k)>=0?"/":"/r/")+k].concat(cols.map(function(x){ return x.liens[k]||0; })); }));
   }
+
+  /* exclure cet appareil : cookie gc_moi=1 (5 ans), lu par le serveur (accueil, liens courts, /api/m) et par la page */
+  function moi(){ return /(?:^|;\s*)gc_moi=1(?:;|$)/.test(document.cookie||""); }
+  function drawMe(){ var on=moi();
+    $("meTxt").textContent=on?"Cet appareil n'est pas compté (ni visites, ni liens courts, ni personnes).":"Cet appareil est compté comme un visiteur.";
+    $("meBtn").textContent=on?"Compter de nouveau cet appareil":"Ne plus compter cet appareil"; }
+  $("meBtn").addEventListener("click",function(){ var sec=location.protocol==="https:"?"; Secure":"";
+    document.cookie=moi()?"gc_moi=; Max-Age=0; Path=/; SameSite=Lax"+sec:"gc_moi=1; Max-Age=157680000; Path=/; SameSite=Lax"+sec;
+    drawMe(); say(moi()?"Cet appareil n'est plus compté.":"Cet appareil est de nouveau compté.","ok"); });
+  drawMe();
 
   function load(){ return call().then(function(j){ $("login").hidden=true; $("app").hidden=false; draw(j); }); }
 
