@@ -3800,6 +3800,31 @@ pseudo dans les classements et les ligues, pas le chat). **Rien ne s'affiche enc
 - **Tests** : `moteur/tests/test_badges.py` (chaque règle, paliers, séries avec trous, invité, rien pour la mise ;
   serveur : une visite par jour, types des paris, invité, interrupteur).
 
+### 131. Créer un compte et choisir sa franchise : « Sign up » et la fenêtre « Join Snapline » (BD-2 bis — 20/11/2026)
+**Constat de Guillaume (20/11)** : créer un compte demandait d'aller tout en bas de Settings, et le choix de la franchise
+favorite n'était pas mis en avant. Les badges ne valent que pour les comptes (`programme/Badges_plan.md`).
+- **« Sign up »** dans la barre du haut pour un invité (serveur seulement). Son affichage est décidé avant le premier
+  dessin par le script de tête (`html.guest`, comme `html.spect` de la section 127), d'après le repère `__JOIN__` que
+  seul le serveur remplace : aucun décalage de la page (CLS mesuré 0,036 sur ordinateur, 0,012 sur téléphone), et rien
+  dans la cellule 427. Quand le bouton est là, la recherche rétrécit pour que la barre tienne sur une ligne.
+- **La fenêtre « Join Snapline »** (`joinOpen`), ouverte par « Sign up » et par toutes les invitations à créer un compte
+  (My team, classement de la saison, ligues, chat, Settings ; avant : un renvoi vers Settings) :
+  1. **le compte** : pseudo et mot de passe (mêmes règles et messages qu'avant), « Sign in » pour un compte existant ;
+     la clé d'invité devient le compte (`/api/account/register` avec le token : ses paris restent) ;
+  2. **la franchise** : les 24, « Follow <franchise> » (`/api/account/team`) ou « Skip for now » (sautée à la
+     connexion d'un compte qui en a déjà une) ;
+  3. **« You're in »** : « Go to My team » ou « Keep watching ».
+  Carte opaque, centrée sur ordinateur, feuille en bas de l'écran sur téléphone (la rangée « Follow / Skip » reste
+  visible) ; le focus reste dans la fenêtre, Échap ou la croix la ferme et le rend où il était.
+- **Une invitation, une seule fois** : après le premier pari gagné d'un invité, une carte discrète « Nice pick! Create a
+  free account to keep your winnings on every device » (12 s, `gc-join-nudge-v1`) ; jamais la fenêtre d'elle-même.
+- **Settings** : pour un invité, deux boutons (« Create account », « Sign in ») qui ouvrent la fenêtre ; plus de
+  formulaire. La gestion d'un compte (pseudo, mot de passe, déconnexion) ne change pas. Le code après une connexion
+  réussie est partagé (`authDone`).
+- **Tests** : `outils/site/test_compte.js` (groupe site-2 ; invité qui a parié, bouton, focus, Échap, erreurs, compte
+  posé sur la clé, 24 franchises, franchise enregistrée, My team, Settings, Sign in, Skip, invitations, téléphone ;
+  `SHOTS=<dossier>`) ; `test_ligues.js` passe par la fenêtre.
+
 ### Annexe — `.github/workflows/semaine.yml`
 
 ```yaml

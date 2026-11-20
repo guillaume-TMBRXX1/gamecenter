@@ -1049,7 +1049,8 @@ def page(request: Request = None):
         srv["spect_off"] = True
     if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
         srv["coach_off"] = True
-    s = _page_source().replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
+    # BD-2 bis : « __JOIN__ » = 1 dans le script de tête (le bouton « Sign up » n'existe qu'avec le serveur)
+    s = _page_source().replace("__JOIN__", "1").replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
