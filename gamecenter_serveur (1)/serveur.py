@@ -512,6 +512,33 @@ def _init_clock():
     _OFFSET_MS = target - int(time.time() * 1000)
 
 
+# ------------------------------------------------------------------ clé d'administration (GC_ADMIN_KEY)
+_KEY_TRIM = " \t\r\n\"'\u00a0"
+
+
+def _admin_key():
+    """GC_ADMIN_KEY nettoyée : espaces, retours à la ligne et guillemets autour retirés (une valeur collée dans
+    l'éditeur de Railway en garde parfois). Chaîne vide si absente ou trop courte (moins de 16 caractères) : tout
+    ce qui demande la clé est alors désactivé."""
+    k = os.environ.get("GC_ADMIN_KEY", "").strip(_KEY_TRIM)
+    return k if len(k) >= 16 else ""
+
+
+def admin_ok(key):
+    """La clé reçue (nettoyée de la même façon) est-elle GC_ADMIN_KEY ? Comparaison en octets, à temps constant
+    (une clé avec un caractère non ASCII ne fait pas d'erreur 500)."""
+    k = _admin_key()
+    got = str(key or "").strip(_KEY_TRIM)
+    return bool(k) and secrets.compare_digest(got.encode("utf-8"), k.encode("utf-8"))
+
+
+def admin_refus(key):
+    """Le motif d'un refus, sans rien dire de la clé attendue : désactivée, ou clé différente (longueur reçue)."""
+    if not _admin_key():
+        return "GC_ADMIN_KEY absente ou trop courte (16 caractères au moins) sur le serveur : fonction désactivée."
+    return f"Clé incorrecte ({len(str(key or '').strip(_KEY_TRIM))} caractères reçus)."
+
+
 # ------------------------------------------------------------------ joueurs et paris (SQLite)
 DB = os.path.join(DATA, "gamecenter.db")
 _db_lock = threading.Lock()
@@ -1641,8 +1668,7 @@ async def api_admin_stats(req: Request):
     ip = _ip(req)
     if _too_many_fails((("admin-stats", ip), 10)):
         raise HTTPException(429, "too_many")
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+    if not admin_ok(body.get("key")):
         _note_fail(("admin-stats", ip))
         raise HTTPException(403, "forbidden")
     try:
@@ -1830,8 +1856,7 @@ async def api_admin_password(req: Request):
     """Mot de passe oublié : réinitialisé par l'administrateur (GC_ADMIN_KEY). La clé du joueur change.
     Usage : POST /api/admin/password {"key": "<GC_ADMIN_KEY>", "pseudo": "...", "password": "nouveau"}"""
     body = await _json(req)
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key", "")), admin):
+    if not admin_ok(body.get("key")):
         raise HTTPException(403, "Non autorisé.")
     p = player_by_login(str(body.get("pseudo") or ""))
     if not p:
@@ -2275,10 +2300,9 @@ def api_admin_fans(key: str = "", week: str = "", request: Request = None):
     """Export pour le calcul du samedi (GC_ADMIN_KEY : en-tête X-Admin-Key, ou ?key=), seulement après le verrou.
     week = lundi où les choix s'appliquent (défaut : la dernière question fermée)."""
     _fo_need()
-    admin = os.environ.get("GC_ADMIN_KEY", "")
     if request is not None and not key:
         key = request.headers.get("x-admin-key", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(key), admin):
+    if not admin_ok(key):
         raise HTTPException(403, "Non autorisé.")
     t = now_ms()
     if not week:
@@ -3947,8 +3971,7 @@ def _chat_admin(req, body):
     ip = _ip(req)
     if _too_many_fails((("admin-chat", ip), 10)):
         raise HTTPException(429, "too_many")
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+    if not admin_ok(body.get("key")):
         _note_fail(("admin-chat", ip))
         raise HTTPException(403, "forbidden")
     _chat_init()
@@ -4739,9 +4762,8 @@ def api_backup(key: str = ""):
     sans elle, la sauvegarde est désactivée. Usage : https://<site>/api/backup?key=<GC_ADMIN_KEY>"""
     import io, zipfile
     from fastapi.responses import Response
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(key, admin):
-        raise HTTPException(403, "Sauvegarde non autorisée.")
+    if not admin_ok(key):
+        raise HTTPException(403, "Sauvegarde non autorisée. " + admin_refus(key))
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         snap = os.path.join(DATA, ".backup.db")         # copie cohérente de la base, même pendant des paris
