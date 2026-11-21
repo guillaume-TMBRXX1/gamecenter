@@ -21,7 +21,8 @@ Variables : GC_DATA (dossier des données, défaut ./data) · GC_SITE (gamecente
 Audio System (V0.1, 03/10/2026) : /static/audio/gc-audio.js (modules de static/audio assemblés, versionnés) et /audio/*
 (fichiers sons pré-générés hors ligne, noms à empreinte, cache 1 an). Aucune clé ElevenLabs ici, jamais.
 """
-import bisect, hashlib, hmac, html, json, os, re, secrets, sqlite3, threading, time, uuid, math
+import bisect, gzip, hashlib, hmac, html, json, os, re, secrets, sqlite3, threading, time, uuid, math
+from contextlib import asynccontextmanager
 from collections import OrderedDict, defaultdict
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -821,10 +822,46 @@ def season_net(pid, t):
 
 
 # ------------------------------------------------------------------ l'application
-app = FastAPI(title="GameCenter live server", docs_url="/api/docs", openapi_url="/api/openapi.json")
+# Préchauffage au démarrage (section 136) : après chaque déploiement, le premier visiteur attendait la lecture des
+# semaines (≈ 25 s), puis l'histoire de la ligue (≈ 20 s de plus sur une page de franchise ou de semaine) : un robot
+# abandonnait avant. Tout est maintenant calculé à côté dès le démarrage. GC_PRECHAUFFAGE=off : comme avant (coupé
+# aussi sous GC_TEST_HOOK=1, sauf GC_PRECHAUFFAGE=on).
+def prechauffage_on():
+    v = os.environ.get("GC_PRECHAUFFAGE")
+    if v is None:
+        return os.environ.get("GC_TEST_HOOK") != "1"
+    return v.strip().lower() not in ("off", "0", "non", "no")
+
+
+def _prechauffer():
+    t0 = time.time()
+    try:
+        _need_week()
+        print(f"préchauffage : semaines lues en {time.time() - t0:.1f} s", flush=True)
+        if page_cache_s() > 0:
+            _page_cachee(page_cache_s())
+        t = now_ms()
+        league_history(t, True)
+        league_history(t)
+        news_prechauffer()
+        tracking_prechauffer()
+    except Exception as e:                           # pragma: no cover
+        print("préchauffage :", e, flush=True)
+    print(f"préchauffage : terminé en {time.time() - t0:.1f} s", flush=True)
+
+
+@asynccontextmanager
+async def _vie(app):
+    if prechauffage_on():
+        threading.Thread(target=_prechauffer, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="GameCenter live server", docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=_vie)
 # compression : page ≈ 53 Mo -> ≈ 6 Mo, /api/delta (toutes les 3 s) ≈ 1 Mo -> quelques Ko ; un onglet trop lourd était
-# rechargé (ou tué) par le navigateur du téléphone, en plein match
-app.add_middleware(GZipMiddleware, minimum_size=1024)
+# rechargé (ou tué) par le navigateur du téléphone, en plein match. Niveau 6 (section 136) : 3 fois plus rapide que le
+# niveau 9 d'origine pour 20 % de plus (50 Mo de page : 1,1 s au lieu de 3,1 s).
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 _init_clock()
 
 # Domaine du site (Railway : variable GC_DOMAINE=snapline.live). L'ancienne adresse *.up.railway.app y est redirigée,
@@ -1042,6 +1079,96 @@ def page(request: Request = None):
         news_prechauffer()                           # onglet News (section 115)
         tracking_prechauffer()                       # Tracking (NGS-6) : semaine en cours, semaines passées, cartes
         badges_prechauffer()                         # badges (BD-2) : tous les comptes, une fois par semaine ouverte
+    ttl = page_cache_s()
+    if ttl <= 0:
+        return HTMLResponse(_page_html(), headers={"Cache-Control": "no-store"})
+    s, gz = _page_cachee(ttl)
+    if request is not None and "gzip" in (request.headers.get("accept-encoding") or "").lower():
+        return Response(gz, media_type="text/html; charset=utf-8",
+                        headers={"Content-Encoding": "gzip", "Cache-Control": "no-store", "Vary": "Accept-Encoding"})
+    return HTMLResponse(s, headers={"Cache-Control": "no-store", "Vary": "Accept-Encoding"})
+
+
+# Page d'accueil gardée quelques secondes (AdSense « site inaccessible », 20/11/2026, section 136). Elle emporte toute la
+# semaine (jusqu'à 50 Mo, 4 à 5 Mo compressés le dimanche) et était refaite et recompressée à chaque visite : 2 à 8 s,
+# bien plus quand plusieurs robots arrivaient ensemble (Google-Display-Ads-Bot attendait 6 s, ceux de Meta et d'Amazon
+# abandonnaient à 5 et 10 s). Elle est maintenant faite une fois toutes les GC_PAGE_CACHE secondes (15 par défaut, 0 :
+# à chaque visite comme avant), déjà compressée ; une seule construction à la fois, l'ancienne page servie pendant
+# qu'elle se refait (2 min au plus). Une page de quelques secondes reste juste : le navigateur demande /api/delta dès
+# l'ouverture avec les actions qu'il a, reçoit les suivantes et l'heure du serveur. Coupé sous GC_TEST_HOOK=1.
+_PAGE_HTML = {"cle": None, "t": 0, "html": None, "gz": None, "verrou": threading.Lock()}
+PAGE_PERIMEE_S = 120
+
+
+def page_cache_s():
+    v = os.environ.get("GC_PAGE_CACHE")
+    if v is None:
+        return 0 if os.environ.get("GC_TEST_HOOK") == "1" else 15
+    try:
+        return max(0, int(v))
+    except ValueError:
+        return 15
+
+
+def _page_cle(w):
+    """Ce dont la page dépend en dehors de l'heure : la semaine, le fichier du site, les variables GC_*, la régie."""
+    return (id(w), w.start, os.path.getmtime(SITE), ADS_CLIENT, repr(ADS_SLOTS), CF_ANALYTICS, GOOGLE_VERIFY,
+            tuple(sorted((k, v) for k, v in os.environ.items() if k.startswith("GC_"))))
+
+
+def _page_cachee(ttl):
+    C = _PAGE_HTML
+    w = _need_week()
+    cle = _page_cle(w)
+
+    def age():
+        return now_ms() - C["t"] if C["cle"] == cle else None
+
+    a = age()
+    if a is not None and 0 <= a < ttl * 1000:
+        return C["html"], C["gz"]
+    if not C["verrou"].acquire(blocking=False):      # quelqu'un la refait : l'ancienne si elle n'est pas trop vieille
+        if a is not None and 0 <= a < max(ttl, PAGE_PERIMEE_S) * 1000:
+            return C["html"], C["gz"]
+        C["verrou"].acquire()
+    try:
+        a = age()
+        if a is not None and 0 <= a < ttl * 1000:    # refaite pendant l'attente
+            return C["html"], C["gz"]
+        t = now_ms()
+        s = _page_html()
+        gz = gzip.compress(s.encode("utf-8"), compresslevel=6)
+        C.update(cle=cle, t=t, html=s, gz=gz)
+        return s, gz
+    finally:
+        C["verrou"].release()
+
+
+_MOIS_GB = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec")   # Intl en-GB, mois courts
+
+
+def _semaine_libelle(w, t):
+    """Le libellé du bouton de semaine (« Week 8 · 16–22 Nov »), écrit comme le fait la page (wRange : premier coup
+    d'envoi, fin du dernier match ou coup d'envoi + 95 min, heure de Bruxelles). Écrit dès le HTML (section 136) : « This
+    week », plus court, était remplacé au démarrage de la page et faisait passer la barre du haut du téléphone sur trois
+    lignes (décalage de 0,23 quand le processeur est lent, comme sur la machine des tests)."""
+    debut = min(g["ko"] for g in w.sched)
+    fin = max(g["end"] if w.status(g, t) == "final" else g["ko"] + 95 * 60_000 for g in w.sched)
+    a, b = (datetime.fromtimestamp(x / 1000, TZ) for x in (debut, fin))
+    return f"Week {w.doc['week']['index']} \u00b7 {a.day}\u2013{b.day} {_MOIS_GB[b.month - 1]} "
+
+
+def _bandeau_bouton(w, t):
+    """Le texte du bouton du bandeau de première visite, choisi comme le fait la page (welcomePick) : écrit dès le HTML
+    (section 136). « Watch live now » devenait « Watch a full game » au démarrage, la nuit : sur téléphone, « How it
+    works » passait à la ligne et la page descendait de 31 px (décalage de 0,16 quand le processeur est lent)."""
+    st = [w.status(g, t) for g in w.sched]
+    if "live" in st:
+        return "Watch live now"
+    return "Watch a full game" if "final" in st else "See the next game" if "upcoming" in st else None
+
+
+def _page_html():
     w = _need_week(); t = now_ms()
     bundle = _page_bundle(w, t)
     srv = {"api": "/api", "now": t, "play_sec": PLAY_SEC, "breaks": BREAK_SEC, "week_start": w.start, "open_ms": w.open}
@@ -1086,7 +1213,12 @@ def page(request: Request = None):
     if not decisions_on():                           # la décision du coach IA sur le terrain (section 128) : GC_DECISIONS=off, rien
         srv["coach_off"] = True
     # BD-2 bis : « __JOIN__ » = 1 dans le script de tête (le bouton « Sign up » n'existe qu'avec le serveur)
-    s = _page_source().replace("__JOIN__", "1").replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
+    s = _page_source().replace('id="weekChip" data-view-go="schedule">This week',
+                               'id="weekChip" data-view-go="schedule">' + html.escape(_semaine_libelle(w, t)).rstrip(), 1)
+    bouton = _bandeau_bouton(w, t)
+    if bouton:
+        s = s.replace('id="welcomeWatch">Watch live now</button>', 'id="welcomeWatch">' + bouton + "</button>", 1)
+    s = s.replace("__JOIN__", "1").replace("__AUDIO_V__", _audio_bundle()["ver"]).replace("__GF_G1__", "null").replace("__WEEK__", _enc(bundle)).replace("__SERVER__", _enc(srv))
     if os.environ.get("GC_TEST_HOOK") == "1":   # tests automatiques seulement (même crochet que build_site.py test)
         s = s.replace("requestAnimationFrame(frame);\n})();", "requestAnimationFrame(frame);\nwindow.__gc={games,byId,views,computeStats,getModalView:()=>modalView,"
                       "season:{SCHED,setClock,nowMs,standingsAt,seasonAgg,setView,gStatus,futuresAt,bets:BETS_API,sw:()=>SW},audio:AUDIO_API,"
@@ -1107,7 +1239,7 @@ def page(request: Request = None):
         s = s.replace("</title>", '</title>\n<meta name="google-adsense-account" content="' + ADS_CLIENT + '">\n'
                       '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS_CLIENT
                       + '" crossorigin="anonymous"></script>', 1)
-    return HTMLResponse(s, headers={"Cache-Control": "no-store"})
+    return s
 
 
 # Première visite (promotion, étape 9.3, README section 81) : GC_ACCUEIL=1 montre le bandeau des nouveaux venus (ce
