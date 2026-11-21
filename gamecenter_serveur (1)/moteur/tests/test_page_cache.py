@@ -1,4 +1,4 @@
-"""Page d'accueil gardée quelques secondes et préchauffage au démarrage (section 133 de serveur.py) : une seule
+"""Page d'accueil gardée quelques secondes et préchauffage au démarrage (section 136 de serveur.py) : une seule
 construction par période, page compressée servie telle quelle, refaite après la période ou quand une variable change,
 coupée sous le crochet des tests du site.
 

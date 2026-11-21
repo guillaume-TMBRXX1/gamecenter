@@ -513,6 +513,33 @@ def _init_clock():
     _OFFSET_MS = target - int(time.time() * 1000)
 
 
+# ------------------------------------------------------------------ clé d'administration (GC_ADMIN_KEY)
+_KEY_TRIM = " \t\r\n\"'\u00a0"
+
+
+def _admin_key():
+    """GC_ADMIN_KEY nettoyée : espaces, retours à la ligne et guillemets autour retirés (une valeur collée dans
+    l'éditeur de Railway en garde parfois). Chaîne vide si absente ou trop courte (moins de 16 caractères) : tout
+    ce qui demande la clé est alors désactivé."""
+    k = os.environ.get("GC_ADMIN_KEY", "").strip(_KEY_TRIM)
+    return k if len(k) >= 16 else ""
+
+
+def admin_ok(key):
+    """La clé reçue (nettoyée de la même façon) est-elle GC_ADMIN_KEY ? Comparaison en octets, à temps constant
+    (une clé avec un caractère non ASCII ne fait pas d'erreur 500)."""
+    k = _admin_key()
+    got = str(key or "").strip(_KEY_TRIM)
+    return bool(k) and secrets.compare_digest(got.encode("utf-8"), k.encode("utf-8"))
+
+
+def admin_refus(key):
+    """Le motif d'un refus, sans rien dire de la clé attendue : désactivée, ou clé différente (longueur reçue)."""
+    if not _admin_key():
+        return "GC_ADMIN_KEY absente ou trop courte (16 caractères au moins) sur le serveur : fonction désactivée."
+    return f"Clé incorrecte ({len(str(key or '').strip(_KEY_TRIM))} caractères reçus)."
+
+
 # ------------------------------------------------------------------ joueurs et paris (SQLite)
 DB = os.path.join(DATA, "gamecenter.db")
 _db_lock = threading.Lock()
@@ -536,7 +563,8 @@ with db() as _c:
     # et donne une place au classement de la saison. Migration douce : colonnes ajoutées à la base existante.
     _cols = {r[1] for r in _c.execute("PRAGMA table_info(players)")}
     for _col, _typ in (("login", "TEXT"), ("pw", "TEXT"), ("acct_at", "INTEGER"), ("fav_team", "TEXT"),
-                       ("fav_team_at", "INTEGER")):        # FO-2 : depuis quand le compte tient sa franchise favorite
+                       ("fav_team_at", "INTEGER"),          # FO-2 : depuis quand le compte tient sa franchise favorite
+                       ("badge", "TEXT"), ("badges_at", "INTEGER")):   # BD-2 : badge mis en avant, dernier calcul
         if _col not in _cols:
             _c.execute(f"ALTER TABLE players ADD COLUMN {_col} {_typ}")
     _c.execute("CREATE UNIQUE INDEX IF NOT EXISTS players_login ON players(login) WHERE login IS NOT NULL")
@@ -554,6 +582,9 @@ with db() as _c:
     CREATE TABLE IF NOT EXISTS push_bells(player TEXT, week TEXT, game TEXT, PRIMARY KEY(player, week, game));
     CREATE TABLE IF NOT EXISTS push_sent(endpoint TEXT, week TEXT, game TEXT, at INTEGER, PRIMARY KEY(endpoint, week, game));
     """)
+    # Badges, BD-4 : « Badges I unlock » par appareil (NULL = oui : un appareil abonné avant BD-4 les reçoit)
+    if "badges" not in {r[1] for r in _c.execute("PRAGMA table_info(push_subs)")}:
+        _c.execute("ALTER TABLE push_subs ADD COLUMN badges INTEGER")
     # Bloc 2, étape 7 : ligues privées entre amis (comptes seulement) : un code d'invitation par ligue.
     _c.executescript("""
     CREATE TABLE IF NOT EXISTS leagues(id TEXT PRIMARY KEY, name TEXT, code TEXT UNIQUE, owner TEXT, created INTEGER);
@@ -791,7 +822,7 @@ def season_net(pid, t):
 
 
 # ------------------------------------------------------------------ l'application
-# Préchauffage au démarrage (section 133) : après chaque déploiement, le premier visiteur attendait la lecture des
+# Préchauffage au démarrage (section 136) : après chaque déploiement, le premier visiteur attendait la lecture des
 # semaines (≈ 25 s), puis l'histoire de la ligue (≈ 20 s de plus sur une page de franchise ou de semaine) : un robot
 # abandonnait avant. Tout est maintenant calculé à côté dès le démarrage. GC_PRECHAUFFAGE=off : comme avant (coupé
 # aussi sous GC_TEST_HOOK=1, sauf GC_PRECHAUFFAGE=on).
@@ -828,7 +859,7 @@ async def _vie(app):
 
 app = FastAPI(title="GameCenter live server", docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=_vie)
 # compression : page ≈ 53 Mo -> ≈ 6 Mo, /api/delta (toutes les 3 s) ≈ 1 Mo -> quelques Ko ; un onglet trop lourd était
-# rechargé (ou tué) par le navigateur du téléphone, en plein match. Niveau 6 (section 133) : 3 fois plus rapide que le
+# rechargé (ou tué) par le navigateur du téléphone, en plein match. Niveau 6 (section 136) : 3 fois plus rapide que le
 # niveau 9 d'origine pour 20 % de plus (50 Mo de page : 1,1 s au lieu de 3,1 s).
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 _init_clock()
@@ -1047,6 +1078,7 @@ def page(request: Request = None):
     if request is not None:
         news_prechauffer()                           # onglet News (section 115)
         tracking_prechauffer()                       # Tracking (NGS-6) : semaine en cours, semaines passées, cartes
+        badges_prechauffer()                         # badges (BD-2) : tous les comptes, une fois par semaine ouverte
     ttl = page_cache_s()
     if ttl <= 0:
         return HTMLResponse(_page_html(), headers={"Cache-Control": "no-store"})
@@ -1057,7 +1089,7 @@ def page(request: Request = None):
     return HTMLResponse(s, headers={"Cache-Control": "no-store", "Vary": "Accept-Encoding"})
 
 
-# Page d'accueil gardée quelques secondes (AdSense « site inaccessible », 20/11/2026, section 133). Elle emporte toute la
+# Page d'accueil gardée quelques secondes (AdSense « site inaccessible », 20/11/2026, section 136). Elle emporte toute la
 # semaine (jusqu'à 50 Mo, 4 à 5 Mo compressés le dimanche) et était refaite et recompressée à chaque visite : 2 à 8 s,
 # bien plus quand plusieurs robots arrivaient ensemble (Google-Display-Ads-Bot attendait 6 s, ceux de Meta et d'Amazon
 # abandonnaient à 5 et 10 s). Elle est maintenant faite une fois toutes les GC_PAGE_CACHE secondes (15 par défaut, 0 :
@@ -1117,7 +1149,7 @@ _MOIS_GB = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct
 
 def _semaine_libelle(w, t):
     """Le libellé du bouton de semaine (« Week 8 · 16–22 Nov »), écrit comme le fait la page (wRange : premier coup
-    d'envoi, fin du dernier match ou coup d'envoi + 95 min, heure de Bruxelles). Écrit dès le HTML (section 133) : « This
+    d'envoi, fin du dernier match ou coup d'envoi + 95 min, heure de Bruxelles). Écrit dès le HTML (section 136) : « This
     week », plus court, était remplacé au démarrage de la page et faisait passer la barre du haut du téléphone sur trois
     lignes (décalage de 0,23 quand le processeur est lent, comme sur la machine des tests)."""
     debut = min(g["ko"] for g in w.sched)
@@ -1128,7 +1160,7 @@ def _semaine_libelle(w, t):
 
 def _bandeau_bouton(w, t):
     """Le texte du bouton du bandeau de première visite, choisi comme le fait la page (welcomePick) : écrit dès le HTML
-    (section 133). « Watch live now » devenait « Watch a full game » au démarrage, la nuit : sur téléphone, « How it
+    (section 136). « Watch live now » devenait « Watch a full game » au démarrage, la nuit : sur téléphone, « How it
     works » passait à la ligne et la page descendait de 31 px (décalage de 0,16 quand le processeur est lent)."""
     st = [w.status(g, t) for g in w.sched]
     if "live" in st:
@@ -1168,6 +1200,8 @@ def _page_html():
         srv["accueil"] = True
     if front_office_on():                            # FO-4 : My team › Front office (vote des supporters, section 111)
         srv["front_office"] = True
+    if badges_on():                                  # badges (BD-3) : vue Badges, puce à côté du pseudo
+        srv["badges"] = True
     if os.environ.get("GC_NETTETE", "on").strip().lower() in ("off", "0", "non", "no"):
         srv["nettete_off"] = True                    # netteté du terrain (section 90) : la règle de fluidité d'avant
     if not jeu_fluide_on():                          # dessin des actions (section 83) : GC_JEU_FLUIDE=0, celui d'avant
@@ -1191,6 +1225,7 @@ def _page_html():
                       "playerCardHTML,openPlayerCard,depthChartHTML,rotLineups,slotMap,injuryReportHTML,injSpot,rosterCardHTML,openReplayFeed,stepGame,kfAt,missSpot,updateGameUI,rpDone,rpSeek,replayGame:()=>replayGame,fluide:v=>{if(v!==undefined)JEU_FLUIDE=!!v;return JEU_FLUIDE;},psBubble,playLine,nameTags,scBubbles,adjLine,rpChip,rpFeedItem,caption,showChip,"
                       "brk:{BRK_SEC,brkKind,tlOf,timelineAt,topPerformers,perfStats,perfScore,liveBreakLeft},fo:{foGameRow,foGameStat,FO_ON},"
                       "trk:{openRosterCard,watchGame,renderStats,rpAfterSeek,modalGame:()=>modalGame},"
+                      "bd:{bdChip,state:()=>BD,chatNode:m=>chatNode(m,CH)},"
                       "fx:(d,glow)=>{FX_DPR=d;FX_GLOW=glow;PERF.t0=Infinity;for(const v of views)v.resize();}};\n})();")
     if GOOGLE_VERIFY:                                # Search Console, vérification par balise (sinon : TXT dans le DNS)
         s = s.replace("</title>", '</title>\n<meta name="google-site-verification" content="' + html.escape(GOOGLE_VERIFY, quote=True) + '">', 1)
@@ -1773,8 +1808,7 @@ async def api_admin_stats(req: Request):
     ip = _ip(req)
     if _too_many_fails((("admin-stats", ip), 10)):
         raise HTTPException(429, "too_many")
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+    if not admin_ok(body.get("key")):
         _note_fail(("admin-stats", ip))
         raise HTTPException(403, "forbidden")
     try:
@@ -1962,8 +1996,7 @@ async def api_admin_password(req: Request):
     """Mot de passe oublié : réinitialisé par l'administrateur (GC_ADMIN_KEY). La clé du joueur change.
     Usage : POST /api/admin/password {"key": "<GC_ADMIN_KEY>", "pseudo": "...", "password": "nouveau"}"""
     body = await _json(req)
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key", "")), admin):
+    if not admin_ok(body.get("key")):
         raise HTTPException(403, "Non autorisé.")
     p = player_by_login(str(body.get("pseudo") or ""))
     if not p:
@@ -1986,6 +2019,9 @@ def api_me(token: str = ""):
     mine = next((r for r in rows if r["id"] == p["id"]), None)
     season = {"rank": mine["rank"] if mine else None, "net": mine["net"] if mine else season_net(p["id"], t)["net"],
               "players": len(rows)}
+    feat = badges_mis_en_avant().get(p["id"])
+    if feat:
+        L = dict(L, badge=feat)                      # BD-2 : son badge mis en avant
     return {"name": p["name"], "account": bool(p.get("login")), "fav_team": p.get("fav_team"), "week": w.start, "now": t,
             "season": season, "carry": wallet_on(w), "refill": {"amount": REFILL, "ok": refill_ok(w, L) is None}, **L}
 
@@ -2026,6 +2062,44 @@ def _fin_semaine(w):
     return max(g["end"] for g in w.sched)
 
 
+_BD_TOP10 = {}                                       # semaine finie -> ids du top 10 (ou vide) ; clé avec les comptes
+_BD_LIGUE = {}                                       # (ligue, semaine, membres, paris) -> vainqueur de la semaine
+
+
+def _bd_top10(w, t):
+    """Les ids du top 10 de la saison à la fin de la semaine w (vide si moins de TOP10_MIN comptes classés). Une
+    semaine finie ne change plus : gardée en mémoire, avec le nombre de paris et de comptes dans la clé (un pari ou
+    un compte de plus, en test où l'horloge recule, refait le calcul)."""
+    with db() as c:
+        nb = c.execute("SELECT COUNT(*) FROM bets WHERE week<=?", (w.start,)).fetchone()[0]
+        na = c.execute("SELECT COUNT(*) FROM players WHERE login IS NOT NULL").fetchone()[0]
+    k = (w.start, nb, na)
+    if k not in _BD_TOP10:
+        rows = season_rows(_fin_semaine(w))
+        _BD_TOP10[k] = frozenset(r["id"] for r in rows if r["rank"] <= 10) if len(rows) >= _badges.TOP10_MIN else frozenset()
+        if len(_BD_TOP10) > 500:
+            _BD_TOP10.clear()
+    return _BD_TOP10[k]
+
+
+def _bd_vainqueur(lid, membres, w):
+    """Le premier d'une ligue à la fin de la semaine w (solde de la semaine, comme le classement des ligues), ou None."""
+    with db() as c:
+        nb = c.execute(f"SELECT COUNT(*) FROM bets WHERE week=? AND player IN ({','.join('?' * len(membres))})",
+                       (w.start, *membres)).fetchone()[0]
+    k = (lid, w.start, tuple(sorted(membres)), nb)
+    if k not in _BD_LIGUE:
+        fin, best = _fin_semaine(w), []
+        for m in membres:
+            Lg = ledger(w, player_bets(m, w), fin)
+            if Lg["bets"]:
+                best.append((-Lg["balance"], m))
+        _BD_LIGUE[k] = min(best)[1] if best else None
+        if len(_BD_LIGUE) > 5000:
+            _BD_LIGUE.clear()
+    return _BD_LIGUE[k]
+
+
 def badges_classements(pid, t):
     """(semaines finies en tête d'une ligue privée de LIGUE_MIN membres ou plus, semaines finies dans le top 10 de la
     saison quand TOP10_MIN comptes au moins sont classés) : chaque semaine est classée à sa fin, comme les classements
@@ -2037,19 +2111,10 @@ def badges_classements(pid, t):
                    for lid in ligues}
     wins = top10 = 0
     for w in finies:
-        fin = _fin_semaine(w)
-        rows = season_rows(fin)
-        if len(rows) >= _badges.TOP10_MIN and any(r["id"] == pid and r["rank"] <= 10 for r in rows):
+        if pid in _bd_top10(w, t):
             top10 += 1
         for lid, ms_ in membres.items():
-            if len(ms_) < _badges.LIGUE_MIN:
-                continue
-            best = []
-            for m in ms_:
-                Lg = ledger(w, player_bets(m, w), fin)
-                if Lg["bets"]:
-                    best.append((-Lg["balance"], m))
-            if best and min(best)[1] == pid:
+            if len(ms_) >= _badges.LIGUE_MIN and _bd_vainqueur(lid, ms_, w) == pid:
                 wins += 1
     return wins, top10
 
@@ -2106,6 +2171,194 @@ def badges_donnees(p, t):
             "now": t, "days": days, "weeks": week_list, "bets": out_bets, "fan_votes": fan_votes,
             "draft_votes": draft_votes, "news_votes": news, "leagues_owned": owned, "league_wins": wins,
             "top10_weeks": top10, "pro": insights_pro(p)}
+
+
+
+# ------------------------------------------------------------------ badges, BD-2 : attribution, API, badge mis en avant
+# Attribution au chargement de la page Badges (/api/badges) et pour tous les comptes à l'ouverture d'une semaine
+# (badges_prechauffer, depuis la page). Un badge gagné ne se retire jamais : le palier montré est le plus haut entre
+# celui gardé dans player_badges et celui dû aujourd'hui. Premier calcul d'un compte (players.badges_at vide) : les badges
+# déjà mérités sont écrits « rétroactifs » (retro) : le site ne les annonce pas un par un. Badge mis en avant :
+# players.badge (un badge gagné), renvoyé à côté du pseudo dans les classements, les ligues et le chat.
+_BD_FEAT = {"map": None}                             # joueur -> {"k": badge, "t": palier} ; None : à relire
+_BD_SEMAINE = {"start": None}                        # semaine pour laquelle tous les comptes ont été évalués
+
+
+def _bd_need():
+    if not badges_on():
+        raise HTTPException(404, "badges_off")
+
+
+def badges_mis_en_avant():
+    """{joueur: {"k", "t"}} des comptes qui ont choisi un badge (gardé en mémoire, relu après une écriture)."""
+    if not badges_on():
+        return {}
+    if _BD_FEAT["map"] is None:
+        with db() as c:
+            _BD_FEAT["map"] = {r[0]: {"k": r[1], "t": r[2]} for r in c.execute(
+                "SELECT p.id, p.badge, b.tier FROM players p JOIN player_badges b ON b.player = p.id AND b.badge = p.badge "
+                "WHERE p.badge IS NOT NULL AND p.login IS NOT NULL")}
+    return _BD_FEAT["map"]
+
+
+def _bd_changed():
+    _BD_FEAT["map"] = None
+    if "_CHAT" in globals():                         # messages du chat gardés en mémoire avec le badge de l'auteur
+        with _CHAT_LOCK:
+            _CHAT["rooms"].clear()
+
+
+def _bd_merge(b, tier):
+    """Le palier montré : le plus haut entre celui gagné (gardé) et celui dû aujourd'hui (un badge ne se perd pas)."""
+    if tier <= b["tier"]:
+        return b
+    seuils = b["tiers"]
+    return dict(b, tier=tier, earned=True, tier_name=_badges.PALIERS[tier - 1] if len(seuils) > 1 else "",
+                next=seuils[tier] if tier < len(seuils) else None)
+
+
+def badges_attribuer(p, t):
+    """Évalue un joueur et écrit ses badges nouveaux (comptes seulement). Rend (badges du catalogue avec palier,
+    date et semaine de gain ; nouveaux [{key, tier}] ; retro : premier calcul du compte)."""
+    ev = _badges.evaluer(badges_donnees(p, t))
+    if not p.get("login"):
+        return ev, [], False
+    with db() as c:
+        deja = {r["badge"]: dict(r) for r in c.execute("SELECT badge, tier, at, week FROM player_badges WHERE player=?",
+                                                     (p["id"],))}
+        first = c.execute("SELECT badges_at FROM players WHERE id=?", (p["id"],)).fetchone()[0] is None
+    nv = _badges.nouveaux({k: v["tier"] for k, v in deja.items()}, {b["key"]: b["tier"] for b in ev if b["earned"]})
+    w = current_week(t)
+    wk = w.start if w else None
+    with _db_lock, db() as c:
+        for k, tier in nv.items():
+            c.execute("INSERT OR REPLACE INTO player_badges(player, badge, tier, at, week) VALUES(?,?,?,?,?)",
+                      (p["id"], k, tier, t, wk))
+            deja[k] = {"badge": k, "tier": tier, "at": t, "week": wk}
+        c.execute("UPDATE players SET badges_at=? WHERE id=?", (t, p["id"]))
+    if nv and p.get("badge") in nv:                  # palier plus haut du badge mis en avant
+        _bd_changed()
+    out = []
+    for b in ev:
+        g = deja.get(b["key"])
+        b = _bd_merge(b, g["tier"]) if g else b
+        out.append(dict(b, at=g["at"] if g else None, week=g["week"] if g else None))
+    return out, [{"key": k, "tier": v} for k, v in nv.items()], first
+
+
+def badges_push_texte(nv):
+    """Notification « You unlocked … » (BD-4) : un badge, ou le récapitulatif de la semaine. nv : [{key, tier}]."""
+    def nom(b):
+        c = _badges.PAR_CLE.get(b["key"])
+        if not c:
+            return b["key"]
+        return c[1] + (f" · {_badges.PALIERS[b['tier'] - 1].capitalize()}" if len(c[3]) > 1 and b["tier"] else "")
+    noms = [nom(b) for b in nv]
+    if len(noms) == 1:
+        return {"title": f"You unlocked {noms[0]}", "body": "A new badge on Snapline. Tap to see your badges.",
+                "url": "/?badges=1", "tag": "badges"}
+    liste = ", ".join(noms[:-1]) + " and " + noms[-1] if len(noms) <= 4 else ", ".join(noms[:3]) + f" and {len(noms) - 3} more"
+    return {"title": f"New this week: {len(noms)} badges", "body": f"{liste}. Tap to see your badges.",
+            "url": "/?badges=1", "tag": "badges"}
+
+
+BADGES_PUSH_TTL = 12 * 3600                          # une notification de badge attend au plus 12 h un appareil éteint
+
+
+def badges_push(pid, nv, t):
+    """BD-4 : prévient les appareils abonnés d'un compte (réglage « Badges I unlock », oui par défaut) de ses badges
+    nouveaux. Une notification par appareil et par semaine au plus (push_sent : game = « badges »). Renvoie le nombre
+    d'envois."""
+    if not nv or not push_ok() or not badges_on():
+        return 0
+    w = current_week(t)
+    wk = w.start if w else _jour_bxl(t)
+    with db() as c:
+        subs = [dict(r) for r in c.execute("SELECT * FROM push_subs WHERE player=? AND COALESCE(badges, 1)=1", (pid,))]
+        sent = {r[0] for r in c.execute("SELECT endpoint FROM push_sent WHERE week=? AND game='badges'", (wk,))}
+    n, data = 0, badges_push_texte(nv)
+    for sub in subs:
+        if sub["endpoint"] in sent:
+            continue
+        try:
+            ok = _push_envoyer(sub, data, ttl=BADGES_PUSH_TTL)
+        except Exception as e:
+            print("notification de badge non envoyée :", str(e)[:200])
+            continue
+        if not ok:
+            _push_oublier(sub["endpoint"])
+            continue
+        n += 1
+        with _db_lock, db() as c:
+            c.execute("INSERT OR IGNORE INTO push_sent(endpoint, week, game, at) VALUES(?,?,?,?)",
+                      (sub["endpoint"], wk, "badges", t))
+    return n
+
+
+def badges_tous(t):
+    """Tous les comptes évalués (ouverture d'une semaine : les badges de classement de la semaine finie, la fidélité).
+    BD-4 : les badges gagnés ainsi (pas ceux d'un premier calcul, rétroactifs) sont annoncés par une notification."""
+    with db() as c:
+        comptes = [dict(r) for r in c.execute("SELECT * FROM players WHERE login IS NOT NULL")]
+    n = 0
+    for p in comptes:
+        try:
+            _, nv, first = badges_attribuer(p, t)
+            n += len(nv)
+            if nv and not first:
+                badges_push(p["id"], nv, t)
+        except Exception as e:                       # un compte en erreur n'arrête pas les autres
+            print(f"[badges] {p['id']} : {e!r}", flush=True)
+    return n
+
+
+def badges_prechauffer(t=None):
+    """Une fois par semaine ouverte (au premier chargement de la page) : tous les comptes évalués, en arrière-plan."""
+    if not badges_on() or not news_prechauffage_on():
+        return
+    w = current_week(t)
+    if not w or _BD_SEMAINE["start"] == w.start:
+        return
+    _BD_SEMAINE["start"] = w.start
+    threading.Thread(target=lambda: badges_tous(now_ms()), daemon=True).start()
+
+
+@app.get("/api/badges")
+def api_badges(token: str = ""):
+    """Badges d'un joueur : le catalogue avec, pour chacun, palier gagné (jamais en baisse), progression vers le
+    suivant, date et semaine de gain ; « new » = gagnés à l'instant (vide pour un invité, qui ne voit que sa progression) ;
+    « retro » = premier calcul du compte (badges déjà mérités : pas d'annonce un par un) ; « featured » = mis en avant."""
+    _bd_need()
+    p = player_by_token(token)
+    if not p:
+        raise HTTPException(401, "Clé de joueur inconnue.")
+    t = now_ms()
+    out, nv, first = badges_attribuer(p, t)
+    feat = badges_mis_en_avant().get(p["id"])
+    w = current_week(t)
+    return {"account": bool(p.get("login")), "now": t, "version": _badges.VERSION, "week": w.start if w else None,
+            "categories": list(_badges.CATEGORIES), "badges": out, "new": nv, "retro": first and bool(nv),
+            "featured": feat["k"] if feat else None, "earned": sum(1 for b in out if b["earned"])}
+
+
+@app.post("/api/badges/featured")
+async def api_badges_featured(req: Request):
+    """Le badge mis en avant à côté du pseudo (comptes seulement) : {token, badge} ; badge vide = aucun. Seulement un
+    badge gagné."""
+    _bd_need()
+    body = await _json(req)
+    p = player_by_token(body.get("token"))
+    if not p or not p.get("login"):
+        raise HTTPException(401, "account_required")
+    k = str(body.get("badge") or "").strip() or None
+    if k is not None:
+        with db() as c:
+            if not c.execute("SELECT 1 FROM player_badges WHERE player=? AND badge=?", (p["id"], k)).fetchone():
+                raise HTTPException(400, "badge_not_earned")
+    with _db_lock, db() as c:
+        c.execute("UPDATE players SET badge=? WHERE id=?", (k, p["id"]))
+    _bd_changed()
+    return {"featured": k}
 
 
 # ------------------------------------------------------------------ « My team » : équipe favorite d'un compte
@@ -2407,10 +2660,9 @@ def api_admin_fans(key: str = "", week: str = "", request: Request = None):
     """Export pour le calcul du samedi (GC_ADMIN_KEY : en-tête X-Admin-Key, ou ?key=), seulement après le verrou.
     week = lundi où les choix s'appliquent (défaut : la dernière question fermée)."""
     _fo_need()
-    admin = os.environ.get("GC_ADMIN_KEY", "")
     if request is not None and not key:
         key = request.headers.get("x-admin-key", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(key), admin):
+    if not admin_ok(key):
         raise HTTPException(403, "Non autorisé.")
     t = now_ms()
     if not week:
@@ -2679,7 +2931,7 @@ def rappels_dus(t, subs, bells, sent):
     return out
 
 
-def _push_envoyer(sub, data):
+def _push_envoyer(sub, data, ttl=None):
     """Un envoi. Renvoie True (parti), False (abonnement à supprimer : 404 / 410) ; lève sinon (réessayé au tour suivant)."""
     if os.environ.get("GC_PUSH_FAKE") == "1":
         PUSH_LOG.append({"endpoint": sub["endpoint"], **data})
@@ -2688,7 +2940,7 @@ def _push_envoyer(sub, data):
     try:
         webpush({"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}},
                 data=json.dumps(data), vapid_private_key=VAPID_PRIVATE, vapid_claims={"sub": VAPID_SUBJECT},
-                ttl=RAPPEL_MIN * 60, timeout=10)
+                ttl=ttl or RAPPEL_MIN * 60, timeout=10)
         return True
     except WebPushException as e:
         if e.response is not None and e.response.status_code in (404, 410):
@@ -2779,13 +3031,16 @@ async def api_push_subscribe(req: Request):
     p = _push_player(body)
     ep, p256, auth = _push_sub_from(body)
     fav = 1 if body.get("fav") else 0
+    bd = None if body.get("badges") is None else (1 if body.get("badges") else 0)   # BD-4 ; absent : inchangé
     with _db_lock, db() as c:
         if c.execute("SELECT COUNT(*) FROM push_subs WHERE player=? AND endpoint<>?", (p["id"], ep)).fetchone()[0] >= PUSH_MAX_PAR_JOUEUR:
             raise HTTPException(429, "too_many_devices")
-        c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created) VALUES(?,?,?,?,?,?) "
+        c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created, badges) VALUES(?,?,?,?,?,?,?) "
                   "ON CONFLICT(endpoint) DO UPDATE SET player=excluded.player, p256dh=excluded.p256dh, "
-                  "auth=excluded.auth, fav=excluded.fav", (ep, p["id"], p256, auth, fav, now_ms()))
-    return {"ok": True, "fav": bool(fav), "fav_team": p.get("fav_team")}
+                  "auth=excluded.auth, fav=excluded.fav, badges=COALESCE(excluded.badges, push_subs.badges)",
+                  (ep, p["id"], p256, auth, fav, now_ms(), bd))
+        r = c.execute("SELECT badges FROM push_subs WHERE endpoint=?", (ep,)).fetchone()
+    return {"ok": True, "fav": bool(fav), "fav_team": p.get("fav_team"), "badges": r[0] is None or bool(r[0])}
 
 
 @app.post("/api/push/unsubscribe")
@@ -3205,23 +3460,29 @@ def api_leaderboard(token: str = "", scope: str = "week"):
     me = player_by_token(token)
     if scope == "season":
         rows = season_rows(t)
+        feat = badges_mis_en_avant()                # BD-2 : badge mis en avant à côté du pseudo
         out = [{k: r[k] for k in ("rank", "name", "net", "weeks", "bets", "won", "lost")} | {"me": bool(me and me["id"] == r["id"])}
-               for r in rows]
+               | ({"badge": feat[r["id"]]} if r["id"] in feat else {}) for r in rows]
         mine = next((r for r in out if r["me"]), None)
         if me and not mine:                         # invité, ou compte sans pari : sa ligne sans rang
             a = season_net(me["id"], t)
             mine = dict(a, rank=None, name=me["name"], me=True, account=bool(me.get("login")))
+            if me["id"] in feat:
+                mine["badge"] = feat[me["id"]]
         return {"scope": "season", "week": w.start, "weeks": [x.start for x in season_weeks(t)], "players": len(out),
                 "top": out[:50], "me": mine}
     with db() as c:
         players = [dict(r) for r in c.execute("SELECT DISTINCT p.* FROM players p JOIN bets b ON b.player=p.id WHERE b.week=?", (w.start,))]
     rows = []
+    feat = badges_mis_en_avant()
     for p in players:
         L = ledger(w, player_bets(p["id"], w), t)
         if not L["bets"]:
             continue
         rows.append({"name": p["name"], "balance": L["balance"], "net": round(L["balance"] - BANKROLL, 2), "bets": len(L["bets"]), "won": L["won"], "lost": L["lost"],
                      "account": bool(p.get("login")), "me": bool(me and me["id"] == p["id"])})
+        if p["id"] in feat:
+            rows[-1]["badge"] = feat[p["id"]]
     rows.sort(key=lambda r: (-r["balance"], r["name"]))
     for i, r in enumerate(rows):
         r["rank"] = i + 1
@@ -3474,8 +3735,11 @@ def api_league_standings(lid: str, token: str = "", scope: str = "week"):
         pub = _ligue_public(c, L, p["id"])
     t = now_ms()
     _, rows = ligue_classement(L["id"], "season" if scope == "season" else "week", t)
+    feat = badges_mis_en_avant()
     for r in rows:
         r["me"] = r["id"] == p["id"]
+        if r["id"] in feat:
+            r["badge"] = feat[r["id"]]
     return {"league": pub, "scope": "season" if scope == "season" else "week", "rows": rows, "now": t}
 
 
@@ -3790,6 +4054,9 @@ def _chat_pub(r):
         d["teams"] = r["teams"].split(",")
     if r["adm"]:
         d["adm"] = 1
+    f = badges_mis_en_avant().get(r["player"]) if not r["adm"] else None
+    if f:                                            # BD-2 : badge mis en avant de l'auteur
+        d["bd"] = f
     return d
 
 
@@ -4079,8 +4346,7 @@ def _chat_admin(req, body):
     ip = _ip(req)
     if _too_many_fails((("admin-chat", ip), 10)):
         raise HTTPException(429, "too_many")
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(str(body.get("key") or ""), admin):
+    if not admin_ok(body.get("key")):
         _note_fail(("admin-chat", ip))
         raise HTTPException(403, "forbidden")
     _chat_init()
@@ -4866,14 +5132,14 @@ def api_health():
 
 
 @app.get("/api/backup")
-def api_backup(key: str = ""):
+def api_backup(key: str = "", only: str = ""):
     """Sauvegarde complète (base des paris + semaines) en .zip. Protégée par la variable GC_ADMIN_KEY :
-    sans elle, la sauvegarde est désactivée. Usage : https://<site>/api/backup?key=<GC_ADMIN_KEY>"""
+    sans elle, la sauvegarde est désactivée. Usage : https://<site>/api/backup?key=<GC_ADMIN_KEY>
+    &only=db : la base seule (quelques Mo ; les semaines, plusieurs centaines de Mo, sont déjà dans le dépôt)."""
     import io, zipfile
     from fastapi.responses import Response
-    admin = os.environ.get("GC_ADMIN_KEY", "")
-    if len(admin) < 16 or not secrets.compare_digest(key, admin):
-        raise HTTPException(403, "Sauvegarde non autorisée.")
+    if not admin_ok(key):
+        raise HTTPException(403, "Sauvegarde non autorisée. " + admin_refus(key))
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         snap = os.path.join(DATA, ".backup.db")         # copie cohérente de la base, même pendant des paris
@@ -4882,13 +5148,14 @@ def api_backup(key: str = ""):
             src.backup(dst)
         src.close(); dst.close()
         z.write(snap, "gamecenter.db"); os.remove(snap)
-        for root, _, files in os.walk(WEEKS_DIR, followlinks=True):     # semaines : liens vers l'image (Dockerfile)
+        for root, _, files in ([] if only == "db" else os.walk(WEEKS_DIR, followlinks=True)):     # semaines : liens vers l'image (Dockerfile)
             for fn in files:
                 p = os.path.join(root, fn)
                 z.write(p, os.path.relpath(p, DATA))
     stamp = datetime.now(TZ).strftime("%Y-%m-%d_%H%M")
+    nom = "gamecenter_db" if only == "db" else "gamecenter_backup"
     return Response(buf.getvalue(), media_type="application/zip",
-                    headers={"Content-Disposition": f'attachment; filename="gamecenter_backup_{stamp}.zip"'})
+                    headers={"Content-Disposition": f'attachment; filename="{nom}_{stamp}.zip"'})
 
 
 async def _json(req):

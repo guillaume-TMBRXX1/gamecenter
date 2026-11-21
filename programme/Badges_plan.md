@@ -103,7 +103,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Outil `outils/badges_rapport.py` : sur une copie de la base de production (lecture seule), combien de comptes
   auraient chaque badge au lancement (pour régler les seuils avant d'afficher quoi que ce soit).
 
-### BD-2 — Serveur : attribution et API *(serveur)*
+### BD-2 — Serveur : attribution et API *(serveur)* — ✅ 20/11 (README section 133)
 - `/api/badges?token=` : badges gagnés (datés), à gagner (progression), badge mis en avant ; `POST /api/badges/featured`.
 - Attribution au chargement (`/api/badges`) et à la révélation du lundi ; rétroactive au premier calcul d'un compte.
 - Le badge mis en avant renvoyé avec les lignes du classement de la saison et des ligues.
@@ -120,7 +120,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Fait : « Sign up » dans la barre du haut, fenêtre « Join Snapline » (compte, puis franchise, puis « You're in »),
   toutes les invitations y mènent, carte « Nice pick! » après le premier pari gagné d'un invité, Settings sans formulaire.
 
-### BD-3 — Site *(site)*
+### BD-3 — Site *(site)* — ✅ 20/11, captures validées (README section 134)
 - My account › **Badges** : grille des badges (gagnés en couleur, à gagner en gris avec la progression « 7 / 12 weeks »),
   choix du badge mis en avant ; toast « Badge unlocked » au moment où il est gagné ; le badge mis en avant à côté du
   pseudo dans Standings › Season, les ligues privées et le chat.
@@ -128,7 +128,7 @@ Catalogue, principes, données existantes, découpage. Points à décider ci-des
 - Icônes : un pictogramme par catégorie + la couleur du palier (pas d'image par badge au départ).
 - Tests navigateur, captures, téléphone 390 px, mode sombre.
 
-### BD-4 — Plus tard
+### BD-4 — Notification et récapitulatif — ✅ 20/11 (README section 135) ; badges des idées d'engagement : plus tard
 - Web Push « You unlocked Season ticket · Silver » (abonnés seulement) ; récapitulatif du lundi (« New this week »).
 - Badges des idées d'engagement si elles sont faites ; badge Insights Pro si le paiement est branché.
 

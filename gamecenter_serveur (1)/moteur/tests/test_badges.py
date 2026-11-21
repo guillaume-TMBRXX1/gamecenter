@@ -5,6 +5,11 @@
   Écriture    nouveaux() : un badge nouveau ou un palier plus haut, jamais une baisse
   Serveur     /api/me note le jour de visite (une ligne par jour) ; badges_donnees lit les paris réglés (type, cote,
               sélections), le compte, les jours ; un invité n'a aucun badge ; GC_BADGES=off n'écrit rien
+  BD-2        /api/badges : attribution (rétroactive au premier calcul, « new » ensuite vide), palier jamais en baisse,
+              invité sans écriture ; badge mis en avant (gagné seulement) dans le classement, les ligues, le chat et
+              /api/me ; badges_tous ; GC_BADGES=off : 404 et aucun badge affiché
+  BD-4        notification « You unlocked … » / « New this week » : badges_tous seulement, pas au premier calcul
+              (rétroactifs), une par appareil et par semaine, réglage « Badges I unlock » par appareil (absent : inchangé)
 
     python -m unittest moteur.tests.test_badges        (depuis « gamecenter_serveur (1) »)
 """
@@ -196,6 +201,132 @@ class Serveur(ts.Base):
         D = ts.serveur.badges_donnees(p, ts.serveur.now_ms())
         self.assertFalse(D["account"])
         self.assertEqual(B.gagnes(D), {})
+
+
+
+class Attribution(ts.Base):
+    def compte(self, nom):
+        return ts.appel(ts.serveur.api_register, {"pseudo": nom, "password": "motdepasse1"})["token"]
+
+    def test_api_attribution_et_mis_en_avant(self):
+        g = self.reg[0]
+        ts.a_l_heure(g["ko"] - 120_000)
+        tok, tok2, tok3 = self.compte("Bd Alpha"), self.compte("Bd Beta"), self.compte("Bd Gamma")
+        p = ts.serveur.player_by_token(tok)
+        r = ts.serveur.api_badges(tok)
+        self.assertTrue(r["account"])
+        self.assertEqual(len(r["badges"]), len(B.CATALOGUE))
+        ff = next(b for b in r["badges"] if b["key"] == "founding_fan")
+        if ff["earned"]:                                                     # avant 2027 : rétroactif au premier calcul
+            self.assertTrue(r["retro"])
+            self.assertIn({"key": "founding_fan", "tier": 1}, r["new"])
+            self.assertTrue(ff["at"] and ff["week"])
+        r2 = ts.serveur.api_badges(tok)
+        self.assertEqual((r2["new"], r2["retro"]), ([], False))             # déjà écrits : rien de nouveau
+        # palier gardé : un badge ne baisse jamais (Season ticket or écrit à la main, valeur actuelle bien plus basse)
+        with ts.serveur.db() as c:
+            c.execute("INSERT OR REPLACE INTO player_badges VALUES(?,?,?,?,?)", (p["id"], "season_ticket", 3, 1, "x"))
+        st = next(b for b in ts.serveur.api_badges(tok)["badges"] if b["key"] == "season_ticket")
+        self.assertEqual((st["tier"], st["tier_name"], st["next"], st["earned"]), (3, "gold", 52, True))
+        self.assertLess(st["value"], 24)
+        # mis en avant : seulement un badge gagné ; un invité ne peut pas
+        self.refus(400, ts.appel, ts.serveur.api_badges_featured, {"token": tok, "badge": "combo"})
+        inv = self.joueur("Bd Invité")["token"]
+        self.refus(401, ts.appel, ts.serveur.api_badges_featured, {"token": inv, "badge": "season_ticket"})
+        self.assertEqual(ts.appel(ts.serveur.api_badges_featured, {"token": tok, "badge": "season_ticket"}),
+                         {"featured": "season_ticket"})
+        badge = {"k": "season_ticket", "t": 3}
+        self.assertEqual(ts.serveur.api_badges(tok)["featured"], "season_ticket")
+        self.assertEqual(ts.serveur.api_me(tok)["badge"], badge)
+        # classements (semaine, saison), ligue, chat
+        self.parier(tok, [self.pick(g["id"], stake=10)])
+        sem = ts.serveur.api_leaderboard(tok, "week")
+        self.assertEqual(sem["me"]["badge"], badge)
+        sai = ts.serveur.api_leaderboard(tok, "season")
+        self.assertEqual(sai["me"]["badge"], badge)
+        lg = ts.appel(ts.serveur.api_league_create, {"token": tok, "name": "Bd League"})["league"]
+        rows = ts.serveur.api_league_standings(lg["id"], tok)["rows"]
+        self.assertEqual(next(x for x in rows if x["me"])["badge"], badge)
+        msg = {"id": 1, "a": "x", "name": "Bd Alpha", "body": "hi", "created": 0, "team": None, "room": "general",
+               "at": 0, "sc": 0, "teams": None, "adm": 0, "player": p["id"]}
+        self.assertEqual(ts.serveur._chat_pub(msg)["bd"], badge)
+        self.assertNotIn("bd", ts.serveur._chat_pub(dict(msg, player="inconnu")))
+        # retiré
+        ts.appel(ts.serveur.api_badges_featured, {"token": tok, "badge": ""})
+        self.assertNotIn("badge", ts.serveur.api_leaderboard(tok, "week")["me"])
+        # tous les comptes (ouverture d'une semaine) : sans erreur, rien en double
+        self.assertGreaterEqual(ts.serveur.badges_tous(ts.serveur.now_ms()), 0)
+        self.assertEqual(ts.serveur.api_badges(tok2)["new"], [])
+        self.assertEqual(ts.serveur.api_badges(tok3)["new"], [])
+
+    def test_invite_et_interrupteur(self):
+        ts.a_l_heure(self.reg[0]["ko"])
+        inv = self.joueur("Bd Invité 2")["token"]
+        p = ts.serveur.player_by_token(inv)
+        r = ts.serveur.api_badges(inv)
+        self.assertFalse(r["account"] or r["new"] or r["earned"])
+        with ts.serveur.db() as c:
+            self.assertEqual(c.execute("SELECT COUNT(*) FROM player_badges WHERE player=?", (p["id"],)).fetchone()[0], 0)
+        self.refus(401, ts.serveur.api_badges, "")
+        tok = self.compte("Bd Delta")
+        ts.serveur.api_badges(tok)
+        with ts.serveur.db() as c:
+            if c.execute("SELECT 1 FROM player_badges WHERE player=(SELECT id FROM players WHERE token=?)", (tok,)).fetchone():
+                ts.appel(ts.serveur.api_badges_featured, {"token": tok, "badge": "founding_fan"})
+        with mock.patch.dict(os.environ, {"GC_BADGES": "off"}):
+            self.refus(404, ts.serveur.api_badges, tok)
+            self.refus(404, ts.appel, ts.serveur.api_badges_featured, {"token": tok, "badge": ""})
+            self.assertEqual(ts.serveur.badges_mis_en_avant(), {})
+            self.assertNotIn("badge", ts.serveur.api_me(tok))
+
+
+
+class Notification(ts.Base):
+    SUB = {"endpoint": "https://push.example/bd-{}", "keys": {"p256dh": "BPkeyabcdefgh123", "auth": "authabcdefgh"}}
+
+    def sub(self, n):
+        return {"endpoint": self.SUB["endpoint"].format(n), "keys": self.SUB["keys"]}
+
+    def test_texte(self):
+        t1 = ts.serveur.badges_push_texte([{"key": "season_ticket", "tier": 2}])
+        self.assertEqual(t1["title"], "You unlocked Season ticket · Silver")
+        self.assertEqual((t1["url"], t1["tag"]), ("/?badges=1", "badges"))
+        t2 = ts.serveur.badges_push_texte([{"key": "top10", "tier": 1}, {"key": "combo", "tier": 1},
+                                           {"key": "newsroom", "tier": 1}])
+        self.assertEqual(t2["title"], "New this week: 3 badges")
+        self.assertIn("Top 10, Combo and Newsroom · Bronze", t2["body"])
+        t5 = ts.serveur.badges_push_texte([{"key": k, "tier": 1} for k in ("top10", "combo", "draft_day", "opening_day", "streak")])
+        self.assertIn("and 2 more", t5["body"])
+
+    def test_envoi_une_fois_par_semaine_et_reglage(self):
+        ts.a_l_heure(self.reg[0]["ko"])
+        with mock.patch.dict(os.environ, {"GC_PUSH_FAKE": "1"}):
+            tok = ts.appel(ts.serveur.api_register, {"pseudo": "Bd Push", "password": "motdepasse1"})["token"]
+            pid = ts.serveur.player_by_token(tok)["id"]
+            r = ts.appel(ts.serveur.api_push_subscribe, {"token": tok, "subscription": self.sub(1), "fav": True})
+            self.assertTrue(r["badges"])                                     # oui par défaut
+            ts.appel(ts.serveur.api_push_subscribe, {"token": tok, "subscription": self.sub(2), "fav": True, "badges": False})
+            ts.serveur.PUSH_LOG.clear()
+            # premier calcul (rétroactif) par badges_tous : aucune notification
+            ts.serveur.badges_tous(ts.serveur.now_ms())
+            self.assertEqual([x for x in ts.serveur.PUSH_LOG if x.get("tag") == "badges"], [])
+            # un badge gagné ensuite (palier plus haut, simulé) : une notification, sur l'appareil qui le veut
+            nv = [{"key": "season_ticket", "tier": 1}]
+            t = ts.serveur.now_ms()
+            self.assertEqual(ts.serveur.badges_push(pid, nv, t), 1)
+            log = [x for x in ts.serveur.PUSH_LOG if x.get("tag") == "badges"]
+            self.assertEqual([x["endpoint"] for x in log], [self.sub(1)["endpoint"]])
+            self.assertEqual(log[0]["title"], "You unlocked Season ticket · Bronze")
+            self.assertEqual(ts.serveur.badges_push(pid, nv, t + 1000), 0)  # une par semaine et par appareil
+            # réglage absent : inchangé (l'appareil 2 reste sans) ; remis à oui : il recevra la semaine suivante
+            r = ts.appel(ts.serveur.api_push_subscribe, {"token": tok, "subscription": self.sub(2), "fav": False})
+            self.assertFalse(r["badges"])
+            r = ts.appel(ts.serveur.api_push_subscribe, {"token": tok, "subscription": self.sub(2), "fav": False, "badges": True})
+            self.assertTrue(r["badges"])
+            self.assertEqual(ts.serveur.badges_push(pid, nv, t + 2000), 1)
+            with mock.patch.dict(os.environ, {"GC_BADGES": "off"}):
+                self.assertEqual(ts.serveur.badges_push(pid, nv, t + 3000), 0)
+        self.assertEqual(ts.serveur.api_badges(tok)["week"], ts.serveur.current_week().start)
 
 
 if __name__ == "__main__":

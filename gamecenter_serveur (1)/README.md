@@ -70,7 +70,11 @@ Les semaines suivantes utiliseront le nouveau notebook. Nouveau design : remplac
   (5 $/mois), sinon le site s'arrête (les données du disque sont conservées un temps). GitHub : *Settings → Billing*
   → minutes Actions utilisées (~70 sur 2 000).
 - **Sauvegardes** : les semaines sont déjà archivées dans GitHub. Pour les paris, une fois par semaine :
-  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder.
+  `https://<adresse>/api/backup?key=<GC_ADMIN_KEY>` → un .zip à garder (`&only=db` : la base seule, sans les semaines
+  déjà dans le dépôt). La clé est comparée sans les espaces, retours
+  à la ligne et guillemets qui l'entourent (une valeur collée dans Railway en garde parfois) ; en cas de refus, le
+  message dit si `GC_ADMIN_KEY` manque sur le serveur (ou fait moins de 16 caractères) ou si la clé reçue diffère
+  (avec le nombre de caractères reçus, rien sur la clé attendue). Même règle pour toutes les fonctions d'administration.
 - **Sécurité** : dépôt privé ; ne jamais publier `GC_ADMIN_KEY` ; pas de vrais comptes ; pas de limite de requêtes
   (à ajouter avant une grosse audience) ; argent fictif uniquement (de l'argent réel demanderait une licence de la
   Commission des jeux de hasard).
@@ -3855,7 +3859,73 @@ favorite n'était pas mis en avant. Les badges ne valent que pour les comptes (`
   posé sur la clé, 24 franchises, franchise enregistrée, My team, Settings, Sign in, Skip, invitations, téléphone ;
   `SHOTS=<dossier>`) ; `test_ligues.js` passe par la fenêtre.
 
-### 133. AdSense « site hors service ou inaccessible » : page d'accueil gardée, préchauffage au démarrage (20/11/2026)
+### 133. Badges, BD-2 : l'attribution, l'API, le badge mis en avant (20/11/2026)
+
+`programme/Badges_plan.md`. Les règles restent dans `moteur/badges.py` (BD-1) ; le serveur écrit les badges gagnés et
+les sert. Rien ne s'affiche encore sur le site (BD-3).
+
+- **Attribution** (`badges_attribuer`) : au chargement de `/api/badges`, et pour tous les comptes une fois par semaine
+  ouverte (`badges_prechauffer`, au premier chargement de la page, en arrière-plan : badges de classement de la semaine
+  finie, fidélité). Comptes seulement ; un invité voit sa progression, rien n'est écrit. Un badge ne se perd jamais :
+  le palier montré est le plus haut entre celui de `player_badges` et celui dû aujourd'hui (changer de franchise ne
+  retire pas True fan). Premier calcul d'un compte (`players.badges_at` vide) : les badges déjà mérités sont écrits d'un
+  coup, `retro: true` (le site ne les annonce pas un par un).
+- **`GET /api/badges?token=`** : `badges` (le catalogue : palier, nom du palier, valeur, seuil suivant, `at` et `week`
+  du gain), `new` (gagnés à l'instant : `[{key, tier}]`), `retro`, `featured`, `earned`, `categories`.
+- **`POST /api/badges/featured {token, badge}`** : le badge mis en avant (un badge gagné, sinon 400 `badge_not_earned` ;
+  vide = aucun ; comptes seulement). Il est renvoyé comme `badge: {k, t}` dans les lignes du classement (semaine et
+  saison), des ligues privées et `/api/me`, et comme `bd: {k, t}` dans les messages du chat (tampon du chat vidé quand un
+  badge mis en avant change).
+- **Classements des semaines finies** gardés en mémoire (`_bd_top10`, `_bd_vainqueur`), la clé portant le nombre de paris
+  et de comptes : calculés une fois, refaits si une donnée change. Sur la copie de la base de production du 20/11
+  (2 comptes) : 7 badges écrits en 0,02 s, rien au second passage.
+- **Colonnes** `players.badge` et `players.badges_at` (migration douce). `GC_BADGES=off` : routes en 404, aucun badge dans
+  les classements, les ligues, le chat ni `/api/me`.
+- **Tests** : `moteur/tests/test_badges.py` (classe `Attribution` : rétroactif puis rien de nouveau, palier jamais en
+  baisse, mis en avant refusé pour un badge non gagné ou un invité, présent dans le classement, la ligue, le chat et
+  `/api/me`, `badges_tous`, interrupteur).
+
+### 134. Badges, BD-3 : la vue Badges, le badge à côté du pseudo (20/11/2026, captures validées)
+
+`programme/Badges_plan.md`. Le site lit `/api/badges` (BD-2, section 133). Sans `SERVER.badges` (`GC_BADGES=off`, ou la
+cellule 427 hors serveur), rien de tout cela n'apparaît.
+
+- **Rail « Badges »** (avant Settings ; dans « More » sur téléphone), vue `#viewBadges` : les 20 badges par catégorie
+  (Loyalty, Supporter, Reading the game, Community, Insights Pro). Gagné : pastille de la couleur du palier (bronze,
+  argent, or, Legend ; badge sans palier : accent), nom du palier, date. À gagner : pastille en pointillés et barre de
+  progression vers le palier suivant (« 1 / 4 weeks »). Un pictogramme par catégorie, pas d'image par badge.
+- **Badge mis en avant** (comptes) : compteur « N of 20 earned » et choix (« None » ou un badge gagné, radios),
+  `POST /api/badges/featured`, toast « … · shown next to your name ».
+- **Puce** (`bdChip`) à côté du pseudo dans les classements (semaine, saison), les ligues privées et les messages du chat
+  (`bd` du serveur) ; titre et nom accessible « Badge: Season ticket · Gold ». Un badge inconnu ne montre rien.
+- **Toasts** : un compte qui ouvre la page (`bdAuto`, 2,5 s après `/api/me`) ou la vue reçoit « Badge unlocked · … »
+  pour un badge gagné ; au premier calcul de son compte, un seul « You already have N badges ». Après la création d'un
+  compte, le calcul est refait.
+- **Invité** : sa progression, aucun badge gagné, pas de choix ; « Create an account to keep them » ouvre « Join Snapline ».
+- **Tests** : `outils/site/test_badges.js` (groupe site-2) : toast rétroactif, vue, choix et API, puce dans les
+  classements, la ligue et le chat, « None », mode sombre, invité, téléphone 390 px, `GC_BADGES=off`. `test_accueil`
+  (CLS 0,036 ordinateur, 0 téléphone), `test_compte`, `test_ligues` inchangés.
+
+### 135. Badges, BD-4 : la notification « You unlocked … », « New this week » (20/11/2026)
+
+`programme/Badges_plan.md`. Suite des sections 133 (serveur) et 134 (site).
+
+- **Notification** (`badges_push`) : quand `badges_tous` (tous les comptes, à l'ouverture d'une semaine) écrit des badges
+  à un compte, ses appareils abonnés aux notifications reçoivent « You unlocked Season ticket · Silver » ou, s'il y en a
+  plusieurs, « New this week: 3 badges » (« Top 10, Combo and Newsroom · Bronze. Tap to see your badges. »). Jamais pour
+  les badges d'un premier calcul (rétroactifs), ni pour ceux gagnés page ouverte (le toast suffit). Une par appareil et
+  par semaine au plus (`push_sent`, game = « badges ») ; elle attend 12 h au plus un appareil éteint. Le lien
+  `/?badges=1` ouvre la vue Badges (service worker : message `{badges: 1}` à un onglet déjà ouvert).
+- **Réglage par appareil** « Badges I unlock » (Settings › Notifications, comptes) : colonne `push_subs.badges`
+  (NULL = oui : un appareil abonné avant BD-4 les reçoit) ; `POST /api/push/subscribe {…, badges}` (absent : inchangé).
+- **Site** : « New this week » dans la vue Badges (badges dont la semaine de gain est la semaine en cours,
+  `/api/badges` renvoie `week`). Un badge écrit hors de la page est annoncé à la visite suivante : l'appareil garde par
+  compte la date du dernier badge vu (`gc-badges-seen-v1`) ; « Badge unlocked · … » pour les plus récents.
+- **Tests** : `moteur/tests/test_badges.py` (classe `Notification` : textes, rien au premier calcul, une par semaine,
+  réglage, interrupteur) ; `outils/site/test_badges.js` (New this week, annonce à la visite suivante, `/?badges=1`,
+  réglage) ; `test_rappels.js` et `test_draft_serveur` inchangés.
+
+### 136. AdSense « site hors service ou inaccessible » : page d'accueil gardée, préchauffage au démarrage (20/11/2026)
 **Constat** (journaux et mesures Railway du 13 au 20/11) : le site répondait (aucune panne, 1 erreur 5xx sur 22 836
 requêtes en 7 jours), mais **trop lentement** pour les robots. Accueil : 5 à 16 s, parfois plus de 3 min ; pages des
 franchises : 8 à 38 s. Google-Display-Ads-Bot attendait 6 s pour l'accueil ; les robots de Meta abandonnaient à 5 s
@@ -4040,7 +4110,7 @@ Sans GitHub Actions, il faut produire les semaines sur la machine (`pip install 
 | POST | `/api/wallet/refill` | `{token}` → recharge de 1 000 $ quand le solde est vide et aucun pari ouvert (section 102) |
 | POST | `/api/bets` | `{token, picks:[{key, price_dec, line, stake, title, sub}]}` → acceptés / refusés (et pourquoi) |
 | GET | `/api/leaderboard` | classement de la semaine |
-| GET | `/api/backup?key=` | sauvegarde .zip (base + semaines), si `GC_ADMIN_KEY` est définie |
+| GET | `/api/backup?key=[&only=db]` | sauvegarde .zip (base + semaines, ou la base seule), si `GC_ADMIN_KEY` est définie |
 | GET | `/api/chat?room=&after=&upto=&rev=` | chat : messages d'un salon (si `GC_CHAT` = `read` ou `on`, section 71) |
 | POST | `/api/chat/status`, `/post`, `/delete`, `/report` | chat : état du joueur, écrire, effacer, signaler (section 71) |
 | POST | `/api/admin/chat` | chat : modération avec `GC_ADMIN_KEY` (section 71) |
@@ -4077,7 +4147,7 @@ ont tout l'onglet), section 78 · `GC_VIDEO_ACCROCHE=0` (vidéos d'avant l'étap
 CLS de l'accueil, section 81) · `GC_JEU_FLUIDE=0` (dessin des actions d'avant le 30/10/2026,
 section 83) · `GC_SCHEDULE_PLUS=off` (Schedule sans filtre par franchise ni paris sous un match, section 84) ·
 `GC_ACTIONS_LONGUES=0` (actions longues et retours d'interception d'avant le 30/10/2026, section 85) ·
-`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_PAGE_CACHE` (secondes pendant lesquelles la page d'accueil est gardée, 15 ; 0 : refaite à chaque visite) et `GC_PRECHAUFFAGE=off` (pas de préchauffage au démarrage), section 133 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 113) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
+`GC_SAME_GAME=off` (pas de combinés sur un même match) et `GC_PARI_RAPIDE=off` (pas de barre de pari sur le grand écran), section 86 · `GC_RIVALITES=off` (pas de rivalités ni de bilans, section 88) · `GC_EMPREINTE=off` (pas d'empreinte de jeu, section 89) · `GC_NETTETE=off` (règle de fluidité d'avant) et `GC_PAGE_LEGERE=off` (page d'avant), section 90 · `GC_PAGE_CACHE` (secondes pendant lesquelles la page d'accueil est gardée, 15 ; 0 : refaite à chaque visite) et `GC_PRECHAUFFAGE=off` (pas de préchauffage au démarrage), section 136 · `GC_WEEK_REVIEW=off` (pas d'émission du week-end, section 92) · `GC_COURSE_SPATIALE=0` (course après le contact d'avant le 06/11/2026, section 95) · `GC_RECEPTION_SPATIALE=0` (course après la réception d'avant, section 96) · `GC_COUVERTURE_SPATIALE=0` (séparation d'avant, section 97) · `GC_POCHE_SPATIALE=0` (temps avant la pression tiré, section 98) · `GC_WALLET_START` (première semaine du portefeuille reporté, défaut `2026-11-09`, section 102) · `GC_SUPPORTERS=0` (notebook : pas de leviers des supporters, ni `fans` ni `fan_vote`) et `GC_FANS` (fichier des choix des supporters de la semaine, facultatif), section 105 · `GC_FRONT_OFFICE=off` (serveur : routes du vote des supporters coupées, section 107) · `GC_DRAFT=0` (notebook : pas de draft des supporters, retraites et recrues d'aujourd'hui, section 113) · `GC_SITE_URL` et `GC_ADMIN_KEY` en secrets GitHub (calcul du samedi : récupération des votes des supporters, section 110).
 
 ## Test
 

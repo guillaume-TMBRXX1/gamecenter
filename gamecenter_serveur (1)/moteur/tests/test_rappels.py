@@ -100,7 +100,7 @@ class TestRappels(unittest.TestCase):
         with serveur._db_lock, serveur.db() as c:
             c.execute("INSERT INTO players(id, token, name, created, fav_team) VALUES('p1','tok-p1','A',0,?)",
                       (self.g["home"],))
-            c.execute("INSERT INTO push_subs VALUES('https://push.example/a','p1','BKey_test_value','auth_test1',1,0)")
+            c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created) VALUES('https://push.example/a','p1','BKey_test_value','auth_test1',1,0)")
         try:
             t = self.g["ko"] - 9 * 60000
             n = serveur.push_tour(t)
@@ -115,7 +115,7 @@ class TestRappels(unittest.TestCase):
 
     def test_abonnement_refuse_oublie(self):
         with serveur._db_lock, serveur.db() as c:
-            c.execute("INSERT INTO push_subs VALUES('https://push.example/gone','p2','BKey_test_value','auth_test1',0,0)")
+            c.execute("INSERT INTO push_subs(endpoint, player, p256dh, auth, fav, created) VALUES('https://push.example/gone','p2','BKey_test_value','auth_test1',0,0)")
             c.execute("INSERT INTO push_bells VALUES('p2',?,?)", (self.w.start, self.g["id"]))
         envoi = serveur._push_envoyer
         serveur._push_envoyer = lambda sub, data: False              # le service de notification répond 410
