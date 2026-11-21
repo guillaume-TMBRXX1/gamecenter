@@ -113,6 +113,7 @@ if [ $S2 = 1 ]; then
   lancer "Site : Tracking dans les fiches (joueur, franchise, Head-to-head, Match centre)" node outils/site/test_tracking_fiches.js
   lancer "Site : Tracking, NGS-6 (cartes des passes et des courses, semaine par semaine, récompenses)" node outils/site/test_tracking_ngs6.js
   lancer "Site : créer un compte et choisir sa franchise (Sign up, Join Snapline)" node outils/site/test_compte.js
+  lancer "Site : badges (vue Badges, badge mis en avant dans les classements, les ligues et le chat)" node outils/site/test_badges.js
   lancer "Site : empreinte de jeu (forme publique, chiffres Insights)" node outils/site/test_empreinte.js
   lancer "Site : netteté du terrain, page allégée, redémarrage signalé (iPhone / iPad)" node outils/site/test_mobile.js
   lancer "Site : « Week in review », l.émission du week-end" node outils/site/test_review.js

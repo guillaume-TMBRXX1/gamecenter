@@ -1524,6 +1524,42 @@
   .tst.lb td,.tst.lb th{font-family:var(--f-mono)} .tst.lb th.tl{font-family:var(--f-ui);text-align:left}
   .tst.lb tr.lb-me th,.tst.lb tr.lb-me td{color:var(--cyan)}
   .lb-you{font:700 italic 10px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-left:6px}
+  /* Badges (BD-3) : puce du badge mis en avant à côté d'un pseudo, vue Badges. Couleur = palier ; badge sans palier : accent. */
+  :root{--bd-1:#A8673A;--bd-2:#7D8A99;--bd-3:#B8901C;--bd-4:#6E54C8;--bd-0:var(--cyan);--bd-off:var(--ink-3)}
+  :root[data-theme="dark"]{--bd-1:#D38E5D;--bd-2:#B3C0CF;--bd-3:#E5BE45;--bd-4:#A391F0}
+  .bd-chip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-left:6px;vertical-align:-4px;color:#fff;background:var(--bd-c,var(--bd-0));flex:none}
+  .bd-chip svg{width:11px;height:11px}
+  .bd-t1{--bd-c:var(--bd-1)}.bd-t2{--bd-c:var(--bd-2)}.bd-t3{--bd-c:var(--bd-3)}.bd-t4{--bd-c:var(--bd-4)}.bd-t0{--bd-c:var(--bd-0)}
+  .chat-meta .bd-chip{margin-left:0;width:16px;height:16px;vertical-align:middle}
+  #viewBadges{gap:18px}
+  .bd-sum{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+  .bd-sum .bd-big{font:800 28px/1 var(--f-display);font-variant-numeric:tabular-nums}
+  .bd-sum .bd-big small{font:600 14px/1 var(--f-ui);color:var(--ink-3);margin-left:4px}
+  .bd-new{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+  .bd-new .label{margin-right:2px}
+  .bd-new-i{display:inline-flex;align-items:center;gap:6px;font:600 13px/1.2 var(--f-ui)}
+  .bd-new-i .bd-chip{margin-left:0}
+  .bd-feat{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .bd-feat button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font:600 13px/1.2 var(--f-ui);cursor:pointer}
+  .bd-feat button .bd-chip{margin-left:0}
+  .bd-feat button[aria-checked="true"]{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan)}
+  .bd-feat button:focus-visible,.bd-card:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .bd-cat+.bd-cat{margin-top:24px}
+  .bd-cat h3{font:700 13px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px}
+  .bd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .bd-card{display:grid;grid-template-columns:40px 1fr;gap:4px 12px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  .bd-card .bd-ic{grid-row:1/span 3;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--bd-c,var(--bd-0))}
+  .bd-card .bd-ic svg{width:20px;height:20px}
+  .bd-card.off .bd-ic{background:transparent;color:var(--bd-off);border:1.5px dashed var(--line-2)}
+  .bd-card b{font:700 14px/1.25 var(--f-ui)}
+  .bd-card .bd-tn{font:700 10px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--bd-c,var(--bd-0));margin-left:6px}
+  .bd-card p{margin:0;font:400 12.5px/1.35 var(--f-ui);color:var(--ink-2)}
+  .bd-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+  .bd-bar i{display:block;height:100%;background:var(--bd-c,var(--cyan));border-radius:3px}
+  .bd-card.off .bd-bar i{background:var(--ink-3)}
+  .bd-meta{font:500 11.5px/1.3 var(--f-ui);color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .bd-guest{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+  @media (max-width:760px){ .bd-grid{grid-template-columns:1fr} }
   .srv-pill{display:none;position:fixed;z-index:360;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:8px 14px;border-radius:var(--r-md);background:var(--l3);border:1px solid var(--pink);font-size:12.5px;color:var(--ink)}
   .srv-off .srv-pill{display:block}
   .set-row .name-in{width:200px}
@@ -8101,11 +8137,12 @@ let VIEW='live', SCH_FILTER='all', TEAM_SEL=null, PL_FOCUS=null;
 function setView(v){
   if(v==='leagues'&&VIEW!=='leagues'){ LG.at=0; LG.data={}; }   /* fresh list and leaderboard each time the tab opens */
   VIEW=v;
-  for(const k of ['live','news','schedule','standings','ranking','teams','myteam','history','leagues','bets','insights','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
+  for(const k of ['live','news','schedule','standings','ranking','teams','myteam','history','leagues','bets','insights','badges','settings']){ const el=document.getElementById('view'+k[0].toUpperCase()+k.slice(1)); if(el) el.hidden=k!==v; }
   if(typeof adsForView==='function'&&ADS) adsForView(v);
   document.querySelectorAll('.rail-btn[data-view]').forEach(b=>{ if(b.dataset.view===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   navSync();
   if(v==='news'&&NEWS_ON){ NEWS.open=null; NEWS.fresh=new Set(); newsMarkSeen(); newsFetch(); }
+  if(v==='badges'&&BD_ON) bdLoad(true);
   renderView(true);
   moView(document.getElementById('view'+v[0].toUpperCase()+v.slice(1)));   /* section 119 */
   window.scrollTo({top:0});
@@ -8308,6 +8345,7 @@ function renderView(force){
   else if(VIEW==='bets') renderBets(t);
   else if(VIEW==='insights') renderInsights(t,force);
   else if(VIEW==='news') renderNews(t,force);
+  else if(VIEW==='badges') renderBadges(force);
   else if(VIEW==='settings') renderSettings(force);
 }
 /* ---------- Ranking: this week's players, position by position, game by game as each one ends ----------
@@ -9060,14 +9098,14 @@ let WATCH_ID=null;
 function pushSupported(){ return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window; }
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
 function isStandalone(){ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
-function pushSig(){ return [PUSH.ready,PUSH.enabled,!!PUSH.sub,PUSH.fav,PUSH.busy,PUSH.bells.size,[...PUSH.bells].join(','),(window.Notification&&Notification.permission)||''].join(':'); }
+function pushSig(){ return [PUSH.ready,PUSH.enabled,!!PUSH.sub,PUSH.fav,PUSH.badges,PUSH.busy,PUSH.bells.size,[...PUSH.bells].join(','),(window.Notification&&Notification.permission)||''].join(':'); }
 function b64u(s){ const p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
 async function pushInit(){
-  const d=lsGet(PUSH_KEY); if(d&&d.fav===false) PUSH.fav=false;
+  const d=lsGet(PUSH_KEY); if(d&&d.fav===false) PUSH.fav=false; if(d&&d.badges===false) PUSH.badges=false;
   try{ const k=await api('/push/key'); PUSH.key=k.public_key; PUSH.enabled=!!k.enabled; PUSH.min=k.minutes||10; }catch(e){}
   if(pushSupported()){
     try{ PUSH.reg=await navigator.serviceWorker.register('/sw.js'); PUSH.sub=await PUSH.reg.pushManager.getSubscription(); }catch(e){}
-    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); if(e.data&&e.data.myteam&&typeof drOpen==='function') drOpen(String(e.data.myteam)); });
+    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data&&e.data.watch) watchGame(String(e.data.watch)); if(e.data&&e.data.myteam&&typeof drOpen==='function') drOpen(String(e.data.myteam)); if(e.data&&e.data.badges&&typeof BD_ON!=='undefined'&&BD_ON) setView('badges'); });
   }
   PUSH.ready=true; await pushRebind(); renderView(true);
 }
@@ -9075,7 +9113,7 @@ async function pushInit(){
 async function pushRebind(){
   PUSH.bells=new Set();
   if(PUSH.sub&&PLAYER&&PLAYER.token&&window.Notification&&Notification.permission==='granted'){
-    try{ await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,subscription:PUSH.sub.toJSON(),fav:PUSH.fav})}); }catch(e){} }
+    try{ await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:PLAYER.token,subscription:PUSH.sub.toJSON(),fav:PUSH.fav,badges:PUSH.badges!==false})}); }catch(e){} }
   await loadBells();
 }
 function pushForget(){
@@ -9095,14 +9133,15 @@ function pushBlocked(){
   if(Notification.permission==='denied') return 'Notifications are blocked for this site: allow them in your browser or device settings, then come back.';
   return null;
 }
-async function pushSubscribe(fav){
+async function pushSubscribe(fav,badges){
+  if(badges===undefined) badges=PUSH.badges!==false;
   const perm=Notification.permission==='granted'?'granted':await Notification.requestPermission();   /* first: still inside the tap */
   if(perm!=='granted') throw Object.assign(new Error('denied'),{code:'denied'});
   const reg=PUSH.reg||await navigator.serviceWorker.ready;
   const s=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(PUSH.key)});
   const p=await ensurePlayer();
-  await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:p.token,subscription:s.toJSON(),fav:!!fav})});
-  PUSH.sub=s; PUSH.fav=!!fav; lsSet(PUSH_KEY,{fav:PUSH.fav});
+  await api('/push/subscribe',{method:'POST',body:JSON.stringify({token:p.token,subscription:s.toJSON(),fav:!!fav,badges:!!badges})});
+  PUSH.sub=s; PUSH.fav=!!fav; PUSH.badges=!!badges; lsSet(PUSH_KEY,{fav:PUSH.fav,badges:PUSH.badges});
 }
 async function pushAction(a){
   if(PUSH.busy) return; PUSH.busy=true; renderView(true);
@@ -9111,6 +9150,7 @@ async function pushAction(a){
     else if(a==='off'){ const s=PUSH.sub; if(s){ try{ await api('/push/unsubscribe',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:s.endpoint})}); }catch(e){} try{ await s.unsubscribe(); }catch(e){} }
       PUSH.sub=null; toast('Reminders off on this device'); }
     else if(a==='fav'){ await pushSubscribe(!PUSH.fav); toast(PUSH.fav?'Your team’s games: on':'Your team’s games: off'); }
+    else if(a==='badges'){ await pushSubscribe(PUSH.fav,PUSH.badges===false); toast(PUSH.badges?'Badge notifications: on':'Badge notifications: off'); }
     else if(a==='test'){ await api('/push/test',{method:'POST',body:JSON.stringify({token:PLAYER&&PLAYER.token,endpoint:PUSH.sub&&PUSH.sub.endpoint})}); toast('Test sent · it should arrive in a few seconds'); }
   }catch(e){
     toastErr(e.code==='denied'?'Notifications were not allowed. You can allow them in your browser settings.':e.status===429?'Wait a few seconds before the next test.':e.status===410?'This device is no longer subscribed: turn reminders on again.':'Could not change reminders. Try again.');
@@ -9125,6 +9165,8 @@ function pushCard(){
       <button type="button" class="switch" role="switch" data-push="${on?'off':'on'}" aria-checked="${on}" aria-labelledby="setPushL"${why||PUSH.busy?' disabled':''}><i></i></button></div>
     <div class="set-row"><span class="set-l" id="setPushFavL">My team’s games<small>${acct&&fav?`Every ${esc(team)} game, playoffs included`:acct?'Pick your team in My team first':'Needs an account and a team (My team)'}</small></span>
       <button type="button" class="switch" role="switch" data-push="fav" aria-checked="${on&&PUSH.fav&&!!fav}" aria-labelledby="setPushFavL"${!on||!fav||PUSH.busy?' disabled':''}><i></i></button></div>
+    ${typeof BD_ON!=='undefined'&&BD_ON?`<div class="set-row"><span class="set-l" id="setPushBdL">Badges I unlock<small>${acct?'At most one a week: the badges you earned, never a score':'Needs an account (badges are kept on accounts)'}</small></span>
+      <button type="button" class="switch" role="switch" data-push="badges" aria-checked="${on&&acct&&PUSH.badges!==false}" aria-labelledby="setPushBdL"${!on||!acct||PUSH.busy?' disabled':''}><i></i></button></div>`:''}
     <div class="set-row"><span class="set-l">Any other game<small>Tap the bell next to a game in the Schedule${PUSH.bells.size?` · ${PUSH.bells.size} picked this week`:''}</small></span>
       <button type="button" class="chip-btn" data-view-go="schedule">Schedule</button></div>
     <div class="set-row"><span class="set-l">Check this device<small>Sends one notification now</small></span>
@@ -9684,7 +9726,7 @@ function seasonBoot(){
   document.documentElement.classList.remove('gc-boot','mo-boot');   /* étape 9.3 : la grille est dessinée, le reste peut paraître (section 121 : et ses silhouettes partent) */
   watchRestore();
   setInterval(()=>seasonRefresh(false),1000);
-  if(SERVER){ joinRefresh(); chatInit(); insInit(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
+  if(SERVER){ joinRefresh(); chatInit(); insInit(); bdInit(); bdFromUrl(); serverWalletLoad(); setInterval(serverPoll,3000); serverPoll(); pushInit(); watchFromUrl(); joinFromUrl(); if(FO_ON) drFromUrl(); }
   if(SERVER&&SERVER.accueil) welcomeInit();
   mesureVu();   /* section 131 */
 }
@@ -10977,7 +11019,7 @@ function fromServerBet(b){ return {id:b.id,key:b.key,price:amOf(b.price_dec),dec
   cash:b.cashed_at!=null?{at:b.cashed_at,amt:b.cashed_amt}:null}; }
 async function serverWalletLoad(){
   if(!PLAYER||!PLAYER.token){ WAL={bets:[]}; return; }
-  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.fav_team=me.fav_team||null; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account,fav_team:PLAYER.fav_team}); WALLET_BASE=me.base!=null?me.base:BANKROLL; WALLET_CARRY=!!me.carry; if(me.refill) REFILL_AMT=me.refill.amount; WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); }
+  try{ const me=await api('/me?token='+encodeURIComponent(PLAYER.token)); PLAYER.name=me.name; PLAYER.account=!!me.account; PLAYER.fav_team=me.fav_team||null; PLAYER.season=me.season||null; lsSet(PLAYER_KEY,{token:PLAYER.token,name:PLAYER.name,account:PLAYER.account,fav_team:PLAYER.fav_team}); WALLET_BASE=me.base!=null?me.base:BANKROLL; WALLET_CARRY=!!me.carry; if(me.refill) REFILL_AMT=me.refill.amount; WAL={bets:me.bets.map(fromServerBet)}; markSeen(nowMs()); BET_SIG=''; renderSlip(); renderView(true); if(typeof bdAuto==='function') bdAuto(); }
   catch(e){ if(e.status===401){ PLAYER=null; WAL={bets:[]}; WALLET_BASE=BANKROLL; try{ localStorage.removeItem(PLAYER_KEY); }catch(_){} BET_SIG=''; renderSlip(); renderView(true); } }
 }
 async function ensurePlayer(){
@@ -11074,17 +11116,130 @@ function leaderboardHTML(){
   const sc=LB.scope, d=LB.data[sc]; if(!d) return '<p class="st-none">Loading the leaderboard…</p>';
   if(sc==='week'){
     if(!d.top.length) return '<p class="st-none">Nobody has placed a bet this week yet: the first bet puts you on the board.</p>';
-    const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${lbNet(r)<0?'dn':lbNet(r)>0?'up':''}">${lbSgn(lbNet(r))}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
+    const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank}</td><th scope="row" class="tl">${esc(r.name)}${bdChip(r.badge)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${lbNet(r)<0?'dn':lbNet(r)>0?'up':''}">${lbSgn(lbNet(r))}</td><td>${r.bets}</td><td>${r.won}–${r.lost}</td></tr>`;
     const mine=d.me&&!d.top.some(r=>r.me)?row(d.me):'';
     return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Week P/L</th><th>Bets</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} player${d.players===1?'':'s'} this week · this week’s bets only, open bets count at their stake</p>`;
   }
   const sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v));
   const cta=PLAYER&&PLAYER.account?'':`<div class="lb-cta"><span>${PLAYER?'You play as a guest. Create an account to join the season leaderboard: your bets so far come with you.':'Create a free account to join the season leaderboard.'}</span><button class="chip-btn" type="button" data-join="register">Create an account</button></div>`;
   if(!d.top.length) return `<p class="st-none">No account has a bet yet: the season leaderboard starts with the first one.</p>${cta}`;
-  const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${r.net<0?'dn':r.net>0?'up':''}">${sgn(r.net)}</td><td>${r.weeks}</td><td>${r.won}–${r.lost}</td></tr>`;
+  const row=r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${bdChip(r.badge)}${r.me?' <span class="lb-you">you</span>':''}</th><td class="${r.net<0?'dn':r.net>0?'up':''}">${sgn(r.net)}</td><td>${r.weeks}</td><td>${r.won}–${r.lost}</td></tr>`;
   const mine=d.me&&d.me.rank!=null&&!d.top.some(r=>r.me)?row(d.me):'';
   const nw=(d.weeks||[]).length;
   return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Player</th><th>Net P/L</th><th>Weeks</th><th>W–L</th></tr></thead><tbody>${d.top.map(row).join('')}${mine}</tbody></table></div><p class="np-note">${d.players} account${d.players===1?'':'s'} · net winnings added up over ${nw} week${nw===1?'':'s'} · a bet counts once it is settled</p>${cta}`;
+}
+/* ---------- Badges (BD-3, programme/Badges_plan.md) ----------
+   Vue Badges (rail, avant Settings) : les badges du catalogue par catégorie, gagnés en couleur (palier), à gagner en
+   pointillés avec la progression ; choix du badge mis en avant (comptes). Invité : sa progression et « Create an account
+   to keep them ». Toast « Badge unlocked » quand /api/badges en écrit un (chargement de la page pour un compte, ouverture
+   de la vue) ; premier calcul d'un compte (retro) : un seul toast. Puce du badge mis en avant à côté du pseudo dans les
+   classements, les ligues et le chat (bdChip). Sans SERVER.badges (GC_BADGES=off, cellule 427) : rien de tout cela. */
+const BD_ON=!!(SERVER&&SERVER.badges);
+const BD={d:null,at:0,busy:false,err:false,auto:null,msg:''};
+const BD_SVG={
+  loyalty:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M9 15l2 2 4-4"/></svg>',
+  supporter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
+  reader:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8" fill="currentColor"/></svg>',
+  community:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3"/><path d="M3.5 19a5.5 5.5 0 0111 0"/><circle cx="17" cy="10" r="2.4"/><path d="M15.5 14.6A4.6 4.6 0 0121 19"/></svg>',
+  pro:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
+  tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M8.6 13.4L7 21l5-2.6 5 2.6-1.6-7.6"/></svg>'};
+/* key -> [nom, catégorie, paliers ?] : la puce d'un autre joueur sans appel au serveur (le catalogue complet vient de /api/badges) */
+const BD_CAT={founding_fan:['Founding fan','loyalty'],season_ticket:['Season ticket','loyalty',1],streak:['On a streak','loyalty',1],every_day:['Every day this week','loyalty'],
+  opening_day:['Opening day','loyalty'],final_night:['Grand Final night','loyalty'],true_fan:['True fan','supporter',1],front_office:['Front office regular','supporter',1],
+  draft_day:['Draft day','supporter'],scouts_pick:['Scout’s pick','supporter'],called_vote:['Called the vote','supporter'],upset_caller:['Upset caller','reader'],
+  perfect_day:['Perfect day','reader'],combo:['Combo','reader'],top_league:['Top of the league','reader'],top10:['Top 10','reader'],
+  league_founder:['League founder','community'],recruiter:['Recruiter','community'],newsroom:['Newsroom','community',1],insights_pro:['Insights Pro','pro']};
+const BD_TIERS=['Bronze','Silver','Gold','Legend'];
+const BD_CATS={loyalty:'Loyalty',supporter:'Supporter',reader:'Reading the game',community:'Community',pro:'Insights Pro'};
+function bdTierName(k,t){ const c=BD_CAT[k]; return c&&c[2]&&t>0?BD_TIERS[t-1]||'':''; }
+function bdLabel(k,t){ const c=BD_CAT[k]; if(!c) return ''; const tn=bdTierName(k,t); return c[0]+(tn?' · '+tn:''); }
+function bdChip(b){
+  if(!BD_ON||!b||!BD_CAT[b.k]) return '';
+  const c=BD_CAT[b.k], t=c[2]?Math.max(1,Math.min(4,b.t|0)):0, l=esc(bdLabel(b.k,t));
+  return `<span class="bd-chip bd-t${t}" role="img" title="${l}" aria-label="Badge: ${l}">${BD_SVG[c[1]]||''}</span>`;
+}
+function bdFromUrl(){
+  if(!BD_ON) return;
+  try{ const u=new URL(location.href); if(u.searchParams.get('badges')){ u.searchParams.delete('badges'); history.replaceState(null,'',u.pathname+u.search+u.hash); setTimeout(()=>setView('badges'),0); } }catch(e){}
+}
+function bdInit(){
+  if(!BD_ON||document.getElementById('viewBadges')) return;
+  const set=document.querySelector('.rail-btn[data-view="settings"]');
+  if(set) set.insertAdjacentHTML('beforebegin',`<button class="rail-btn" type="button" data-view="badges">${BD_SVG.tab}Badges</button>`);
+  const v=document.getElementById('viewSettings');
+  if(v) v.insertAdjacentHTML('beforebegin','<section class="view" id="viewBadges" hidden aria-label="Badges"></section>');
+  document.addEventListener('click',e=>{ const f=e.target.closest&&e.target.closest('[data-bd-feat]'); if(f) bdFeature(f.dataset.bdFeat); });
+}
+async function bdLoad(force){
+  if(!BD_ON||BD.busy||!PLAYER||!PLAYER.token) { if(VIEW==='badges') renderBadges(true); return; }
+  if(!force&&BD.d&&Date.now()-BD.at<60000) return;
+  BD.busy=true;
+  try{ const d=await api('/badges?token='+encodeURIComponent(PLAYER.token)); BD.d=d; BD.at=Date.now(); BD.err=false; bdAnnounce(d); }
+  catch(e){ BD.err=true; }
+  finally{ BD.busy=false; if(VIEW==='badges') renderBadges(true); }
+}
+/* BD-4 : un badge écrit hors de la page (tous les comptes, à l'ouverture d'une semaine) est annoncé à la visite suivante :
+   l'appareil garde, par compte, la date du dernier badge déjà vu (gc-badges-seen-v1). */
+const BD_SEEN_KEY='gc-badges-seen-v1';
+function bdSeen(tok,v){ const m=lsGet(BD_SEEN_KEY)||{}; if(v===undefined) return m[tok]; m[tok]=v; lsSet(BD_SEEN_KEY,m); }
+function bdAnnounce(d){
+  if(!d||!d.account) return;
+  const tok=PLAYER&&PLAYER.token, earned=d.badges.filter(b=>b.earned&&b.at), last=Math.max(0,...earned.map(b=>b.at)), seen=bdSeen(tok);
+  if(tok&&last) bdSeen(tok,Math.max(last,seen||0));
+  if(d.retro&&d.new&&d.new.length){ toast(`You already have ${d.earned} badge${d.earned===1?'':'s'} · see them in Badges`); return; }
+  let fresh=(d.new||[]).map(n=>({key:n.key,tier:n.tier}));
+  if(seen!=null) for(const b of earned) if(b.at>seen&&!fresh.some(f=>f.key===b.key)) fresh.push({key:b.key,tier:b.tier});
+  if(!fresh.length) return;
+  const n=fresh[fresh.length-1];
+  toast('Badge unlocked · '+bdLabel(n.key,n.tier)+(fresh.length>1?` · and ${fresh.length-1} more`:''));
+}
+/* compte : un calcul au chargement de la page (un badge gagné depuis la dernière visite est annoncé), une fois par clé */
+function bdAuto(){
+  if(!BD_ON||!PLAYER||!PLAYER.account||!PLAYER.token||BD.auto===PLAYER.token) return;
+  BD.auto=PLAYER.token; setTimeout(()=>bdLoad(true),2500);
+}
+async function bdFeature(k){
+  if(!BD.d||!BD.d.account||BD.busy) return;
+  const key=k==='none'?'':k;
+  try{ const r=await api('/badges/featured',{method:'POST',body:JSON.stringify({token:PLAYER.token,badge:key})});
+    BD.d.featured=r.featured; LB.at={}; LG.at=0; LG.data={};
+    toast(r.featured?bdLabel(r.featured,(BD.d.badges.find(b=>b.key===r.featured)||{}).tier)+' · shown next to your name':'No badge next to your name');
+  }catch(e){ toastErr('Could not change your badge. Try again.'); }
+  renderBadges(true);
+}
+function bdDate(ms){ try{ return new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Europe/Brussels'}); }catch(e){ return ''; } }
+function bdCard(b){
+  const c=BD_CAT[b.key]||[b.name,b.category], tiered=b.tiers.length>1, t=b.earned?(tiered?b.tier:0):0;
+  const tn=b.earned&&tiered?b.tier_name:'';
+  let prog='';
+  if(b.next!=null&&b.unit){ const pct=Math.max(0,Math.min(100,Math.round(100*b.value/b.next)));
+    prog=`<div class="bd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${b.next}" aria-valuenow="${Math.min(b.value,b.next)}" aria-label="${esc(b.name)}: ${b.value} of ${b.next} ${esc(b.unit)}"><i style="width:${pct}%"></i></div><span class="bd-meta">${Math.min(b.value,b.next)} / ${b.next} ${esc(b.unit)}${tiered&&b.earned?' to '+BD_TIERS[b.tier]:''}</span>`; }
+  const when=b.earned&&b.at?`<span class="bd-meta">Earned ${bdDate(b.at)}</span>`:'';
+  return `<div class="bd-card${b.earned?'':' off'} bd-t${t}"><span class="bd-ic" aria-hidden="true">${BD_SVG[c[1]]||''}</span>
+    <div><b>${esc(b.name)}</b>${tn?`<span class="bd-tn">${esc(tn)}</span>`:''}${b.earned?'':'<span class="chat-sr"> · not earned yet</span>'}</div>
+    <p>${esc(b.description)}</p>
+    <div>${prog}${when}</div></div>`;
+}
+function renderBadges(force){
+  const el=document.getElementById('viewBadges'); if(!el) return;
+  const d=BD.d, acct=!!(PLAYER&&PLAYER.account);
+  const key='bd|'+BD.at+'|'+(d&&d.featured)+'|'+acct+'|'+BD.err+'|'+BD.busy;
+  if(!force&&el._k===key) return; el._k=key;
+  const head=`<div class="view-head"><h2>Badges</h2><p class="eyebrow">Earned by what you do on Snapline · no points, no advantage, nothing for the size of a bet</p></div>`;
+  if(!d){ el.innerHTML=head+`<div class="card"><p class="st-none">${BD.err?'Badges could not be loaded. Try again in a moment.':!PLAYER||!PLAYER.token?'Place a bet or create an account to start earning badges.':'Loading your badges…'}</p></div>`; return; }
+  const earned=d.badges.filter(b=>b.earned);
+  const guest=d.account?'':`<div class="card bd-guest"><span><b>Create an account to keep them.</b> As a guest you can see your progress; badges are only kept on an account (what you have done so far counts).</span><button class="chip-btn" type="button" data-join="register">Create an account</button></div>`;
+  const feat=d.account&&earned.length?`<div role="radiogroup" aria-label="Badge shown next to your name" class="bd-feat">
+      <button type="button" role="radio" data-bd-feat="none" aria-checked="${!d.featured}">None</button>
+      ${earned.map(b=>`<button type="button" role="radio" data-bd-feat="${esc(b.key)}" aria-checked="${d.featured===b.key}">${bdChip({k:b.key,t:b.tier})}${esc(b.name)}${b.tier_name?' · '+esc(BD_TIERS[b.tier-1]):''}</button>`).join('')}</div>
+      <p class="np-note">Shown next to your name in the leaderboards, your leagues and the chat.</p>`:d.account?'<p class="np-note">Your first badge can be shown next to your name in the leaderboards, your leagues and the chat.</p>':'';
+  const wk=d.week||(SERVER&&SERVER.week_start), nw=d.account&&wk?earned.filter(b=>b.week===wk):[];
+  const fresh=nw.length?`<div class="bd-new" aria-label="New this week"><span class="label">New this week</span>${nw.map(b=>`<span class="bd-new-i">${bdChip({k:b.key,t:b.tier})}${esc(b.name)}${b.tier_name&&b.tiers.length>1?' · '+esc(BD_TIERS[b.tier-1]):''}</span>`).join('')}</div>`:'';
+  const sum=`<div class="card"><div class="bd-sum"><span class="bd-big">${earned.length}<small>of ${d.badges.length} earned</small></span>${fresh}</div>${feat}</div>`;
+  const cats=(d.categories||Object.keys(BD_CATS)).map(c=>{ const l=d.badges.filter(b=>b.category===c); if(!l.length) return '';
+    l.sort((a,b)=>(b.earned-a.earned));
+    return `<section class="bd-cat" aria-label="${esc(BD_CATS[c]||c)}"><h3>${esc(BD_CATS[c]||c)}</h3><div class="bd-grid">${l.map(bdCard).join('')}</div></section>`; }).join('');
+  el.innerHTML=head+guest+(d.account?sum:'')+`<div class="card">${cats}</div>`;
 }
 /* ---------- Leagues (bloc 2, étape 7): private leaderboards between friends ----------
    Accounts only. A league ranks its members with the global measures (this week's balance, the season's net winnings);
@@ -11170,7 +11325,7 @@ async function leagueForm(f){
 }
 function lgTable(d){
   const sc=d.scope, sgn=v=>v===0?money(0):(v<0?MINUS:'+')+money(Math.abs(v)), own=d.league.owner;
-  const rows=d.rows.map(r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${r.owner?'<span class="lg-own" title="Created the league">★</span>':''}${r.me?' <span class="lb-you">you</span>':''}</th>
+  const rows=d.rows.map(r=>`<tr class="${r.me?'lb-me':''}"><td class="rk">${r.rank==null?'—':r.rank}</td><th scope="row" class="tl">${esc(r.name)}${bdChip(r.badge)}${r.owner?'<span class="lg-own" title="Created the league">★</span>':''}${r.me?' <span class="lb-you">you</span>':''}</th>
     <td class="${(sc==='season'?r.net:lbNet(r))<0?'dn':(sc==='season'?r.net:lbNet(r))>0?'up':''}">${sc==='season'?sgn(r.net):lbSgn(lbNet(r))}</td><td>${sc==='season'?r.weeks:r.bets}</td><td>${r.won}–${r.lost}</td>
     ${own?`<td>${r.me?'':`<button type="button" class="lg-x" data-lg="${LG.confirm==='kick:'+r.id?'kick':'confirm'}" data-arg="${LG.confirm==='kick:'+r.id?esc(r.id):'kick:'+esc(r.id)}" title="Remove ${esc(r.name)}" aria-label="Remove ${esc(r.name)}">${LG.confirm==='kick:'+r.id?'Remove?':'×'}</button>`}</td>`:''}</tr>`).join('');
   return `<div class="st-scroll"><table class="tst lb"><thead><tr><th>#</th><th scope="col" class="tl">Member</th><th>${sc==='season'?'Net P/L':'Week P/L'}</th><th>${sc==='season'?'Weeks':'Bets'}</th><th>W–L</th>${own?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>
@@ -11263,7 +11418,7 @@ async function accountSubmit(){
 /* after a successful sign-up or sign-in (Settings or the Join dialog): the key becomes the account's, everything reloads */
 async function authDone(r,reg,quiet){
   PLAYER={token:r.token,name:r.name,account:true,fav_team:r.fav_team||null}; if(!lsSet(PLAYER_KEY,PLAYER)) STORE_OK=false;
-  ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset();
+  ACCT={mode:'register',pwOpen:false,busy:false}; LB.at={}; LB.data={}; histReset(); if(typeof BD!=='undefined'){ BD.d=null; BD.at=0; }
   await serverWalletLoad(); pushRebind(); renderSettings(true); walletRender(nowMs()); leaguesAfterLogin(); joinRefresh();
   if(!quiet) toast(reg?`Account created · signed in as ${r.name}`:`Signed in as ${r.name}`+(r.moved?` · ${r.moved} guest bet${r.moved>1?'s':''} added`:''));
   if(r.left_behind) setTimeout(()=>toastErr(`${r.left_behind} bet${r.left_behind>1?'s':''} placed as a guest stay${r.left_behind>1?'':'s'} in the guest wallet: your account already had bets that week.`),2900);
@@ -11581,6 +11736,7 @@ function chatNode(m,X){
   const d=chatEl('div','chat-msg'); d.dataset.id=m.id; d.dataset.a=m.a;
   const meta=chatEl('div','chat-meta');
   meta.appendChild(chatEl('span','chat-n',m.n));
+  if(m.bd&&BD_ON){ const c=bdChip(m.bd); if(c) meta.insertAdjacentHTML('beforeend',c); }
   if(m.adm) meta.appendChild(chatEl('span','chat-adm','Snapline'));
   else if(m.t&&TEAMS[m.t]){ const t=chatEl('span','chat-t',TEAMS[m.t].abbr); t.title='Favorite team: '+TEAMS[m.t].name; meta.appendChild(t); }
   if(mine) meta.appendChild(chatEl('span','chat-you','you'));
