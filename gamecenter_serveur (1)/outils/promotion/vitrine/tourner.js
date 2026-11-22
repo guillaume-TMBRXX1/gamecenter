@@ -21,6 +21,7 @@ const F=process.argv[2]||'L', OUT=process.argv[3]||'tournage_'+F, URL=process.ar
 const OW=F==='L'?1920:1080, VW=F==='L'?1440:810, VH=F==='L'?810:1440, AR=F==='L'?16/9:9/16, DPR=3, FPS=30, DT=1000/FPS;
 const COMPTE=process.env.VITRINE_COMPTE?JSON.parse(fs.readFileSync(process.env.VITRINE_COMPTE,'utf8')):null;
 const T0=+process.env.VITRINE_T0||0;
+const PLEIN=process.env.VITRINE_ZOOM!=='1';   /* écran entier (demande de Guillaume, 22/11) : la caméra ne zoome jamais, elle suit seulement le défilement ; VITRINE_ZOOM=1 : cadrages serrés (v2) */
 const SCENES=process.env.VITRINE_SCENES?process.env.VITRINE_SCENES.split(','):null;   /* refaire seulement ces scènes (les autres : gestes sans images) */
 fs.mkdirSync(OUT,{recursive:true});
 
@@ -104,7 +105,7 @@ const vMix=(a,b,q)=>({v:lerp(a.v,b.v,q)});
     for(let f=0;f<frames;f+=stepF){
       const t=f/FPS;
       while(ei<ev.length&&ev[ei].t<=t){ await ev[ei].fn(); ei++; }
-      const c=at(S.cam,t,camMix); const ch=c.w/AR;
+      const c0=at(S.cam,t,camMix), c=PLEIN?{cx:VW/2,cy:c0.cy,w:VW}:c0; const ch=c.w/AR;
       /* la caméra suit le défilement : la page défile juste ce qu'il faut pour que le cadre soit dans la fenêtre */
       if(!S.fixed){ let want=Math.min(Math.max(scroll,c.cy+ch/2-VH),c.cy-ch/2); want=Math.max(0,Math.min(want,H-VH));
         if(Math.abs(want-scroll)>0.01){ scroll=await p.evaluate(y=>{ window.scrollTo(0,y); return scrollY; },want); } }
@@ -123,7 +124,10 @@ const vMix=(a,b,q)=>({v:lerp(a.v,b.v,q)});
         meta.push({f:n,scene:name}); n++; continue; }
       const file=path.join(OUT,`f${String(n).padStart(5,'0')}.jpg`);
       const sc=Math.min(1,OW/cam.w*1.08/DPR);
-      const r=await cdp.send('Page.captureScreenshot',{format:'jpeg',quality:93,optimizeForSpeed:true,clip:{x:x0,y:y0,width:x1-x0,height:y1-y0,scale:sc}});
+      /* la zone de capture de Chrome est en coordonnées du document : on ajoute le défilement réel de la page (sinon, page
+         défilée, le cadre filmé remonte d'autant et le haut de l'image est noir) */
+      const sy=await p.evaluate(()=>window.scrollY);
+      const r=await cdp.send('Page.captureScreenshot',{format:'jpeg',quality:93,optimizeForSpeed:true,clip:{x:x0,y:y0+sy,width:x1-x0,height:y1-y0,scale:sc}});
       fs.writeFileSync(file,Buffer.from(r.data,'base64'));
       meta.push({f:n,scene:name,clip:[x0,y0],cam:[cam.x,cam.y,cam.w,cam.h]}); n++;
       if(n%60===0) console.log(F,name,n);
@@ -194,16 +198,14 @@ const vMix=(a,b,q)=>({v:lerp(a.v,b.v,q)});
       {t:4.8,...tCam},{t:8.4,...tCam,w:tCam.w*.97}],
     cur:[{t:0,x:today.x+today.w*.7,y:today.y+today.h*.8},{t:2.6,x:today.x+today.w*.82,y:today.y+today.h*.45},
          {t:5.2,x:cpoe.x+cpoe.w/2,y:tb.y+20},{t:6.4,x:cpoe.x+cpoe.w/2,y:tr[2].y+tr[2].h/2},{t:7.6,...plc}],
-    ev:[{t:7.6,fn:async()=>{ const sy=await p.evaluate(()=>scrollY); await ring(plc.x,plc.y-sy); }},
-        {t:7.72,fn:()=>p.evaluate(()=>document.querySelector('#viewInsights table.trk tbody tr .trk-pl').click())}]});
+    ev:[{t:7.6,fn:async()=>{ const sy=await p.evaluate(()=>scrollY); await ring(plc.x,plc.y-sy); }}]});   /* le clic s'entend et se voit ici ; la fiche s'ouvre au plan suivant */
 
   /* ── 5. La fiche du joueur : Tracking · this week, carte des passes ── */
   /* la fiche dessine sa partie Tracking quand elle devient visible : on la fait défiler une fois avant de mesurer */
   /* la fiche verrouille le défilement de la page : rouverte page remontée en haut, sinon le cadre filmé est décalé */
-  await attendre(()=>!!document.querySelector('.pcard'),100);
-  if(await p.evaluate(()=>scrollY>0)){ await p.keyboard.press('Escape'); await run(500); await p.evaluate(()=>window.scrollTo(0,0)); await run(300);
-    await p.evaluate(()=>document.querySelector('#viewInsights table.trk tbody tr .trk-pl').click()); await run(300); }
-  await attendre(()=>!!document.querySelector('.pcard'),100);
+  await p.evaluate(()=>window.scrollTo(0,0)); await run(300);
+  await p.evaluate(()=>document.querySelector('#viewInsights table.trk tbody tr .trk-pl').click()); await run(300);
+  if(!await attendre(()=>!!document.querySelector('.pcard'),100)) throw new Error('la fiche ne s\'ouvre pas');
   await p.evaluate(()=>{ const c=document.querySelector('.pcard'); c.scrollTop=c.scrollHeight; }); await run(400);
   const PCH="document.querySelector('.pcard .trk-pch')||[...document.querySelectorAll('.pcard .trk-gl')].find(e=>/where he throws/i.test(e.textContent))";
   if(!await attendre(new Function('return !!('+PCH+')'),900)) throw new Error('fiche : pas de carte des passes');

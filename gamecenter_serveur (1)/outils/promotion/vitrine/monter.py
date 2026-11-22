@@ -77,8 +77,8 @@ for si, sc in enumerate(scenes):
         events.append(('whoosh', len(plan) / FPS))
         for j in range(OV):
             q = (j + .5) / OV
-            a = (sc, n - OV + j, 1 - .10 * ease(q), 1 - ease(q), 22 * math.sin(math.pi * q))
-            b = (nxt, j, 1.08 - .08 * ease(q), ease(q), 22 * math.sin(math.pi * q))
+            a = (sc, n - OV + j, 1.0, 1 - ease(q), 22 * math.sin(math.pi * q))   # fondu flou, sans zoom : l'écran reste entier
+            b = (nxt, j, 1.0, ease(q), 22 * math.sin(math.pi * q))
             plan.append([a, b])
 total = len(plan)
 print(F, 'images de sortie :', total, '=', round(total / FPS, 2), 's')
@@ -95,7 +95,6 @@ for o, layers in enumerate(plan):
         m = sc['frames'][i]
         if o < INTRO:                       # ouverture : du noir, flou → net, léger recul
             q = ease((o + 1) / INTRO)
-            k = k * (0.92 + 0.08 * q)
             r = max(r, 18 * (1 - q))
         im = blur(render(m, k), r)
         if o < INTRO:

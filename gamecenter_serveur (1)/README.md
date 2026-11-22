@@ -1163,7 +1163,11 @@ Plan (compte, rythme, formats, mesure) : `programme/Promotion.md` à la racine d
 - **Vidéo « vitrine »** (v1 04/11/2026 : la même vidéo qu'un reel de démo d'interface, avec snapline.live ; **v2
   21/11/2026**, pour un post Reddit : plans plus longs pour lire, fonctionnalités récentes) :
   `bash outils/promotion/vitrine/faire_vitrine.sh [sortie]` → `snapline_vitrine_9x16.mp4` (1080×1920) et
-  `snapline_vitrine_16x9.mp4` (1920×1080), ≈ 60 s, 30 images/s, dans `videos/` (non versionné). Le site réel est filmé
+  `snapline_vitrine_16x9.mp4` (1920×1080), ≈ 60 s, 30 images/s, dans `videos/` (non versionné). **Écran entier**
+  (demande de Guillaume, 22/11 : « trop zoomé ») : la caméra montre toujours toute la fenêtre (1440×810 en 16:9,
+  810×1440 en 9:16) et ne fait que suivre le défilement ; transitions en fondu flou, sans zoom (`VITRINE_ZOOM=1` : les
+  cadrages serrés de la v2). La zone de capture de Chrome est en coordonnées du document : le défilement réel de la
+  page lui est ajouté (sans cela, page défilée, le haut de l'image était noir — aussi la bande noire de la v1). Le site réel est filmé
   image par image (`tourner.js` : serveur local, horloge de la page et animations CSS pilotées, caméra virtuelle),
   connecté avec un compte de démonstration (`compte_demo.py` : « Snapfan », Insights Pro, 8 badges de fidélité et de
   supporter). Plans : Live Now → le match Prime Time (GRZ @ MRD du 20/11, Q4 1:06) → clic → grand écran : la carte
