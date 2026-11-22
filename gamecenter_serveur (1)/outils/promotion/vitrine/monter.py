@@ -1,7 +1,8 @@
 """Vidéo « vitrine » (promotion, 04/11/2026) : images du tournage (tourner.js) + carton (carton.js) → MP4.
    python3 monter.py <L|P> <out_dir> <end_dir> <musique.mp3> <sortie.mp4>
 Caméra sous-pixel (le cadre filmé est recadré exactement), transitions floues en fondu avec un léger zoom (comme la
-vidéo de référence), ouverture depuis le noir, son : musique du site + « whoosh » aux transitions + clic."""
+vidéo de référence), ouverture depuis le noir, son : musique du site (une piste, ou plusieurs séparées par des virgules, enchaînées
+en fondu) + « whoosh » aux transitions + clics."""
 import json, math, os, subprocess, sys, wave
 import numpy as np
 from PIL import Image, ImageFilter
@@ -22,9 +23,10 @@ for m in frames:
 ends = sorted(f for f in os.listdir(END) if f.endswith('.png'))
 scenes.append({'name': 'end', 'frames': [{'end': os.path.join(END, f)} for f in ends]})
 
-OV = 10                        # chevauchement d'une transition (images)
+OV = 15                        # chevauchement d'une transition (images) : 0,5 s
 NO_CUT = set()
-TRIM = {'home': 118}           # la fenêtre du match s'ouvre au clic (3,62 s) : on coupe juste après
+CLICS = {'home': [('click', 7.0)], 'insights': [('click', 7.6)]}   # clics de tourner.js (s dans la scène)
+TRIM = {}                      # images gardées par scène (aucune coupe : chaque scène finit sur son dernier geste)
 for sc in scenes:
     if sc['name'] in TRIM:
         sc['frames'] = sc['frames'][:TRIM[sc['name']]]
@@ -66,17 +68,18 @@ for si, sc in enumerate(scenes):
     cut_out = nxt is not None and (sc['name'], nxt['name']) not in NO_CUT
     start = OV if cut_in else 0
     stop = n - OV if cut_out else n
+    debut = len(plan) - start                   # image de sortie de la 1re image de la scène
+    for k, tc in CLICS.get(sc['name'], []):
+        events.append((k, (debut + tc * FPS) / FPS))
     for i in range(start, stop):
         plan.append([(sc, i, 1.0, 1.0, 0.0)])
     if cut_out:
         events.append(('whoosh', len(plan) / FPS))
         for j in range(OV):
             q = (j + .5) / OV
-            a = (sc, n - OV + j, 1 - .10 * ease(q), 1 - ease(q), 22 * math.sin(math.pi * q))
-            b = (nxt, j, 1.08 - .08 * ease(q), ease(q), 22 * math.sin(math.pi * q))
+            a = (sc, n - OV + j, 1.0, 1 - ease(q), 22 * math.sin(math.pi * q))   # fondu flou, sans zoom : l'écran reste entier
+            b = (nxt, j, 1.0, ease(q), 22 * math.sin(math.pi * q))
             plan.append([a, b])
-    if sc['name'] == 'home':
-        events.append(('click', 3.5))
 total = len(plan)
 print(F, 'images de sortie :', total, '=', round(total / FPS, 2), 's')
 
@@ -92,7 +95,6 @@ for o, layers in enumerate(plan):
         m = sc['frames'][i]
         if o < INTRO:                       # ouverture : du noir, flou → net, léger recul
             q = ease((o + 1) / INTRO)
-            k = k * (0.92 + 0.08 * q)
             r = max(r, 18 * (1 - q))
         im = blur(render(m, k), r)
         if o < INTRO:
@@ -131,10 +133,24 @@ fxw = DEST + '.fx.wav'
 with wave.open(fxw, 'wb') as w:
     w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((fx * 32767).astype('<i2').tobytes())
 fade = max(0, dur - 1.2)
-subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp_v, '-stream_loop', '-1', '-i', MUSIC, '-i', fxw,
+# musique : une piste (en boucle) ou plusieurs, séparées par des virgules, enchaînées en fondu de 1,5 s
+pistes = [x for x in MUSIC.split(',') if x]
+entrees = ['-i', tmp_v, '-i', fxw]
+if len(pistes) == 1:
+    entrees += ['-stream_loop', '-1', '-i', pistes[0]]
+    chaine = '[2:a]anull[mus];'
+else:
+    for x in pistes:
+        entrees += ['-i', x]
+    chaine, prec = '', '[2:a]'
+    for k in range(1, len(pistes)):
+        out = '[mus]' if k == len(pistes) - 1 else f'[x{k}]'
+        chaine += f'{prec}[{k + 2}:a]acrossfade=d=1.5:c1=tri:c2=tri{out};'
+        prec = out
+subprocess.run(['ffmpeg', '-v', 'error', '-y', *entrees,
                 '-filter_complex',
-                f'[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,volume=1.6,afade=t=in:d=0.3,afade=t=out:st={fade:.3f}:d=1.2[m];'
-                f'[2:a]aresample=48000,volume=0.9[f];[m][f]amix=inputs=2:normalize=0,alimiter=limit=0.95[a]',
+                chaine + f'[mus]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,volume=1.6,afade=t=in:d=0.3,afade=t=out:st={fade:.3f}:d=1.2[m];'
+                f'[1:a]aresample=48000,volume=0.9[f];[m][f]amix=inputs=2:normalize=0,alimiter=limit=0.95[a]',
                 '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', DEST],
                check=True)
 os.remove(tmp_v); os.remove(fxw)

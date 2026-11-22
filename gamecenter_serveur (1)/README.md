@@ -1160,15 +1160,30 @@ Plan (compte, rythme, formats, mesure) : `programme/Promotion.md` à la racine d
 « Vidéos » (section 46) et se publient à la main.
 - **Photo de profil** : `outils/promotion/photo_profil.png` (1080×1080, le logo du site sur son dégradé ; le réseau
   l'affiche en rond). À refaire seulement si le logo change : `node outils/promotion/faire_profil.js` (Playwright).
-- **Vidéo « vitrine »** (04/11/2026, demande de Guillaume : la même vidéo qu'un reel de démo d'interface, avec
-  snapline.live) : `bash outils/promotion/vitrine/faire_vitrine.sh [sortie]` → `snapline_vitrine_9x16.mp4`
-  (1080×1920) et `snapline_vitrine_16x9.mp4` (1920×1080), ≈ 17 s, 30 images/s, dans `videos/` (non versionné).
-  Le site réel est filmé image par image (`tourner.js` : serveur local à l'heure `VITRINE_AT`, horloge de la page et
-  animations CSS pilotées, caméra virtuelle) : Live Now → zoom sur le match Prime Time en direct → clic → grand écran
-  → Standings → Ranking → Teams → retour à Live Now ; puis `carton.js` (logo + « snapline.live ») et `monter.py`
-  (recadrage sous-pixel, transitions floues, musique originale du site `final_drive` + « whoosh » et clic). Solde,
-  ticket, cotes et marchés masqués (jamais de paris à l'image). ≈ 20 min ; `DRY=1 node …/tourner.js P /tmp/x` vérifie
-  les sélecteurs en une minute (serveur lancé).
+- **Vidéo « vitrine »** (v1 04/11/2026 : la même vidéo qu'un reel de démo d'interface, avec snapline.live ; **v2
+  21/11/2026**, pour un post Reddit : plans plus longs pour lire, fonctionnalités récentes) :
+  `bash outils/promotion/vitrine/faire_vitrine.sh [sortie]` → `snapline_vitrine_9x16.mp4` (1080×1920) et
+  `snapline_vitrine_16x9.mp4` (1920×1080), ≈ 60 s, 30 images/s, dans `videos/` (non versionné). **Écran entier**
+  (demande de Guillaume, 22/11 : « trop zoomé ») : la caméra montre toujours toute la fenêtre (1440×810 en 16:9,
+  810×1440 en 9:16) et ne fait que suivre le défilement ; transitions en fondu flou, sans zoom (`VITRINE_ZOOM=1` : les
+  cadrages serrés de la v2). La zone de capture de Chrome est en coordonnées du document : le défilement réel de la
+  page lui est ajouté (sans cela, page défilée, le haut de l'image était noir — aussi la bande noire de la v1). Le site réel est filmé
+  image par image (`tourner.js` : serveur local, horloge de la page et animations CSS pilotées, caméra virtuelle),
+  connecté avec un compte de démonstration (`compte_demo.py` : « Snapfan », Insights Pro, 8 badges de fidélité et de
+  supporter). Plans : Live Now → le match Prime Time (GRZ @ MRD du 20/11, Q4 1:06) → clic → grand écran : la carte
+  « AI coach » du 4e essai (Goes for it, 52 % contre 43 % et 34 %), le touchdown, « Goes for two » manqué → Standings
+  → Ranking → Insights › Tracking (stat du jour, tableau Passing) → fiche du n° 1 (Tracking · this week, semaine par
+  semaine, carte « Where he throws ») → Teams → Badges → Live Now ; puis `carton.js` (logo + « snapline.live ») et
+  `monter.py` (recadrage sous-pixel, transitions floues de 0,5 s, musiques originales du site enchaînées en fondu,
+  « whoosh » et clics). **Horloge** : le site se recale sur l'heure du serveur à chaque `/api/delta` ; le tournage
+  retire cette heure de la réponse (sinon le match saute) et ouvre la page 30 s avant `VITRINE_T0` (heure du site au
+  premier plan), puis l'horloge pilotée y mène exactement : la décision du coach tombe 1,6 s après l'ouverture du
+  grand écran. **Jamais de paris à l'image** : solde, ticket, cotes, marchés, barre de pari rapide, onglet « This
+  week » d'Insights (on va droit à Tracking), badges « Reading the game » masqués ; « play money only », « nothing for
+  the size of a bet », « a bet » retirés des textes filmés. ≈ 1 h ; `DRY=1 node …/tourner.js P /tmp/x` (serveur et
+  compte lancés, `VITRINE_COMPTE`, `VITRINE_T0`) vérifie les sélecteurs en quelques minutes, avec une capture toutes
+  les 2 s de chaque scène ; `VITRINE_SCENES=insights,card` refait seulement ces scènes (les autres : leurs gestes sans
+  images), à recoller dans le tournage complet (mêmes nombres d'images).
 
 ### 49. Fin de match dans le grand écran (14/10/2026)
 **Demande de Guillaume (14/10)** : une fois un match terminé dans le grand écran, en direct ou en replay, laisser le

@@ -3,7 +3,7 @@ let chromium; try{ ({chromium}=require('playwright')); }catch(e){ ({chromium}=re
 const fs=require('fs'), path=require('path');
 const EXE=process.env.CHROMIUM_PATH||(fs.existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined);
 const F=process.argv[2]||'L', OUT=process.argv[3]||'carton_'+F, URL=process.argv[4]||'http://localhost:8170/';
-const W=F==='L'?640:360, H=F==='L'?360:640, FPS=30, DUR=+process.env.END_DUR||2.2;
+const W=F==='L'?640:360, H=F==='L'?360:640, FPS=30, DUR=+process.env.END_DUR||3;
 fs.mkdirSync(OUT,{recursive:true});
 (async()=>{
   const b=await chromium.launch({executablePath:EXE}); const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:3,colorScheme:'dark'});
